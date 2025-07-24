@@ -5,11 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ssafy.dochi.notice.domain.Notice.NoticeCategory;
 import com.ssafy.dochi.notice.dto.response.NoticeInfoResDto;
 import com.ssafy.dochi.notice.dto.response.NoticePageResDto;
 import com.ssafy.dochi.notice.dto.response.NoticeResDto;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.ssafy.dochi.notice.domain.Notice;
 import com.ssafy.dochi.notice.dto.request.NoticeSaveReqDto;
@@ -20,9 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class NoticeServiceImpl implements NoticeService {
-
     private final NoticeDao noticeDao;
 
     @Override
@@ -31,22 +29,19 @@ public class NoticeServiceImpl implements NoticeService {
                 .userId(userId)
                 .title(dto.getTitle())
                 .content(dto.getContent())
-                .category(dto.getCategory() != null ? dto.getCategory() : "announcement")
+                .category(dto.getCategory() != null ? dto.getCategory() : NoticeCategory.ANNOUNCEMENT)
                 .isImportant(dto.getIsImportant() != null ? dto.getIsImportant() : false)
                 .isPopup(dto.getIsPopup() != null ? dto.getIsPopup() : false)
                 .viewCount(0)
-                .publishDate(dto.getPublishDate() != null ? dto.getPublishDate() : LocalDateTime.now())
-                .expireDate(dto.getExpireDate())
-                .isActive(true)
+                .publishDate(LocalDateTime.now())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-
         noticeDao.insert(notice);
     }
 
     @Override
-    public void update(NoticeUpdateReqDto dto, Long userId) {
+    public void update(NoticeUpdateReqDto dto) {
         Notice notice = Notice.builder()
                 .id(dto.getId())
                 .title(dto.getTitle())
@@ -54,44 +49,29 @@ public class NoticeServiceImpl implements NoticeService {
                 .category(dto.getCategory())
                 .isImportant(dto.getIsImportant())
                 .isPopup(dto.getIsPopup())
-                .publishDate(dto.getPublishDate())
-                .expireDate(dto.getExpireDate())
-                .isActive(dto.getIsActive())
                 .updatedAt(LocalDateTime.now())
                 .build();
-
         noticeDao.update(notice);
     }
 
     @Override
-    public void delete(Long id, Long userId) {
-        // 실제 삭제가 아닌 비활성화 처리
-        Notice notice = Notice.builder()
-                .id(id)
-                .isActive(false)
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        noticeDao.update(notice);
+    public void delete(Long id) {
+        noticeDao.delete(id);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Notice> findAll() {
         return noticeDao.findAll();
     }
 
     @Override
-    @Transactional(readOnly = true)
     public NoticeInfoResDto findById(Long id) {
-        // 조회수 증가
         noticeDao.incrementViewCount(id);
         return noticeDao.findById(id);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public NoticePageResDto<NoticeResDto> findAll(int page, int size, String search, String category) {
+    public NoticePageResDto<NoticeResDto> findAll(int page, int size, String search, NoticeCategory category, Boolean isImportant) {
         Map<String, Object> params = new HashMap<>();
 
         // 검색어가 있으면 파라미터에 추가
@@ -100,12 +80,14 @@ public class NoticeServiceImpl implements NoticeService {
         }
 
         // 카테고리 필터
-        if (category != null && !category.trim().isEmpty()) {
-            params.put("category", category);
+        if (category != null) {
+            params.put("category", category.name());
         }
 
-        // 활성화된 공지만 조회
-        params.put("isActive", true);
+        // 중요 공지 필터
+        if (isImportant != null) {
+            params.put("isImportant", isImportant);
+        }
 
         // 전체 개수 조회
         int totalCount = noticeDao.getTotalCount(params);
@@ -116,7 +98,7 @@ public class NoticeServiceImpl implements NoticeService {
         params.put("limit", size);
 
         // 데이터 조회
-        List<NoticeResDto> content = noticeDao.findAllWithPaging(params);
+        List<NoticeResDto> content = noticeDao.findAll(params);
 
         // 페이징 응답 생성
         return new NoticePageResDto<>(
@@ -126,17 +108,5 @@ public class NoticeServiceImpl implements NoticeService {
                 totalCount,
                 (int) Math.ceil((double) totalCount / size)
         );
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<NoticeResDto> findImportantNotices() {
-        return noticeDao.findImportantNotices();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<NoticeResDto> findPopupNotices() {
-        return noticeDao.findPopupNotices();
     }
 }
