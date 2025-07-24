@@ -36,7 +36,7 @@ public class ApiResponse<B> extends ResponseEntity<B> {
 
     @Getter
     @AllArgsConstructor
-    public static class SuccesCustomBody<D> implements Serializable {
+    public static class SuccessCustomBody<D> implements Serializable {
         private int status;
         private String message;
         private D data;
