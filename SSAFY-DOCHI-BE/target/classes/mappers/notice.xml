@@ -1,144 +1,110 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
 <mapper namespace="com.ssafy.dochi.notice.dao.NoticeDao">
 
     <!-- 공지사항 등록 -->
-    <insert id="insert" parameterType="com.ssafy.dochi.notice.domain.Notice" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO notices (
-            user_id, title, content, category, is_important, is_popup,
-            view_count, publish_date, expire_date, is_active, created_at, updated_at
-        ) VALUES (
-                     #{userId}, #{title}, #{content}, #{category}, #{isImportant}, #{isPopup},
-                     #{viewCount}, #{publishDate}, #{expireDate}, #{isActive}, #{createdAt}, #{updatedAt}
-                 )
+    <insert id="insert" parameterType="com.ssafy.dochi.notice.domain.Notice">
+        INSERT INTO notices (user_id, title, content, category, is_important, is_popup, view_count, publish_date, created_at, updated_at)
+        VALUES (#{userId}, #{title}, #{content}, #{category}, #{isImportant}, #{isPopup}, #{viewCount}, #{publishDate}, #{createdAt}, #{updatedAt})
     </insert>
 
     <!-- 공지사항 수정 -->
     <update id="update" parameterType="com.ssafy.dochi.notice.domain.Notice">
-        UPDATE notices SET
-        <trim suffixOverrides=",">
-            <if test="title != null">title = #{title},</if>
-            <if test="content != null">content = #{content},</if>
-            <if test="category != null">category = #{category},</if>
-            <if test="isImportant != null">is_important = #{isImportant},</if>
-            <if test="isPopup != null">is_popup = #{isPopup},</if>
-            <if test="publishDate != null">publish_date = #{publishDate},</if>
-            <if test="expireDate != null">expire_date = #{expireDate},</if>
-            <if test="isActive != null">is_active = #{isActive},</if>
+        UPDATE notices
+        SET title = #{title},
+            content = #{content},
+            category = #{category},
+            is_important = #{isImportant},
+            is_popup = #{isPopup},
             updated_at = #{updatedAt}
-        </trim>
         WHERE id = #{id}
     </update>
 
     <!-- 공지사항 삭제 -->
-    <delete id="delete" parameterType="Long">
+    <delete id="delete" parameterType="long">
         DELETE FROM notices WHERE id = #{id}
     </delete>
 
+    <!-- 공지사항 상세 조회 -->
+    <select id="findById" parameterType="long" resultType="com.ssafy.dochi.notice.dto.response.NoticeInfoResDto">
+        SELECT
+            id,
+            title,
+            content,
+            user_id as userId,
+            category,
+            is_important as isImportant,
+            is_popup as isPopup,
+            view_count as viewCount,
+            DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,
+            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
+            DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,
+            DATE_FORMAT(expire_date, '%Y-%m-%d %H:%i:%s') as expireDate
+        FROM notices
+        WHERE id = #{id}
+    </select>
+
     <!-- 조회수 증가 -->
-    <update id="incrementViewCount" parameterType="Long">
-        UPDATE notices SET view_count = view_count + 1 WHERE id = #{id}
+    <update id="incrementViewCount" parameterType="long">
+        UPDATE notices
+        SET view_count = view_count + 1
+        WHERE id = #{id}
     </update>
 
-    <!-- 공지사항 상세 조회 -->
-    <select id="findById" parameterType="Long" resultType="com.ssafy.dochi.notice.dto.response.NoticeInfoResDto">
-        SELECT
-            id, title, content, user_id as userId, category,
-            is_important as isImportant, is_popup as isPopup, view_count as viewCount,
-            DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,
-            DATE_FORMAT(expire_date, '%Y-%m-%d %H:%i:%s') as expireDate,
-            is_active as isActive,
-            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
-            DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
-        FROM notices
-        WHERE id = #{id} AND is_active = true
-    </select>
-
-    <!-- 전체 공지사항 조회 -->
+    <!-- 전체 공지사항 조회 (기본) -->
     <select id="findAll" resultType="com.ssafy.dochi.notice.domain.Notice">
-        SELECT * FROM notices WHERE is_active = true ORDER BY created_at DESC
+        SELECT * FROM notices ORDER BY publish_date DESC
     </select>
 
-    <!-- 페이징 공지사항 조회 -->
-    <select id="findAllWithPaging" parameterType="map" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
+    <!-- 페이징된 공지사항 조회 -->
+    <select id="findAll" parameterType="map" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
         SELECT
-        id, title, content, user_id as userId, category,
-        is_important as isImportant, is_popup as isPopup, view_count as viewCount,
+        id,
+        title,
+        content,
+        user_id as userId,
+        category,
+        is_important as isImportant,
+        is_popup as isPopup,
         DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,
-        DATE_FORMAT(expire_date, '%Y-%m-%d %H:%i:%s') as expireDate,
-        is_active as isActive,
         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
-        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,
+        view_count as viewCount
         FROM notices
-        WHERE is_active = true
-        <if test="search != null and search != ''">
-            AND (title LIKE CONCAT('%', #{search}, '%') OR content LIKE CONCAT('%', #{search}, '%'))
-        </if>
-        <if test="category != null and category != ''">
-            AND category = #{category}
-        </if>
-        ORDER BY created_at DESC
+        <where>
+            <if test="search != null and search != ''">
+                AND (title LIKE CONCAT('%', #{search}, '%')
+                OR content LIKE CONCAT('%', #{search}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="isImportant != null">
+                AND is_important = #{isImportant}
+            </if>
+        </where>
+        ORDER BY
+        is_important DESC,
+        publish_date DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <!-- 전체 개수 조회 -->
     <select id="getTotalCount" parameterType="map" resultType="int">
-        SELECT COUNT(*) FROM notices
-        WHERE is_active = true
-        <if test="search != null and search != ''">
-            AND (title LIKE CONCAT('%', #{search}, '%') OR content LIKE CONCAT('%', #{search}, '%'))
-        </if>
-        <if test="category != null and category != ''">
-            AND category = #{category}
-        </if>
+        SELECT COUNT(*)
+        FROM notices
+        <where>
+            <if test="search != null and search != ''">
+                AND (title LIKE CONCAT('%', #{search}, '%')
+                OR content LIKE CONCAT('%', #{search}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="isImportant != null">
+                AND is_important = #{isImportant}
+            </if>
+        </where>
     </select>
 
-    <!-- 중요 공지사항 조회 -->
-    <select id="findImportantNotices" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
-        SELECT
-            id, title, content, user_id as userId, category,
-            is_important as isImportant, is_popup as isPopup, view_count as viewCount,
-            DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,
-            DATE_FORMAT(expire_date, '%Y-%m-%d %H:%i:%s') as expireDate,
-            is_active as isActive,
-            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
-            DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
-        FROM notices
-        WHERE is_active = true AND is_important = true
-        ORDER BY created_at DESC
-    </select>
-
-    <!-- 팝업 공지사항 조회 -->
-    <select id="findPopupNotices" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
-        SELECT
-            id, title, content, user_id as userId, category,
-            is_important as isImportant, is_popup as isPopup, view_count as viewCount,
-            DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,
-            DATE_FORMAT(expire_date, '%Y-%m-%d %H:%i:%s') as expireDate,
-            is_active as isActive,
-            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
-            DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
-        FROM notices
-        WHERE is_active = true AND is_popup = true
-          AND (expire_date IS NULL OR expire_date > NOW())
-        ORDER BY created_at DESC
-    </select>
-
-    <!-- 활성 공지사항 조회 -->
-    <select id="findActiveNotices" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
-        SELECT
-        id, title, content, user_id as userId, category,
-        is_important as isImportant, is_popup as isPopup, view_count as viewCount,
-        DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,
-        DATE_FORMAT(expire_date, '%Y-%m-%d %H:%i:%s') as expireDate,
-        is_active as isActive,
-        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
-        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
-        FROM notices
-        WHERE is_active = true
-        AND publish_date <= NOW()
-        AND (expire_date IS NULL OR expire_date > NOW())
-        ORDER BY created_at DESC
-    </select>
 </mapper>

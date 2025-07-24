@@ -1,12 +1,12 @@
 package com.ssafy.dochi.notice.domain;
 
-import java.time.LocalDateTime;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,16 +16,20 @@ import lombok.Setter;
 public class Notice {
 
     private Long id;
-    private Long userId;  // users 테이블의 mno와 연결
+    private Long userId;                    // user_id (FK)
     private String title;
     private String content;
-    private String category; // system, update, maintenance, announcement
-    private Boolean isImportant;
-    private Boolean isPopup;
-    private Integer viewCount;
-    private LocalDateTime publishDate;
-    private LocalDateTime expireDate;
-    private Boolean isActive;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private NoticeCategory category;        // ENUM('SYSTEM', 'UPDATE', 'MAINTENANCE', 'ANNOUNCEMENT')
+    private Boolean isImportant;            // is_important
+    private Boolean isPopup;                // is_popup
+    private Integer viewCount;              // view_count
+    private LocalDateTime publishDate;      // publish_date
+    private LocalDateTime expireDate;       // expire_date
+    private LocalDateTime createdAt;        // created_at
+    private LocalDateTime updatedAt;        // updated_at
+
+    // 카테고리 ENUM
+    public enum NoticeCategory {
+        SYSTEM, UPDATE, MAINTENANCE, ANNOUNCEMENT
+    }
 }

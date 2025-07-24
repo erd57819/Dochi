@@ -17,9 +17,6 @@ public interface NoticeDao {
     NoticeInfoResDto findById(Long id);
     List<Notice> findAll();
     void incrementViewCount(Long id);
-    List<NoticeResDto> findAllWithPaging(Map<String, Object> params);
+    List<NoticeResDto> findAll(Map<String, Object> params);
     int getTotalCount(Map<String, Object> params);
-    List<NoticeResDto> findImportantNotices();
-    List<NoticeResDto> findPopupNotices();
-    List<NoticeResDto> findActiveNotices();
 }
