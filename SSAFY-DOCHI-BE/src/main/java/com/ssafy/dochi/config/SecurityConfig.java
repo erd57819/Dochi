@@ -15,11 +15,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        // Swagger UI 관련 경로 허용
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
-                        // 공지사항 API 모두 허용 (테스트용)
-                        .requestMatchers("/api/notice/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()  // 모든 요청 허용 (테스트용)
                 );
 
         return http.build();

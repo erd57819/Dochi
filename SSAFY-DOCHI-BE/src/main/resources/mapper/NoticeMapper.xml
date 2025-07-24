@@ -53,7 +53,21 @@
 
     <!-- 전체 공지사항 조회 (기본) -->
     <select id="findAll" resultType="com.ssafy.dochi.notice.domain.Notice">
-        SELECT * FROM notices ORDER BY publish_date DESC
+        SELECT
+            id,
+            user_id as userId,
+            title,
+            content,
+            category,
+            is_important as isImportant,
+            is_popup as isPopup,
+            view_count as viewCount,
+            publish_date as publishDate,
+            expire_date as expireDate,
+            created_at as createdAt,
+            updated_at as updatedAt
+        FROM notices
+        ORDER BY publish_date DESC
     </select>
 
     <!-- 페이징된 공지사항 조회 -->
