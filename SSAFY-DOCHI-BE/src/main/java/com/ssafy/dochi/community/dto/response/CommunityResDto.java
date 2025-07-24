@@ -2,21 +2,20 @@ package com.ssafy.dochi.community.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 public class CommunityResDto {
     private Long id;
-    private String title;
-    private String content;
     private Long userId;
     private String category;
-    private Boolean isImportant;
-    private Boolean isPopup;
+    private String title;
+    private String content;
     private Integer viewCount;
-    private String publishDate;
-    private String expireDate;
-    private Boolean isActive;
+    private Integer commentCount;
+    private String tags;
     private String createdAt;
     private String updatedAt;
 }

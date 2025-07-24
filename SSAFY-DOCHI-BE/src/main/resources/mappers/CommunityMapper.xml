@@ -3,6 +3,19 @@
 
 <mapper namespace="com.ssafy.dochi.community.dao.CommunityDao">
 
+    <resultMap id="CommunityResultMap" type="com.ssafy.dochi.community.dto.response.CommunityResDto">
+        <id property="id" column="id"/>
+        <result property="userId" column="userId"/>
+        <result property="category" column="category"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="viewCount" column="viewCount"/>
+        <result property="commentCount" column="commentCount"/>
+        <result property="tags" column="tags"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
     <insert id="insert" parameterType="com.ssafy.dochi.community.domain.Community">
         INSERT INTO community_posts (
         user_id, category, title, content, view_count, comment_count, tags, created_at, updated_at
@@ -30,7 +43,7 @@
         UPDATE community_posts SET view_count = view_count + 1 WHERE id = #{id}
     </update>
 
-    <select id="findById" parameterType="long" resultType="com.ssafy.dochi.community.dto.response.CommunityResDto">
+    <select id="findById" parameterType="long" resultMap="CommunityResultMap">
         SELECT
         id, user_id as userId, category, title, content, view_count as viewCount,
         comment_count as commentCount, tags,
@@ -40,11 +53,12 @@
         WHERE id = #{id} AND deleted_at IS NULL
     </select>
 
-    <select id="findAllWithPaging" parameterType="map" resultType="com.ssafy.dochi.community.dto.response.CommunityResDto">
+    <select id="findAllWithPaging" parameterType="map" resultMap="CommunityResultMap">
         SELECT
-        id, user_id as userId, category, title,
-        view_count as viewCount, comment_count as commentCount,
-        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt
+        id, user_id as userId, category, title, content,
+        view_count as viewCount, comment_count as commentCount, tags,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
         FROM community_posts
         WHERE deleted_at IS NULL
         <if test="search != null and search != ''">
