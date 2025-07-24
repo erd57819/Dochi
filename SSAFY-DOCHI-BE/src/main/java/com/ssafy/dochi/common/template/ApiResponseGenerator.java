@@ -9,12 +9,12 @@ import java.util.List;
 
 @UtilityClass
 public class ApiResponseGenerator {
-    public static ApiResponse<ApiResponse.SuccesCustomBody<Void>> success(final HttpStatus status) {
-        return new ApiResponse<>(new ApiResponse.SuccesCustomBody<>(200, null, null), status);
+    public static ApiResponse<ApiResponse.SuccessCustomBody<Void>> success(final HttpStatus status) {
+        return new ApiResponse<>(new ApiResponse.SuccessCustomBody<>(200, null, null), status);
     }
 
-    public static <D> ApiResponse<ApiResponse.SuccesCustomBody<D>> success(final D data, final HttpStatus status) {
-        return new ApiResponse<>(new ApiResponse.SuccesCustomBody<>(200, null, data), status);
+    public static <D> ApiResponse<ApiResponse.SuccessCustomBody<D>> success(final D data, final HttpStatus status) {
+        return new ApiResponse<>(new ApiResponse.SuccessCustomBody<>(200, null, data), status);
     }
 
     public static ApiResponse<ApiResponse.FailureCustomBody> fail(final String message, final HttpStatus status) {

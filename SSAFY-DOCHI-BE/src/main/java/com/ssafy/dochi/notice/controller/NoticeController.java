@@ -4,12 +4,16 @@ import java.util.List;
 
 import com.ssafy.dochi.notice.dto.response.NoticePageResDto;
 import com.ssafy.dochi.notice.dto.response.NoticeResDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.ssafy.dochi.common.security.CustomUserDetails;
-import com.ssafy.dochi.common.template.ApiResponse;
 import com.ssafy.dochi.common.template.ApiResponseGenerator;
 import com.ssafy.dochi.notice.dto.request.NoticeSaveReqDto;
 import com.ssafy.dochi.notice.dto.request.NoticeUpdateReqDto;
@@ -17,74 +21,112 @@ import com.ssafy.dochi.notice.dto.response.NoticeInfoResDto;
 import com.ssafy.dochi.notice.service.NoticeService;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/notices")
 @RequiredArgsConstructor
+@Tag(name = "Notice", description = "공지사항 관리 API")
 public class NoticeController {
 
     private final NoticeService noticeService;
 
-    // 🔹 공지 목록 조회 (페이징, 검색)
     @GetMapping
-    public ApiResponse<ApiResponse.SuccessCustomBody<NoticePageResDto<NoticeResDto>>> getNotices(
+    @Operation(summary = "공지사항 목록 조회")
+    public com.ssafy.dochi.common.template.ApiResponse<?> getNotices(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category) {
 
-        NoticePageResDto<NoticeResDto> notices = noticeService.findAll(page, size, search, category);
-        return ApiResponseGenerator.success(notices, HttpStatus.OK);
+        try {
+            NoticePageResDto<NoticeResDto> notices = noticeService.findAll(page, size, search, category);
+            return ApiResponseGenerator.success(notices, HttpStatus.OK);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("공지사항 조회 중 오류: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    // 🔹 공지 작성 (관리자만)
     @PostMapping
-    public ApiResponse<ApiResponse.SuccessCustomBody<Void>> createNotice(
-            @RequestBody NoticeSaveReqDto dto,
+    @Operation(summary = "공지사항 작성")
+    public com.ssafy.dochi.common.template.ApiResponse<?> createNotice(
+            @Valid @RequestBody NoticeSaveReqDto dto,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        noticeService.save(dto, userDetails.getId());
-        return ApiResponseGenerator.success(HttpStatus.CREATED);
+
+        try {
+            // TODO: 유저 모듈 완성 후 실제 인증 적용
+            Long userId = (userDetails != null && userDetails.getId() != null) ? userDetails.getId() : 1L;
+            noticeService.save(dto, userId);
+            return ApiResponseGenerator.success(HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("공지사항 작성 중 오류: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
-    // 🔹 공지 상세 조회 (조회수 증가 포함)
     @GetMapping("/{noticeId}")
-    public ApiResponse<ApiResponse.SuccessCustomBody<NoticeInfoResDto>> getNoticeDetail(
+    @Operation(summary = "공지사항 상세 조회")
+    public com.ssafy.dochi.common.template.ApiResponse<?> getNoticeDetail(
             @PathVariable("noticeId") Long id) {
-        NoticeInfoResDto notice = noticeService.findById(id);
-        return ApiResponseGenerator.success(notice, HttpStatus.OK);
+
+        try {
+            NoticeInfoResDto notice = noticeService.findById(id);
+            return ApiResponseGenerator.success(notice, HttpStatus.OK);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("공지사항을 찾을 수 없습니다: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
     }
 
-    // 🔹 공지 수정 (관리자만)
     @PutMapping("/{noticeId}")
-    public ApiResponse<ApiResponse.SuccessCustomBody<Void>> updateNotice(
+    @Operation(summary = "공지사항 수정")
+    public com.ssafy.dochi.common.template.ApiResponse<?> updateNotice(
             @PathVariable("noticeId") Long id,
-            @RequestBody NoticeUpdateReqDto dto,
+            @Valid @RequestBody NoticeUpdateReqDto dto,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        dto.setId(id);
-        noticeService.update(dto, userDetails.getId());
-        return ApiResponseGenerator.success(HttpStatus.OK);
+
+        try {
+            dto.setId(id);
+            Long userId = (userDetails != null && userDetails.getId() != null) ? userDetails.getId() : 1L;
+            noticeService.update(dto, userId);
+            return ApiResponseGenerator.success(HttpStatus.OK);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("공지사항 수정 중 오류: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
-    // 🔹 공지 삭제 (관리자만)
     @DeleteMapping("/{noticeId}")
-    public ApiResponse<ApiResponse.SuccessCustomBody<Void>> deleteNotice(
+    @Operation(summary = "공지사항 삭제")
+    public com.ssafy.dochi.common.template.ApiResponse<?> deleteNotice(
             @PathVariable("noticeId") Long id,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        noticeService.delete(id, userDetails.getId());
-        return ApiResponseGenerator.success(HttpStatus.OK);
+
+        try {
+            Long userId = (userDetails != null && userDetails.getId() != null) ? userDetails.getId() : 1L;
+            noticeService.delete(id, userId);
+            return ApiResponseGenerator.success(HttpStatus.OK);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("공지사항 삭제 중 오류: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
-    // 🔹 중요 공지 목록 조회
     @GetMapping("/important")
-    public ApiResponse<ApiResponse.SuccessCustomBody<List<NoticeResDto>>> getImportantNotices() {
-        List<NoticeResDto> notices = noticeService.findImportantNotices();
-        return ApiResponseGenerator.success(notices, HttpStatus.OK);
+    @Operation(summary = "중요 공지사항 조회")
+    public com.ssafy.dochi.common.template.ApiResponse<?> getImportantNotices() {
+        try {
+            List<NoticeResDto> notices = noticeService.findImportantNotices();
+            return ApiResponseGenerator.success(notices, HttpStatus.OK);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("중요 공지사항 조회 중 오류: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    // 🔹 팝업 공지 목록 조회
     @GetMapping("/popup")
-    public ApiResponse<ApiResponse.SuccessCustomBody<List<NoticeResDto>>> getPopupNotices() {
-        List<NoticeResDto> notices = noticeService.findPopupNotices();
-        return ApiResponseGenerator.success(notices, HttpStatus.OK);
+    @Operation(summary = "팝업 공지사항 조회")
+    public com.ssafy.dochi.common.template.ApiResponse<?> getPopupNotices() {
+        try {
+            List<NoticeResDto> notices = noticeService.findPopupNotices();
+            return ApiResponseGenerator.success(notices, HttpStatus.OK);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("팝업 공지사항 조회 중 오류: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
