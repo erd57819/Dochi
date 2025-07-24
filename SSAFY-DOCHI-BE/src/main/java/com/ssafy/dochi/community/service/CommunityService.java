@@ -1,21 +1,14 @@
 package com.ssafy.dochi.community.service;
 
-import com.ssafy.dochi.notice.domain.Notice;
-import com.ssafy.dochi.notice.dto.request.NoticeSaveReqDto;
-import com.ssafy.dochi.notice.dto.request.NoticeUpdateReqDto;
-import com.ssafy.dochi.notice.dto.response.NoticeInfoResDto;
-import com.ssafy.dochi.notice.dto.response.NoticePageResDto;
-import com.ssafy.dochi.notice.dto.response.NoticeResDto;
-
-import java.util.List;
+import com.ssafy.dochi.community.dto.request.CommunitySaveReqDto;
+import com.ssafy.dochi.community.dto.request.CommunityUpdateReqDto;
+import com.ssafy.dochi.community.dto.response.CommunityPageResDto;
+import com.ssafy.dochi.community.dto.response.CommunityResDto;
 
 public interface CommunityService {
-    void save(NoticeSaveReqDto dto, Long userId);
-    void update(NoticeUpdateReqDto dto, Long userId);
-    void delete(Long id, Long userId);
-    List<Notice> findAll();
-    NoticeInfoResDto findById(Long id);
-    NoticePageResDto<NoticeResDto> findAll(int page, int size, String search, String category);
-    List<NoticeResDto> findImportantNotices();
-    List<NoticeResDto> findPopupNotices();
+    void savePost(CommunitySaveReqDto communitySaveReqDto, Long userId);
+    void updatePost(Long communityId, CommunityUpdateReqDto communityUpdateReqDto, Long userId);
+    void deletePost(Long communityId, Long userId);
+    CommunityResDto findPostById(Long communityId);
+    CommunityPageResDto<CommunityResDto> findAllPosts(int page, int size, String search, String category);
 }

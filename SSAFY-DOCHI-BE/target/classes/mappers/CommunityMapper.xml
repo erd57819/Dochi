@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.dochi.community.dao.CommunityDao">
+
+    <insert id="insert" parameterType="com.ssafy.dochi.community.domain.Community">
+        INSERT INTO community_posts (
+        user_id, category, title, content, view_count, comment_count, tags, created_at, updated_at
+        ) VALUES (
+        #{userId}, #{category}, #{title}, #{content}, 0, 0, #{tags}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.ssafy.dochi.community.domain.Community">
+        UPDATE community_posts
+        SET
+        <if test="title != null">title = #{title},</if>
+        <if test="content != null">content = #{content},</if>
+        <if test="category != null">category = #{category},</if>
+        <if test="tags != null">tags = #{tags},</if>
+        updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="softDelete" parameterType="long">
+        UPDATE community_posts SET deleted_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="incrementViewCount" parameterType="long">
+        UPDATE community_posts SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <select id="findById" parameterType="long" resultType="com.ssafy.dochi.community.dto.response.CommunityResDto">
+        SELECT
+        id, user_id as userId, category, title, content, view_count as viewCount,
+        comment_count as commentCount, tags,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
+        FROM community_posts
+        WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <select id="findAllWithPaging" parameterType="map" resultType="com.ssafy.dochi.community.dto.response.CommunityResDto">
+        SELECT
+        id, user_id as userId, category, title,
+        view_count as viewCount, comment_count as commentCount,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt
+        FROM community_posts
+        WHERE deleted_at IS NULL
+        <if test="search != null and search != ''">
+            AND (title LIKE CONCAT('%', #{search}, '%') OR content LIKE CONCAT('%', #{search}, '%'))
+        </if>
+        <if test="category != null and category != ''">AND category = #{category}</if>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="getTotalCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM community_posts
+        WHERE deleted_at IS NULL
+        <if test="search != null and search != ''">
+            AND (title LIKE CONCAT('%', #{search}, '%') OR content LIKE CONCAT('%', #{search}, '%'))
+        </if>
+        <if test="category != null and category != ''">AND category = #{category}</if>
+    </select>
+
+</mapper>
