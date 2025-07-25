@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.dochi.like.dao.PostLikeDao">
+
+    <!-- 게시글 좋아요/싫어요 등록 또는 수정 -->
+    <insert id="insertOrUpdate" parameterType="com.ssafy.dochi.like.domain.PostLike">
+        INSERT INTO post_likes (post_id, user_id, like_type, created_at)
+        VALUES (#{postId}, #{userId}, #{likeType}, #{createdAt})
+        ON DUPLICATE KEY UPDATE
+        like_type = #{likeType},
+        created_at = #{createdAt}
+    </insert>
+
+    <!-- 게시글 좋아요/싫어요 삭제 -->
+    <delete id="delete">
+        DELETE FROM post_likes
+        WHERE post_id = #{postId} AND user_id = #{userId}
+    </delete>
+
+    <!-- 사용자의 게시글 좋아요 상태 조회 -->
+    <select id="findByPostIdAndUserId" resultType="com.ssafy.dochi.like.domain.PostLike">
+        SELECT 
+            id,
+            post_id as postId,
+            user_id as userId,
+            like_type as likeType,
+            created_at as createdAt
+        FROM post_likes
+        WHERE post_id = #{postId} AND user_id = #{userId}
+    </select>
+
+    <!-- 게시글 좋아요 통계 조회 -->
+    <select id="getLikeStats" resultType="com.ssafy.dochi.like.dto.response.LikeStatsResDto">
+        SELECT 
+            #{postId} as targetId,
+            COALESCE(SUM(CASE WHEN like_type = 'LIKE' THEN 1 ELSE 0 END), 0) as likeCount,
+            COALESCE(SUM(CASE WHEN like_type = 'DISLIKE' THEN 1 ELSE 0 END), 0) as dislikeCount,
+            COALESCE(MAX(CASE WHEN user_id = #{userId} THEN like_type ELSE NULL END), NULL) as userLikeType,
+            CASE WHEN MAX(CASE WHEN user_id = #{userId} THEN 1 ELSE 0 END) = 1 THEN TRUE ELSE FALSE END as hasUserLiked
+        FROM post_likes
+        WHERE post_id = #{postId}
+    </select>
+
+    <!-- 게시글의 좋아요 개수 조회 -->
+    <select id="getLikeCount" parameterType="long" resultType="int">
+        SELECT COUNT(*)
+        FROM post_likes
+        WHERE post_id = #{postId} AND like_type = 'LIKE'
+    </select>
+
+    <!-- 게시글의 싫어요 개수 조회 -->
+    <select id="getDislikeCount" parameterType="long" resultType="int">
+        SELECT COUNT(*)
+        FROM post_likes
+        WHERE post_id = #{postId} AND like_type = 'DISLIKE'
+    </select>
+
+</mapper>
