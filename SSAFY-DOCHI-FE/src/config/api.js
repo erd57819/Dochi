@@ -9,6 +9,5 @@ export const getApiUrl = () => {
   if (import.meta.env.PROD) {  // production 환경
     return 'https://your-production-domain.com/api';
   }
-  return 'http://localhost:8080/api/notice';  // development 환경
+  return 'http://localhost:8080/api';  // development 환경 - /notice 제거
 };
-
