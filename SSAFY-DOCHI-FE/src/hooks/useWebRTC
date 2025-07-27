@@ -1,0 +1,262 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ]
+};
+
+export const useWebRTC = (roomCode, userId) => {
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [connectionState, setConnectionState] = useState('disconnected');
+
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const stompClientRef = useRef(null);
+
+  // WebSocket 연결 설정
+  const connectWebSocket = useCallback(() => {
+    const socket = new SockJS('http://localhost:8080/ws/video-call');
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      debug: (str) => console.log('STOMP:', str),
+      onConnect: () => {
+        console.log('WebSocket 연결됨');
+        
+        // 시그널링 메시지 구독
+        stompClient.subscribe(`/topic/signaling/${roomCode}`, (message) => {
+          handleSignalingMessage(JSON.parse(message.body));
+        });
+
+        // 방 상태 변경 구독
+        stompClient.subscribe(`/topic/room/${roomCode}`, (message) => {
+          handleRoomMessage(JSON.parse(message.body));
+        });
+      },
+      onDisconnect: () => {
+        console.log('WebSocket 연결 해제됨');
+      }
+    });
+
+    stompClient.activate();
+    stompClientRef.current = stompClient;
+  }, [roomCode]);
+
+  // 시그널링 메시지 전송
+  const sendSignalingMessage = useCallback((type, data) => {
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      const message = {
+        type,
+        from: userId,
+        data,
+        timestamp: new Date().toISOString()
+      };
+      
+      stompClientRef.current.publish({
+        destination: `/app/signaling/${roomCode}`,
+        body: JSON.stringify(message)
+      });
+    }
+  }, [roomCode, userId]);
+
+  // 시그널링 메시지 처리
+  const handleSignalingMessage = useCallback(async (message) => {
+    if (message.from === userId) return; // 자신이 보낸 메시지는 무시
+
+    const { type, data } = message;
+    const peerConnection = peerConnectionRef.current;
+
+    try {
+      switch (type) {
+        case 'offer':
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          sendSignalingMessage('answer', answer);
+          break;
+
+        case 'answer':
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+          break;
+
+        case 'ice-candidate':
+          await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+          break;
+
+        default:
+          console.log('알 수 없는 시그널링 메시지:', type);
+      }
+    } catch (error) {
+      console.error('시그널링 메시지 처리 오류:', error);
+    }
+  }, [userId, sendSignalingMessage]);
+
+  // 방 메시지 처리
+  const handleRoomMessage = useCallback((message) => {
+    const { type, from } = message;
+    
+    if (from === userId) return;
+
+    switch (type) {
+      case 'user-joined':
+        console.log('사용자가 방에 참여했습니다:', from);
+        break;
+      case 'user-left':
+        console.log('사용자가 방을 나갔습니다:', from);
+        setRemoteStream(null);
+        setIsConnected(false);
+        break;
+    }
+  }, [userId]);
+
+  // PeerConnection 설정
+  const setupPeerConnection = useCallback(() => {
+    const peerConnection = new RTCPeerConnection(ICE_SERVERS);
+
+    // ICE candidate 이벤트
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        sendSignalingMessage('ice-candidate', event.candidate);
+      }
+    };
+
+    // 원격 스트림 수신
+    peerConnection.ontrack = (event) => {
+      const [stream] = event.streams;
+      setRemoteStream(stream);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+      }
+    };
+
+    // 연결 상태 변경
+    peerConnection.onconnectionstatechange = () => {
+      setConnectionState(peerConnection.connectionState);
+      setIsConnected(peerConnection.connectionState === 'connected');
+    };
+
+    peerConnectionRef.current = peerConnection;
+  }, [sendSignalingMessage]);
+
+  // 로컬 미디어 스트림 가져오기
+  const getLocalStream = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: true
+      });
+
+      setLocalStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      // PeerConnection에 스트림 추가
+      if (peerConnectionRef.current) {
+        stream.getTracks().forEach(track => {
+          peerConnectionRef.current.addTrack(track, stream);
+        });
+      }
+
+      return stream;
+    } catch (error) {
+      console.error('미디어 스트림 가져오기 실패:', error);
+      throw error;
+    }
+  }, []);
+
+  // 통화 시작 (방 생성자)
+  const startCall = useCallback(async () => {
+    try {
+      const peerConnection = peerConnectionRef.current;
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      sendSignalingMessage('offer', offer);
+    } catch (error) {
+      console.error('통화 시작 실패:', error);
+    }
+  }, [sendSignalingMessage]);
+
+  // 비디오 토글
+  const toggleVideo = useCallback(() => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+      }
+    }
+  }, [localStream]);
+
+  // 오디오 토글
+  const toggleAudio = useCallback(() => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioEnabled(audioTrack.enabled);
+      }
+    }
+  }, [localStream]);
+
+  // 통화 종료
+  const endCall = useCallback(() => {
+    // 로컬 스트림 정리
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
+
+    // PeerConnection 정리
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+
+    // WebSocket 연결 해제
+    if (stompClientRef.current) {
+      stompClientRef.current.deactivate();
+      stompClientRef.current = null;
+    }
+
+    setRemoteStream(null);
+    setIsConnected(false);
+    setConnectionState('disconnected');
+  }, [localStream]);
+
+  // 초기화
+  useEffect(() => {
+    if (roomCode && userId) {
+      setupPeerConnection();
+      connectWebSocket();
+      getLocalStream();
+    }
+
+    return () => {
+      endCall();
+    };
+  }, [roomCode, userId]);
+
+  return {
+    localVideoRef,
+    remoteVideoRef,
+    localStream,
+    remoteStream,
+    isConnected,
+    isVideoEnabled,
+    isAudioEnabled,
+    connectionState,
+    startCall,
+    toggleVideo,
+    toggleAudio,
+    endCall
+  };
+};
