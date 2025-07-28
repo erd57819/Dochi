@@ -1,42 +1,33 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+@import "tailwindcss";
+
+/* Swiper 기본 스타일 수정 */
+.swiper {
+  width: 100% !important;
+  height: 100% !important;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.swiper-slide {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.swiper-button-next,
+.swiper-button-prev {
+  color: #f97316 !important;
+  font-weight: bold !important;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 24px !important;
 }
 
-.card {
-  padding: 2em;
+.swiper-pagination-bullet {
+  background: #d1d5db !important;
+  opacity: 1 !important;
 }
 
-.read-the-docs {
-  color: #888;
+.swiper-pagination-bullet-active {
+  background: #f97316 !important;
 }
