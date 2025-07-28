@@ -1,37 +1,21 @@
-version: '3.8'
-
 services:
-  # Nginx 리버스 프록시
-  nginx:
-    image: nginx:alpine
-    container_name: dochi-nginx
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: dochi-redis
     ports:
-      - "80:80"
-      - "443:443"
+      - "6380:6379"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-      - nginx-logs:/var/log/nginx
-    depends_on:
-      - frontend
-      - backend
+      - redis-data:/data
     networks:
       - dochi-network
     restart: unless-stopped
-
-  # React 프론트엔드
-  frontend:
-    build:
-      context: ./SSAFY-DOCHI-FE
-      dockerfile: Dockerfile
-    container_name: dochi-frontend
-    ports:
-      - "5173:5173"
-    environment:
-      - NODE_ENV=production
-    networks:
-      - dochi-network
-    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Spring Boot 백엔드
   backend:
@@ -40,85 +24,60 @@ services:
       dockerfile: Dockerfile
     container_name: dochi-backend
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/dochi?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      - SPRING_DATASOURCE_USERNAME=dochi_user
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      # Windows/Mac에서 로컬 MySQL 접속
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/dochi?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-your_local_mysql_password}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_min_32_characters}
     depends_on:
-      - mysql
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - dochi-network
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # 중요: 로컬 호스트 접근
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 60s
 
-  # MySQL 데이터베이스
-  mysql:
-    image: mysql:8.0
-    container_name: dochi-mysql
+  # React 프론트엔드
+  frontend:
+    build:
+      context: ./SSAFY-DOCHI-FE
+      dockerfile: Dockerfile
+    container_name: dochi-frontend
     ports:
-      - "3306:3306"
+      - "3001:80"  # Nginx는 80포트 사용
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=dochi
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=ssafy
-      - TZ=Asia/Seoul
-    volumes:
-      - mysql-data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d
-      - ./mysql/conf:/etc/mysql/conf.d
+      - NODE_ENV=production
     networks:
       - dochi-network
     restart: unless-stopped
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
-  # Redis
-  redis:
-    image: redis:7-alpine
-    container_name: dochi-redis
+  # Nginx 리버스 프록시
+  nginx:
+    image: nginx:alpine
+    container_name: dochi-nginx
     ports:
-      - "6379:6379"
+      - "8090:80"
     volumes:
-      - redis-data:/data
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - nginx-logs:/var/log/nginx
     networks:
       - dochi-network
     restart: unless-stopped
-    command: redis-server --appendonly yes
-
-  # Jenkins
-  jenkins:
-    image: jenkins/jenkins:lts
-    container_name: dochi-jenkins
-    ports:
-      - "8090:8081"
-      - "50000:50000"
-    volumes:
-      - jenkins-data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-    environment:
-      - JENKINS_OPTS=--httpPort=8080
-    networks:
-      - dochi-network
-    restart: unless-stopped
-    user: root
 
 volumes:
-  mysql-data:
-    driver: local
   redis-data:
-    driver: local
-  jenkins-data:
     driver: local
   nginx-logs:
     driver: local
