@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.dochi.user.dao.EmailVerificationDao">
+
+    <!-- 이메일로 인증 정보 조회 -->
+    <select id="findByEmail" resultType="com.ssafy.dochi.user.domain.EmailVerification">
+        SELECT *
+        FROM email_verification
+        WHERE email = #{email}
+    </select>
+
+    <!-- 인증 코드 삽입 또는 업데이트 -->
+    <insert id="upsertCode">
+        INSERT INTO email_verification (email, verification_code, expires_at, is_verified, created_at)
+        VALUES (#{email}, #{code}, #{expiresAt}, FALSE, NOW())
+            ON DUPLICATE KEY UPDATE
+                                 verification_code = VALUES(verification_code),
+                                 expires_at = VALUES(expires_at),
+                                 is_verified = FALSE,
+                                 created_at = NOW()
+    </insert>
+
+    <!-- 인증 완료 처리 -->
+    <update id="markAsVerified">
+        UPDATE email_verification
+        SET is_verified = TRUE
+        WHERE email = #{email}
+    </update>
+
+    <delete id="deleteByEmail">
+        DELETE FROM email_verification
+        WHERE email = #{email}
+    </delete>
+
+
+</mapper>
