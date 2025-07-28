@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/dochi
+    username: root
+    password: ssafy
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

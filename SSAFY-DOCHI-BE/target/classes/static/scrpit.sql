@@ -268,3 +268,35 @@ CREATE TABLE `notices` (
     `updated_at`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
 );
+
+-- 영상통화 테스트 테이블 (삭제할수도 있습니다.)
+-- 영상통화방 테이블
+CREATE TABLE `video_call_rooms` (
+                                    `id`              BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                                    `room_code`       VARCHAR(20)     NOT NULL UNIQUE COMMENT '방 초대 코드',
+                                    `host_user_id`    BIGINT          NOT NULL COMMENT '방 생성자 ID (FK)',
+                                    `guest_user_id`   BIGINT          NULL COMMENT '참여자 ID (FK)',
+                                    `status`          ENUM('WAITING', 'ACTIVE', 'ENDED') NOT NULL DEFAULT 'WAITING' COMMENT '방 상태',
+                                    `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                    `started_at`      DATETIME        NULL COMMENT '통화 시작 시간',
+                                    `ended_at`        DATETIME        NULL COMMENT '통화 종료 시간',
+                                    `expires_at`      DATETIME        NOT NULL COMMENT '방 만료 시간 (24시간 후)',
+                                    FOREIGN KEY (`host_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+                                    FOREIGN KEY (`guest_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+                                    INDEX `idx_room_code` (`room_code`),
+                                    INDEX `idx_expires_at` (`expires_at`)
+);
+
+-- 영상통화 세션 테이블 (AI 분석용)
+CREATE TABLE `video_call_sessions` (
+                                       `id`              BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                                       `room_id`         BIGINT          NOT NULL COMMENT '영상통화방 ID (FK)',
+                                       `conflict_id`     BIGINT          NULL COMMENT '연관된 갈등 ID (FK)',
+                                       `duration_seconds` INT            NULL COMMENT '통화 시간 (초)',
+                                       `ai_analysis_requested` BOOLEAN   NOT NULL DEFAULT FALSE COMMENT 'AI 분석 요청 여부',
+                                       `recording_enabled` BOOLEAN       NOT NULL DEFAULT FALSE COMMENT '녹화 여부',
+                                       `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                       `updated_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                       FOREIGN KEY (`room_id`) REFERENCES `video_call_rooms`(`id`) ON DELETE CASCADE,
+                                       FOREIGN KEY (`conflict_id`) REFERENCES `user_conflicts`(`id`) ON DELETE SET NULL
+);

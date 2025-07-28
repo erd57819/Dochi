@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Swiper 기본 스타일 수정 */
+.swiper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.swiper-slide {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+  color: #f97316 !important;
+  font-weight: bold !important;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 24px !important;
+}
+
+.swiper-pagination-bullet {
+  background: #d1d5db !important;
+  opacity: 1 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: #f97316 !important;
+}
