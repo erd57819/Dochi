@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # Redis
   redis:
@@ -41,7 +43,7 @@ services:
       - dochi-network
     restart: unless-stopped
     extra_hosts:
-      - "host.docker.internal:host-gateway"  # 중요: 로컬 호스트 접근
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -55,26 +57,36 @@ services:
       context: ./SSAFY-DOCHI-FE
       dockerfile: Dockerfile
     container_name: dochi-frontend
-    ports:
-      - "3001:80"  # Nginx는 80포트 사용
+    expose:
+      - "80"  # 내부 네트워크에서만 접근 가능
     environment:
       - NODE_ENV=production
     networks:
       - dochi-network
     restart: unless-stopped
+    depends_on:
+      - backend
 
   # Nginx 리버스 프록시
   nginx:
     image: nginx:alpine
     container_name: dochi-nginx
     ports:
-      - "8090:80"
+      - "8090:80"  # 외부에서는 8090 포트로 접근
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx-logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
     networks:
       - dochi-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   redis-data:

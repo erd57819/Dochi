@@ -83,6 +83,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Actuator for health checks -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Devtools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -124,6 +130,7 @@
     </dependencies>
 
     <build>
+        <defaultGoal>install</defaultGoal>
         <plugins>
             <!-- Spring Boot Maven Plugin -->
             <plugin>
