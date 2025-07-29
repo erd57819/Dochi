@@ -1,6 +1,28 @@
 version: '3.8'
 
 services:
+  # MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: dochi-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=dochi
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - dochi-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Redis
   redis:
     image: redis:7-alpine
@@ -28,15 +50,26 @@ services:
     ports:
       - "8081:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
       # Windows/Mac에서 로컬 MySQL 접속
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/dochi?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/dochi?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-your_local_mysql_password}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_min_32_characters}
+      - JWT_SECRET=${JWT_SECRET}
+      - SOCIAL_PW=${SOCIAL_PW}
+      - EMAIL_USERNAME=${EMAIL_USERNAME}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - KAKAO_REST_API_KEY=${KAKAO_REST_API_KEY}
+      - KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}
+      - KAKAO_REDIRECT_WITHDRAW_URI=${KAKAO_REDIRECT_WITHDRAW_URI}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -89,6 +122,8 @@ services:
       retries: 3
 
 volumes:
+  mysql-data:
+    driver: local
   redis-data:
     driver: local
   nginx-logs:
