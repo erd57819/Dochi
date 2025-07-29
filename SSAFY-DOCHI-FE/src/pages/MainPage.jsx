@@ -185,7 +185,7 @@ export const MainPage = () => {
           {/* Conflict Resolution Card */}
           <div 
             className="absolute w-[645px] h-[368px] top-[288px] left-[52px] bg-[#83673f] rounded-[20px] cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            onClick={() => navigate('/emotion')}
+            onClick={() => navigate('/conflict-resolution')}
           >
             <img
               className="absolute w-[18px] h-[38px] top-[104px] right-[72px]"
@@ -205,7 +205,7 @@ export const MainPage = () => {
           {/* Comfort Service Card */}
           <div 
             className="absolute w-[645px] h-[368px] top-[50px] right-[51px] bg-[#7f5539] rounded-[20px] cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            onClick={() => navigate('/todak')}
+            onClick={() => navigate('/comfort')}
           >
             <img
               className="absolute w-[19px] h-[38px] top-[98px] right-[70px]"
