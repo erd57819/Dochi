@@ -1,7 +1,7 @@
 # app/routers/summary.py
 from fastapi import APIRouter, Depends
-from ..schemas import summary as summary_schema
-from ..services.summary_service import SummaryService
+from schemas import summary as summary_schema
+from services.summary_service import SummaryService
 
 router = APIRouter(prefix="/api/summary", tags=["summary"])
 
