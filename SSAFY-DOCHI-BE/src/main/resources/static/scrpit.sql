@@ -4,24 +4,32 @@
 
 -- 사용자 정보
 CREATE TABLE `users` (
-    `id`              BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '사용자 고유 ID (PK)',
-    `user_id`         VARCHAR(50)     NOT NULL UNIQUE COMMENT '로그인 아이디',
-    `name`            VARCHAR(50)     NOT NULL COMMENT '이름',
-    `email`           VARCHAR(100)    NOT NULL UNIQUE COMMENT '이메일',
-    `password`        VARCHAR(255)    NOT NULL COMMENT '암호화된 비밀번호',
-    `address`         VARCHAR(500)    NULL COMMENT '주소',
-    `age`             INT             NULL COMMENT '나이',
-    `gender`          ENUM('MALE', 'FEMALE', 'NONE') NULL COMMENT '성별',
-    `role`            ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER' COMMENT '역할',
-    `email_verified`  BOOLEAN         NOT NULL DEFAULT FALSE COMMENT '이메일 인증 여부',
-    `is_active`       BOOLEAN         NOT NULL DEFAULT TRUE COMMENT '계정 활성화 여부',
-    `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '가입일시',
-    `updated_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '마지막 수정일시',
-    `deleted_at`      DATETIME        NULL COMMENT '탈퇴일시 (Soft Delete)',
-    `profile_image`   VARCHAR(255)    NULL COMMENT '프로필 이미지 URL'
+                         `id`              BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '사용자 고유 ID (PK)',
+                         `user_id`         VARCHAR(50)     NOT NULL UNIQUE COMMENT '로그인 아이디',
+                         `name`            VARCHAR(50)     NOT NULL COMMENT '이름',
+                         `nickname`		  VARCHAR(50)     NOT NULL COMMENT '닉네임',
+                         `email`           VARCHAR(100)    NOT NULL UNIQUE COMMENT '이메일',
+                         `password`        VARCHAR(255)    NOT NULL COMMENT '암호화된 비밀번호',
+                         `address`         VARCHAR(500)    NULL COMMENT '주소',
+                         `age`             INT             NULL COMMENT '나이',
+                         `gender`          ENUM('MALE', 'FEMALE', 'NONE') NULL COMMENT '성별',
+                         `role`            ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER' COMMENT '역할',
+                         `isSocial` boolean DEFAULT FALSE,
+                         `kakao_id` varchar(255) DEFAULT NULL,
+                         `google_id` VARCHAR(255) DEFAULT NULL COMMENT '구글 로그인 고유 ID',
+                         `email_verified`  BOOLEAN         NOT NULL DEFAULT FALSE COMMENT '이메일 인증 여부',
+                         `is_active`       BOOLEAN         NOT NULL DEFAULT TRUE COMMENT '계정 활성화 여부',
+                         `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '가입일시',
+                         `updated_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '마지막 수정일시',
+                         `deleted_at`      DATETIME        NULL COMMENT '탈퇴일시 (Soft Delete)',
+                         `refresh_token` varchar(512) DEFAULT NULL,
+                         `profile_image`   VARCHAR(255)    NULL COMMENT '프로필 이미지 URL'
+
 );
 
--- 사용자 세션 (로그인 정보)
+
+
+-- 사용자 세션 (화상채팅 정보)
 CREATE TABLE `user_sessions` (
     `id`              BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `session_id`      VARCHAR(255)    NOT NULL UNIQUE COMMENT '세션 고유 ID',
@@ -33,7 +41,7 @@ CREATE TABLE `user_sessions` (
 );
 
 -- 이메일 인증
-CREATE TABLE `email_verifications` (
+CREATE TABLE `email_verification` (
     `id`                BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `email`             VARCHAR(100)    NOT NULL,
     `verification_code` VARCHAR(10)     NOT NULL COMMENT '인증번호',
@@ -41,6 +49,7 @@ CREATE TABLE `email_verifications` (
     `is_verified`       BOOLEAN         NOT NULL DEFAULT FALSE,
     `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE email_verification ADD UNIQUE(email);
 
 -- =================================================================================
 -- 갈등 및 AI 분석 세션 관련 테이블
@@ -258,4 +267,36 @@ CREATE TABLE `notices` (
     `created_at`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+);
+
+-- 영상통화 테스트 테이블 (삭제할수도 있습니다.)
+-- 영상통화방 테이블
+CREATE TABLE `video_call_rooms` (
+                                    `id`              BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                                    `room_code`       VARCHAR(20)     NOT NULL UNIQUE COMMENT '방 초대 코드',
+                                    `host_user_id`    BIGINT          NOT NULL COMMENT '방 생성자 ID (FK)',
+                                    `guest_user_id`   BIGINT          NULL COMMENT '참여자 ID (FK)',
+                                    `status`          ENUM('WAITING', 'ACTIVE', 'ENDED') NOT NULL DEFAULT 'WAITING' COMMENT '방 상태',
+                                    `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                    `started_at`      DATETIME        NULL COMMENT '통화 시작 시간',
+                                    `ended_at`        DATETIME        NULL COMMENT '통화 종료 시간',
+                                    `expires_at`      DATETIME        NOT NULL COMMENT '방 만료 시간 (24시간 후)',
+                                    FOREIGN KEY (`host_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+                                    FOREIGN KEY (`guest_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+                                    INDEX `idx_room_code` (`room_code`),
+                                    INDEX `idx_expires_at` (`expires_at`)
+);
+
+-- 영상통화 세션 테이블 (AI 분석용)
+CREATE TABLE `video_call_sessions` (
+                                       `id`              BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                                       `room_id`         BIGINT          NOT NULL COMMENT '영상통화방 ID (FK)',
+                                       `conflict_id`     BIGINT          NULL COMMENT '연관된 갈등 ID (FK)',
+                                       `duration_seconds` INT            NULL COMMENT '통화 시간 (초)',
+                                       `ai_analysis_requested` BOOLEAN   NOT NULL DEFAULT FALSE COMMENT 'AI 분석 요청 여부',
+                                       `recording_enabled` BOOLEAN       NOT NULL DEFAULT FALSE COMMENT '녹화 여부',
+                                       `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                       `updated_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                       FOREIGN KEY (`room_id`) REFERENCES `video_call_rooms`(`id`) ON DELETE CASCADE,
+                                       FOREIGN KEY (`conflict_id`) REFERENCES `user_conflicts`(`id`) ON DELETE SET NULL
 );

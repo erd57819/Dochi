@@ -41,4 +41,6 @@ public class ApiResponse<B> extends ResponseEntity<B> {
         private String message;
         private D data;
     }
+
+
 }

@@ -1,13 +1,16 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8080/api',
+  BASE_URL: 'http://localhost:8081',
   TIMEOUT: 10000,
 };
+
+// API Base URL for direct use
+export const API_BASE_URL = 'http://localhost:8081';
 
 // Vite 환경 변수 사용
 export const getApiUrl = () => {
   // Vite에서는 import.meta.env 사용
   if (import.meta.env.PROD) {  // production 환경
-    return 'https://your-production-domain.com/api';
+    return 'http://localhost:8081';
   }
-  return 'http://localhost:8080/api';  // development 환경 - /notice 제거
+  return 'http://localhost:8081';  // development 환경
 };
