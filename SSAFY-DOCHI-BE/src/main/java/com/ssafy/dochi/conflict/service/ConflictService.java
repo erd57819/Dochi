@@ -4,6 +4,7 @@ import com.ssafy.dochi.conflict.dao.ConflictDao;
 import com.ssafy.dochi.conflict.domain.UserConflict;
 import com.ssafy.dochi.conflict.dto.request.ConflictCreateReqDto;
 import com.ssafy.dochi.conflict.dto.request.ConflictSummaryReqDto;
+import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
 import com.ssafy.dochi.conflict.dto.response.ConflictResDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,8 +20,59 @@ public class ConflictService {
     
     private final ConflictDao conflictDao;
     private final AiSummaryService aiSummaryService;
+    private final ConflictRedisService conflictRedisService;
     
-    // 갈등 생성
+    /**
+     * 1단계: 갈등 카드를 Redis에 임시 저장
+     */
+    public String saveTempConflict(Long userId, ConflictCreateReqDto reqDto) {
+        return conflictRedisService.saveTempConflict(userId, reqDto);
+    }
+    
+    /**
+     * 2단계: Redis에서 갈등 데이터 조회 및 AI 분석
+     */
+    public AiAnalysisResDto analyzeConflict(String tempConflictId) {
+        ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
+        return aiSummaryService.generateAnalysis(conflictData.getDescription(), conflictData.getConflictType());
+    }
+    
+    /**
+     * 3단계: AI 분석 완료 후 최종 SQL 저장
+     */
+    public ConflictResDto finalizeConflict(Long userId, String tempConflictId, String aiSummary, String aiSolutions) {
+        // Redis에서 갈등 데이터 조회
+        ConflictCreateReqDto reqDto = conflictRedisService.getTempConflict(tempConflictId);
+        
+        // UserConflict 객체 생성 (AI 분석 결과 포함)
+        UserConflict conflict = new UserConflict(
+            userId,
+            reqDto.getTitle(),
+            reqDto.getDescription(),
+            reqDto.getConflictType(),
+            reqDto.getConflictWhen(),
+            reqDto.getConflictFrequency(),
+            reqDto.getParticipants(),
+            reqDto.getDesiredOutcome(),
+            reqDto.getPriority(),
+            reqDto.getTalkWillingness(),
+            reqDto.getInitialEmotion(),
+            reqDto.getIntensity(),
+            aiSummary + "\n\n[해결방안]\n" + aiSolutions // AI 요약과 해결방안을 합쳐서 저장
+        );
+        
+        // SQL에 최종 저장
+        conflictDao.save(conflict);
+        
+        // Redis에서 임시 데이터 삭제
+        conflictRedisService.deleteTempConflict(tempConflictId);
+        
+        return ConflictResDto.from(conflict);
+    }
+    
+    /**
+     * 기존 방식 유지 (호환성을 위해)
+     */
     public ConflictResDto createConflict(Long userId, ConflictCreateReqDto reqDto) {
         UserConflict conflict = new UserConflict(
             userId,

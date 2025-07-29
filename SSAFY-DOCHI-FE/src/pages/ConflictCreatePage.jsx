@@ -23,6 +23,9 @@ const ConflictCreatePage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [aiSummary, setAiSummary] = useState('');
+  const [aiSolutions, setAiSolutions] = useState('');
+  const [tempConflictId, setTempConflictId] = useState(null);
+  const [currentStep, setCurrentStep] = useState(1); // 1: 작성, 2: AI 분석, 3: 최종 확인
 
   // 로그인 확인
   if (!isLoggedIn) {
@@ -38,31 +41,95 @@ const ConflictCreatePage = () => {
     });
   };
 
-  const handleAiSummary = async () => {
-    if (!formData.description.trim()) {
-      alert('갈등 상황을 먼저 작성해주세요.');
+
+  // 1단계: Redis에 임시 저장 및 AI 분석 요청
+  const handleAnalyzeConflict = async () => {
+    if (!formData.title.trim() || !formData.description.trim()) {
+      alert('제목과 갈등 상황을 모두 작성해주세요.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/conflict/summarize`, {
+      // 1단계: Redis에 임시 저장
+      const tempResponse = await fetch(`${API_BASE_URL}/conflict/temp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         },
         body: JSON.stringify({
-          description: formData.description,
-          conflictType: formData.conflictType
+          ...formData,
+          conflictWhen: formData.conflictWhen ? parseInt(formData.conflictWhen) : null,
+          conflictFrequency: formData.conflictFrequency ? parseInt(formData.conflictFrequency) : null,
+          intensity: parseInt(formData.intensity),
+          participants: formData.participants ? JSON.stringify(formData.participants.split(',').map(p => p.trim())) : null
+        })
+      });
+
+      if (!tempResponse.ok) {
+        throw new Error('갈등 데이터 임시 저장에 실패했습니다.');
+      }
+
+      const tempResult = await tempResponse.json();
+      const conflictId = tempResult.data || tempResult.response?.response;
+      setTempConflictId(conflictId);
+
+      // 2단계: AI 분석 요청
+      const analysisResponse = await fetch(`${API_BASE_URL}/conflict/analyze/${conflictId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error('AI 분석에 실패했습니다.');
+      }
+
+      const analysisResult = await analysisResponse.json();
+      const analysisData = analysisResult.data || analysisResult.response?.response;
+      
+      setAiSummary(analysisData.summary || '요약을 생성할 수 없습니다.');
+      setAiSolutions(analysisData.solutions || '해결방안을 생성할 수 없습니다.');
+      setCurrentStep(2); // AI 분석 결과 확인 단계로 이동
+
+    } catch (error) {
+      console.error('갈등 분석 오류:', error);
+      alert(error.message || '갈등 분석 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3단계: 최종 저장
+  const handleFinalSave = async () => {
+    if (!tempConflictId) {
+      alert('임시 저장된 갈등 데이터가 없습니다.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/conflict/finalize/${tempConflictId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          aiSummary: aiSummary,
+          aiSolutions: aiSolutions
         })
       });
 
       if (response.ok) {
-        const result = await response.json();
-        setAiSummary(result.response || result.summary);
+        alert('갈등 카드가 성공적으로 생성되었습니다!');
+        navigate('/');
       } else {
-        throw new Error('AI 요약 생성에 실패했습니다.');
+        const errorData = await response.json();
+        throw new Error(errorData.message || '갈등 카드 생성에 실패했습니다.');
       }
     } catch (error) {
       alert(error.message);
@@ -123,13 +190,36 @@ const ConflictCreatePage = () => {
               <span className="text-2xl">🦔</span>
             </div>
             <h1 className="text-2xl font-bold text-gray-800 mb-2">갈등 카드 작성</h1>
-            <p className="text-gray-600">갈등 상황을 자세히 작성해주세요. AI가 요약해드릴게요!</p>
+            <p className="text-gray-600">
+              {currentStep === 1 && "갈등 상황을 자세히 작성해주세요. AI가 분석해드릴게요!"}
+              {currentStep === 2 && "AI 분석 결과를 확인하고 최종 저장해주세요."}
+            </p>
+          </div>
+          
+          {/* 진행 단계 표시 */}
+          <div className="flex justify-center mt-6">
+            <div className="flex items-center space-x-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= 1 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>1</div>
+              <div className={`w-16 h-1 ${currentStep >= 2 ? 'bg-orange-500' : 'bg-gray-200'}`}></div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= 2 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>2</div>
+            </div>
+          </div>
+          <div className="flex justify-center mt-2">
+            <div className="flex space-x-12 text-xs text-gray-500">
+              <span>갈등 작성</span>
+              <span>AI 분석</span>
+            </div>
           </div>
         </div>
 
-        {/* 폼 */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6">
-          <div className="space-y-6">
+        {/* 1단계: 갈등 작성 폼 */}
+        {currentStep === 1 && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="space-y-6">
             {/* 제목 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -180,25 +270,7 @@ const ConflictCreatePage = () => {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400 resize-none"
                 required
               />
-              <div className="mt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleAiSummary}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition-colors text-sm"
-                >
-                  {isLoading ? 'AI 요약 중...' : '🤖 AI 요약 받기'}
-                </button>
-              </div>
             </div>
-
-            {/* AI 요약 결과 */}
-            {aiSummary && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-blue-800 mb-2">🤖 AI 요약</h3>
-                <p className="text-blue-700 text-sm leading-relaxed">{aiSummary}</p>
-              </div>
-            )}
 
             {/* 추가 정보 그리드 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -330,7 +402,7 @@ const ConflictCreatePage = () => {
               </div>
             </div>
 
-            {/* 버튼들 */}
+            {/* 1단계 버튼들 */}
             <div className="flex gap-4 pt-6">
               <button
                 type="button"
@@ -340,15 +412,59 @@ const ConflictCreatePage = () => {
                 취소
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={handleAnalyzeConflict}
                 disabled={isLoading}
                 className="flex-1 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 transition-colors font-medium"
               >
-                {isLoading ? '저장 중...' : '갈등 카드 생성'}
+                {isLoading ? 'AI 분석 중...' : 'AI 분석 요청'}
               </button>
             </div>
+            </div>
           </div>
-        </form>
+        )}
+
+        {/* 2단계: AI 분석 결과 */}
+        {currentStep === 2 && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="space-y-6">
+              {/* AI 요약 */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">📝 AI 상황 요약</h3>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-gray-700 whitespace-pre-line">{aiSummary}</p>
+                </div>
+              </div>
+
+              {/* AI 해결방안 */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">💡 AI 해결방안</h3>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <pre className="text-gray-700 whitespace-pre-line font-sans">{aiSolutions}</pre>
+                </div>
+              </div>
+
+              {/* 2단계 버튼들 */}
+              <div className="flex gap-4 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  다시 작성하기
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFinalSave}
+                  disabled={isLoading}
+                  className="flex-1 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 transition-colors font-medium"
+                >
+                  {isLoading ? '저장 중...' : '갈등 카드 저장'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

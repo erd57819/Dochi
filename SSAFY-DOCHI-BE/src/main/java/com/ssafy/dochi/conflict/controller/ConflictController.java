@@ -5,6 +5,8 @@ import com.ssafy.dochi.common.template.ApiResponse;
 import com.ssafy.dochi.common.template.ApiResponseGenerator;
 import com.ssafy.dochi.conflict.dto.request.ConflictCreateReqDto;
 import com.ssafy.dochi.conflict.dto.request.ConflictSummaryReqDto;
+import com.ssafy.dochi.conflict.dto.request.FinalizeConflictReqDto;
+import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
 import com.ssafy.dochi.conflict.dto.response.ConflictResDto;
 import com.ssafy.dochi.conflict.service.ConflictService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,13 +25,54 @@ public class ConflictController {
     
     private final ConflictService conflictService;
     
-    // 갈등 생성
+    // 1단계: 갈등 카드를 Redis에 임시 저장
+    @PostMapping("/temp")
+    public ApiResponse<ApiResponse.SuccessCustomBody<String>> saveTempConflict(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody ConflictCreateReqDto reqDto) {
+        
+        // 테스트용: 인증 없을 때 기본 사용자 ID 사용
+        Long userId = (user != null) ? user.getId() : 2L;
+        String tempConflictId = conflictService.saveTempConflict(userId, reqDto);
+        return ApiResponseGenerator.success(tempConflictId, HttpStatus.CREATED);
+    }
+    
+    // 2단계: 임시 저장된 갈등 데이터를 AI 분석
+    @PostMapping("/analyze/{tempConflictId}")
+    public ApiResponse<ApiResponse.SuccessCustomBody<AiAnalysisResDto>> analyzeConflict(
+            @PathVariable String tempConflictId) {
+        
+        AiAnalysisResDto response = conflictService.analyzeConflict(tempConflictId);
+        return ApiResponseGenerator.success(response, HttpStatus.OK);
+    }
+    
+    // 3단계: AI 분석 완료 후 최종 SQL 저장
+    @PostMapping("/finalize/{tempConflictId}")
+    public ApiResponse<ApiResponse.SuccessCustomBody<ConflictResDto>> finalizeConflict(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable String tempConflictId,
+            @RequestBody FinalizeConflictReqDto reqDto) {
+        
+        // 테스트용: 인증 없을 때 기본 사용자 ID 사용
+        Long userId = (user != null) ? user.getId() : 2L;
+        ConflictResDto response = conflictService.finalizeConflict(
+            userId, 
+            tempConflictId, 
+            reqDto.getAiSummary(), 
+            reqDto.getAiSolutions()
+        );
+        return ApiResponseGenerator.success(response, HttpStatus.CREATED);
+    }
+    
+    // 기존 방식 유지 (호환성)
     @PostMapping("/create")
     public ApiResponse<ApiResponse.SuccessCustomBody<ConflictResDto>> createConflict(
             @AuthenticationPrincipal CustomUserDetails user,
             @RequestBody ConflictCreateReqDto reqDto) {
         
-        ConflictResDto response = conflictService.createConflict(user.getId(), reqDto);
+        // 테스트용: 인증 없을 때 기본 사용자 ID 사용
+        Long userId = (user != null) ? user.getId() : 2L;
+        ConflictResDto response = conflictService.createConflict(userId, reqDto);
         return ApiResponseGenerator.success(response, HttpStatus.CREATED);
     }
     

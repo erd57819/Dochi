@@ -86,6 +86,7 @@ public class SecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/**", "OPTIONS")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/user/verify/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/user/regist")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/conflict/**")).permitAll() // 갈등 API 테스트용
                         .anyRequest().permitAll());
 
         return http.build();
