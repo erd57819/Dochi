@@ -14,7 +14,7 @@ CREATE TABLE `users` (
                          `age`             INT             NULL COMMENT '나이',
                          `gender`          ENUM('MALE', 'FEMALE', 'NONE') NULL COMMENT '성별',
                          `role`            ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER' COMMENT '역할',
-                         `isSocial` boolean DEFAULT FALSE,
+                         `is_Social` boolean DEFAULT FALSE,
                          `kakao_id` varchar(255) DEFAULT NULL,
                          `google_id` VARCHAR(255) DEFAULT NULL COMMENT '구글 로그인 고유 ID',
                          `email_verified`  BOOLEAN         NOT NULL DEFAULT FALSE COMMENT '이메일 인증 여부',
