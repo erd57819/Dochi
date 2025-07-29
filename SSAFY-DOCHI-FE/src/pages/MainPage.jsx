@@ -1,14 +1,16 @@
 import React from "react";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 import image9 from "@/assets/image 9.png";
 import image10 from "@/assets/image 10.png";
-import image16 from "@/assets/image 16.png";
 import image17 from "@/assets/image 17.png";
 import image18 from "@/assets/image 18.png";
 import image65 from "@/assets/image-65.png";
-import line27 from "@/assets/Line-27.png";
 import line203 from "@/assets/Line-203.png";
-import pngtreeGameControlLineIconVector52090841 from "@/assets/game.png";
 import social from "@/assets/Social.png";
 import line from "@/assets/line.png";
 import vector2 from "@/assets/Vector-2.png";
@@ -20,46 +22,134 @@ export const MainPage = () => {
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-full max-w-[1440px] relative">
         
-
-
-        {/* Main Hero Section */}
-        <div className="relative w-full h-[887px] bg-white">
-          <div className="relative w-full max-w-[1321px] h-[719px] top-[129px] left-1/2 transform -translate-x-1/2">
+        {/* Main Hero Section - Swiper */}
+        <div className="relative w-full h-[1100px] bg-white">
+          <Swiper
+            modules={[Navigation, Pagination, Autoplay]}
+            spaceBetween={0}
+            slidesPerView={1}
+            navigation={{
+              nextEl: '.swiper-button-next-custom',
+              prevEl: '.swiper-button-prev-custom',
+            }}
+            pagination={{ 
+              clickable: true,
+              el: '.swiper-pagination-custom'
+            }}
+            autoplay={{
+              delay: 5000,
+              disableOnInteraction: false,
+            }}
+            loop={true}
+            className="w-full h-full"
+          >
             
-            {/* Main Title */}
-            <div className="absolute top-0 left-0">
-              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-8xl leading-normal">
-                나만의{" "}
-                <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-                  고민해결
-                </span>{" "}
-                플랫폼,
-              </div>
-              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-[115px] leading-normal">
-                참견도치 🦔
-              </div>
-            </div>
+            {/* Slide 1: 나만의 고민해결 플랫폼 */}
+            <SwiperSlide>
+              <div className="relative w-full max-w-[1600px] h-[900px] top-[100px] left-1/2 transform -translate-x-1/2 px-16">
+                {/* Main Title */}
+                <div className="absolute top-[80px] left-16">
+                  <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-8xl leading-normal">
+                    나만의{" "}
+                    <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+                      고민해결
+                    </span>{" "}
+                    플랫폼,
+                  </div>
+                  <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-[115px] leading-normal">
+                    참견도치 🦔
+                  </div>
+                </div>
 
-            {/* Main Hedgehog Image */}
-            <img
-              className="absolute w-[489px] h-[489px] top-[230px] right-0 object-cover"
-              alt="Main Hedgehog"
-              src={image65}
-            />
+                {/* Main Hedgehog Image */}
+                <img
+                  className="absolute w-[489px] h-[489px] top-[280px] right-16 object-cover"
+                  alt="Main Hedgehog"
+                  src={image65}
+                />
 
-            {/* CTA Buttons */}
-            <div className="absolute top-[610px] left-0">
-              <div className="w-[295px] h-20 bg-[#bf7d2c] rounded-[20px] flex items-center justify-center">
-                <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-[26px] leading-normal">
-                  참견도치 사용해보기
+                {/* CTA Buttons */}
+                <div className="absolute top-[720px] left-16">
+                  <div className="w-[295px] h-20 bg-[#bf7d2c] rounded-[20px] flex items-center justify-center">
+                    <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-[26px] leading-normal">
+                      참견도치 사용해보기
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="absolute top-[740px] left-[403px] font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-[26px] leading-normal underline">
+                  더 둘러보기 →
                 </div>
               </div>
-            </div>
-            
-            <div className="absolute top-[630px] left-[387px] font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-[26px] leading-normal underline">
-              더 둘러보기 →
+            </SwiperSlide>
+
+            {/* Slide 2: 좁혀지지 않는 갈등 */}
+            <SwiperSlide>
+              <div className="relative w-full h-[900px] top-[100px] px-8">
+                <div className="w-full max-w-none h-full flex flex-col justify-start items-end pr-8 pt-20">
+                  <div className="text-right space-y-4">
+                    <div className="font-['Pretendard-SemiBold'] font-semibold text-black text-6xl lg:text-8xl leading-tight">
+                      좁혀지지 않는 갈등
+                    </div>
+                    <div className="font-['Pretendard-SemiBold'] font-semibold text-8xl lg:text-[115px] leading-tight">
+                      <span className="text-black">참견도치가 </span>
+                      <span className="text-[#bf7d2c]">참견</span>
+                      <span className="text-black">해드립니다</span>
+                    </div>
+                  </div>
+                </div>
+                <img
+                  className="absolute w-[400px] h-[500px] top-[350px] left-8 object-cover"
+                  alt="Image"
+                  src={image9}
+                />
+              </div>
+            </SwiperSlide>
+
+            {/* Slide 3: 고민이 있다면? */}
+            <SwiperSlide>
+              <div className="relative w-full h-[1100px] px-16">
+                <header className="absolute top-[150px] left-24 text-black text-[115px] w-[1047px] font-['Pretendard-SemiBold'] font-semibold leading-normal">
+                  고민이 있다면?
+                </header>
+                <main className="absolute w-full h-[600px] top-[350px] left-24 right-24">
+                  <div className="absolute top-[200px] left-0 text-8xl w-[1047px] font-['Pretendard-SemiBold'] font-semibold leading-normal">
+                    <span className="text-[#bf7d2c]">비밀보장</span>
+                    <span className="text-black">되는</span>
+                    <br />
+                    <span className="text-[#030303]">참견도치</span>
+                    <span className="text-black">가 들어줄게요</span>
+                  </div>
+                  <img
+                    className="absolute w-[522px] h-[522px] top-0 right-24 object-cover"
+                    alt="참견도치 캐릭터 이미지"
+                    src={image10}
+                  />
+                </main>
+              </div>
+            </SwiperSlide>
+
+          </Swiper>
+          
+          {/* Custom Navigation Buttons */}
+          <div className="swiper-button-prev-custom absolute -left-16 top-0 bottom-0 w-20 flex items-center justify-center cursor-pointer z-10">
+            <div className="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-lg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 18L9 12L15 6" stroke="#bf7d2c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
           </div>
+          
+          <div className="swiper-button-next-custom absolute -right-16 top-0 bottom-0 w-20 flex items-center justify-center cursor-pointer z-10">
+            <div className="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-lg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 18L15 12L9 6" stroke="#bf7d2c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          
+          {/* Custom Pagination */}
+          <div className="swiper-pagination-custom absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"></div>
         </div>
 
         {/* Service Cards Section */}
