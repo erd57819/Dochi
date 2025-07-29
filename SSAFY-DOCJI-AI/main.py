@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 # CORSMiddleware를 import 합니다.
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import summary
+from routers import summary
 
 app = FastAPI()
 

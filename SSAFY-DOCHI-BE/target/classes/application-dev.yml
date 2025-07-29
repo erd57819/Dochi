@@ -3,6 +3,7 @@ server:
 
 spring:
   datasource:
+<<<<<<< HEAD
     url: ${DB_URL:jdbc:mysql://localhost:3306/dochi}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:ssafy}
@@ -11,6 +12,11 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: ${REDIS_TIMEOUT:2000ms}
+=======
+    url: jdbc:mysql://localhost:3306/dochi
+    username: root
+    password: ssafy
+>>>>>>> da60d044a823cd55845fe066e9fc642f5e24a7f4
 
 management:
   endpoints:
