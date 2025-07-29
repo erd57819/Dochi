@@ -1,8 +1,19 @@
 server:
-  port: 8081
+  port: 8080
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/dochi
-    username: root
-    password: ssafy
+    url: ${DB_URL:jdbc:mysql://localhost:3306/dochi}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:ssafy}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: ${REDIS_TIMEOUT:2000ms}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
