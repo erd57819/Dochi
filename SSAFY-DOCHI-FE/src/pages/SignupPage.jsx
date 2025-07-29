@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    userId: '',
     password: '',
     passwordConfirm: '',
     email: '',
     name: '',
-    birthYear: '',
+    nickname: '',
+    age: '',
     gender: '',
+    address: '',
     agreeTerms: false
+  });
+
+  const [emailVerification, setEmailVerification] = useState({
+    isSent: false,
+    isVerified: false,
+    code: '',
+    isLoading: false,
+    message: ''
   });
   const navigate = useNavigate();
 
@@ -22,11 +33,120 @@ const SignupPage = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSendVerification = async () => {
+    if (!formData.email) {
+      alert('이메일을 입력해주세요.');
+      return;
+    }
+
+    setEmailVerification({ ...emailVerification, isLoading: true, message: '' });
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/verify/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      if (response.ok) {
+        setEmailVerification({
+          ...emailVerification,
+          isSent: true,
+          isLoading: false,
+          message: '인증코드가 발송되었습니다.'
+        });
+      } else {
+        throw new Error('인증코드 발송에 실패했습니다.');
+      }
+    } catch (error) {
+      setEmailVerification({
+        ...emailVerification,
+        isLoading: false,
+        message: error.message
+      });
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!emailVerification.code) {
+      alert('인증코드를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/verify/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          code: emailVerification.code
+        }),
+      });
+
+      if (response.ok) {
+        setEmailVerification({
+          ...emailVerification,
+          isVerified: true,
+          message: '이메일 인증이 완료되었습니다.'
+        });
+      } else {
+        throw new Error('인증코드가 올바르지 않습니다.');
+      }
+    } catch (error) {
+      setEmailVerification({
+        ...emailVerification,
+        message: error.message
+      });
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: 백엔드 API 연동
-    console.log('회원가입 데이터:', formData);
-    navigate('/login');
+
+    if (!emailVerification.isVerified) {
+      alert('이메일 인증을 완료해주세요.');
+      return;
+    }
+
+    if (formData.password !== formData.passwordConfirm) {
+      alert('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    try {
+      const signupData = {
+        userId: formData.userId,
+        name: formData.name,
+        nickname: formData.nickname,
+        email: formData.email,
+        password: formData.password,
+        address: formData.address,
+        age: parseInt(formData.age),
+        gender: formData.gender.toUpperCase()
+      };
+
+      const response = await fetch(`${API_BASE_URL}/user/regist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupData),
+      });
+
+      if (response.ok) {
+        alert('회원가입이 완료되었습니다.');
+        navigate('/login');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '회원가입에 실패했습니다.');
+      }
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
@@ -47,11 +167,11 @@ const SignupPage = () => {
           <div>
             <input
               type="text"
-              name="username"
+              name="userId"
               placeholder="아이디를 입력하세요"
-              value={formData.username}
+              value={formData.userId}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
               required
             />
           </div>
@@ -63,7 +183,7 @@ const SignupPage = () => {
               placeholder="비밀번호를 입력하세요"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
               required
             />
           </div>
@@ -75,21 +195,57 @@ const SignupPage = () => {
               placeholder="비밀번호를 재입력하세요"
               value={formData.passwordConfirm}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
               required
             />
           </div>
 
           <div>
-            <input
-              type="email"
-              name="email"
-              placeholder="이메일을 입력하세요"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              required
-            />
+            <div className="flex gap-2">
+              <input
+                type="email"
+                name="email"
+                placeholder="이메일을 입력하세요"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
+                required
+                disabled={emailVerification.isVerified}
+              />
+              <button
+                type="button"
+                onClick={handleSendVerification}
+                disabled={emailVerification.isLoading || emailVerification.isVerified}
+                className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition-colors whitespace-nowrap"
+              >
+                {emailVerification.isLoading ? '전송중...' : emailVerification.isVerified ? '인증완료' : '인증발송'}
+              </button>
+            </div>
+            {emailVerification.isSent && !emailVerification.isVerified && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  value={emailVerification.code}
+                  onChange={(e) => setEmailVerification({ ...emailVerification, code: e.target.value })}
+                  placeholder="인증코드를 입력하세요"
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifyCode}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap"
+                >
+                  확인
+                </button>
+              </div>
+            )}
+            {emailVerification.message && (
+              <p className={`mt-1 text-sm ${
+                emailVerification.isVerified ? 'text-green-600' : 'text-red-500'
+              }`}>
+                {emailVerification.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -99,19 +255,42 @@ const SignupPage = () => {
               placeholder="이름을 입력하세요"
               value={formData.name}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
               required
             />
           </div>
 
           <div>
             <input
-              type="number"
-              name="birthYear"
-              placeholder="생년월일을 입력하세요"
-              value={formData.birthYear}
+              type="text"
+              name="nickname"
+              placeholder="닉네임을 입력하세요"
+              value={formData.nickname}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
+              required
+            />
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="address"
+              placeholder="주소를 입력하세요"
+              value={formData.address}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
+            />
+          </div>
+
+          <div>
+            <input
+              type="number"
+              name="age"
+              placeholder="나이를 입력하세요"
+              value={formData.age}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
             />
           </div>
 
@@ -120,11 +299,12 @@ const SignupPage = () => {
               name="gender"
               value={formData.gender}
               onChange={handleInputChange}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800"
             >
               <option value="">성별</option>
               <option value="male">남성</option>
               <option value="female">여성</option>
+              <option value="none">선택안함</option>
             </select>
           </div>
 
