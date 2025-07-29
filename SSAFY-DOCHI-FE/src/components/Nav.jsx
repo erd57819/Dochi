@@ -1,11 +1,23 @@
-import React from "react";
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import img16 from "@/assets/image-16.png";
-import gameIcon from "@/assets/game.png";
 
 export const Nav = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isLoggedIn, user, logOut } = useAuthStore();
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    // localStorage에서 토큰 제거
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    
+    // 스토어에서 로그아웃
+    logOut();
+    
+    // 홈으로 이동
+    navigate('/');
+  };
 
   return (
     <div className="bg-white flex flex-row justify-center w-full border-b border-gray-100 shadow-sm">
@@ -22,79 +34,59 @@ export const Nav = () => {
           </div>
         </Link>
 
-        {/* 메인 네비게이션 */}
-        <div className="absolute w-[698px] h-7 top-[32px] left-[389px] flex justify-between items-center">
-          <Link 
-            to="/conflict-resolution" 
-            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
-              isActive('/conflict-resolution') 
-                ? 'text-[#ff6b35] scale-105' 
-                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
-            }`}
-          >
-            갈등해결
-          </Link>
-          
-          <Link 
-            to="/comfort" 
-            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
-              isActive('/comfort') 
-                ? 'text-[#ff6b35] scale-105' 
-                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
-            }`}
-          >
-            토닥토닥
-          </Link>
-          
-          <Link 
-            to="/community" 
-            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
-              isActive('/community') 
-                ? 'text-[#ff6b35] scale-105' 
-                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
-            }`}
-          >
-            커뮤니티
-          </Link>
-          
-          <Link 
-            to="/notice" 
-            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
-              isActive('/notice') 
-                ? 'text-[#ff6b35] scale-105' 
-                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
-            }`}
-          >
-            공지사항
-          </Link>
-        </div>
+          {/* 메뉴 */}
+          <div className="flex items-center gap-8">
+            <Link 
+              to="/" 
+              className={`text-sm transition-colors ${
+                isActive('/') 
+                  ? 'text-amber-600 font-semibold' 
+                  : 'text-gray-600 hover:text-amber-600'
+              }`}
+            >
+              홈
+            </Link>
 
-        {/* 로그인/회원가입/게임 - 완벽하게 정렬 */}
-        <div className="absolute top-[32px] right-[50px] flex items-center gap-4 h-7">
-          <Link 
-            to="/login" 
-            className="[font-family:'Pretendard',Helvetica] text-[#4a4a4a] text-[18px] font-semibold tracking-[0] leading-[27px] hover:text-[#ff6b35] transition-all duration-200 hover:scale-105"
-          >
-            로그인
-          </Link>
-          
-          <Link 
-            to="/signup" 
-            className="[font-family:'Pretendard',Helvetica] text-white text-[16px] font-semibold tracking-[0] leading-[20px] bg-[#ff6b35] px-3 py-[4px] rounded-full hover:bg-[#e55a2b] hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
-          >
-            회원가입
-          </Link>
-          
-          <Link 
-            to="/game" 
-            className="flex items-center justify-center w-[35px] h-[35px] hover:scale-110 transition-all duration-200"
-          >
-            <img
-              className="w-[30px] h-[30px] object-cover"
-              alt="게임"
-              src={gameIcon}
-            />
-          </Link>
+            <Link 
+              to="/service" 
+              className={`text-sm transition-colors ${
+                isActive('/service') 
+                  ? 'text-amber-600 font-semibold' 
+                  : 'text-gray-600 hover:text-amber-600'
+              }`}
+            >
+              서비스
+            </Link>
+
+            <Link 
+              to="/notice" 
+              className={`text-sm transition-colors ${
+                isActive('/notice') 
+                  ? 'text-amber-600 font-semibold' 
+                  : 'text-gray-600 hover:text-amber-600'
+              }`}
+            >
+              공지사항
+            </Link>
+
+            <Link 
+              to="/community" 
+              className={`text-sm transition-colors ${
+                isActive('/community') 
+                  ? 'text-amber-600 font-semibold' 
+                  : 'text-gray-600 hover:text-amber-600'
+              }`}
+            >
+              커뮤니티
+            </Link>
+
+            <Link 
+              to="/login" 
+              className="text-sm bg-amber-600 text-white px-6 py-2 rounded-full hover:bg-amber-700 transition-colors font-medium"
+            >
+              로그인
+            </Link>
+          </div>
         </div>
       </div>
     </div>
