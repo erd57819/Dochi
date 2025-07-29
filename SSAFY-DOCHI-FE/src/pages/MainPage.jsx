@@ -225,7 +225,7 @@ export const MainPage = () => {
           {/* My Page Card */}
           <div 
             className="absolute w-[645px] h-[214px] top-[447px] right-[51px] cursor-pointer"
-            onClick={() => navigate('/review')}
+            onClick={() => navigate('/mypage')}
           >
             <div className="w-[645px] h-[204px] bg-[#cd9f6e] rounded-[20px] relative hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <div className="absolute w-[506px] top-[115px] left-[43px] font-['Pretendard-Regular'] font-normal text-[#4E2B1A] text-2xl leading-normal">
