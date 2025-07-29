@@ -63,7 +63,7 @@ services:
     environment:
       - OPENVIDU_SECRET=MY_SECRET
       - OPENVIDU_CERT_TYPE=selfsigned
-      -
+
   # Spring Boot 백엔드
   backend:
     build:
