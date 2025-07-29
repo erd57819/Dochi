@@ -1,8 +1,11 @@
-import React from 'react';
+import React from "react";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore';
+import img16 from "@/assets/image-16.png";
+import gameIcon from "@/assets/game.png";
 
-const Nav = () => {
+
+export const Nav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, user, logOut } = useAuthStore();
@@ -21,85 +24,112 @@ const Nav = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* 로고 */}
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🦔</span>
-            <span className="text-xl font-bold text-gray-800">참견도치</span>
+    <div className="bg-white flex flex-row justify-center w-full border-b border-gray-100 shadow-sm">
+      <div className="bg-white w-[1440px] h-[87px] relative">
+        {/* 로고 영역 */}
+        <Link to="/" className="absolute flex items-center top-[28px] left-[53px] gap-3 hover:opacity-80 transition-opacity">
+          <img
+            className="w-9 h-[35px] object-cover"
+            alt="참견도치 로고"
+            src={img16}
+          />
+          <div className="[font-family:'Pretendard',Helvetica] text-black text-[32px] font-semibold tracking-[0] leading-[35px]">
+            참견도치
+          </div>
+        </Link>
+
+        {/* 메인 네비게이션 */}
+        <div className="absolute w-[698px] h-7 top-[32px] left-[389px] flex justify-between items-center">
+          <Link 
+            to="/conflict-resolution" 
+            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
+              isActive('/conflict-resolution') 
+                ? 'text-[#ff6b35] scale-105' 
+                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
+            }`}
+          >
+            갈등해결
           </Link>
+          
+          <Link 
+            to="/comfort" 
+            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
+              isActive('/comfort') 
+                ? 'text-[#ff6b35] scale-105' 
+                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
+            }`}
+          >
+            토닥토닥
+          </Link>
+          
+          <Link 
+            to="/community" 
+            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
+              isActive('/community') 
+                ? 'text-[#ff6b35] scale-105' 
+                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
+            }`}
+          >
+            커뮤니티
+          </Link>
+          
+          <Link 
+            to="/notice" 
+            className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
+              isActive('/notice') 
+                ? 'text-[#ff6b35] scale-105' 
+                : 'text-[#777777] hover:text-[#ff6b35] hover:scale-105'
+            }`}
+          >
+            공지사항
+          </Link>
+        </div>
 
-          {/* 메뉴 */}
-          <div className="flex items-center gap-8">
-            <Link 
-              to="/" 
-              className={`text-sm transition-colors ${
-                isActive('/') 
-                  ? 'text-amber-600 font-semibold' 
-                  : 'text-gray-600 hover:text-amber-600'
-              }`}
-            >
-              홈
-            </Link>
-
-            <Link 
-              to="/service" 
-              className={`text-sm transition-colors ${
-                isActive('/service') 
-                  ? 'text-amber-600 font-semibold' 
-                  : 'text-gray-600 hover:text-amber-600'
-              }`}
-            >
-              서비스
-            </Link>
-
-            <Link 
-              to="/notice" 
-              className={`text-sm transition-colors ${
-                isActive('/notice') 
-                  ? 'text-amber-600 font-semibold' 
-                  : 'text-gray-600 hover:text-amber-600'
-              }`}
-            >
-              공지사항
-            </Link>
-
-            <Link 
-              to="/community" 
-              className={`text-sm transition-colors ${
-                isActive('/community') 
-                  ? 'text-amber-600 font-semibold' 
-                  : 'text-gray-600 hover:text-amber-600'
-              }`}
-            >
-              커뮤니티
-            </Link>
-
-            {isLoggedIn ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-700">
-                  안녕하세요, <span className="font-semibold text-amber-600">{user?.nickname || user?.name}</span>님
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-sm bg-gray-500 text-white px-4 py-2 rounded-full hover:bg-gray-600 transition-colors font-medium"
-                >
-                  로그아웃
-                </button>
-              </div>
-            ) : (
+        {/* 로그인/회원가입/게임 */}
+        <div className="absolute top-[32px] right-[50px] flex items-center gap-4 h-7">
+          {isLoggedIn ? (
+            <>
+              <span className="[font-family:'Pretendard',Helvetica] text-[#4a4a4a] text-[16px] font-medium tracking-[0] leading-[27px]">
+                <span className="font-semibold text-[#ff6b35]">{user?.nickname || user?.name}</span>도치님
+              </span>
+              <button
+                onClick={handleLogout}
+                className="[font-family:'Pretendard',Helvetica] text-white text-[16px] font-semibold tracking-[0] leading-[20px] bg-gray-500 px-3 py-[4px] rounded-full hover:bg-gray-600 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <>
               <Link 
                 to="/login" 
-                className="text-sm bg-amber-600 text-white px-6 py-2 rounded-full hover:bg-amber-700 transition-colors font-medium"
+                className="[font-family:'Pretendard',Helvetica] text-[#4a4a4a] text-[18px] font-semibold tracking-[0] leading-[27px] hover:text-[#ff6b35] transition-all duration-200 hover:scale-105"
               >
                 로그인
               </Link>
-            )}
-          </div>
+              
+              <Link 
+                to="/signup" 
+                className="[font-family:'Pretendard',Helvetica] text-white text-[16px] font-semibold tracking-[0] leading-[20px] bg-[#ff6b35] px-3 py-[4px] rounded-full hover:bg-[#e55a2b] hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                회원가입
+              </Link>
+            </>
+          )}
+          
+          <Link 
+            to="/game" 
+            className="flex items-center justify-center w-[35px] h-[35px] hover:scale-110 transition-all duration-200"
+          >
+            <img
+              className="w-[30px] h-[30px] object-cover"
+              alt="게임"
+              src={gameIcon}
+            />
+          </Link>
         </div>
       </div>
-    </nav>
+    </div>
   );
 };
 
