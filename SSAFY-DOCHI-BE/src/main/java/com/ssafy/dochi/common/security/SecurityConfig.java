@@ -50,8 +50,8 @@ public class SecurityConfig {
         // csrf disable
         http.csrf(AbstractHttpConfigurer::disable);
 
-        // cors 재설정
-        http.cors(corsCustomizer -> corsCustomizer.configurationSource(configurationSource()));
+        // cors 활성화 (WebConfig와 함께 사용)
+        http.cors(cors -> cors.configurationSource(configurationSource()));
 
         // 세션 사용 안함 -> 토큰 방식 사용
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
@@ -83,19 +83,25 @@ public class SecurityConfig {
         http.authorizeHttpRequests(
                 authorize -> authorize.requestMatchers(new AntPathRequestMatcher("/member/info", "GET")).authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/member/info", "PUT")).authenticated()
+                        .requestMatchers(new AntPathRequestMatcher("/**", "OPTIONS")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/user/verify/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/user/regist")).permitAll()
                         .anyRequest().permitAll());
 
         return http.build();
 
     }
 
+    @Bean
     public CorsConfigurationSource configurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedHeader("*");
-        configuration.addAllowedMethod("*"); // GET, POST, PUT, DELETE (Javascript 요청 허용)
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174", "https://ssafy-home-fe.vercel.app/"));
-        configuration.setAllowCredentials(true); // 클라이언트에서 쿠키 요청 허용
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
         configuration.addExposedHeader("Authorization");
+        configuration.setMaxAge(3600L);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
