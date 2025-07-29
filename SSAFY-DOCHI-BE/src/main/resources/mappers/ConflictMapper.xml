@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.dochi.conflict.dao.ConflictDao">
+
+    <resultMap id="ConflictResultMap" type="com.ssafy.dochi.conflict.domain.UserConflict">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="conflictType" column="conflict_type"/>
+        <result property="conflictWhen" column="conflict_when"/>
+        <result property="conflictFrequency" column="conflict_frequency"/>
+        <result property="participants" column="participants"/>
+        <result property="desiredOutcome" column="desired_outcome"/>
+        <result property="priority" column="priority"/>
+        <result property="talkWillingness" column="talk_willingness"/>
+        <result property="initialEmotion" column="initial_emotion"/>
+        <result property="intensity" column="intensity"/>
+        <result property="aiSummary" column="ai_summary"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="save" parameterType="com.ssafy.dochi.conflict.domain.UserConflict" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_conflicts (
+            user_id, title, description, conflict_type, conflict_when, conflict_frequency,
+            participants, desired_outcome, priority, talk_willingness, initial_emotion,
+            intensity, ai_summary
+        )
+        VALUES (
+            #{userId}, #{title}, #{description}, #{conflictType}, #{conflictWhen}, #{conflictFrequency},
+            #{participants}, #{desiredOutcome}, #{priority}, #{talkWillingness}, #{initialEmotion},
+            #{intensity}, #{aiSummary}
+        )
+    </insert>
+
+    <select id="findById" resultMap="ConflictResultMap">
+        SELECT * FROM user_conflicts WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId" resultMap="ConflictResultMap">
+        SELECT * FROM user_conflicts 
+        WHERE user_id = #{userId} 
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="update">
+        UPDATE user_conflicts
+        SET title = #{title},
+            description = #{description},
+            conflict_type = #{conflictType},
+            conflict_when = #{conflictWhen},
+            conflict_frequency = #{conflictFrequency},
+            participants = #{participants},
+            desired_outcome = #{desiredOutcome},
+            priority = #{priority},
+            talk_willingness = #{talkWillingness},
+            initial_emotion = #{initialEmotion},
+            intensity = #{intensity},
+            ai_summary = #{aiSummary},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM user_conflicts WHERE id = #{id}
+    </delete>
+
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(*) FROM user_conflicts WHERE user_id = #{userId}
+    </select>
+
+</mapper>

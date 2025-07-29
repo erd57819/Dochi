@@ -7,6 +7,7 @@ import com.ssafy.dochi.user.dao.EmailVerificationDao;
 import com.ssafy.dochi.user.dao.UserDao;
 import com.ssafy.dochi.user.domain.EmailVerification;
 import com.ssafy.dochi.user.domain.User;
+import com.ssafy.dochi.user.service.EmailVerificationService;
 import com.ssafy.dochi.user.dto.request.UserLoginReqDto;
 import com.ssafy.dochi.user.dto.request.UserPasswordUpdateReqDto;
 import com.ssafy.dochi.user.dto.request.UserSignUpReqDto;
@@ -26,6 +27,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailVerificationDao emailVerificationDao;
+    private final EmailVerificationService emailVerificationService;
 //  private final ChatDao chatDao;
 
     public UserLoginResDto login(UserLoginReqDto reqDto) {
@@ -89,9 +91,8 @@ public class UserService {
             throw new IllegalArgumentException("이미 사용중인 아이디입니다.");
         });
 
-        EmailVerification verification = emailVerificationDao.findByEmail(reqDto.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("이메일 인증이 필요합니다."));
-        if (!verification.isVerified()) {
+        // Redis 기반 이메일 인증 확인
+        if (!emailVerificationService.isEmailVerified(reqDto.getEmail())) {
             throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
         }
 

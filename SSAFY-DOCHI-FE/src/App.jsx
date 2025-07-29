@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import NoticePage from './pages/NoticePage';
 import CommunityPage from './pages/CommunityPage';
+import ConflictCreatePage from './pages/ConflictCreatePage';
 import './App.css';
 
 const App = () => {
@@ -20,6 +21,8 @@ const App = () => {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/notice" element={<NoticePage />} />
             <Route path="/community" element={<CommunityPage />} />
+            <Route path="/service" element={<ConflictCreatePage />} />
+            <Route path="/conflict/create" element={<ConflictCreatePage />} />
           </Routes>
         </main>
       </div>

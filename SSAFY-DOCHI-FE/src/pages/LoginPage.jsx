@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore';
+import { API_BASE_URL } from '../config/api';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    userId: '',
     password: ''
   });
   const navigate = useNavigate();
@@ -17,11 +18,52 @@ const LoginPage = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: 백엔드 API 연동
-    logIn({ username: formData.username, id: 1 });
-    navigate('/');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: formData.userId,
+          password: formData.password
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Login response:', result); // 디버깅용 로그
+        
+        // ApiResponse 구조에 맞게 접근
+        const loginData = result.response?.response || result.response || result;
+        const { accessToken, refreshToken, profileImage, name, nickname, isSocial, email, userId } = loginData;
+        
+        // JWT 토큰을 localStorage에 저장
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        
+        // 유저 정보를 스토어에 저장
+        logIn({ 
+          userId: userId, 
+          name: name,
+          nickname: nickname,
+          email: email,
+          profileImage: profileImage,
+          isSocial: isSocial
+        });
+        
+        alert('로그인 성공!');
+        navigate('/');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '로그인에 실패했습니다.');
+      }
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
@@ -41,11 +83,11 @@ const LoginPage = () => {
           <div>
             <input
               type="text"
-              name="username"
+              name="userId"
               placeholder="아이디를 입력하세요"
-              value={formData.username}
+              value={formData.userId}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
               required
             />
           </div>
@@ -57,7 +99,7 @@ const LoginPage = () => {
               placeholder="비밀번호를 입력하세요"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
               required
             />
           </div>
