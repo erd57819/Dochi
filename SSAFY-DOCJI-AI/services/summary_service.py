@@ -1,6 +1,6 @@
 # app/services/summary_service.py
 
-from ..core.config import settings
+from core.config import settings
 import openai
 
 class SummaryService:
