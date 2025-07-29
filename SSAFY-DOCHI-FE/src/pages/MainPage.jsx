@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -18,6 +19,8 @@ import vector3 from "@/assets/Vector-3.png";
 import vector from "@/assets/Vector.png";
 
 export const MainPage = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-full max-w-[1440px] relative">
@@ -70,14 +73,17 @@ export const MainPage = () => {
 
                 {/* CTA Buttons */}
                 <div className="absolute top-[720px] left-16">
-                  <div className="w-[295px] h-20 bg-[#bf7d2c] rounded-[20px] flex items-center justify-center">
+                  <div 
+                    className="w-[295px] h-20 bg-[#bf7d2c] rounded-[20px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
+                    onClick={() => navigate('/service')}
+                  >
                     <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-[26px] leading-normal">
                       참견도치 사용해보기
                     </div>
                   </div>
                 </div>
                 
-                <div className="absolute top-[740px] left-[403px] font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-[26px] leading-normal underline">
+                <div className="absolute top-[740px] left-[403px] font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-[26px] leading-normal underline cursor-pointer hover:text-[#bf7d2c] transition-colors">
                   더 둘러보기 →
                 </div>
               </div>
@@ -155,8 +161,11 @@ export const MainPage = () => {
         {/* Service Cards Section */}
         <div className="relative w-full h-[600px]">
           {/* Community Card */}
-          <div className="absolute w-[645px] h-[223px] top-[50px] left-[52px]">
-            <div className="w-[645px] h-[204px] bg-[#f8d6b3] rounded-[20px] relative">
+          <div 
+            className="absolute w-[645px] h-[223px] top-[50px] left-[52px] cursor-pointer"
+            onClick={() => navigate('/community')}
+          >
+            <div className="w-[645px] h-[204px] bg-[#f8d6b3] rounded-[20px] relative hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <img
                 className="absolute w-[18px] h-[38px] top-[77px] right-[72px]"
                 alt="Vector"
@@ -174,7 +183,10 @@ export const MainPage = () => {
           </div>
 
           {/* Conflict Resolution Card */}
-          <div className="absolute w-[645px] h-[368px] top-[288px] left-[52px] bg-[#83673f] rounded-[20px]">
+          <div 
+            className="absolute w-[645px] h-[368px] top-[288px] left-[52px] bg-[#83673f] rounded-[20px] cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+            onClick={() => navigate('/emotion')}
+          >
             <img
               className="absolute w-[18px] h-[38px] top-[104px] right-[72px]"
               alt="Vector"
@@ -191,7 +203,10 @@ export const MainPage = () => {
           </div>
 
           {/* Comfort Service Card */}
-          <div className="absolute w-[645px] h-[368px] top-[50px] right-[51px] bg-[#7f5539] rounded-[20px]">
+          <div 
+            className="absolute w-[645px] h-[368px] top-[50px] right-[51px] bg-[#7f5539] rounded-[20px] cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+            onClick={() => navigate('/todak')}
+          >
             <img
               className="absolute w-[19px] h-[38px] top-[98px] right-[70px]"
               alt="Vector"
@@ -208,8 +223,11 @@ export const MainPage = () => {
           </div>
 
           {/* My Page Card */}
-          <div className="absolute w-[645px] h-[214px] top-[447px] right-[51px]">
-            <div className="w-[645px] h-[204px] bg-[#cd9f6e] rounded-[20px] relative">
+          <div 
+            className="absolute w-[645px] h-[214px] top-[447px] right-[51px] cursor-pointer"
+            onClick={() => navigate('/review')}
+          >
+            <div className="w-[645px] h-[204px] bg-[#cd9f6e] rounded-[20px] relative hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <div className="absolute w-[506px] top-[115px] left-[43px] font-['Pretendard-Regular'] font-normal text-[#4E2B1A] text-2xl leading-normal">
                 나의 대화·중재 기록을 확인하고 관리해요
               </div>
@@ -243,7 +261,10 @@ export const MainPage = () => {
             src={image9}
           />
 
-          <div className="absolute w-[321px] h-[30px] top-[363px] left-[121px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0]">
+          <div 
+            className="absolute w-[321px] h-[30px] top-[363px] left-[121px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] cursor-pointer hover:text-[#a66a25] transition-colors"
+            onClick={() => navigate('/todak')}
+          >
             토닥토닥 서비스
           </div>
 
@@ -262,7 +283,10 @@ export const MainPage = () => {
             src={image17}
           />
 
-          <div className="absolute w-[485px] h-[31px] top-[670px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0]">
+          <div 
+            className="absolute w-[485px] h-[31px] top-[670px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] cursor-pointer hover:text-[#a66a25] transition-colors"
+            onClick={() => navigate('/emotion')}
+          >
             참견도치와 갈등 해결하기
           </div>
 
@@ -276,7 +300,10 @@ export const MainPage = () => {
             src={image18}
           />
 
-          <div className="absolute w-[485px] h-[30px] top-[928px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0]">
+          <div 
+            className="absolute w-[485px] h-[30px] top-[928px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] cursor-pointer hover:text-[#a66a25] transition-colors"
+            onClick={() => navigate('/community')}
+          >
             커뮤니티
           </div>
 
@@ -351,7 +378,7 @@ export const MainPage = () => {
               Learn how to grow 💪audience fast in Twitter
             </div>
             
-            <div className="absolute top-6 right-[195px] w-[193px] h-[45px] bg-gray-900 rounded-[60px] border-[1.5px] border-solid border-gray-900 flex items-center justify-center">
+            <div className="absolute top-6 right-[195px] w-[193px] h-[45px] bg-gray-900 rounded-[60px] border-[1.5px] border-solid border-gray-900 flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors">
               <div className="font-['Plus_Jakarta_Sans-Bold'] font-bold text-white text-sm tracking-[0] leading-[22px] whitespace-nowrap">
                 Download Free Chapter
               </div>
