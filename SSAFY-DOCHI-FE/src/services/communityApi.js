@@ -37,8 +37,8 @@ export const communityApi = {
         ...(category && { category })
       });
       
-      // ✅ 올바른 엔드포인트 (백엔드 매핑과 일치)
-      const response = await fetch(`${API_BASE_URL}/community?${params}`, {
+      // ✅ 백엔드 매핑과 일치하도록 수정
+      const response = await fetch(`${API_BASE_URL}/api/community?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -81,8 +81,8 @@ export const communityApi = {
     try {
       console.log('API: 게시글 상세 조회 시작, postId:', postId);
       
-      // ✅ 올바른 엔드포인트
-      const url = `${API_BASE_URL}/community/${postId}`;
+      // ✅ 백엔드 매핑과 일치하도록 수정
+      const url = `${API_BASE_URL}/api/community/${postId}`;
       console.log('API: 요청 URL:', url);
       
       const response = await fetch(url, {
@@ -116,8 +116,8 @@ export const communityApi = {
       console.log('🌐 API_BASE_URL:', API_BASE_URL);
       console.log('🔑 인증 헤더:', getAuthHeaders());
       
-      // ✅ 올바른 엔드포인트 (백엔드 @RequestMapping("/community")와 일치)
-      const url = `${API_BASE_URL}/community`;
+      // ✅ 백엔드 매핑과 일치하도록 수정 (/api/community)
+      const url = `${API_BASE_URL}/api/community`;
       console.log('📡 게시글 작성 URL:', url);
       
       const response = await fetch(url, {
@@ -152,8 +152,8 @@ export const commentApi = {
   // 댓글 목록 조회
   async getComments(postId) {
     try {
-      // ✅ 올바른 엔드포인트
-      const response = await fetch(`${API_BASE_URL}/comments/post/${postId}`, {
+      // ✅ 백엔드 매핑 확인 필요 (comments 컨트롤러가 있는지)
+      const response = await fetch(`${API_BASE_URL}/api/comments/post/${postId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -187,8 +187,8 @@ export const commentApi = {
   // 댓글 작성
   async createComment(postId, content) {
     try {
-      // ✅ 올바른 엔드포인트
-      const response = await fetch(`${API_BASE_URL}/comments`, {
+      // ✅ 백엔드 매핑 확인 필요
+      const response = await fetch(`${API_BASE_URL}/api/comments`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -219,8 +219,8 @@ export const likeApi = {
   // 게시글 좋아요 토글
   async togglePostLike(postId, likeType) {
     try {
-      // ✅ 올바른 엔드포인트
-      const response = await fetch(`${API_BASE_URL}/likes/posts`, {
+      // ✅ 백엔드 매핑 확인 필요
+      const response = await fetch(`${API_BASE_URL}/api/likes/posts`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -249,7 +249,7 @@ export const likeApi = {
   async toggleCommentLike(commentId, likeType) {
     try {
       // ✅ 올바른 엔드포인트
-      const response = await fetch(`${API_BASE_URL}/likes/comments`, {
+      const response = await fetch(`${API_BASE_URL}/api/likes/comments`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -277,7 +277,7 @@ export const likeApi = {
   // 게시글 좋아요 통계 조회
   async getPostLikeStats(postId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/likes/posts/${postId}?userId=${getCurrentUserId()}`, {
+      const response = await fetch(`${API_BASE_URL}/api/likes/posts/${postId}?userId=${getCurrentUserId()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -312,7 +312,7 @@ export const likeApi = {
   // 댓글 좋아요 통계 조회
   async getCommentLikeStats(commentId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/likes/comments/${commentId}?userId=${getCurrentUserId()}`, {
+      const response = await fetch(`${API_BASE_URL}/api/likes/comments/${commentId}?userId=${getCurrentUserId()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
