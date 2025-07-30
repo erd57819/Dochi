@@ -15,7 +15,7 @@ const getAuthHeaders = () => {
 // 현재 사용자 ID 가져오기
 const getCurrentUserId = () => {
   const user = useAuthStore.getState().user;
-  return user?.id || localStorage.getItem('userId') || 1;
+  return user?.id || localStorage.getItem('userId') || 2; // 데이터베이스에 존재하는 사용자 ID로 변경
 };
 
 // 날짜 포맷팅 함수
@@ -56,16 +56,37 @@ export const communityApi = {
       // 응답 데이터 구조 확인 및 변환
       const result = data.data || data;
       
+      // 각 게시글에 대해 좋아요 통계 조회
+      const postsWithLikes = await Promise.all(
+        (result.content || []).map(async (post) => {
+          try {
+            const likeStats = await likeApi.getPostLikeStats(post.id);
+            return {
+              ...post,
+              author: `사용자${post.userId}`, // 임시 작성자명
+              createdAt: formatDate(post.createdAt),
+              tags: post.tags ? post.tags.split(',') : [], // 태그 문자열을 배열로 변환
+              likeCount: likeStats.likeCount || 0,
+              dislikeCount: likeStats.dislikeCount || 0,
+              userLikeType: likeStats.userLikeType
+            };
+          } catch (error) {
+            console.warn(`게시글 ${post.id} 좋아요 통계 로드 실패:`, error);
+            return {
+              ...post,
+              author: `사용자${post.userId}`,
+              createdAt: formatDate(post.createdAt),
+              tags: post.tags ? post.tags.split(',') : [],
+              likeCount: 0,
+              dislikeCount: 0,
+              userLikeType: null
+            };
+          }
+        })
+      );
+
       return {
-        content: (result.content || []).map(post => ({
-          ...post,
-          author: `사용자${post.userId}`, // 임시 작성자명
-          createdAt: formatDate(post.createdAt),
-          tags: post.tags ? post.tags.split(',') : [], // 태그 문자열을 배열로 변환
-          likeCount: 0, // 초기값
-          dislikeCount: 0, // 초기값
-          userLikeType: null // 초기값
-        })),
+        content: postsWithLikes,
         totalPages: result.totalPages || 0,
         totalElements: result.totalElements || 0,
         pageNumber: result.pageNumber || 0
@@ -102,7 +123,26 @@ export const communityApi = {
       }
       
       // 백엔드 응답 구조에 맞게 수정
-      return data.data || data;
+      const post = data.data || data;
+      
+      // 게시글 좋아요 통계 로드
+      try {
+        const likeStats = await likeApi.getPostLikeStats(postId);
+        return {
+          ...post,
+          likeCount: likeStats.likeCount || 0,
+          dislikeCount: likeStats.dislikeCount || 0,
+          userLikeType: likeStats.userLikeType
+        };
+      } catch (error) {
+        console.warn('게시글 좋아요 통계 로드 실패:', error);
+        return {
+          ...post,
+          likeCount: 0,
+          dislikeCount: 0,
+          userLikeType: null
+        };
+      }
     } catch (error) {
       console.error('API: 게시글 상세 조회 에러:', error);
       throw error;
@@ -196,14 +236,34 @@ export const commentApi = {
       
       const comments = data.data || [];
       
-      return comments.map(comment => ({
-        ...comment,
-        author: comment.userName || `사용자${comment.userId}`,
-        createdAt: formatDate(comment.createdAt),
-        likeCount: 0, // 초기값
-        dislikeCount: 0, // 초기값
-        userLikeType: null // 초기값
-      }));
+      // 각 댓글에 대해 좋아요 통계 조회
+      const commentsWithLikes = await Promise.all(
+        comments.map(async (comment) => {
+          try {
+            const likeStats = await likeApi.getCommentLikeStats(comment.id);
+            return {
+              ...comment,
+              author: comment.userName || `사용자${comment.userId}`,
+              createdAt: formatDate(comment.createdAt),
+              likeCount: likeStats.likeCount || 0,
+              dislikeCount: likeStats.dislikeCount || 0,
+              userLikeType: likeStats.userLikeType
+            };
+          } catch (error) {
+            console.warn(`댓글 ${comment.id} 좋아요 통계 로드 실패:`, error);
+            return {
+              ...comment,
+              author: comment.userName || `사용자${comment.userId}`,
+              createdAt: formatDate(comment.createdAt),
+              likeCount: 0,
+              dislikeCount: 0,
+              userLikeType: null
+            };
+          }
+        })
+      );
+      
+      return commentsWithLikes;
     } catch (error) {
       console.error('댓글 조회 에러:', error);
       throw error;
