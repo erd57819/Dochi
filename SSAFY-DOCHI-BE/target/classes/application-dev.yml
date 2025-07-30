@@ -3,7 +3,6 @@ server:
 
 spring:
   datasource:
-<<<<<<< HEAD
     url: ${DB_URL:jdbc:mysql://localhost:3306/dochi}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:ssafy}
@@ -12,11 +11,43 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: ${REDIS_TIMEOUT:2000ms}
-=======
-    url: jdbc:mysql://localhost:3306/dochi
-    username: root
-    password: ssafy
->>>>>>> da60d044a823cd55845fe066e9fc642f5e24a7f4
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${EMAIL_USERNAME:}
+    password: ${EMAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET:default-secret-key}
+
+# 카카오 OAuth 설정  
+kakao:
+  rest:
+    api:
+      key: ${KAKAO_REST_API_KEY:}
+  redirect-uri: ${KAKAO_REDIRECT_URI:}
+  redirect-withdraw-uri: ${KAKAO_REDIRECT_WITHDRAW_URI:}
+
+# AWS S3 설정
+aws:
+  credentials:
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+  s3:
+    region: ${AWS_REGION:ap-northeast-2}
+    bucket: ${AWS_S3_BUCKET:}
+
+# 소셜 로그인 설정
+social:
+  default:
+    password: ${SOCIAL_PW:social_login}
 
 management:
   endpoints:

@@ -14,6 +14,8 @@ import VideoRoomPage from './pages/VideoRoomPage';
 import VoiceDemoPage from './pages/VoiceDemoPage';
 import STTPage from './pages/STTPage';
 import STTVideoRoomPage from './pages/STTVideoRoomPage';
+import ConflictListPage from './pages/ConflictListPage';
+import ConflictDetailPage from './pages/ConflictDetailPage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
 const App = () => {
@@ -31,7 +33,9 @@ const App = () => {
             <Route path="/community/create" element={<CreatePostPage />} />
             <Route path="/community/post/:postId" element={<PostDetailPage />} />
             <Route path="/service" element={<ConflictCreatePage />} />
-            <Route path="/conflict/create" element={<ConflictCreatePage />} />
+            <Route path="/conflicts/create" element={<ConflictCreatePage />} />
+            <Route path="/conflicts" element={<ConflictListPage />} />
+            <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call" element={<VideoCallRoom />} />
             <Route path="/voice-chat" element={<VoiceChatPage />} />
             <Route path="/video-room/:roomId" element={<VideoRoomPage />} />
