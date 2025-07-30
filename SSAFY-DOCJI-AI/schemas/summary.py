@@ -12,3 +12,8 @@ class SummaryRequest(BaseModel):
 
 class SummaryResponse(BaseModel):
     summary_text: str
+
+class AdvancedAnalysisRequest(BaseModel):
+    original_text: str
+    conflict_type: str
+    model_type: ModelType = ModelType.gpt
