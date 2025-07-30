@@ -52,7 +52,7 @@ social:
 # AI 서비스 설정
 ai:
   service:
-    url: ${AI_SERVICE_URL:http://localhost:8001}
+    url: ${AI_SERVICE_URL:http://localhost:8002}
 
 management:
   endpoints:

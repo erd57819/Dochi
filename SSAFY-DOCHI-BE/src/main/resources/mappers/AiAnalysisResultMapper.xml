@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.dochi.conflict.dao.AiAnalysisResultDao">
+
+    <resultMap id="AiAnalysisResultMap" type="com.ssafy.dochi.conflict.domain.AiAnalysisResult">
+        <id property="id" column="id"/>
+        <result property="conflictId" column="conflict_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="emotionAnalysis" column="emotion_analysis"/>
+        <result property="conflictAnalysis" column="conflict_analysis"/>
+        <result property="relationshipHealthScore" column="relationship_health_score"/>
+        <result property="trustScore" column="trust_score"/>
+        <result property="communicationScore" column="communication_score"/>
+        <result property="cooperationScore" column="cooperation_score"/>
+        <result property="priorityRecommendation" column="priority_recommendation"/>
+        <result property="recommendedActions" column="recommended_actions"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="save" parameterType="com.ssafy.dochi.conflict.domain.AiAnalysisResult" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_analysis_results (
+            conflict_id, user_id, emotion_analysis, conflict_analysis, relationship_health_score,
+            trust_score, communication_score, cooperation_score,
+            priority_recommendation, recommended_actions
+        )
+        VALUES (
+            #{conflictId}, #{userId}, #{emotionAnalysis}, #{conflictAnalysis}, #{relationshipHealthScore},
+            #{trustScore}, #{communicationScore}, #{cooperationScore},
+            #{priorityRecommendation}, #{recommendedActions}
+        )
+    </insert>
+
+    <select id="findById" resultMap="AiAnalysisResultMap">
+        SELECT * FROM ai_analysis_results WHERE id = #{id}
+    </select>
+
+    <select id="findByConflictId" resultMap="AiAnalysisResultMap">
+        SELECT * FROM ai_analysis_results WHERE conflict_id = #{conflictId}
+    </select>
+
+    <select id="findByUserId" resultMap="AiAnalysisResultMap">
+        SELECT * FROM ai_analysis_results 
+        WHERE user_id = #{userId} 
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="update">
+        UPDATE ai_analysis_results
+        SET emotion_analysis = #{emotionAnalysis},
+            conflict_analysis = #{conflictAnalysis},
+            relationship_health_score = #{relationshipHealthScore},
+            trust_score = #{trustScore},
+            communication_score = #{communicationScore},
+            cooperation_score = #{cooperationScore},
+            priority_recommendation = #{priorityRecommendation},
+            recommended_actions = #{recommendedActions},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM ai_analysis_results WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByConflictId">
+        DELETE FROM ai_analysis_results WHERE conflict_id = #{conflictId}
+    </delete>
+
+</mapper>

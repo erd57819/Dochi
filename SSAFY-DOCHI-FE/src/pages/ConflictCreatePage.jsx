@@ -24,6 +24,7 @@ const ConflictCreatePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [aiSummary, setAiSummary] = useState('');
   const [aiSolutions, setAiSolutions] = useState('');
+  const [advancedAnalysis, setAdvancedAnalysis] = useState(null);
   const [tempConflictId, setTempConflictId] = useState(null);
   const [currentStep, setCurrentStep] = useState(1); // 1: 작성, 2: AI 분석, 3: 최종 확인
 
@@ -93,6 +94,27 @@ const ConflictCreatePage = () => {
       
       setAiSummary(analysisData.summary || '요약을 생성할 수 없습니다.');
       setAiSolutions(analysisData.solutions || '해결방안을 생성할 수 없습니다.');
+      
+      // 고급 AI 분석도 함께 요청
+      try {
+        const advancedResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/${conflictId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+
+        if (advancedResponse.ok) {
+          const advancedResult = await advancedResponse.json();
+          const advancedData = advancedResult.data || advancedResult.response?.response;
+          setAdvancedAnalysis(advancedData);
+        }
+      } catch (error) {
+        console.error('고급 AI 분석 오류:', error);
+        // 고급 분석 실패해도 기본 분석은 표시
+      }
+      
       setCurrentStep(2); // AI 분석 결과 확인 단계로 이동
 
     } catch (error) {
@@ -103,7 +125,7 @@ const ConflictCreatePage = () => {
     }
   };
 
-  // 3단계: 최종 저장
+  // 3단계: 최종 저장 (고급 AI 분석 포함)
   const handleFinalSave = async () => {
     if (!tempConflictId) {
       alert('임시 저장된 갈등 데이터가 없습니다.');
@@ -112,21 +134,18 @@ const ConflictCreatePage = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/conflict/finalize/${tempConflictId}`, {
+      // 고급 AI 분석과 함께 갈등 데이터 저장
+      const response = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${tempConflictId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({
-          aiSummary: aiSummary,
-          aiSolutions: aiSolutions
-        })
+        }
       });
 
       if (response.ok) {
-        alert('갈등 카드가 성공적으로 생성되었습니다!');
-        navigate('/');
+        alert('갈등 카드가 성공적으로 생성되었습니다! 🦔');
+        navigate('/conflicts');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || '갈등 카드 생성에 실패했습니다.');
@@ -443,6 +462,149 @@ const ConflictCreatePage = () => {
                   <pre className="text-gray-700 whitespace-pre-line font-sans">{aiSolutions}</pre>
                 </div>
               </div>
+
+              {/* 고급 AI 분석 결과 */}
+              {advancedAnalysis && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">🔍 상세 AI 분석</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 감정 분석 */}
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-purple-800 mb-2">😊 감정 분석</h4>
+                      <p className="text-gray-700 text-sm">{advancedAnalysis.emotion_analysis || '분석 결과 없음'}</p>
+                    </div>
+
+                    {/* 갈등 분석 */}
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-red-800 mb-2">⚡ 갈등 분석</h4>
+                      <p className="text-gray-700 text-sm">{advancedAnalysis.conflict_analysis || '분석 결과 없음'}</p>
+                    </div>
+
+                    {/* 관계 건강도 */}
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-blue-800 mb-2">💙 관계 건강도</h4>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full" 
+                            style={{width: `${advancedAnalysis.relationship_health_score || 0}%`}}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium">{advancedAnalysis.relationship_health_score || 0}/100</span>
+                      </div>
+                    </div>
+
+                    {/* 신뢰도 */}
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-yellow-800 mb-2">🤝 신뢰도</h4>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-yellow-500 h-2 rounded-full" 
+                            style={{width: `${(advancedAnalysis.trust_score?.score || advancedAnalysis.trust_score || 0)}%`}}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium">{advancedAnalysis.trust_score?.score || advancedAnalysis.trust_score || 0}/100</span>
+                      </div>
+                      {advancedAnalysis.trust_score?.analysis && (
+                        <p className="text-xs text-gray-600">{advancedAnalysis.trust_score.analysis}</p>
+                      )}
+                    </div>
+
+                    {/* 소통 점수 */}
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-green-800 mb-2">💬 소통 점수</h4>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full" 
+                            style={{width: `${advancedAnalysis.communication_score || 0}%`}}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium">{advancedAnalysis.communication_score || 0}/100</span>
+                      </div>
+                    </div>
+
+                    {/* 협력 점수 */}
+                    <div className="bg-indigo-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-indigo-800 mb-2">🤝 협력 점수</h4>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-indigo-500 h-2 rounded-full" 
+                            style={{width: `${(advancedAnalysis.cooperation_score?.score || advancedAnalysis.cooperation_score || 0)}%`}}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium">{advancedAnalysis.cooperation_score?.score || advancedAnalysis.cooperation_score || 0}/100</span>
+                      </div>
+                      {advancedAnalysis.cooperation_score?.improvement_suggestions && (
+                        <p className="text-xs text-gray-600">
+                          개선 제안: {Array.isArray(advancedAnalysis.cooperation_score.improvement_suggestions) 
+                            ? advancedAnalysis.cooperation_score.improvement_suggestions.join(', ')
+                            : advancedAnalysis.cooperation_score.improvement_suggestions}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 우선순위 추천 및 권장 행동 */}
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-orange-800 mb-2">📋 우선순위 추천</h4>
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        advancedAnalysis.priority_recommendation === 'HIGH' ? 'bg-red-100 text-red-800' :
+                        advancedAnalysis.priority_recommendation === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {advancedAnalysis.priority_recommendation === 'HIGH' ? '높음' :
+                         advancedAnalysis.priority_recommendation === 'MEDIUM' ? '보통' : '낮음'}
+                      </span>
+                    </div>
+
+                    <div className="bg-teal-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-teal-800 mb-2">🎯 권장 행동</h4>
+                      <div className="space-y-1">
+                        {Array.isArray(advancedAnalysis.recommended_actions) ? 
+                          advancedAnalysis.recommended_actions.slice(0, 2).map((action, index) => (
+                            <div key={index} className="text-sm text-gray-700">• {action}</div>
+                          )) :
+                          <div className="text-sm text-gray-700">• {advancedAnalysis.recommended_actions}</div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 추가 서비스 버튼들 */}
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-gray-800 mb-3">🚀 추가 서비스</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <button 
+                        onClick={() => alert('화상 채팅 기능은 준비 중입니다! 🎥')}
+                        className="flex items-center justify-center gap-2 p-3 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
+                      >
+                        <span>🎥</span>
+                        <span className="font-medium">화상 채팅</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => alert('챗봇 상담 기능은 준비 중입니다! 🤖')}
+                        className="flex items-center justify-center gap-2 p-3 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
+                      >
+                        <span>🤖</span>
+                        <span className="font-medium">챗봇 상담</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => alert('전문가 매칭 기능은 준비 중입니다! 👨‍⚕️')}
+                        className="flex items-center justify-center gap-2 p-3 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors"
+                      >
+                        <span>👨‍⚕️</span>
+                        <span className="font-medium">전문가 매칭</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 2단계 버튼들 */}
               <div className="flex gap-4 pt-6">
