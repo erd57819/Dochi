@@ -54,6 +54,20 @@ services:
     networks:
       - dochi-network
 
+
+  #OpenVidu
+  openvidu-server:
+    image: openvidu/openvidu-server-kms
+    ports:
+      - "4443:4443"
+    environment:
+      - DOMAIN_OR_PUBLIC_IP=${DOMAIN_OR_PUBLIC_IP}
+      - CERTIFICATE_TYPE=${CERTIFICATE_TYPE}
+      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
+
+
+  # Spring Boot 백엔드
+
   # == BACKEND (Spring Boot) ==
   backend:
     build:
