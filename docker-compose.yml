@@ -79,9 +79,14 @@ services:
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AI_SERVICE_URL=http://ai-service:8002
     networks:
       - dochi-network
     restart: unless-stopped
+    depends_on:
+      - mysql
+      - redis
+      - ai-service
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -90,6 +95,26 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # == AI SERVICE (FastAPI) ==
+  ai-service:
+    build:
+      context: ./SSAFY-DOCJI-AI
+      dockerfile: Dockerfile
+    container_name: dochi-ai-service
+    ports:
+      - "8002:8002"
+    environment:
+      - GMS_KEY=${GMS_KEY}
+    networks:
+      - dochi-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # == FRONTEND (React) ==
   frontend:

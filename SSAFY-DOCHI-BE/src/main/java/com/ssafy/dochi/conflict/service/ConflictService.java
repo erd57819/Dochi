@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +36,58 @@ public class ConflictService {
     public AiAnalysisResDto analyzeConflict(String tempConflictId) {
         ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
         return aiSummaryService.generateAnalysis(conflictData.getDescription(), conflictData.getConflictType());
+    }
+    
+    /**
+     * 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - 임시 분석만 (저장 안함)
+     */
+    public Map<String, Object> analyzeConflictAdvanced(String tempConflictId) {
+        ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
+        return aiSummaryService.generateAdvancedAnalysis(conflictData.getDescription(), conflictData.getConflictType());
+    }
+    
+    /**
+     * 2-2단계: 고급 AI 분석 후 갈등 저장 및 분석 결과 MySQL 저장
+     */
+    public ConflictResDto analyzeAndSaveConflictAdvanced(Long userId, String tempConflictId) {
+        // Redis에서 갈등 데이터 조회
+        ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
+        
+        // 고급 AI 분석 수행
+        Map<String, Object> analysisResult = aiSummaryService.generateAdvancedAnalysis(
+            conflictData.getDescription(), conflictData.getConflictType());
+        
+        // 기본 AI 분석도 수행 (요약 및 해결방안)
+        AiAnalysisResDto basicAnalysis = aiSummaryService.generateAnalysis(
+            conflictData.getDescription(), conflictData.getConflictType());
+        
+        // UserConflict 객체 생성 (기본 분석 결과 포함)
+        UserConflict conflict = new UserConflict(
+            userId,
+            conflictData.getTitle(),
+            conflictData.getDescription(),
+            conflictData.getConflictType(),
+            conflictData.getConflictWhen(),
+            conflictData.getConflictFrequency(),
+            conflictData.getParticipants(),
+            conflictData.getDesiredOutcome(),
+            conflictData.getPriority(),
+            conflictData.getTalkWillingness(),
+            conflictData.getInitialEmotion(),
+            conflictData.getIntensity(),
+            basicAnalysis.getSummary() + "\n\n[해결방안]\n" + basicAnalysis.getSolutions()
+        );
+        
+        // 갈등 데이터를 MySQL에 저장
+        conflictDao.save(conflict);
+        
+        // 고급 AI 분석 결과를 MySQL에 저장
+        aiSummaryService.saveAdvancedAnalysisResult(conflict.getId(), userId, analysisResult);
+        
+        // Redis에서 임시 데이터 삭제
+        conflictRedisService.deleteTempConflict(tempConflictId);
+        
+        return ConflictResDto.from(conflict);
     }
     
     /**

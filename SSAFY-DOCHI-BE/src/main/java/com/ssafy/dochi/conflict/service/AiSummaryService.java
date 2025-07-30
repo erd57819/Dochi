@@ -1,7 +1,10 @@
 package com.ssafy.dochi.conflict.service;
 
+import com.ssafy.dochi.conflict.dao.AiAnalysisResultDao;
+import com.ssafy.dochi.conflict.domain.AiAnalysisResult;
 import com.ssafy.dochi.conflict.domain.UserConflict.ConflictType;
 import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -21,8 +25,10 @@ import java.util.Map;
 public class AiSummaryService {
     
     private final RestTemplate restTemplate = new RestTemplate();
+    private final AiAnalysisResultDao aiAnalysisResultDao;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     
-    @Value("${ai.service.url:http://localhost:8001}")
+    @Value("${ai.service.url:http://localhost:8002}")
     private String aiServiceUrl;
     
     public AiAnalysisResDto generateAnalysis(String description, ConflictType conflictType) {
@@ -68,6 +74,72 @@ public class AiSummaryService {
         } catch (Exception e) {
             log.error("AI 서비스 호출 실패: {}", e.getMessage());
             throw e;
+        }
+    }
+    
+    public Map<String, Object> generateAdvancedAnalysis(String description, ConflictType conflictType) {
+        try {
+            // AI 서비스에 고급 분석 요청
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("original_text", description);
+            requestBody.put("conflict_type", getKoreanConflictType(conflictType));
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                aiServiceUrl + "/api/summary/advanced", entity, Map.class);
+            
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                throw new RuntimeException("AI 고급 분석 서비스 응답 오류");
+            }
+        } catch (Exception e) {
+            log.error("AI 고급 분석 실패: {}", e.getMessage());
+            // 기본값 반환
+            Map<String, Object> fallback = new HashMap<>();
+            fallback.put("emotion_analysis", "감정 분석을 완료할 수 없습니다.");
+            fallback.put("conflict_analysis", "갈등 분석을 완료할 수 없습니다.");
+            fallback.put("relationship_health_score", 50);
+            fallback.put("trust_score", Map.of("score", 50, "analysis", "신뢰도 분석 불가"));
+            fallback.put("communication_score", 50);
+            fallback.put("cooperation_score", Map.of("score", 50, "improvement_suggestions", List.of("분석 불가")));
+            fallback.put("priority_recommendation", "MEDIUM");
+            fallback.put("recommended_actions", List.of("전문가 상담을 권장합니다."));
+            return fallback;
+        }
+    }
+    
+    /**
+     * 고급 AI 분석 결과를 MySQL에 저장
+     */
+    public void saveAdvancedAnalysisResult(Long conflictId, Long userId, Map<String, Object> analysisResult) {
+        try {
+            // 분석 결과에서 필요한 데이터 추출
+            String emotionAnalysis = (String) analysisResult.get("emotion_analysis");
+            String conflictAnalysis = (String) analysisResult.get("conflict_analysis");
+            Integer relationshipHealthScore = (Integer) analysisResult.get("relationship_health_score");
+            Integer communicationScore = (Integer) analysisResult.get("communication_score");
+            String priorityRecommendation = (String) analysisResult.get("priority_recommendation");
+            
+            // JSON 필드들을 문자열로 변환
+            String trustScore = objectMapper.writeValueAsString(analysisResult.get("trust_score"));
+            String cooperationScore = objectMapper.writeValueAsString(analysisResult.get("cooperation_score"));
+            String recommendedActions = objectMapper.writeValueAsString(analysisResult.get("recommended_actions"));
+            
+            // AiAnalysisResult 객체 생성 및 저장
+            AiAnalysisResult result = new AiAnalysisResult(
+                conflictId, userId, emotionAnalysis, conflictAnalysis, relationshipHealthScore,
+                trustScore, communicationScore, cooperationScore, priorityRecommendation, recommendedActions
+            );
+            
+            aiAnalysisResultDao.save(result);
+            log.info("AI 고급 분석 결과가 저장되었습니다. conflict_id: {}", conflictId);
+            
+        } catch (Exception e) {
+            log.error("AI 고급 분석 결과 저장 실패: {}", e.getMessage(), e);
         }
     }
     
