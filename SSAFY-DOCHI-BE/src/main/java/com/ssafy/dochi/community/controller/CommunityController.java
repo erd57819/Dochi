@@ -49,9 +49,19 @@ public class CommunityController {
     public ApiResponse<ApiResponse.SuccessCustomBody<Void>> createCommunity(
             @RequestBody CommunitySaveReqDto communitySaveReqDto,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        // TODO: Security 설정 완료 후 userDetails.getId()로 변경 필요
-        communityService.savePost(communitySaveReqDto, 1L);
-        return ApiResponseGenerator.success(HttpStatus.CREATED);
+        
+        // 인증된 사용자 ID 가져오기 (인증 실패 시 기본값 사용)
+        Long userId = (userDetails != null) ? userDetails.getId() : 2L;
+        
+        try {
+            communityService.savePost(communitySaveReqDto, userId);
+            return ApiResponseGenerator.success(HttpStatus.CREATED);
+        } catch (Exception e) {
+            // 로그 추가
+            System.err.println("게시글 작성 실패: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { communityApi } from '../services/communityApi';
 import useAuthStore from '../stores/AuthStore';
 
 const CreatePostPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoggedIn, user } = useAuthStore();
   
   const [formData, setFormData] = useState({
@@ -14,6 +15,18 @@ const CreatePostPage = () => {
   });
   
   const [isLoading, setIsLoading] = useState(false);
+
+  // 갈등 공유하기에서 전달된 데이터 처리
+  useEffect(() => {
+    const prefilledData = location.state?.prefilledData;
+    if (prefilledData) {
+      setFormData({
+        title: prefilledData.title || '',
+        content: prefilledData.content || '',
+        category: prefilledData.category || 'GENERAL'
+      });
+    }
+  }, [location.state]);
 
   const categories = [
     { value: 'GENERAL', label: '자유게시판' },
@@ -27,6 +40,9 @@ const CreatePostPage = () => {
     navigate('/login');
     return null;
   }
+
+  // 갈등 공유 게시글인지 확인
+  const isConflictSharingPost = formData.category === 'CONFLICT_SHARING';
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,17 +80,46 @@ const CreatePostPage = () => {
         {/* 헤더 */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
-              <span className="text-2xl">✍️</span>
+            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+              isConflictSharingPost ? 'bg-blue-100' : 'bg-orange-100'
+            }`}>
+              <span className="text-2xl">{isConflictSharingPost ? '📢' : '✍️'}</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">새 게시글 작성</h1>
-            <p className="text-gray-600">갈등 해결 경험과 조언을 커뮤니티와 나누어보세요</p>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              {isConflictSharingPost ? '갈등 상황 공유하기' : '새 게시글 작성'}
+            </h1>
+            <p className="text-gray-600">
+              {isConflictSharingPost 
+                ? '갈등 상황을 공유하고 커뮤니티의 조언을 구해보세요' 
+                : '갈등 해결 경험과 조언을 커뮤니티와 나누어보세요'
+              }
+            </p>
             {/* 작성자 정보 */}
             <p className="text-sm text-orange-600 mt-2">
               작성자: {user?.nickname || user?.name || user?.email}님
             </p>
           </div>
         </div>
+
+        {/* 갈등 공유 안내 */}
+        {isConflictSharingPost && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-lg p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xl">💡</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-blue-800 mb-2">갈등 공유 게시글 안내</h3>
+                <ul className="text-blue-700 space-y-1 text-sm">
+                  <li>• 개인정보나 실명은 절대 포함하지 마세요</li>
+                  <li>• 객관적이고 균형잡힌 시각으로 상황을 설명해주세요</li>
+                  <li>• 커뮤니티의 건설적인 조언을 기대할 수 있어요</li>
+                  <li>• A안/B안 형태의 투표로 다양한 의견을 수집할 수 있습니다</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 작성 폼 */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -149,13 +194,30 @@ const CreatePostPage = () => {
             </div>
 
             {/* 작성 가이드 */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2">💡 좋은 게시글 작성 팁</h3>
+            <div className={`border rounded-lg p-4 ${
+              isConflictSharingPost 
+                ? 'bg-blue-50 border-blue-200' 
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <h3 className="text-sm font-semibold text-blue-800 mb-2">
+                💡 {isConflictSharingPost ? '갈등 공유 게시글 작성 팁' : '좋은 게시글 작성 팁'}
+              </h3>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• 구체적이고 명확한 제목을 작성해주세요</li>
-                <li>• 상황을 자세히 설명하면 더 정확한 조언을 받을 수 있어요</li>
-                <li>• 다른 사람을 비방하거나 개인정보를 노출하지 마세요</li>
-                <li>• 긍정적이고 건설적인 내용으로 작성해주세요</li>
+                {isConflictSharingPost ? (
+                  <>
+                    <li>• 실명이나 구체적인 회사명 등 개인정보는 절대 포함하지 마세요</li>
+                    <li>• 객관적이고 균형잡힌 시각으로 상황을 설명해주세요</li>
+                    <li>• A안/B안 형태로 선택지를 제시하면 더 많은 의견을 받을 수 있어요</li>
+                    <li>• 감정적인 표현보다는 사실 중심으로 작성해주세요</li>
+                  </>
+                ) : (
+                  <>
+                    <li>• 구체적이고 명확한 제목을 작성해주세요</li>
+                    <li>• 상황을 자세히 설명하면 더 정확한 조언을 받을 수 있어요</li>
+                    <li>• 다른 사람을 비방하거나 개인정보를 노출하지 마세요</li>
+                    <li>• 긍정적이고 건설적인 내용으로 작성해주세요</li>
+                  </>
+                )}
               </ul>
             </div>
 
@@ -193,10 +255,10 @@ const CreatePostPage = () => {
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    작성 중...
+                    {isConflictSharingPost ? '공유 중...' : '작성 중...'}
                   </div>
                 ) : (
-                  '게시글 작성'
+                  isConflictSharingPost ? '갈등 상황 공유하기' : '게시글 작성'
                 )}
               </button>
             </div>
