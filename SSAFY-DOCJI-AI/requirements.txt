@@ -1,5 +1,9 @@
 fastapi
 uvicorn
 pydantic-settings
-openai
 python-multipart
+requests
+python-dotenv
+pydub
+ffmpeg-python
+openai
