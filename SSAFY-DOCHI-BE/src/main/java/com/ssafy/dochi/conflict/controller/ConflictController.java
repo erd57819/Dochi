@@ -8,6 +8,7 @@ import com.ssafy.dochi.conflict.dto.request.ConflictSummaryReqDto;
 import com.ssafy.dochi.conflict.dto.request.FinalizeConflictReqDto;
 import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
 import com.ssafy.dochi.conflict.dto.response.ConflictResDto;
+import com.ssafy.dochi.conflict.domain.AiAnalysisResult;
 import com.ssafy.dochi.conflict.service.ConflictService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -44,6 +46,27 @@ public class ConflictController {
         
         AiAnalysisResDto response = conflictService.analyzeConflict(tempConflictId);
         return ApiResponseGenerator.success(response, HttpStatus.OK);
+    }
+    
+    // 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - 임시 분석만
+    @PostMapping("/analyze/advanced/{tempConflictId}")
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> analyzeConflictAdvanced(
+            @PathVariable String tempConflictId) {
+        
+        Map<String, Object> response = conflictService.analyzeConflictAdvanced(tempConflictId);
+        return ApiResponseGenerator.success(response, HttpStatus.OK);
+    }
+    
+    // 2-2단계: 고급 AI 분석 후 갈등 저장 및 분석 결과 MySQL 저장
+    @PostMapping("/analyze/advanced/save/{tempConflictId}")
+    public ApiResponse<ApiResponse.SuccessCustomBody<ConflictResDto>> analyzeAndSaveConflictAdvanced(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable String tempConflictId) {
+        
+        // 테스트용: 인증 없을 때 기본 사용자 ID 사용
+        Long userId = (user != null) ? user.getId() : 2L;
+        ConflictResDto response = conflictService.analyzeAndSaveConflictAdvanced(userId, tempConflictId);
+        return ApiResponseGenerator.success(response, HttpStatus.CREATED);
     }
     
     // 3단계: AI 분석 완료 후 최종 SQL 저장
@@ -121,5 +144,15 @@ public class ConflictController {
         
         Integer count = conflictService.getUserConflictCount(user.getId());
         return ApiResponseGenerator.success(count, HttpStatus.OK);
+    }
+    
+    // 갈등의 AI 분석 결과 조회
+    @GetMapping("/{conflictId}/analysis")
+    public ApiResponse<ApiResponse.SuccessCustomBody<AiAnalysisResult>> getConflictAnalysis(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long conflictId) {
+        
+        AiAnalysisResult analysis = conflictService.getConflictAnalysis(conflictId, user.getId());
+        return ApiResponseGenerator.success(analysis, HttpStatus.OK);
     }
 }
