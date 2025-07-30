@@ -10,7 +10,7 @@ import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
 import './App.css';
-
+import VideoCallRoom from './components/VideoCallRoom';
 const App = () => {
   return (
     <Router>
@@ -27,6 +27,7 @@ const App = () => {
             <Route path="/community/post/:postId" element={<PostDetailPage />} />
             <Route path="/service" element={<ConflictCreatePage />} />
             <Route path="/conflict/create" element={<ConflictCreatePage />} />
+            <Route path="/video-call" element={<VideoCallRoom />} />
           </Routes>
         </main>
       </div>
