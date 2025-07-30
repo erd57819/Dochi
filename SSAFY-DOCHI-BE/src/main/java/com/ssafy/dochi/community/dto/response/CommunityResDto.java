@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class CommunityResDto {
     private Long id;
     private Long userId;
+    private String author;
     private String category;
     private String title;
     private String content;

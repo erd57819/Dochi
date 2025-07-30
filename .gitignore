@@ -150,3 +150,19 @@ sketch
 # 프로젝트 설정용 환경변수 파일은 외부 노출 방지를 위해 무시
 ../.env
 .env
+.env-prod
+.env.local
+.env.production
+
+# === 운영 환경 관련 ===
+# 운영 환경에서 생성되는 데이터 및 로그 파일들
+data/
+logs/
+ssl/
+*.pem
+*.key
+backup_*.sql
+
+# === Docker 관련 ===
+# Docker 볼륨 및 임시 파일들
+.docker/
