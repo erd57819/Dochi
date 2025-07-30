@@ -114,34 +114,60 @@ export const communityApi = {
     try {
       console.log('🚀 게시글 작성 요청:', postData);
       console.log('🌐 API_BASE_URL:', API_BASE_URL);
-      console.log('🔑 인증 헤더:', getAuthHeaders());
+      
+      const headers = getAuthHeaders();
+      console.log('🔑 인증 헤더:', headers);
       
       // ✅ 백엔드 매핑과 일치하도록 수정 (/api/community)
       const url = `${API_BASE_URL}/api/community`;
       console.log('📡 게시글 작성 URL:', url);
       
+      const requestBody = {
+        title: postData.title,
+        content: postData.content,
+        category: postData.category || 'GENERAL'
+      };
+      console.log('📝 요청 본문:', requestBody);
+      
       const response = await fetch(url, {
         method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          title: postData.title,
-          content: postData.content,
-          category: postData.category || 'GENERAL'
-        })
+        headers: headers,
+        body: JSON.stringify(requestBody)
       });
 
-      console.log('📊 게시글 작성 응답 상태:', response.status);
-      
-      const data = await response.json();
-      console.log('📋 게시글 작성 API 응답:', data);
+      console.log('📊 게시글 작성 응답 상태:', response.status, response.statusText);
       
       if (!response.ok) {
-        throw new Error(data.message || '게시글 작성 실패');
+        // 응답이 JSON이 아닐 수 있으므로 안전하게 처리
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('❌ 에러 응답 데이터:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
+          // 응답 본문을 텍스트로 읽어보기
+          try {
+            const errorText = await response.text();
+            console.log('❌ 에러 응답 텍스트:', errorText);
+            if (errorText) errorMessage = errorText;
+          } catch (textError) {
+            console.warn('에러 응답을 텍스트로도 읽을 수 없음:', textError);
+          }
+        }
+        throw new Error(errorMessage);
       }
+      
+      const data = await response.json();
+      console.log('✅ 게시글 작성 성공 응답:', data);
       
       return data;
     } catch (error) {
       console.error('❌ 게시글 작성 에러:', error);
+      // 네트워크 에러나 기타 에러 정보 추가
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+      }
       throw error;
     }
   }
