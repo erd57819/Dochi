@@ -7,8 +7,10 @@ import SignupPage from './pages/SignupPage';
 import NoticePage from './pages/NoticePage';
 import CommunityPage from './pages/CommunityPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
+import ComfortPage from './pages/ComfortPage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
+
 const App = () => {
   return (
     <Router>
@@ -24,6 +26,7 @@ const App = () => {
             <Route path="/service" element={<ConflictCreatePage />} />
             <Route path="/conflict/create" element={<ConflictCreatePage />} />
             <Route path="/video-call" element={<VideoCallRoom />} />
+            <Route path="/comfort" element={<ComfortPage />} />
           </Routes>
         </main>
       </div>
