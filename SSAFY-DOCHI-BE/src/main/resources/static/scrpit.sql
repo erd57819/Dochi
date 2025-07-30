@@ -52,7 +52,6 @@ CREATE TABLE `user_sessions` (
     `session_id`      VARCHAR(255)    NOT NULL UNIQUE COMMENT '세션 고유 ID',
     `user_id`         BIGINT          NOT NULL COMMENT '사용자 ID (FK)',
     `expires_at`      DATETIME        NOT NULL COMMENT '만료일시',
-    `last_activity`   DATETIME        NULL COMMENT '마지막 활동 시간',
     `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );

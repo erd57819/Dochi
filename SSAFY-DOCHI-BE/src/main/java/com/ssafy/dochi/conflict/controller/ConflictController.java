@@ -8,6 +8,7 @@ import com.ssafy.dochi.conflict.dto.request.ConflictSummaryReqDto;
 import com.ssafy.dochi.conflict.dto.request.FinalizeConflictReqDto;
 import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
 import com.ssafy.dochi.conflict.dto.response.ConflictResDto;
+import com.ssafy.dochi.conflict.domain.AiAnalysisResult;
 import com.ssafy.dochi.conflict.service.ConflictService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -143,5 +144,15 @@ public class ConflictController {
         
         Integer count = conflictService.getUserConflictCount(user.getId());
         return ApiResponseGenerator.success(count, HttpStatus.OK);
+    }
+    
+    // 갈등의 AI 분석 결과 조회
+    @GetMapping("/{conflictId}/analysis")
+    public ApiResponse<ApiResponse.SuccessCustomBody<AiAnalysisResult>> getConflictAnalysis(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long conflictId) {
+        
+        AiAnalysisResult analysis = conflictService.getConflictAnalysis(conflictId, user.getId());
+        return ApiResponseGenerator.success(analysis, HttpStatus.OK);
     }
 }

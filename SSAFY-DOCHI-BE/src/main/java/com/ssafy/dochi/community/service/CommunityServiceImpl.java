@@ -7,7 +7,9 @@ import com.ssafy.dochi.community.dto.request.CommunityUpdateReqDto;
 import com.ssafy.dochi.community.dto.response.CommunityPageResDto;
 import com.ssafy.dochi.community.dto.response.CommunityResDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -81,10 +84,45 @@ public class CommunityServiceImpl implements CommunityService {
      * @return 조회된 게시글 정보
      */
     @Override
-    @Transactional(readOnly = true)
     public CommunityResDto findPostById(Long communityId) {
-        communityDao.incrementViewCount(communityId);
+        // 먼저 게시글 조회 (읽기 전용)
+        CommunityResDto post = findPostByIdReadOnly(communityId);
+
+        if (post == null) {
+            throw new RuntimeException("게시글을 찾을 수 없습니다.");
+        }
+
+        // 조회수 증가를 별도 트랜잭션으로 비동기 처리
+        try {
+            incrementViewCountSeparately(communityId);
+        } catch (Exception e) {
+            // 조회수 증가 실패해도 게시글 조회는 성공으로 처리
+            log.warn("조회수 증가 실패 - 게시글 ID: {}, 오류: {}", communityId, e.getMessage());
+        }
+
+        return post;
+    }
+
+    /**
+     * 게시글 조회만 수행 (읽기 전용)
+     */
+    @Transactional(readOnly = true)
+    private CommunityResDto findPostByIdReadOnly(Long communityId) {
         return communityDao.findById(communityId);
+    }
+
+    /**
+     * 조회수 증가를 별도 트랜잭션으로 처리
+     * REQUIRES_NEW를 사용하여 새로운 트랜잭션에서 실행
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private void incrementViewCountSeparately(Long communityId) {
+        try {
+            communityDao.incrementViewCount(communityId);
+        } catch (Exception e) {
+            log.error("조회수 증가 실패 - 게시글 ID: {}", communityId, e);
+            throw e;
+        }
     }
 
     /**

@@ -1,7 +1,9 @@
 package com.ssafy.dochi.conflict.service;
 
 import com.ssafy.dochi.conflict.dao.ConflictDao;
+import com.ssafy.dochi.conflict.dao.AiAnalysisResultDao;
 import com.ssafy.dochi.conflict.domain.UserConflict;
+import com.ssafy.dochi.conflict.domain.AiAnalysisResult;
 import com.ssafy.dochi.conflict.dto.request.ConflictCreateReqDto;
 import com.ssafy.dochi.conflict.dto.request.ConflictSummaryReqDto;
 import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 public class ConflictService {
     
     private final ConflictDao conflictDao;
+    private final AiAnalysisResultDao aiAnalysisResultDao;
     private final AiSummaryService aiSummaryService;
     private final ConflictRedisService conflictRedisService;
     
@@ -190,5 +193,21 @@ public class ConflictService {
     @Transactional(readOnly = true)
     public int getUserConflictCount(Long userId) {
         return conflictDao.countByUserId(userId);
+    }
+    
+    // 갈등의 AI 분석 결과 조회
+    @Transactional(readOnly = true)
+    public AiAnalysisResult getConflictAnalysis(Long conflictId, Long userId) {
+        // 갈등 소유권 확인
+        UserConflict conflict = conflictDao.findById(conflictId)
+            .orElseThrow(() -> new IllegalArgumentException("갈등을 찾을 수 없습니다."));
+        
+        if (!conflict.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("접근 권한이 없습니다.");
+        }
+        
+        // AI 분석 결과 조회
+        return aiAnalysisResultDao.findByConflictId(conflictId)
+            .orElse(null); // 분석 결과가 없으면 null 반환
     }
 }
