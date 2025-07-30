@@ -63,7 +63,7 @@ export const communityApi = {
             const likeStats = await likeApi.getPostLikeStats(post.id);
             return {
               ...post,
-              author: `사용자${post.userId}`, // 임시 작성자명
+              author: post.author || `사용자${post.userId}`,
               createdAt: formatDate(post.createdAt),
               tags: post.tags ? post.tags.split(',') : [], // 태그 문자열을 배열로 변환
               likeCount: likeStats.likeCount || 0,
@@ -74,7 +74,7 @@ export const communityApi = {
             console.warn(`게시글 ${post.id} 좋아요 통계 로드 실패:`, error);
             return {
               ...post,
-              author: `사용자${post.userId}`,
+              author: post.author || `사용자${post.userId}`,
               createdAt: formatDate(post.createdAt),
               tags: post.tags ? post.tags.split(',') : [],
               likeCount: 0,
