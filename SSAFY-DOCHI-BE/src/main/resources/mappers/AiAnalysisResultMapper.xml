@@ -13,13 +13,10 @@
         <result property="conflictAnalysis" column="conflict_analysis"/>
         <result property="relationshipHealthScore" column="relationship_health_score"/>
         <result property="trustScore" column="trust_score"/>
-        <result property="trustAnalysis" column="trust_analysis"/>
         <result property="communicationScore" column="communication_score"/>
         <result property="cooperationScore" column="cooperation_score"/>
-        <result property="cooperationSuggestions" column="cooperation_suggestions"/>
         <result property="priorityRecommendation" column="priority_recommendation"/>
         <result property="recommendedActions" column="recommended_actions"/>
-        <result property="rawAnalysisJson" column="raw_analysis_json"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
@@ -27,13 +24,13 @@
     <insert id="save" parameterType="com.ssafy.dochi.conflict.domain.AiAnalysisResult" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO ai_analysis_results (
             conflict_id, user_id, emotion_analysis, conflict_analysis, relationship_health_score,
-            trust_score, trust_analysis, communication_score, cooperation_score, cooperation_suggestions,
-            priority_recommendation, recommended_actions, raw_analysis_json
+            trust_score, communication_score, cooperation_score,
+            priority_recommendation, recommended_actions
         )
         VALUES (
             #{conflictId}, #{userId}, #{emotionAnalysis}, #{conflictAnalysis}, #{relationshipHealthScore},
-            #{trustScore}, #{trustAnalysis}, #{communicationScore}, #{cooperationScore}, #{cooperationSuggestions},
-            #{priorityRecommendation}, #{recommendedActions}, #{rawAnalysisJson}
+            #{trustScore}, #{communicationScore}, #{cooperationScore},
+            #{priorityRecommendation}, #{recommendedActions}
         )
     </insert>
 
@@ -57,13 +54,10 @@
             conflict_analysis = #{conflictAnalysis},
             relationship_health_score = #{relationshipHealthScore},
             trust_score = #{trustScore},
-            trust_analysis = #{trustAnalysis},
             communication_score = #{communicationScore},
             cooperation_score = #{cooperationScore},
-            cooperation_suggestions = #{cooperationSuggestions},
             priority_recommendation = #{priorityRecommendation},
             recommended_actions = #{recommendedActions},
-            raw_analysis_json = #{rawAnalysisJson},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>

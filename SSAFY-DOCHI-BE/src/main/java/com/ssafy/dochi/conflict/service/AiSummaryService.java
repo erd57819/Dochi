@@ -121,32 +121,18 @@ public class AiSummaryService {
             String emotionAnalysis = (String) analysisResult.get("emotion_analysis");
             String conflictAnalysis = (String) analysisResult.get("conflict_analysis");
             Integer relationshipHealthScore = (Integer) analysisResult.get("relationship_health_score");
-            
-            // trust_score 처리
-            Map<String, Object> trustData = (Map<String, Object>) analysisResult.get("trust_score");
-            Integer trustScore = trustData != null ? (Integer) trustData.get("score") : 50;
-            String trustAnalysis = trustData != null ? (String) trustData.get("analysis") : "신뢰도 분석 불가";
-            
             Integer communicationScore = (Integer) analysisResult.get("communication_score");
-            
-            // cooperation_score 처리
-            Map<String, Object> cooperationData = (Map<String, Object>) analysisResult.get("cooperation_score");
-            Integer cooperationScore = cooperationData != null ? (Integer) cooperationData.get("score") : 50;
-            List<String> suggestions = cooperationData != null ? (List<String>) cooperationData.get("improvement_suggestions") : List.of("분석 불가");
-            String cooperationSuggestions = String.join(", ", suggestions);
-            
             String priorityRecommendation = (String) analysisResult.get("priority_recommendation");
-            List<String> actions = (List<String>) analysisResult.get("recommended_actions");
-            String recommendedActions = actions != null ? String.join(", ", actions) : "전문가 상담 권장";
             
-            // 전체 JSON을 문자열로 저장
-            String rawAnalysisJson = objectMapper.writeValueAsString(analysisResult);
+            // JSON 필드들을 문자열로 변환
+            String trustScore = objectMapper.writeValueAsString(analysisResult.get("trust_score"));
+            String cooperationScore = objectMapper.writeValueAsString(analysisResult.get("cooperation_score"));
+            String recommendedActions = objectMapper.writeValueAsString(analysisResult.get("recommended_actions"));
             
             // AiAnalysisResult 객체 생성 및 저장
             AiAnalysisResult result = new AiAnalysisResult(
                 conflictId, userId, emotionAnalysis, conflictAnalysis, relationshipHealthScore,
-                trustScore, trustAnalysis, communicationScore, cooperationScore, cooperationSuggestions,
-                priorityRecommendation, recommendedActions, rawAnalysisJson
+                trustScore, communicationScore, cooperationScore, priorityRecommendation, recommendedActions
             );
             
             aiAnalysisResultDao.save(result);

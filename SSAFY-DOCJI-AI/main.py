@@ -9,6 +9,8 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:5173", # 리액트 개발 서버의 주소
+    "http://localhost:8090", # nginx 프록시 주소
+    "http://localhost:8080", # 백엔드 주소
 ]
 
 app.add_middleware(
@@ -25,3 +27,7 @@ app.include_router(summary.router)
 @app.get("/")
 def read_root():
     return {"message": "Summarization API Server is running"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "ai-service"}
