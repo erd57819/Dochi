@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore';
 import { communityApi, likeApi } from '../services/communityApi';
-import CreatePostModal from '../components/CreatePostModal';
-import PostDetailModal from '../components/PostDetailModal';
 
 const CommunityPage = () => {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   
@@ -90,15 +86,9 @@ const CommunityPage = () => {
     }
   };
 
-  // 게시글 클릭 시 상세보기
+  // 게시글 클릭 시 상세보기 페이지로 이동
   const handlePostClick = (postId) => {
-    setSelectedPostId(postId);
-    setIsDetailModalOpen(true);
-  };
-
-  // 게시글 작성 완료 후 목록 새로고침
-  const handlePostCreated = () => {
-    fetchPosts(currentPage, selectedCategory);
+    navigate(`/community/post/${postId}`);
   };
 
   // 페이지 변경
@@ -121,56 +111,94 @@ const CommunityPage = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* 헤더 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">갈등도치 커뮤니티</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">💬</span>
+                </div>
+                <h1 className="text-2xl font-bold text-gray-800">갈등도치 커뮤니티</h1>
+              </div>
               <p className="text-gray-600">갈등 해결 경험과 조언을 나누어요</p>
               {/* 로그인 상태 표시 */}
               {isLoggedIn && user && (
-                <p className="text-sm text-orange-600 mt-1">
-                  {user.name || user.email}님 환영합니다!
+                <p className="text-sm text-orange-600 mt-2">
+                  <span className="font-semibold">{user.nickname || user.name || user.email}</span>도치님 환영합니다! 🦔
                 </p>
               )}
             </div>
             {isLoggedIn ? (
-              <button 
-                onClick={() => setIsCreateModalOpen(true)}
-                className="bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-              >
-                글쓰기
-              </button>
-            ) : (
               <Link 
-                to="/login"
-                className="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+                to="/community/create"
+                className="bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2"
               >
-                로그인하여 글쓰기
+                <span className="text-lg">✍️</span>
+                글쓰기
               </Link>
+            ) : (
+              <div className="text-center">
+                <Link 
+                  to="/login"
+                  className="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors block mb-2"
+                >
+                  로그인하여 글쓰기
+                </Link>
+                <p className="text-xs text-gray-500">로그인 후 참여하세요</p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* 나머지 코드는 동일... */}
+        {/* 통계 및 정보 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 text-center">
+            <div className="text-2xl font-bold text-orange-500">{posts.length}</div>
+            <div className="text-sm text-gray-600">오늘의 게시글</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4 text-center">
+            <div className="text-2xl font-bold text-blue-500">156</div>
+            <div className="text-sm text-gray-600">활성 사용자</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4 text-center">
+            <div className="text-2xl font-bold text-green-500">89%</div>
+            <div className="text-sm text-gray-600">해결률</div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* 사이드바 - 카테고리 */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-4 sticky top-4">
-              <h3 className="font-semibold text-gray-800 mb-3">카테고리</h3>
-              <div className="space-y-1">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-4">
+              <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="text-lg">📂</span>
+                카테고리
+              </h3>
+              <div className="space-y-2">
                 {categories.map(category => (
                   <button
                     key={category.value}
                     onClick={() => handleCategoryChange(category.value)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all ${
                       selectedCategory === category.value
-                        ? 'bg-orange-500 text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-orange-500 text-white shadow-md transform scale-105'
+                        : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
                     }`}
                   >
                     {category.label}
                   </button>
                 ))}
+              </div>
+              
+              {/* 커뮤니티 가이드 */}
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">💡 커뮤니티 가이드</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• 서로 존중하는 대화</li>
+                  <li>• 건설적인 조언 나누기</li>
+                  <li>• 개인정보 보호하기</li>
+                  <li>• 긍정적인 해결책 제시</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -179,62 +207,85 @@ const CommunityPage = () => {
           <div className="lg:col-span-3">
             <div className="space-y-4">
               {posts.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                  <div className="text-4xl mb-4">💬</div>
-                  <p className="text-gray-600">해당 카테고리의 게시글이 없습니다.</p>
-                  {!isLoggedIn && (
-                    <div className="mt-4">
-                      <Link 
-                        to="/login"
-                        className="text-orange-500 hover:text-orange-600"
-                      >
-                        로그인하고 첫 게시글을 작성해보세요!
-                      </Link>
-                    </div>
+                <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                  <div className="text-6xl mb-4">📝</div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    해당 카테고리의 게시글이 없습니다
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    첫 번째 게시글을 작성해보세요!
+                  </p>
+                  {isLoggedIn ? (
+                    <Link 
+                      to="/community/create"
+                      className="inline-block bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+                    >
+                      첫 게시글 작성하기
+                    </Link>
+                  ) : (
+                    <Link 
+                      to="/login"
+                      className="inline-block text-orange-500 hover:text-orange-600 font-medium"
+                    >
+                      로그인하고 첫 게시글을 작성해보세요! →
+                    </Link>
                   )}
                 </div>
               ) : (
                 posts.map(post => (
                   <div 
                     key={post.id} 
-                    className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
+                    className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
                     onClick={() => handlePostClick(post.id)}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full font-medium">
                           {categories.find(cat => cat.value === post.category)?.label || post.category}
                         </span>
-                        <span className="text-xs text-gray-500">{post.author || '익명'}</span>
-                        <span className="text-xs text-gray-400">•</span>
-                        <span className="text-xs text-gray-500">{post.createdAt}</span>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-medium text-orange-600">
+                              {(post.author || '익명').charAt(0)}
+                            </span>
+                          </div>
+                          <span className="font-medium">{post.author || '익명'}</span>
+                          <span className="text-gray-400">•</span>
+                          <span>{post.createdAt}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <span>👁</span>
+                        <span>{post.viewCount || 0}</span>
                       </div>
                     </div>
                     
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2 hover:text-orange-500">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 hover:text-orange-500 transition-colors line-clamp-2">
                       {post.title}
                     </h3>
                     
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
                       {post.content}
                     </p>
                     
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span>👁 {post.viewCount || 0}</span>
-                        <span>💬 {post.commentCount || 0}</span>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <span>💬</span>
+                          <span>{post.commentCount || 0}</span>
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={(e) => handlePostLike(post.id, 'LIKE', e)}
                           disabled={!isLoggedIn}
-                          className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors ${
+                          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
                             !isLoggedIn 
                               ? 'text-gray-300 cursor-not-allowed'
                               : post.userLikeType === 'LIKE'
-                              ? 'bg-orange-100 text-orange-600'
-                              : 'text-gray-400 hover:text-orange-500'
+                              ? 'bg-orange-100 text-orange-600 shadow-sm'
+                              : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'
                           }`}
                         >
                           👍 {post.likeCount || 0}
@@ -242,12 +293,12 @@ const CommunityPage = () => {
                         <button 
                           onClick={(e) => handlePostLike(post.id, 'DISLIKE', e)}
                           disabled={!isLoggedIn}
-                          className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors ${
+                          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
                             !isLoggedIn 
                               ? 'text-gray-300 cursor-not-allowed'
                               : post.userLikeType === 'DISLIKE'
-                              ? 'bg-red-100 text-red-600'
-                              : 'text-gray-400 hover:text-red-500'
+                              ? 'bg-red-100 text-red-600 shadow-sm'
+                              : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
                           }`}
                         >
                           👎 {post.dislikeCount || 0}
@@ -266,7 +317,7 @@ const CommunityPage = () => {
                   <button 
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 0}
-                    className="px-3 py-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
+                    className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-orange-500 disabled:text-gray-300 transition-colors"
                   >
                     ←
                   </button>
@@ -275,10 +326,10 @@ const CommunityPage = () => {
                     <button
                       key={i}
                       onClick={() => handlePageChange(i)}
-                      className={`px-3 py-2 rounded ${
+                      className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
                         currentPage === i
-                          ? 'bg-orange-500 text-white'
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-orange-500 text-white shadow-md'
+                          : 'text-gray-500 hover:text-orange-500 hover:bg-orange-50'
                       }`}
                     >
                       {i + 1}
@@ -288,30 +339,26 @@ const CommunityPage = () => {
                   <button 
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages - 1}
-                    className="px-3 py-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
+                    className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-orange-500 disabled:text-gray-300 transition-colors"
                   >
                     →
                   </button>
                 </div>
               </div>
             )}
+
+            {/* 글쓰기 플로팅 버튼 (모바일) */}
+            {isLoggedIn && (
+              <Link
+                to="/community/create"
+                className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-orange-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-orange-600 transition-all z-10"
+              >
+                ✍️
+              </Link>
+            )}
           </div>
         </div>
       </div>
-
-      {/* 게시글 작성 모달 */}
-      <CreatePostModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onPostCreated={handlePostCreated}
-      />
-
-      {/* 게시글 상세보기 모달 */}
-      <PostDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        postId={selectedPostId}
-      />
     </div>
   );
 };

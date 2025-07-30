@@ -3,7 +3,9 @@ import useAuthStore from '../stores/AuthStore.js';
 
 // 인증 헤더 생성
 const getAuthHeaders = () => {
-  const token = useAuthStore.getState().token || localStorage.getItem('token');
+  // ✅ 올바른 토큰 키 (accessToken)
+  const token = localStorage.getItem('accessToken') || useAuthStore.getState().token;
+  console.log('🔐 사용 중인 토큰:', token ? '토큰 있음' : '토큰 없음');
   return {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` })
@@ -35,7 +37,14 @@ export const communityApi = {
         ...(category && { category })
       });
       
-      const response = await fetch(`${API_BASE_URL}/api/community?${params}`);
+      // ✅ 올바른 엔드포인트 (백엔드 매핑과 일치)
+      const response = await fetch(`${API_BASE_URL}/community?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       
       console.log('게시글 목록 API 응답:', data);
@@ -67,37 +76,51 @@ export const communityApi = {
     }
   },
 
-// 게시글 상세 조회 - 디버깅 강화
-async getPost(postId) {
-  try {
-    console.log('API: 게시글 상세 조회 시작, postId:', postId);
-    const url = `${API_BASE_URL}/api/community/${postId}`;
-    console.log('API: 요청 URL:', url);
-    
-    const response = await fetch(url);
-    console.log('API: 응답 상태:', response.status, response.statusText);
-    
-    const data = await response.json();
-    console.log('API: 응답 데이터 전체:', data);
-    console.log('API: 응답 구조 - success:', data.success);
-    console.log('API: 응답 구조 - data:', data.data);
-    
-    if (!response.ok) {
-      throw new Error(data.message || `HTTP Error: ${response.status}`);
+  // 게시글 상세 조회
+  async getPost(postId) {
+    try {
+      console.log('API: 게시글 상세 조회 시작, postId:', postId);
+      
+      // ✅ 올바른 엔드포인트
+      const url = `${API_BASE_URL}/community/${postId}`;
+      console.log('API: 요청 URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('API: 응답 상태:', response.status, response.statusText);
+      
+      const data = await response.json();
+      console.log('API: 응답 데이터 전체:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP Error: ${response.status}`);
+      }
+      
+      // 백엔드 응답 구조에 맞게 수정
+      return data.data || data;
+    } catch (error) {
+      console.error('API: 게시글 상세 조회 에러:', error);
+      throw error;
     }
-    
-    // 백엔드 응답 구조에 맞게 수정
-    return data.data; // 또는 data가 직접 게시글 데이터일 수 있음
-  } catch (error) {
-    console.error('API: 게시글 상세 조회 에러:', error);
-    throw error;
-  }
-},
+  },
 
   // 게시글 작성
   async createPost(postData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/community`, {
+      console.log('🚀 게시글 작성 요청:', postData);
+      console.log('🌐 API_BASE_URL:', API_BASE_URL);
+      console.log('🔑 인증 헤더:', getAuthHeaders());
+      
+      // ✅ 올바른 엔드포인트 (백엔드 @RequestMapping("/community")와 일치)
+      const url = `${API_BASE_URL}/community`;
+      console.log('📡 게시글 작성 URL:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -107,9 +130,10 @@ async getPost(postId) {
         })
       });
 
-      const data = await response.json();
+      console.log('📊 게시글 작성 응답 상태:', response.status);
       
-      console.log('게시글 작성 API 응답:', data);
+      const data = await response.json();
+      console.log('📋 게시글 작성 API 응답:', data);
       
       if (!response.ok) {
         throw new Error(data.message || '게시글 작성 실패');
@@ -117,7 +141,7 @@ async getPost(postId) {
       
       return data;
     } catch (error) {
-      console.error('게시글 작성 에러:', error);
+      console.error('❌ 게시글 작성 에러:', error);
       throw error;
     }
   }
@@ -128,7 +152,14 @@ export const commentApi = {
   // 댓글 목록 조회
   async getComments(postId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/comments/post/${postId}`);
+      // ✅ 올바른 엔드포인트
+      const response = await fetch(`${API_BASE_URL}/comments/post/${postId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       
       console.log('댓글 목록 API 응답:', data);
@@ -156,7 +187,8 @@ export const commentApi = {
   // 댓글 작성
   async createComment(postId, content) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/comments`, {
+      // ✅ 올바른 엔드포인트
+      const response = await fetch(`${API_BASE_URL}/comments`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -187,7 +219,8 @@ export const likeApi = {
   // 게시글 좋아요 토글
   async togglePostLike(postId, likeType) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/likes/posts`, {
+      // ✅ 올바른 엔드포인트
+      const response = await fetch(`${API_BASE_URL}/likes/posts`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -215,7 +248,8 @@ export const likeApi = {
   // 댓글 좋아요 토글
   async toggleCommentLike(commentId, likeType) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/likes/comments`, {
+      // ✅ 올바른 엔드포인트
+      const response = await fetch(`${API_BASE_URL}/likes/comments`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -243,7 +277,13 @@ export const likeApi = {
   // 게시글 좋아요 통계 조회
   async getPostLikeStats(postId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/likes/posts/${postId}?userId=${getCurrentUserId()}`);
+      const response = await fetch(`${API_BASE_URL}/likes/posts/${postId}?userId=${getCurrentUserId()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       
       console.log('게시글 좋아요 통계 API 응답:', data);
@@ -272,7 +312,13 @@ export const likeApi = {
   // 댓글 좋아요 통계 조회
   async getCommentLikeStats(commentId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/likes/comments/${commentId}?userId=${getCurrentUserId()}`);
+      const response = await fetch(`${API_BASE_URL}/likes/comments/${commentId}?userId=${getCurrentUserId()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       
       console.log('댓글 좋아요 통계 API 응답:', data);
