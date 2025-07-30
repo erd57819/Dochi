@@ -37,9 +37,9 @@ const LoginPage = () => {
         const result = await response.json();
         console.log('Login response:', result); // 디버깅용 로그
         
-        // ApiResponse 구조에 맞게 접근
-        const loginData = result.response?.response || result.response || result;
-        const { accessToken, refreshToken, profileImage, name, nickname, isSocial, email, userId } = loginData;
+        // ApiResponse 구조에 맞게 접근 - data 필드 사용
+        const loginData = result.data || result.response?.response || result.response || result;
+        const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId } = loginData;
         
         // JWT 토큰을 localStorage에 저장
         localStorage.setItem('accessToken', accessToken);
