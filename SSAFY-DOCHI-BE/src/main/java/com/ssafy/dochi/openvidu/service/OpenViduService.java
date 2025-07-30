@@ -1,60 +1,52 @@
 package com.ssafy.dochi.openvidu.service;
 
+import com.ssafy.dochi.openvidu.exception.OpenViduException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class OpenViduService {
 
-    @Value("${openvidu.url}")
-    private String openviduUrl;
+    @Value("${livekit.api.key}")
+    private String apiKey;
 
-    @Value("${openvidu.secret}")
-    private String secret;
+    @Value("${livekit.api.secret}")
+    private String apiSecret;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    // LiveKit용 JWT 생성
+    public String createToken(String roomName, String identity, List<String> permissions) {
+        try {
+            Map<String, Object> videoClaims = Map.of(
+                    "room", roomName,
+                    "identity", identity,
+                    "permissions", permissions
+            );
 
-    // 세션 생성
-    public String createSession() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBasicAuth("OPENVIDUAPP", secret);
-        headers.setContentType(MediaType.APPLICATION_JSON);
+            Date now = new Date();
+            Date exp = new Date(now.getTime() + 1000L * 60 * 60); // 1시간
 
-        HttpEntity<String> entity = new HttpEntity<>("{}", headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                openviduUrl + "/openvidu/api/sessions",
-                entity,
-                Map.class
-        );
+            Key key = Keys.hmacShaKeyFor(apiSecret.getBytes(StandardCharsets.UTF_8));
 
-        return (String) response.getBody().get("id");
-    }
-
-    // 세션 참가 (Connection 생성)
-    public String createConnection(String sessionId, Long userId, String nickname) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBasicAuth("OPENVIDUAPP", secret);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // 화자 구분을 위한 userId, nickname 전달
-        String body = String.format(
-                "{\"role\":\"PUBLISHER\", \"data\":\"userId:%d,name:%s\"}",
-                userId, nickname
-        );
-
-        HttpEntity<String> entity = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                openviduUrl + "/openvidu/api/sessions/" + sessionId + "/connection",
-                entity,
-                Map.class
-        );
-
-        return (String) response.getBody().get("token");
+            return Jwts.builder()
+                    .setSubject(apiKey)
+                    .claim("video", videoClaims)
+                    .setIssuedAt(now)
+                    .setExpiration(exp)
+                    .signWith(key, SignatureAlgorithm.HS256)
+                    .compact();
+        } catch (Exception e) {
+            throw new OpenViduException("LiveKit 토큰 생성 실패", e);
+        }
     }
 }
