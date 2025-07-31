@@ -48,9 +48,10 @@ export const myPageApi = {
       
       console.log('✅ 사용자 정보 조회 성공:', data);
       
+      // UserInfoResDto 구조: userId, name, nickname, profileImage, email, address, age, gender, created_at
       return {
         success: true,
-        data: data.data // UserInfoResDto 구조
+        data: data.data
       };
     } catch (error) {
       console.error('❌ 사용자 정보 조회 실패:', error);
@@ -60,7 +61,7 @@ export const myPageApi = {
 
   /**
    * 사용자 정보 수정
-   * @param {Object} userData - 수정할 사용자 정보
+   * @param {Object} userData - 수정할 사용자 정보 {nickname, address}
    * @returns {Promise<Object>} 수정 결과
    */
   async updateUserInfo(userData) {
@@ -69,12 +70,8 @@ export const myPageApi = {
       
       // UserUpdateReqDto 구조에 맞게 변환
       const requestData = {
-        name: userData.name,
-        nickname: userData.nickname || userData.name, // nickname이 없으면 name 사용
-        email: userData.email,
-        address: userData.address,
-        age: userData.age,
-        gender: userData.gender || 'M' // 기본값
+        nickname: userData.nickname,
+        address: userData.address || '' // address는 nullable
       };
       
       const response = await fetch(`${API_BASE_URL}/user/info`, {
@@ -205,30 +202,27 @@ export const myPageApi = {
   },
 
   /**
-   * 비밀번호 변경 (현재 미구현)
-   * @param {Object} passwordData - 비밀번호 변경 데이터
+   * 비밀번호 변경
+   * @param {Object} passwordData - 비밀번호 변경 데이터 {currentPassword, newPassword}
    * @returns {Promise<Object>} 변경 결과
    */
   async changePassword(passwordData) {
-    // 현재 백엔드에 비밀번호 변경 API가 없어서 임시 에러 반환
-    throw new Error('비밀번호 변경 기능이 아직 구현되지 않았습니다. 백엔드 개발자에게 문의해주세요.');
-    
-    // 나중에 API가 추가되면 아래 코드 사용:
-    /*
     try {
       console.log('🔐 비밀번호 변경 시작');
       
-      const response = await fetch(`${API_BASE_URL}/user/password`, {
+      const response = await fetch(`${API_BASE_URL}/user/update`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          currentPassword: passwordData.password,
-          newPassword: passwordData.newpassword
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
         })
       });
       
       await handleApiError(response);
       const data = await response.json();
+      
+      console.log('✅ 비밀번호 변경 성공:', data);
       
       return {
         success: true,
@@ -238,7 +232,6 @@ export const myPageApi = {
       console.error('❌ 비밀번호 변경 실패:', error);
       throw error;
     }
-    */
   }
 };
 

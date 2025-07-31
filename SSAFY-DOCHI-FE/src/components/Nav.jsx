@@ -85,10 +85,20 @@ export const Nav = () => {
           </Link>
         </div>
 
-        {/* 로그인/회원가입/게임 */}
+        {/* 로그인/회원가입/게임/마이페이지 */}
         <div className="absolute top-[32px] right-[50px] flex items-center gap-4 h-7">
           {isLoggedIn ? (
             <>
+              <Link 
+                to="/mypage" 
+                className={`[font-family:'Pretendard',Helvetica] text-[16px] font-semibold tracking-[0] leading-[27px] transition-all duration-200 hover:scale-105 ${
+                  location.pathname.startsWith('/mypage') 
+                    ? 'text-[#ff6b35]' 
+                    : 'text-[#4a4a4a] hover:text-[#ff6b35]'
+                }`}
+              >
+                마이페이지
+              </Link>
               <span className="[font-family:'Pretendard',Helvetica] text-[#4a4a4a] text-[16px] font-medium tracking-[0] leading-[27px]">
                 <span className="font-semibold text-[#ff6b35]">{user?.nickname || user?.name}</span>도치님
               </span>

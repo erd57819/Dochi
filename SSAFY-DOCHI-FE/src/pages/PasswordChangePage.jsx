@@ -79,9 +79,8 @@ const PasswordChangePage = () => {
       setLoading(true);
       
       await myPageApi.changePassword({
-        password: formData.password,
-        newpassword: formData.newpassword,
-        newpassword2: formData.newpassword2
+        currentPassword: formData.password,
+        newPassword: formData.newpassword
       });
       
       alert("비밀번호가 성공적으로 변경되었습니다.");

@@ -7,31 +7,38 @@ import myPageApi from "../services/myPageApi";
 const MyPage = () => {
   const navigate = useNavigate();
   const [conflictCount, setConflictCount] = useState(0);
+  const [conflicts, setConflicts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 갈등 개수 로드
+  // 갈등 데이터 로드
   useEffect(() => {
-    loadConflictCount();
+    loadConflictData();
   }, []);
 
-  const loadConflictCount = async () => {
+  const loadConflictData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await myPageApi.getUserConflictCount();
-      setConflictCount(response.count || 0);
+      
+      // 갈등 개수와 목록을 동시에 불러오기
+      const [countResponse, conflictsResponse] = await Promise.all([
+        myPageApi.getUserConflictCount(),
+        myPageApi.getUserConflicts()
+      ]);
+      
+      setConflictCount(countResponse.count || 0);
+      setConflicts(conflictsResponse.data || []);
     } catch (err) {
-      console.error('갈등 개수 로드 실패:', err);
-      setError('갈등 개수를 불러오는데 실패했습니다.');
+      console.error('갈등 데이터 로드 실패:', err);
+      setError('갈등 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCardClick = (index) => {
-    // 실제 갈등 ID로 이동 (나중에 수정)
-    navigate(`/conflicts/${index + 1}`);
+  const handleCardClick = (conflictId) => {
+    navigate(`/conflicts/${conflictId}`);
   };
 
   const handleCreateClick = () => {
@@ -73,7 +80,7 @@ const MyPage = () => {
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
               {error}
               <button 
-                onClick={loadConflictCount}
+                onClick={loadConflictData}
                 className="ml-4 text-red-800 underline hover:no-underline"
               >
                 다시 시도
@@ -86,14 +93,14 @@ const MyPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-8 lg:px-16">
           
           {/* 등록된 갈등 카드들 */}
-          {Array.from({ length: conflictCount }).map((_, index) => (
+          {conflicts.map((conflict) => (
             <ConflictCard
-              key={`conflict-${index}`}
+              key={`conflict-${conflict.id}`}
               type="normal"
-              date={null} // 또는 "갈등 등록일" 표시
-              title="집안일 분담\n관련 갈등"
+              date={conflict.formattedDate || conflict.createdAt}
+              title={conflict.title || conflict.description || "갈등 내용"}
               buttonText="자세히 보기"
-              onButtonClick={() => handleCardClick(index)}
+              onButtonClick={() => handleCardClick(conflict.id)}
             />
           ))}
 
