@@ -206,4 +206,5 @@ volumes:
 # == NETWORKS ==
 networks:
   dochi-network:
+    name: dochi-network
     driver: bridge
