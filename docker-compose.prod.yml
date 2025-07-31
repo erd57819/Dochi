@@ -1,0 +1,108 @@
+version: '3.8'
+
+# 운영 환경용 Docker Compose 오버라이드 설정
+services:
+  # == MYSQL (Production) ==
+  mysql:
+    restart: always
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --sql-mode=STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO
+      --max-connections=200
+      --innodb-buffer-pool-size=512M
+      --innodb-log-file-size=128M
+      --slow-query-log=1
+      --long-query-time=2
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # == REDIS (Production) ==
+  redis:
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # == BACKEND (Production) ==
+  backend:
+    restart: always
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseStringDeduplication
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # == AI SERVICE (Production) ==
+  ai-service:
+    restart: always
+    healthcheck:
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # == FRONTEND (Production) ==
+  frontend:
+    restart: always
+
+  # == NGINX (Production) ==
+  nginx:
+    restart: always
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro  # SSL 인증서 경로
+      - nginx-logs:/var/log/nginx
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # == OPENVIDU (Production) ==
+  openvidu-server:
+    restart: always
+    environment:
+      - CERTIFICATE_TYPE=letsencrypt
+      - LETSENCRYPT_EMAIL=your-email@domain.com
+    healthcheck:
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+
+# Production 볼륨 설정
+volumes:
+  mysql-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/mysql
+  redis-data:
+    driver: local
+    driver_opts:
+      type: none  
+      o: bind
+      device: ./data/redis
+  nginx-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/nginx

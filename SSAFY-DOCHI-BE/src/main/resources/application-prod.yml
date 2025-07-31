@@ -1,0 +1,123 @@
+server:
+  port: 8080
+  # 운영 환경에서는 서버 설정 최적화
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 10000
+    accept-count: 100
+  compression:
+    enabled: true
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://mysql:3306/dochi?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
+  
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6381}
+      timeout: ${REDIS_TIMEOUT:2000ms}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+  
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# JWT 설정 (운영 환경에서는 강력한 시크릿 키 사용)
+jwt:
+  secret: ${JWT_SECRET}
+
+# 카카오 OAuth 설정  
+kakao:
+  rest:
+    api:
+      key: ${KAKAO_REST_API_KEY}
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+  redirect-withdraw-uri: ${KAKAO_REDIRECT_WITHDRAW_URI}
+
+# AWS S3 설정
+aws:
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+  s3:
+    region: ${AWS_REGION:ap-northeast-2}
+    bucket: ${AWS_S3_BUCKET}
+
+# 소셜 로그인 설정
+social:
+  default:
+    password: ${SOCIAL_PW}
+
+# AI 서비스 설정
+ai:
+  service:
+    url: ${AI_SERVICE_URL:http://ai-service:8002}
+
+# LiveKit 설정 (WebRTC 화상통화용)
+livekit:
+  api:
+    key: ${LIVEKIT_API_KEY}
+    secret: ${LIVEKIT_API_SECRET}
+
+# OpenVidu 설정 (WebRTC 화상통화용)
+openvidu:
+  url: ${OPENVIDU_URL:http://openvidu-server:4443}
+  secret: ${OPENVIDU_SECRET}
+
+# 로깅 설정 (운영 환경)
+logging:
+  level:
+    root: INFO
+    com.ssafy.dochi: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /app/logs/application.log
+    max-size: 100MB
+    max-history: 30
+
+# 액추에이터 설정 (운영 환경에서는 보안 강화)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    env:
+      enabled: true
+
+# 운영 환경 보안 설정
+security:
+  headers:
+    frame-options: DENY
+    content-type-options: nosniff
+    xss-protection: 1; mode=block

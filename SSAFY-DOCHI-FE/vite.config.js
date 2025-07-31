@@ -10,9 +10,22 @@ const __dirname = path.dirname(__filename);
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    global: 'globalThis',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'), // 💡 @ => src/
     },
   },
+  server: {
+    proxy: {
+      '/dochi': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/dochi/, '/api')
+      }
+    }
+  }
 })

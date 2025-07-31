@@ -24,7 +24,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 @Tag(name = "auth-controller", description = "이메일 인증 및 로그인 기능")
 public class UserController {
     private final UserService userService;
@@ -119,6 +119,16 @@ public class UserController {
     @PostMapping("/verify/check")
     public ApiResponse<ApiResponse.SuccessCustomBody<Void>> verifyCode(@RequestBody EmailVerifyReqDto reqDto) {
         emailVerificationService.verifyCode(reqDto.getEmail(), reqDto.getCode());
+        return ApiResponseGenerator.success(HttpStatus.OK);
+    }
+
+    // 비밀번호 변경
+    @PutMapping("/update")
+    public ApiResponse<ApiResponse.SuccessCustomBody<Void>> updatePassword(
+            @AuthenticationPrincipal CustomUserDetails member,
+            @RequestBody UserPasswordUpdateReqDto dto) {
+
+        userService.updatePassword(member, dto);
         return ApiResponseGenerator.success(HttpStatus.OK);
     }
 

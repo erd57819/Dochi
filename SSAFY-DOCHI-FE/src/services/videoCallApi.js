@@ -1,4 +1,13 @@
-const BASE_URL = '/api/video-call';
+const BASE_URL = '/dochi/video-call';
+
+// 인증 헤더 생성
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('accessToken');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
 
 export const videoCallApi = {
   // 영상통화방 생성
@@ -6,17 +15,18 @@ export const videoCallApi = {
     try {
       const response = await fetch(`${BASE_URL}/rooms`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ conflictId }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('createRoom API 응답:', result); // 디버깅용
+      return result.data || result;
     } catch (error) {
       console.error('영상통화방 생성 실패:', error);
       throw error;
@@ -28,9 +38,7 @@ export const videoCallApi = {
     try {
       const response = await fetch(`${BASE_URL}/rooms/join`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ roomCode }),
       });
 
@@ -39,7 +47,8 @@ export const videoCallApi = {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       console.error('영상통화방 참여 실패:', error);
       throw error;
@@ -51,16 +60,16 @@ export const videoCallApi = {
     try {
       const response = await fetch(`${BASE_URL}/rooms/${roomCode}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       console.error('영상통화방 정보 조회 실패:', error);
       throw error;
@@ -72,16 +81,16 @@ export const videoCallApi = {
     try {
       const response = await fetch(`${BASE_URL}/rooms/${roomCode}/end`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      return response.ok;
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       console.error('영상통화 종료 실패:', error);
       throw error;

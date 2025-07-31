@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.dochi.openvidu.dao.UserSessionDao">
+
+    <insert id="insertSession" parameterType="com.ssafy.dochi.openvidu.domain.UserSession">
+        INSERT INTO user_sessions (session_id, user_id, expires_at)
+        VALUES (#{sessionId}, #{userId}, #{expiresAt})
+    </insert>
+
+    <select id="existsBySessionIdAndUserId" resultType="boolean">
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM user_sessions
+            WHERE session_id = #{sessionId}
+              AND user_id = #{userId}
+        ) THEN true ELSE false END
+    </select>
+
+</mapper>

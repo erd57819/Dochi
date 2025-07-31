@@ -18,16 +18,33 @@ CREATE TABLE `users` (
                          `kakao_id` varchar(255) DEFAULT NULL,
                          `google_id` VARCHAR(255) DEFAULT NULL COMMENT '구글 로그인 고유 ID',
                          `email_verified`  BOOLEAN         NOT NULL DEFAULT FALSE COMMENT '이메일 인증 여부',
-                         `is_active`       BOOLEAN         NOT NULL DEFAULT TRUE COMMENT '계정 활성화 여부',
                          `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '가입일시',
                          `updated_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '마지막 수정일시',
-                         `deleted_at`      DATETIME        NULL COMMENT '탈퇴일시 (Soft Delete)',
                          `refresh_token` varchar(512) DEFAULT NULL,
                          `profile_image`   VARCHAR(255)    NULL COMMENT '프로필 이미지 URL'
 
 );
 
-
+-- AI 분석 결과 테이블
+CREATE TABLE `ai_analysis_results` (
+    `id`                        BIGINT          NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'AI 분석 결과 고유 ID',
+    `conflict_id`               BIGINT          NOT NULL COMMENT '갈등 카드 ID',
+    `user_id`                   BIGINT          NOT NULL COMMENT '사용자 ID',
+    `emotion_analysis`          TEXT            NULL COMMENT '감정 분석 결과',
+    `conflict_analysis`         TEXT            NULL COMMENT '갈등 원인 분석',
+    `relationship_health_score` INT             NULL COMMENT '관계 건강도 점수 (1-100)',
+    `trust_score`               JSON            NULL COMMENT '신뢰도 점수 및 세부 분석',
+    `communication_score`       INT             NULL COMMENT '소통 점수 (1-100)',
+    `cooperation_score`         JSON            NULL COMMENT '협력도 점수 및 개선 방안',
+    `priority_recommendation`   ENUM('HIGH', 'MEDIUM', 'LOW') NULL COMMENT 'AI 추천 우선순위',
+    `recommended_actions`       JSON            NULL COMMENT 'AI 추천 행동 방안',
+    `created_at`               TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    `updated_at`               TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+    
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_created` (`user_id`, `created_at`),
+    INDEX `idx_conflict_id` (`conflict_id`)
+) COMMENT 'AI 고급 분석 결과';
 
 -- 사용자 세션 (화상채팅 정보)
 CREATE TABLE `user_sessions` (
@@ -35,7 +52,6 @@ CREATE TABLE `user_sessions` (
     `session_id`      VARCHAR(255)    NOT NULL UNIQUE COMMENT '세션 고유 ID',
     `user_id`         BIGINT          NOT NULL COMMENT '사용자 ID (FK)',
     `expires_at`      DATETIME        NOT NULL COMMENT '만료일시',
-    `last_activity`   DATETIME        NULL COMMENT '마지막 활동 시간',
     `created_at`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );

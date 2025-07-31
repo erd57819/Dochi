@@ -8,8 +8,11 @@ spring:
     password: ${MYSQL_ROOT_PASSWORD:ssafy}
   data:
     redis:
+
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6381}
+
+
       timeout: ${REDIS_TIMEOUT:2000ms}
   mail:
     host: ${SMTP_HOST:smtp.gmail.com}
@@ -48,6 +51,22 @@ aws:
 social:
   default:
     password: ${SOCIAL_PW:social_login}
+
+# AI 서비스 설정
+ai:
+  service:
+    url: ${AI_SERVICE_URL:http://localhost:8002}
+
+# LiveKit 설정 (WebRTC 화상통화용)
+livekit:
+  api:
+    key: ${LIVEKIT_API_KEY:devkey}
+    secret: ${LIVEKIT_API_SECRET:devsecret}
+
+# OpenVidu 설정 (WebRTC 화상통화용)
+openvidu:
+  url: ${OPENVIDU_URL:http://localhost:4443}
+  secret: ${OPENVIDU_SECRET:MY_SECRET}
 
 management:
   endpoints:
