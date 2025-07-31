@@ -1,6 +1,6 @@
 import { API_CONFIG } from '../config/api';
 
-const BASE_URL = '/api/notice';  // Vite 프록시를 통해 /api 요청
+const BASE_URL = '/dochi/notice';  // Vite 프록시를 통해 /dochi 요청
 
 export const noticeApi = {
   // 공지사항 목록 조회

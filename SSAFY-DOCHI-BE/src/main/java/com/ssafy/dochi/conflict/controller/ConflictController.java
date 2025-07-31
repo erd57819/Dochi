@@ -21,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/conflict")
+@RequestMapping("/api/conflict")
 @Tag(name = "conflict-controller", description = "갈등 관리 API")
 public class ConflictController {
     

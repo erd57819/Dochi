@@ -1,4 +1,4 @@
-const BASE_URL = '/api/video-call';
+const BASE_URL = '/dochi/video-call';
 
 export const videoCallApi = {
   // 영상통화방 생성
