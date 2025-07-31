@@ -4,7 +4,7 @@ export const LIVEKIT_CONFIG = {
   LIVEKIT_URL: 'ws://localhost:7880',
   
   // 백엔드 토큰 발급 엔드포인트
-  TOKEN_ENDPOINT: '/openvidu/token',
+  TOKEN_ENDPOINT: '/dochi/openvidu/token',
   
   // 기본 룸 설정
   DEFAULT_ROOM_OPTIONS: {
