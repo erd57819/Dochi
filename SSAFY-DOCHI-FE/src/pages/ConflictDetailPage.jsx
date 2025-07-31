@@ -125,16 +125,25 @@ const ConflictDetailPage = () => {
       setIsLoading(true);
       
       // 갈등 ID와 함께 화상채팅 방 생성
-      const roomData = await videoCallApi.createRoom(conflictId);
+      const response = await videoCallApi.createRoom(conflictId);
+      console.log('화상채팅 방 생성 응답:', response); // 디버깅용
+      
+      // API 응답 구조에 맞게 데이터 추출
+      const roomData = response.data || response;
       
       if (roomData && roomData.roomCode) {
-        // 생성된 방 코드를 복사하고 화상채팅 페이지로 이동
-        await navigator.clipboard.writeText(roomData.roomCode);
-        alert(`화상채팅 방이 생성되었습니다!\n방 코드: ${roomData.roomCode}\n(클립보드에 복사되었습니다)`);
+        // 화상채팅 링크 생성
+        const videoCallLink = `${window.location.origin}/video-call/${roomData.roomCode}`;
+        
+        // 링크를 클립보드에 복사
+        await navigator.clipboard.writeText(videoCallLink);
+        
+        alert(`화상채팅 방이 생성되었습니다!\n\n방 코드: ${roomData.roomCode}\n링크: ${videoCallLink}\n\n링크가 클립보드에 복사되었습니다.\n상대방에게 공유하여 함께 참여하세요!`);
         
         // 화상채팅 페이지로 이동
         navigate(`/video-call/${roomData.roomCode}`);
       } else {
+        console.error('roomCode가 없습니다:', roomData);
         throw new Error('방 생성에 실패했습니다.');
       }
     } catch (error) {

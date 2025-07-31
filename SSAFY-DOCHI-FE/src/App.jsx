@@ -41,7 +41,7 @@ const App = () => {
             <Route path="/conflicts/create" element={<ConflictCreatePage />} />
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
-            <Route path="/video-call" element={<VideoCallRoom />} />
+            <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
             {/* <Route path="/comfort" element={<ComfortPage />} /> */}
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<ProfileEditPage />} />
