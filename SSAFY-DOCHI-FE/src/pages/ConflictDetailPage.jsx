@@ -232,6 +232,73 @@ const ConflictDetailPage = () => {
   const roadmap = getResolutionRoadmap(conflict.conflictType);
   const recommendedServices = getRecommendedServices(conflict);
 
+  // 갈등 내용을 3줄로 요약하는 함수
+  const generateConflictSummary = (conflict) => {
+    if (!conflict) return [];
+
+    const sentences = [];
+    
+    // 1줄: 갈등 상황 요약
+    const situationSummary = conflict.description.length > 100 
+      ? conflict.description.substring(0, 100) + "..."
+      : conflict.description;
+    sentences.push(`📌 상황: ${situationSummary}`);
+    
+    // 2줄: 갈등 강도와 감정 상태
+    const emotionText = getEmotionText(conflict.initialEmotion);
+    sentences.push(`💢 갈등 강도: ${conflict.intensity}/10, 주된 감정: ${emotionText}`);
+    
+    // 3줄: 원하는 결과나 우선순위
+    const priorityText = getPriorityText(conflict.priority);
+    const desiredOutcome = conflict.desiredOutcome || "해결 방안을 찾고 싶어요";
+    sentences.push(`🎯 목표: ${priorityText} 중심으로 ${desiredOutcome}`);
+    
+    return sentences;
+  };
+
+  // 갈등 공유하기 함수
+  const handleShareConflict = () => {
+    if (!conflict) return;
+
+    const summary = generateConflictSummary(conflict);
+    const conflictTypeText = getConflictTypeText(conflict.conflictType);
+    
+    // 자동 생성된 제목
+    const autoTitle = `[${conflictTypeText}] 갈등 상황 공유 - 조언 구합니다`;
+    
+    // 자동 생성된 내용 (찬반 투표 형식)
+    const autoContent = `안녕하세요! 갈등 상황을 공유하며 여러분의 의견을 듣고 싶습니다.
+
+${summary.join('\n')}
+
+📊 **여러분의 의견을 들려주세요:**
+
+**A안) 적극적 해결 방식**
+- 직접 대화를 통해 문제를 해결
+- 감정을 솔직하게 표현하고 소통
+- 빠른 해결을 위한 적극적 접근
+
+**B안) 신중한 접근 방식**  
+- 시간을 두고 상황을 정리한 후 접근
+- 중재자나 제3자의 도움 요청
+- 관계 손상을 최소화하는 방향으로 진행
+
+어떤 방식이 더 좋을지 댓글로 의견 부탁드립니다! 🙏
+
+#갈등해결 #조언구함 #${conflictTypeText}`;
+
+    // CreatePostPage로 이동하면서 데이터 전달
+    navigate('/community/create', {
+      state: {
+        prefilledData: {
+          title: autoTitle,
+          content: autoContent,
+          category: 'CONFLICT_SHARING'
+        }
+      }
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
@@ -257,7 +324,14 @@ const ConflictDetailPage = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleShareConflict}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                <span>📢</span>
+                갈등 공유하기
+              </button>
               <div className="text-right">
                 <div className="text-sm text-gray-500">갈등 강도</div>
                 <div className="text-lg font-bold text-red-600">{conflict.intensity}/10</div>

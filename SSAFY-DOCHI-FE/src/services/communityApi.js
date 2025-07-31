@@ -15,7 +15,7 @@ const getAuthHeaders = () => {
 // 현재 사용자 ID 가져오기
 const getCurrentUserId = () => {
   const user = useAuthStore.getState().user;
-  return user?.id || localStorage.getItem('userId') || 1;
+  return user?.id || localStorage.getItem('userId') || 2; // 데이터베이스에 존재하는 사용자 ID로 변경
 };
 
 // 날짜 포맷팅 함수
@@ -56,16 +56,37 @@ export const communityApi = {
       // 응답 데이터 구조 확인 및 변환
       const result = data.data || data;
       
+      // 각 게시글에 대해 좋아요 통계 조회
+      const postsWithLikes = await Promise.all(
+        (result.content || []).map(async (post) => {
+          try {
+            const likeStats = await likeApi.getPostLikeStats(post.id);
+            return {
+              ...post,
+              author: post.author || `사용자${post.userId}`,
+              createdAt: formatDate(post.createdAt),
+              tags: post.tags ? post.tags.split(',') : [], // 태그 문자열을 배열로 변환
+              likeCount: likeStats.likeCount || 0,
+              dislikeCount: likeStats.dislikeCount || 0,
+              userLikeType: likeStats.userLikeType
+            };
+          } catch (error) {
+            console.warn(`게시글 ${post.id} 좋아요 통계 로드 실패:`, error);
+            return {
+              ...post,
+              author: post.author || `사용자${post.userId}`,
+              createdAt: formatDate(post.createdAt),
+              tags: post.tags ? post.tags.split(',') : [],
+              likeCount: 0,
+              dislikeCount: 0,
+              userLikeType: null
+            };
+          }
+        })
+      );
+
       return {
-        content: (result.content || []).map(post => ({
-          ...post,
-          author: `사용자${post.userId}`, // 임시 작성자명
-          createdAt: formatDate(post.createdAt),
-          tags: post.tags ? post.tags.split(',') : [], // 태그 문자열을 배열로 변환
-          likeCount: 0, // 초기값
-          dislikeCount: 0, // 초기값
-          userLikeType: null // 초기값
-        })),
+        content: postsWithLikes,
         totalPages: result.totalPages || 0,
         totalElements: result.totalElements || 0,
         pageNumber: result.pageNumber || 0
@@ -102,7 +123,26 @@ export const communityApi = {
       }
       
       // 백엔드 응답 구조에 맞게 수정
-      return data.data || data;
+      const post = data.data || data;
+      
+      // 게시글 좋아요 통계 로드
+      try {
+        const likeStats = await likeApi.getPostLikeStats(postId);
+        return {
+          ...post,
+          likeCount: likeStats.likeCount || 0,
+          dislikeCount: likeStats.dislikeCount || 0,
+          userLikeType: likeStats.userLikeType
+        };
+      } catch (error) {
+        console.warn('게시글 좋아요 통계 로드 실패:', error);
+        return {
+          ...post,
+          likeCount: 0,
+          dislikeCount: 0,
+          userLikeType: null
+        };
+      }
     } catch (error) {
       console.error('API: 게시글 상세 조회 에러:', error);
       throw error;
@@ -114,34 +154,60 @@ export const communityApi = {
     try {
       console.log('🚀 게시글 작성 요청:', postData);
       console.log('🌐 API_BASE_URL:', API_BASE_URL);
-      console.log('🔑 인증 헤더:', getAuthHeaders());
+      
+      const headers = getAuthHeaders();
+      console.log('🔑 인증 헤더:', headers);
       
       // ✅ 백엔드 매핑과 일치하도록 수정 (/api/community)
       const url = `${API_BASE_URL}/api/community`;
       console.log('📡 게시글 작성 URL:', url);
       
+      const requestBody = {
+        title: postData.title,
+        content: postData.content,
+        category: postData.category || 'GENERAL'
+      };
+      console.log('📝 요청 본문:', requestBody);
+      
       const response = await fetch(url, {
         method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          title: postData.title,
-          content: postData.content,
-          category: postData.category || 'GENERAL'
-        })
+        headers: headers,
+        body: JSON.stringify(requestBody)
       });
 
-      console.log('📊 게시글 작성 응답 상태:', response.status);
-      
-      const data = await response.json();
-      console.log('📋 게시글 작성 API 응답:', data);
+      console.log('📊 게시글 작성 응답 상태:', response.status, response.statusText);
       
       if (!response.ok) {
-        throw new Error(data.message || '게시글 작성 실패');
+        // 응답이 JSON이 아닐 수 있으므로 안전하게 처리
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('❌ 에러 응답 데이터:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
+          // 응답 본문을 텍스트로 읽어보기
+          try {
+            const errorText = await response.text();
+            console.log('❌ 에러 응답 텍스트:', errorText);
+            if (errorText) errorMessage = errorText;
+          } catch (textError) {
+            console.warn('에러 응답을 텍스트로도 읽을 수 없음:', textError);
+          }
+        }
+        throw new Error(errorMessage);
       }
+      
+      const data = await response.json();
+      console.log('✅ 게시글 작성 성공 응답:', data);
       
       return data;
     } catch (error) {
       console.error('❌ 게시글 작성 에러:', error);
+      // 네트워크 에러나 기타 에러 정보 추가
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+      }
       throw error;
     }
   }
@@ -170,14 +236,34 @@ export const commentApi = {
       
       const comments = data.data || [];
       
-      return comments.map(comment => ({
-        ...comment,
-        author: comment.userName || `사용자${comment.userId}`,
-        createdAt: formatDate(comment.createdAt),
-        likeCount: 0, // 초기값
-        dislikeCount: 0, // 초기값
-        userLikeType: null // 초기값
-      }));
+      // 각 댓글에 대해 좋아요 통계 조회
+      const commentsWithLikes = await Promise.all(
+        comments.map(async (comment) => {
+          try {
+            const likeStats = await likeApi.getCommentLikeStats(comment.id);
+            return {
+              ...comment,
+              author: comment.userName || `사용자${comment.userId}`,
+              createdAt: formatDate(comment.createdAt),
+              likeCount: likeStats.likeCount || 0,
+              dislikeCount: likeStats.dislikeCount || 0,
+              userLikeType: likeStats.userLikeType
+            };
+          } catch (error) {
+            console.warn(`댓글 ${comment.id} 좋아요 통계 로드 실패:`, error);
+            return {
+              ...comment,
+              author: comment.userName || `사용자${comment.userId}`,
+              createdAt: formatDate(comment.createdAt),
+              likeCount: 0,
+              dislikeCount: 0,
+              userLikeType: null
+            };
+          }
+        })
+      );
+      
+      return commentsWithLikes;
     } catch (error) {
       console.error('댓글 조회 에러:', error);
       throw error;

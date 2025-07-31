@@ -28,15 +28,10 @@ public class OpenViduService {
     private String apiSecret;
 
     private final UserSessionDao userSessionDao;
+
     // LiveKit용 JWT 생성
     public String createToken(String roomName, String identity, List<String> permissions, Long userId) {
         try {
-
-            boolean alreadyJoined = userSessionDao.existsBySessionIdAndUserId(roomName, userId);
-            if (alreadyJoined) {
-                throw new OpenViduException("이미 해당 세션에 참여 중입니다.");
-            }
-
             Map<String, Object> videoClaims = Map.of(
                     "room", roomName,
                     "identity", identity,
@@ -51,9 +46,9 @@ public class OpenViduService {
             userSessionDao.insertSession(UserSession.builder()
                     .sessionId(roomName)
                     .userId(userId)
-                    .expiresAt(exp.toInstant()
-                            .atZone(ZoneId.systemDefault()).toLocalDateTime())
+                    .expiresAt(exp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
                     .build());
+
 
             return Jwts.builder()
                     .setSubject(apiKey)
