@@ -135,8 +135,25 @@ const ConflictDetailPage = () => {
         // 화상채팅 링크 생성
         const videoCallLink = `${window.location.origin}/video-call/${roomData.roomCode}`;
         
-        // 링크를 클립보드에 복사
-        await navigator.clipboard.writeText(videoCallLink);
+        // 링크를 클립보드에 복사 (HTTP/HTTPS 환경 모두 지원)
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(videoCallLink);
+          } else {
+            // HTTP 환경에서 fallback 방법
+            const textArea = document.createElement('textarea');
+            textArea.value = videoCallLink;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+          }
+        } catch (clipboardError) {
+          console.log('클립보드 복사 실패:', clipboardError);
+        }
         
         alert(`화상채팅 방이 생성되었습니다!\n\n방 코드: ${roomData.roomCode}\n링크: ${videoCallLink}\n\n링크가 클립보드에 복사되었습니다.\n상대방에게 공유하여 함께 참여하세요!`);
         

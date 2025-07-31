@@ -86,6 +86,7 @@ CREATE TABLE `user_conflicts` (
     `talk_willingness`    ENUM('YES', 'MAYBE', 'NO', 'NONE') NOT NULL DEFAULT 'NONE' COMMENT '대화 의지',
     `initial_emotion`     ENUM('ANGER', 'SADNESS', 'FRUSTRATION', 'ETC') NULL COMMENT '갈등에 대한 주된 감정',
     `intensity`           INT             NOT NULL COMMENT '갈등 강도 (1-10)',
+    `ai_summary`          TEXT            NULL COMMENT 'AI 분석 요약 결과',
     `created_at`          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
