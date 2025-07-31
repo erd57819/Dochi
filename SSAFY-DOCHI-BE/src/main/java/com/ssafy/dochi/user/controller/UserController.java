@@ -122,6 +122,16 @@ public class UserController {
         return ApiResponseGenerator.success(HttpStatus.OK);
     }
 
+    // 비밀번호 변경
+    @PutMapping("/update")
+    public ApiResponse<ApiResponse.SuccessCustomBody<Void>> updatePassword(
+            @AuthenticationPrincipal CustomUserDetails member,
+            @RequestBody UserPasswordUpdateReqDto dto) {
+
+        userService.updatePassword(member, dto);
+        return ApiResponseGenerator.success(HttpStatus.OK);
+    }
+
 
 
 
