@@ -6,6 +6,7 @@
     <resultMap id="CommunityResultMap" type="com.ssafy.dochi.community.dto.response.CommunityResDto">
         <id property="id" column="id"/>
         <result property="userId" column="userId"/>
+        <result property="author" column="author"/>
         <result property="category" column="category"/>
         <result property="title" column="title"/>
         <result property="content" column="content"/>
@@ -45,27 +46,29 @@
 
     <select id="findById" parameterType="long" resultMap="CommunityResultMap">
         SELECT
-        id, user_id as userId, category, title, content, view_count as viewCount,
-        comment_count as commentCount, tags,
-        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
-        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
-        FROM community_posts
-        WHERE id = #{id} AND deleted_at IS NULL
+        cp.id, cp.user_id as userId, u.name as author, cp.category, cp.title, cp.content, 
+        cp.view_count as viewCount, cp.comment_count as commentCount, cp.tags,
+        DATE_FORMAT(cp.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
+        DATE_FORMAT(cp.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
+        FROM community_posts cp
+        LEFT JOIN users u ON cp.user_id = u.id
+        WHERE cp.id = #{id} AND cp.deleted_at IS NULL
     </select>
 
     <select id="findAllWithPaging" parameterType="map" resultMap="CommunityResultMap">
         SELECT
-        id, user_id as userId, category, title, content,
-        view_count as viewCount, comment_count as commentCount, tags,
-        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
-        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
-        FROM community_posts
-        WHERE deleted_at IS NULL
+        cp.id, cp.user_id as userId, u.name as author, cp.category, cp.title, cp.content,
+        cp.view_count as viewCount, cp.comment_count as commentCount, cp.tags,
+        DATE_FORMAT(cp.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
+        DATE_FORMAT(cp.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
+        FROM community_posts cp
+        LEFT JOIN users u ON cp.user_id = u.id
+        WHERE cp.deleted_at IS NULL
         <if test="search != null and search != ''">
-            AND (title LIKE CONCAT('%', #{search}, '%') OR content LIKE CONCAT('%', #{search}, '%'))
+            AND (cp.title LIKE CONCAT('%', #{search}, '%') OR cp.content LIKE CONCAT('%', #{search}, '%'))
         </if>
-        <if test="category != null and category != ''">AND category = #{category}</if>
-        ORDER BY created_at DESC
+        <if test="category != null and category != ''">AND cp.category = #{category}</if>
+        ORDER BY cp.created_at DESC
         LIMIT #{offset}, #{limit}
     </select>
 

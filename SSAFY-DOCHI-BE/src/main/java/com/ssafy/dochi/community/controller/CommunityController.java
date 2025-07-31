@@ -88,8 +88,9 @@ public class CommunityController {
             @PathVariable("communityId") Long communityId,
             @RequestBody CommunityUpdateReqDto communityUpdateReqDto,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        // TODO: Security 설정 완료 후 userDetails.getId()로 변경 필요
-        communityService.updatePost(communityId, communityUpdateReqDto, 1L);
+        // 인증된 사용자 ID 가져오기 (인증 실패 시 기본값 사용)
+        Long userId = (userDetails != null) ? userDetails.getId() : 2L;
+        communityService.updatePost(communityId, communityUpdateReqDto, userId);
         return ApiResponseGenerator.success(HttpStatus.OK);
     }
 
@@ -103,8 +104,9 @@ public class CommunityController {
     public ApiResponse<ApiResponse.SuccessCustomBody<Void>> deleteCommunity(
             @PathVariable("communityId") Long communityId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        // TODO: Security 설정 완료 후 userDetails.getId()로 변경 필요
-        communityService.deletePost(communityId, 1L);
+        // 인증된 사용자 ID 가져오기 (인증 실패 시 기본값 사용)
+        Long userId = (userDetails != null) ? userDetails.getId() : 2L;
+        communityService.deletePost(communityId, userId);
         return ApiResponseGenerator.success(HttpStatus.OK);
     }
 }

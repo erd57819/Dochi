@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 # CORSMiddleware를 import 합니다.
 from fastapi.middleware.cors import CORSMiddleware
-from routers import summary
+from routers import summary, stt_processing
 
 app = FastAPI()
 
@@ -23,10 +23,12 @@ app.add_middleware(
 
 # summary 라우터 등록
 app.include_router(summary.router)
+# STT processing 라우터 등록
+app.include_router(stt_processing.router)
 
 @app.get("/")
 def read_root():
-    return {"message": "Summarization API Server is running"}
+    return {"message": "Speech-to-Text API Server is running"}
 
 @app.get("/health")
 def health_check():

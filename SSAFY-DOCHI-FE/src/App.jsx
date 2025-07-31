@@ -9,7 +9,6 @@ import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
-// import ComfortPage from './pages/ComfortPage';
 import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
 import MyPage from './pages/MyPage';
@@ -35,8 +34,6 @@ const App = () => {
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call" element={<VideoCallRoom />} />
-            {/* <Route path="/comfort" element={<ComfortPage />} /> */}
-            <Route path="/mypage" element={<MyPage />} />
           </Routes>
         </main>
       </div>
