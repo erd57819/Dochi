@@ -41,7 +41,7 @@ export const Nav = () => {
         {/* 메인 네비게이션 */}
         <div className="absolute w-[698px] h-7 top-[32px] left-[389px] flex justify-between items-center">
           <Link 
-            to="/conflict-resolution" 
+            to="/conflicts"
             className={`w-[165px] h-7 [font-family:'Pretendard',Helvetica] font-bold text-[23px] text-center tracking-[0] leading-[27px] transition-all duration-200 ${
               isActive('/conflict-resolution') 
                 ? 'text-[#ff6b35] scale-105' 
