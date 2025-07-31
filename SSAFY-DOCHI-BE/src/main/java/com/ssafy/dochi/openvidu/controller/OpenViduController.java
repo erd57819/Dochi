@@ -33,7 +33,8 @@ public class OpenViduController {
         String token = openViduService.createToken(
                 room,
                 identity,
-                List.of("join", "publish", "subscribe")
+                List.of("join", "publish", "subscribe"),
+                userDetails.getId()
         );
 
         return ApiResponseGenerator.success(new OpenViduTokenResDto(token), HttpStatus.OK);
