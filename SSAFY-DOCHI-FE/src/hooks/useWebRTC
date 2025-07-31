@@ -24,7 +24,7 @@ export const useWebRTC = (roomCode, userId) => {
 
   // WebSocket 연결 설정
   const connectWebSocket = useCallback(() => {
-    const socket = new SockJS('/api/ws/video-call');
+    const socket = new SockJS('/dochi/ws/video-call');
     const stompClient = new Client({
       webSocketFactory: () => socket,
       debug: (str) => console.log('STOMP:', str),

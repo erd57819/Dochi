@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/openvidu")
+@RequestMapping("/api/openvidu")
 @RequiredArgsConstructor
 @Tag(name = "OpenViduController", description = "LiveKit 토큰 발급")
 public class OpenViduController {

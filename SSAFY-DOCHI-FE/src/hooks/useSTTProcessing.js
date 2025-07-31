@@ -2,8 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 // API 엔드포인트 설정 (백엔드 우선)
 const API_ENDPOINTS = [
-  '/api/ai',  // AI 서비스 (백엔드를 통해 프록시)
-  '/api'      // 백엔드 직접
+  '/dochi/ai',  // AI 서비스 (백엔드를 통해 프록시)
+  '/dochi'      // 백엔드 직접
 ];
 
 export const useSTTProcessing = () => {
