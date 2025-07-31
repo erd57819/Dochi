@@ -2,9 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 // API 엔드포인트 설정 (백엔드 우선)
 const API_ENDPOINTS = [
-  'http://localhost:8002',     // AI 서비스 직접 (최우선)
-  'http://localhost:8080/api', // 백엔드 프록시
-  'http://localhost:8090/api'  // nginx 프록시
+  '/api/ai',  // AI 서비스 (백엔드를 통해 프록시)
+  '/api'      // 백엔드 직접
 ];
 
 export const useSTTProcessing = () => {
