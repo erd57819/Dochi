@@ -7,6 +7,7 @@ import tempfile
 import os
 from datetime import datetime
 from .speech_processing import speech_to_text, analyze_emotion_from_text, analyze_conflict_risk, generate_feedback_suggestions
+from .emotion_model import detect_emotion_from_image
 
 router = APIRouter()
 
@@ -84,6 +85,9 @@ async def websocket_speech_analysis(websocket: WebSocket, room_id: str, user_id:
                     "type": "pong",
                     "timestamp": datetime.now().isoformat()
                 }))
+
+            elif message_type == "face_image":
+                await handle_face_image(websocket, room_id, user_id, message)
     
     except WebSocketDisconnect:
         print(f"사용자 {user_id}가 방 {room_id}에서 연결 해제됨")
@@ -219,3 +223,38 @@ async def broadcast_message_to_room(room_id: str, message: dict):
             "message": "활성 연결이 없습니다",
             "recipients": 0
         }
+    
+async def handle_face_image(websocket: WebSocket, room_id: str, user_id: str, message: dict):
+    """표정 이미지 감정 분석"""
+    try:
+        image_base64 = message.get("image_data", "")
+        if not image_base64:
+            return
+
+        # data:image/jpeg;base64, 접두사 제거
+        if "," in image_base64:
+            image_base64 = image_base64.split(",")[1]
+        
+        image_bytes = base64.b64decode(image_base64)
+        
+        # 감정 분석 (예시: DeepFace 등)
+        emotion_result = detect_emotion_from_image(image_bytes)
+
+        response = {
+            "type": "face_analysis_result",
+            "room_id": room_id,
+            "speaker_id": user_id,
+            "emotion": emotion_result,
+            "processed_at": datetime.now().isoformat()
+        }
+
+        await manager.send_to_room(room_id, response)
+        print(f"표정 분석 완료 - 방: {room_id}, 사용자: {user_id}, 감정: {emotion_result}")
+
+    except Exception as e:
+        error_response = {
+            "type": "error",
+            "message": f"표정 분석 오류: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }
+        await websocket.send_text(json.dumps(error_response))
