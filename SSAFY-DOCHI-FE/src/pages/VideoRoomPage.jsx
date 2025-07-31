@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import VideoCallWithVoice from '../components/VideoCallWithVoice';
 
 const VideoRoomPage = () => {
-  const { roomId } = useParams();
+  const { roomId, roomCode } = useParams();
   const navigate = useNavigate();
   const [userId, setUserId] = useState(`user_${Date.now()}`);
+  
+  const currentRoomId = roomId || roomCode; // roomId 또는 roomCode 사용
 
-  if (!roomId) {
+  if (!currentRoomId) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -26,7 +28,7 @@ const VideoRoomPage = () => {
 
   return (
     <VideoCallWithVoice 
-      roomCode={roomId} 
+      roomCode={currentRoomId} 
       userId={userId}
     />
   );

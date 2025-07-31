@@ -37,6 +37,7 @@ const App = () => {
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call" element={<VideoCallRoom />} />
+            <Route path="/video-call/:roomCode" element={<VideoRoomPage />} />
             <Route path="/voice-chat" element={<VoiceChatPage />} />
             <Route path="/video-room/:roomId" element={<VideoRoomPage />} />
             <Route path="/voice-demo" element={<VoiceDemoPage />} />
