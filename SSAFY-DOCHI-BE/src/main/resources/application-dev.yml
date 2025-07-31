@@ -5,11 +5,11 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/dochi}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:ssafy}
+    password: ${MYSQL_ROOT_PASSWORD:ssafy}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:6381}
       timeout: ${REDIS_TIMEOUT:2000ms}
   mail:
     host: ${SMTP_HOST:smtp.gmail.com}
