@@ -9,9 +9,17 @@ import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
+// import ComfortPage from './pages/ComfortPage';
+import VoiceChatPage from './pages/VoiceChatPage';
+import VideoRoomPage from './pages/VideoRoomPage';
+import VoiceDemoPage from './pages/VoiceDemoPage';
+import STTPage from './pages/STTPage';
+import STTVideoRoomPage from './pages/STTVideoRoomPage';
 import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
 import MyPage from './pages/MyPage';
+import ProfileEditPage from './pages/ProfileEditPage';
+import PasswordChangePage from './pages/PasswordChangePage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
 
@@ -34,6 +42,15 @@ const App = () => {
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call" element={<VideoCallRoom />} />
+            {/* <Route path="/comfort" element={<ComfortPage />} /> */}
+            <Route path="/mypage" element={<MyPage />} />
+            <Route path="/mypage/profile" element={<ProfileEditPage />} />
+            <Route path="/mypage/password" element={<PasswordChangePage />} />
+            <Route path="/voice-chat" element={<VoiceChatPage />} />
+            <Route path="/video-room/:roomId" element={<VideoRoomPage />} />
+            <Route path="/voice-demo" element={<VoiceDemoPage />} />
+            <Route path="/stt" element={<STTPage />} />
+            <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
           </Routes>
         </main>
       </div>

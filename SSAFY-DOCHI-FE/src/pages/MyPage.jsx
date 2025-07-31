@@ -1,176 +1,116 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import MyPageNavigation from "../components/MyPageNavigation";
+import ConflictCard from "../components/ConflictCard";
+import myPageApi from "../services/myPageApi";
 
-const Element = () => {
+const MyPage = () => {
+  const navigate = useNavigate();
+  const [conflictCount, setConflictCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // 갈등 개수 로드
+  useEffect(() => {
+    loadConflictCount();
+  }, []);
+
+  const loadConflictCount = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await myPageApi.getUserConflictCount();
+      setConflictCount(response.count || 0);
+    } catch (err) {
+      console.error('갈등 개수 로드 실패:', err);
+      setError('갈등 개수를 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCardClick = (index) => {
+    // 실제 갈등 ID로 이동 (나중에 수정)
+    navigate(`/conflicts/${index + 1}`);
+  };
+
+  const handleCreateClick = () => {
+    navigate("/conflicts/create");
+  };
+
+  // 3의 배수로 카드 배치 계산
+  const getTotalCards = () => {
+    if (conflictCount === 0) return 3; // 갈등이 없으면 3개 빈 카드
+    return Math.ceil(conflictCount / 3) * 3;
+  };
+
+  const getEmptyCardsCount = () => {
+    const totalCards = getTotalCards();
+    return totalCards - conflictCount;
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white min-h-screen flex justify-center">
+        <div className="w-full max-w-[1440px] bg-white">
+          <MyPageNavigation />
+          <div className="flex justify-center items-center py-20">
+            <div className="text-xl text-[#999999]">로딩 중...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#ffffff] flex flex-row justify-center w-full">
-      <div className="bg-[#ffffff] overflow-hidden w-[1440px] h-[1024px] relative">
+    <div className="bg-white min-h-screen flex justify-center">
+      <div className="w-full max-w-[1440px] bg-white">
         
-        {/* 마이페이지 제목 */}
-        <div className="absolute w-[227px] top-[80px] left-[606px] [font-family:'Pretendard-Bold',Helvetica] font-bold text-[36px] text-[#bf7d2c] text-center">
-          마이페이지
-        </div>
+        <MyPageNavigation />
 
-        {/* 네비게이션 메뉴 */}
-        <div className="absolute top-[160px] left-[432px] [font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[20px] text-[#bf7d2c] border-b-[3px] border-[#bf7d2c] pb-[8px]">
-          갈등 모아보기
-        </div>
-
-        <div className="absolute top-[160px] left-[643px] [font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[20px] text-[#999999]">
-          내 정보 수정
-        </div>
-
-        <div className="absolute top-[160px] left-[834px] [font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[20px] text-[#999999]">
-          비밀번호 변경
-        </div>
-
-        {/* 첫 번째 카드 */}
-        <div className="absolute w-[362px] h-[529px] top-[250px] left-[123px] rounded-[20px] border border-solid border-[#e5e7eb] bg-white shadow-[0px_4px_6px_rgba(0,0,0,0.1)]">
-          
-          {/* 고슴도치 아이콘 */}
-          <div className="absolute w-[100px] h-[100px] top-[60px] left-[131px] rounded-full border-[4px] border-[#fbbf24] overflow-hidden" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
-            <div className="absolute top-[30px] left-[35px] flex space-x-[8px]">
-              {/* 왼쪽 고슴도치 */}
-              <div className="relative">
-                <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-                  <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-                  <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-                </div>
-              </div>
-              {/* 오른쪽 고슴도치 */}
-              <div className="relative">
-                <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-                  <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-                  <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-                </div>
-              </div>
+        {error && (
+          <div className="max-w-[600px] mx-auto px-8 mb-8">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+              {error}
+              <button 
+                onClick={loadConflictCount}
+                className="ml-4 text-red-800 underline hover:no-underline"
+              >
+                다시 시도
+              </button>
             </div>
           </div>
-          
-          {/* 갈등 등록일 텍스트 */}
-          <div className="absolute top-[200px] left-[50%] transform -translate-x-1/2 [font-family:'Pretendard-Regular',Helvetica] text-[18px] text-[#999999]">
-            갈등 등록일
-          </div>
-          
-          {/* 메인 텍스트 */}
-          <div className="absolute top-[250px] left-[50%] transform -translate-x-1/2 text-center [font-family:'Pretendard-Bold',Helvetica] font-bold text-[24px] text-[#ea580c] leading-[1.3]">
-            집안일 분담<br />
-            관련 갈등
-          </div>
-          
-          {/* 버튼 */}
-          <div className="absolute bottom-[60px] left-[50%] transform -translate-x-1/2">
-            <button className="bg-[#ea580c] hover:bg-[#dc2626] text-white px-[40px] py-[16px] rounded-full [font-family:'Pretendard-Medium',Helvetica] text-[18px] font-medium transition-colors shadow-lg">
-              자세히 보기
-            </button>
-          </div>
-        </div>
+        )}
 
-        {/* 두 번째 카드 */}
-        <div className="absolute w-[362px] h-[529px] top-[250px] left-[539px] rounded-[20px] border border-solid border-[#e5e7eb] bg-white shadow-[0px_4px_6px_rgba(0,0,0,0.1)]">
+        {/* 카드 그리드 - 3열 고정 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-8 lg:px-16">
           
-          {/* 고슴도치 아이콘 */}
-          <div className="absolute w-[100px] h-[100px] top-[60px] left-[131px] rounded-full border-[4px] border-[#fbbf24] overflow-hidden" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
-            <div className="absolute top-[30px] left-[35px] flex space-x-[8px]">
-              {/* 왼쪽 고슴도치 */}
-              <div className="relative">
-                <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-                  <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-                  <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-                </div>
-              </div>
-              {/* 오른쪽 고슴도치 */}
-              <div className="relative">
-                <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-                  <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-                  <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* 날짜 텍스트 */}
-          <div className="absolute top-[200px] left-[50%] transform -translate-x-1/2 [font-family:'Pretendard-Regular',Helvetica] text-[18px] text-[#999999]">
-            2025.05.05
-          </div>
-          
-          {/* 메인 텍스트 */}
-          <div className="absolute top-[250px] left-[50%] transform -translate-x-1/2 text-center [font-family:'Pretendard-Bold',Helvetica] font-bold text-[24px] text-[#ea580c] leading-[1.3]">
-            집안일 분담<br />
-            관련 갈등
-          </div>
-          
-          {/* 버튼 */}
-          <div className="absolute bottom-[60px] left-[50%] transform -translate-x-1/2">
-            <button className="bg-[#ea580c] hover:bg-[#dc2626] text-white px-[40px] py-[16px] rounded-full [font-family:'Pretendard-Medium',Helvetica] text-[18px] font-medium transition-colors shadow-lg">
-              자세히 보기
-            </button>
-          </div>
-        </div>
+          {/* 등록된 갈등 카드들 */}
+          {Array.from({ length: conflictCount }).map((_, index) => (
+            <ConflictCard
+              key={`conflict-${index}`}
+              type="normal"
+              date={null} // 또는 "갈등 등록일" 표시
+              title="집안일 분담\n관련 갈등"
+              buttonText="자세히 보기"
+              onButtonClick={() => handleCardClick(index)}
+            />
+          ))}
 
-        {/* 세 번째 카드 - 빈 상태 */}
-        <div className="absolute w-[362px] h-[529px] top-[250px] left-[955px] rounded-[20px] border border-solid border-[#e5e7eb] bg-white shadow-[0px_4px_6px_rgba(0,0,0,0.1)]">
-          
-          {/* 고슴도치 아이콘 */}
-          <div className="absolute w-[100px] h-[100px] top-[60px] left-[131px] rounded-full border-[4px] border-[#fbbf24] overflow-hidden" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
-            <div className="absolute top-[30px] left-[35px] flex space-x-[8px]">
-              {/* 왼쪽 고슴도치 */}
-              <div className="relative">
-                <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-                  <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-                  <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-                </div>
-              </div>
-              {/* 오른쪽 고슴도치 */}
-              <div className="relative">
-                <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-                  <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-                  <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-                  <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-                  <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* 메인 텍스트 */}
-          <div className="absolute top-[230px] left-[50%] transform -translate-x-1/2 text-center [font-family:'Pretendard-Bold',Helvetica] font-bold text-[24px] text-[#ea580c] leading-[1.3]">
-            아직 등록된<br />
-            갈등이 없어요
-          </div>
-          
-          {/* 버튼 */}
-          <div className="absolute bottom-[60px] left-[50%] transform -translate-x-1/2">
-            <button className="bg-[#ea580c] hover:bg-[#dc2626] text-white px-[40px] py-[16px] rounded-full [font-family:'Pretendard-Medium',Helvetica] text-[18px] font-medium transition-colors shadow-lg">
-              등록하러가기
-            </button>
-          </div>
-        </div>
+          {/* 3의 배수로 맞추기 위한 빈 카드들 */}
+          {Array.from({ length: getEmptyCardsCount() }).map((_, index) => (
+            <ConflictCard
+              key={`empty-${index}`}
+              type="empty"
+              buttonText="등록하러가기"
+              onButtonClick={handleCreateClick}
+            />
+          ))}
 
+        </div>
       </div>
     </div>
   );
 };
 
-export default Element;
+export default MyPage;
