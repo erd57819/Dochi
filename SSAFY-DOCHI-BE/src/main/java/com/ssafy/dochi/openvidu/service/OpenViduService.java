@@ -1,5 +1,7 @@
 package com.ssafy.dochi.openvidu.service;
 
+import com.ssafy.dochi.openvidu.dao.UserSessionDao;
+import com.ssafy.dochi.openvidu.domain.UserSession;
 import com.ssafy.dochi.openvidu.exception.OpenViduException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +27,16 @@ public class OpenViduService {
     @Value("${livekit.api.secret}")
     private String apiSecret;
 
+    private final UserSessionDao userSessionDao;
     // LiveKit용 JWT 생성
-    public String createToken(String roomName, String identity, List<String> permissions) {
+    public String createToken(String roomName, String identity, List<String> permissions, Long userId) {
         try {
+
+            boolean alreadyJoined = userSessionDao.existsBySessionIdAndUserId(roomName, userId);
+            if (alreadyJoined) {
+                throw new OpenViduException("이미 해당 세션에 참여 중입니다.");
+            }
+
             Map<String, Object> videoClaims = Map.of(
                     "room", roomName,
                     "identity", identity,
@@ -37,6 +47,13 @@ public class OpenViduService {
             Date exp = new Date(now.getTime() + 1000L * 60 * 60); // 1시간
 
             Key key = Keys.hmacShaKeyFor(apiSecret.getBytes(StandardCharsets.UTF_8));
+
+            userSessionDao.insertSession(UserSession.builder()
+                    .sessionId(roomName)
+                    .userId(userId)
+                    .expiresAt(exp.toInstant()
+                            .atZone(ZoneId.systemDefault()).toLocalDateTime())
+                    .build());
 
             return Jwts.builder()
                     .setSubject(apiKey)
