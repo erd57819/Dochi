@@ -24,8 +24,8 @@ spring:
   
   data:
     redis:
-      host: ${SPRING_REDIS_HOST:dochi-redis}
-      port: ${SPRING_REDIS_PORT:6379}
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6381}
       timeout: ${REDIS_TIMEOUT:2000ms}
       lettuce:
         pool:
