@@ -1,31 +1,13 @@
 import React from "react";
+import conflictImage from '../assets/conflict.png'; // conflict.png 이미지 import
 
 const HedgehogIcon = () => (
   <div className="w-[100px] h-[100px] mt-[60px] rounded-full border-[4px] border-[#fbbf24] overflow-hidden flex items-center justify-center" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
-    <div className="flex space-x-[8px]">
-      {/* 왼쪽 고슴도치 */}
-      <div className="relative">
-        <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-          <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-          <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-          <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-          <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-          <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-          <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-        </div>
-      </div>
-      {/* 오른쪽 고슴도치 */}
-      <div className="relative">
-        <div className="w-[14px] h-[18px] bg-[#92400e] rounded-full relative">
-          <div className="absolute top-[4px] left-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-          <div className="absolute top-[4px] right-[3px] w-[2px] h-[2px] bg-black rounded-full"></div>
-          <div className="absolute -top-[2px] left-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-45"></div>
-          <div className="absolute -top-[2px] left-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-12"></div>
-          <div className="absolute -top-[2px] right-[4px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform rotate-12"></div>
-          <div className="absolute -top-[2px] right-[1px] w-[2px] h-[6px] bg-[#78350f] rounded-t-full transform -rotate-45"></div>
-        </div>
-      </div>
-    </div>
+    <img 
+      src={conflictImage} 
+      alt="갈등" 
+      className="w-full h-full object-contain p-2"
+    />
   </div>
 );
 
@@ -41,7 +23,7 @@ const ConflictCard = ({
   return (
     <div className="w-full max-w-[362px] mx-auto h-[529px] rounded-[20px] border border-solid border-[#e5e7eb] bg-white shadow-[0px_4px_6px_rgba(0,0,0,0.1)] flex flex-col items-center">
       
-      {/* 고슴도치 아이콘 */}
+      {/* 갈등 이미지 아이콘 */}
       <HedgehogIcon />
       
       {/* 날짜 또는 갈등 등록일 텍스트 */}
@@ -52,7 +34,14 @@ const ConflictCard = ({
       )}
       
       {/* 메인 텍스트 */}
-      <div className={`${isEmptyCard ? 'mt-16' : 'mt-6'} text-center text-2xl font-bold text-[#ea580c] leading-[1.3]`} style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+      <div className={`${isEmptyCard ? 'mt-16' : 'mt-6'} text-center text-2xl font-bold leading-[1.3]`} 
+           style={{ 
+             fontFamily: 'Pretendard-Bold, Helvetica',
+             background: 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)',
+             WebkitBackgroundClip: 'text',
+             WebkitTextFillColor: 'transparent',
+             backgroundClip: 'text'
+           }}>
         {isEmptyCard ? (
           <>아직 등록된<br />갈등이 없어요</>
         ) : (
@@ -69,8 +58,14 @@ const ConflictCard = ({
       <div className="mt-auto mb-[60px]">
         <button 
           onClick={onButtonClick}
-          className="bg-[#ea580c] hover:bg-[#dc2626] text-white px-10 py-4 rounded-full text-lg font-medium transition-colors shadow-lg" 
-          style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}
+          className="px-10 py-4 rounded-full text-lg font-medium transition-colors shadow-lg text-white"
+          style={{ 
+            fontFamily: 'Pretendard-Medium, Helvetica',
+            background: 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)',
+            border: 'none'
+          }}
+          onMouseEnter={(e) => e.target.style.background = 'linear-gradient(135deg, #E55A43 0%, #F0B85C 100%)'}
+          onMouseLeave={(e) => e.target.style.background = 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)'}
         >
           {buttonText}
         </button>
