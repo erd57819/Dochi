@@ -1,6 +1,15 @@
 import { API_BASE_URL } from '../config/api.js';
 import useAuthStore from '../stores/AuthStore.js';
 
+// 인증 헤더 생성 (이미지 업로드용)
+const getAuthHeadersForUpload = () => {
+  const token = localStorage.getItem('accessToken') || useAuthStore.getState().token;
+  console.log('🔐 마이페이지 API 토큰:', token ? '토큰 있음' : '토큰 없음');
+  return {
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
 // 인증 헤더 생성
 const getAuthHeaders = () => {
   const token = localStorage.getItem('accessToken') || useAuthStore.getState().token;
@@ -30,6 +39,66 @@ export const myPageApi = {
   
   // === 사용자 정보 관련 API ===
   
+  /**
+   * 프로필 이미지 업로드용 Presigned URL 생성
+   * @param {Object} imageInfo - {fileName, contentType}
+   * @returns {Promise<Object>} Presigned URL 정보
+   */
+  async generateProfileImageUploadUrl(imageInfo) {
+    try {
+      console.log('🖼️ 프로필 이미지 Presigned URL 생성 시작:', imageInfo);
+      
+      const response = await fetch(`${API_BASE_URL}/user/image/presigned-url`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(imageInfo)
+      });
+      
+      await handleApiError(response);
+      const data = await response.json();
+      
+      console.log('✅ Presigned URL 생성 성공:', data);
+      
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('❌ Presigned URL 생성 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 프로필 이미지 업로드 완료 처리
+   * @param {string} imageKey - 업로드된 이미지 키
+   * @returns {Promise<Object>} 완료 처리 결과
+   */
+  async completeProfileImageUpload(imageKey) {
+    try {
+      console.log('✅ 프로필 이미지 업로드 완료 처리 시작:', imageKey);
+      
+      const response = await fetch(`${API_BASE_URL}/user/image/complete`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ imageKey })
+      });
+      
+      await handleApiError(response);
+      const data = await response.json();
+      
+      console.log('✅ 이미지 업로드 완료 처리 성공:', data);
+      
+      return {
+        success: true,
+        message: '프로필 이미지가 성공적으로 업로드되었습니다.'
+      };
+    } catch (error) {
+      console.error('❌ 이미지 업로드 완료 처리 실패:', error);
+      throw error;
+    }
+  },
+
   /**
    * 사용자 정보 조회
    * @returns {Promise<Object>} 사용자 정보
@@ -68,7 +137,7 @@ export const myPageApi = {
     try {
       console.log('✏️ 사용자 정보 수정 시작:', userData);
       
-      // UserUpdateReqDto 구조에 맞게 변환
+      // UserUpdateReqDto 구조에 맞게 변환 (profileImage 제외)
       const requestData = {
         nickname: userData.nickname,
         address: userData.address || '' // address는 nullable
@@ -230,6 +299,34 @@ export const myPageApi = {
       };
     } catch (error) {
       console.error('❌ 비밀번호 변경 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 회원탈퇴
+   * @returns {Promise<Object>} 탈퇴 결과
+   */
+  async deleteUser() {
+    try {
+      console.log('🗑️ 회원탈퇴 시작');
+      
+      const response = await fetch(`${API_BASE_URL}/user/delete`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      
+      await handleApiError(response);
+      const data = await response.json();
+      
+      console.log('✅ 회원탈퇴 성공:', data);
+      
+      return {
+        success: true,
+        message: '회원탈퇴가 성공적으로 처리되었습니다.'
+      };
+    } catch (error) {
+      console.error('❌ 회원탈퇴 실패:', error);
       throw error;
     }
   }
