@@ -252,7 +252,6 @@ CREATE TABLE `comment_likes` (
 CREATE TABLE `chat_rooms` (
     `id`         BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `user_id`    BIGINT       NOT NULL COMMENT '채팅방 생성자 ID (FK)',
-    `title`      VARCHAR(255) NULL COMMENT '채팅방 제목',
     `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
@@ -261,7 +260,7 @@ CREATE TABLE `chat_rooms` (
 -- 챗봇 메시지
 CREATE TABLE `chat_messages` (
     `id`           BIGINT                 NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `chat_room_id` BIGINT                 NOT NULL COMMENT '채팅방 ID (FK)',
+    `user_id` BIGINT                 NOT NULL COMMENT 'user ID (FK)',
     `sender_type`  ENUM('USER', 'BOT')    NOT NULL COMMENT '발신자 타입',
     `message`      TEXT                   NOT NULL,
     `created_at`   DATETIME               NOT NULL DEFAULT CURRENT_TIMESTAMP,
