@@ -1,9 +1,12 @@
 from fastapi import FastAPI
-# CORSMiddleware를 import 합니다.
 from fastapi.middleware.cors import CORSMiddleware
-from routers import summary, stt_processing
+from routers import sttRouter, speechRouter, voiceRouter, summary, websocketRouter, apiRouter
 
-app = FastAPI()
+app = FastAPI(
+    title="SSAFY DOCHI AI Server",
+    description="AI-powered conflict mediation platform - Speech and Text Analysis API",
+    version="2.0.0"
+)
 
 # CORS 미들웨어 설정
 origins = [
@@ -17,19 +20,37 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # 모든 HTTP 메소드 허용
-    allow_headers=["*"], # 모든 HTTP 헤더 허용
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# summary 라우터 등록
-app.include_router(summary.router)
-# STT processing 라우터 등록
-app.include_router(stt_processing.router)
+# 라우터 등록
+app.include_router(apiRouter.router)          # API 정보
+app.include_router(sttRouter.router)          # STT 처리
+app.include_router(speechRouter.router)       # 음성 분석
+app.include_router(voiceRouter.router)        # 음성 대화
+app.include_router(summary.router)            # AI 요약
+app.include_router(websocketRouter.router)    # WebSocket 실시간 통신
 
 @app.get("/")
-def read_root():
-    return {"message": "Speech-to-Text API Server is running"}
+def readRoot():
+    return {
+        "message": "SSAFY DOCHI AI Server is running",
+        "version": "2.0.0",
+        "services": [
+            "STT Processing",
+            "Speech Analysis", 
+            "Voice Chat",
+            "AI Summary",
+            "Real-time WebSocket"
+        ]
+    }
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "ai-service"}
+def healthCheck():
+    return {
+        "status": "healthy", 
+        "service": "dochi-ai-server",
+        "version": "2.0.0"
+    }
+

@@ -8,6 +8,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.core.io.ByteArrayResource;
 
+/**
+ * STT 프록시 컨트롤러
+ * 현재 프론트엔드에서 AI 서버로 직접 연결하도록 수정됨 (Vite 프록시: /ai -> localhost:8002)
+ * 이 컨트롤러는 fallback 용도로 유지
+ */
 @RestController
 @RequestMapping("/api/stt")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8090"})

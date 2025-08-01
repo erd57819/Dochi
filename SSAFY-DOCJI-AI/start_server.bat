@@ -23,14 +23,14 @@ pip install -r requirements.txt
 :: 서버 실행
 echo.
 echo AI 서버 시작 중...
-echo 포트: 8000
-echo API 문서: http://localhost:8000/docs
-echo 음성 분석 API: http://localhost:8000/speech/
-echo WebSocket: ws://localhost:8000/ws/speech-analysis/{room_id}/{user_id}
+echo 포트: 8002 (도커와 동일)
+echo API 문서: http://localhost:8002/docs
+echo 음성 분석 API: http://localhost:8002/speech/
+echo WebSocket: ws://localhost:8002/ws/speech-analysis/{room_id}/{user_id}
 echo.
 echo 서버 종료: Ctrl+C
 echo.
 
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 
 pause
