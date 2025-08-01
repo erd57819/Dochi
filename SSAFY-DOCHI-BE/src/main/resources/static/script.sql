@@ -1,4 +1,37 @@
 -- =================================================================================
+-- 데이터베이스 초기화
+-- =================================================================================
+
+-- 데이터베이스 사용 (Docker 환경에서 자동 생성됨)
+USE dochi;
+
+-- 기존 테이블이 있다면 삭제 (순서 중요: 외래키 참조 역순)
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS `final_analysis_reports`;
+DROP TABLE IF EXISTS `session_summaries`;
+DROP TABLE IF EXISTS `ai_interventions`;
+DROP TABLE IF EXISTS `stt_transcripts`;
+DROP TABLE IF EXISTS `emotion_analysis_logs`;
+DROP TABLE IF EXISTS `sessions`;
+DROP TABLE IF EXISTS `user_conflicts`;
+DROP TABLE IF EXISTS `ai_analysis_results`;
+DROP TABLE IF EXISTS `video_call_sessions`;
+DROP TABLE IF EXISTS `video_call_rooms`;
+DROP TABLE IF EXISTS `chat_messages`;
+DROP TABLE IF EXISTS `chat_rooms`;
+DROP TABLE IF EXISTS `notices`;
+DROP TABLE IF EXISTS `comment_likes`;
+DROP TABLE IF EXISTS `post_likes`;
+DROP TABLE IF EXISTS `comments`;
+DROP TABLE IF EXISTS `community_posts`;
+DROP TABLE IF EXISTS `email_verification`;
+DROP TABLE IF EXISTS `user_sessions`;
+DROP TABLE IF EXISTS `users`;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- =================================================================================
 -- 사용자 관련 테이블
 -- =================================================================================
 
@@ -370,3 +403,12 @@ INSERT INTO `chat_messages` (
 (1, 'BOT', '안녕하세요! 직장 갈등에 대해 도움을 드릴게요. 어떤 상황인지 자세히 말씀해 주세요.'),
 (2, 'USER', '친구와의 관계를 개선하고 싶어요.'),
 (2, 'BOT', '친구와의 관계 개선을 원하시는군요. 현재 어떤 문제가 있는지 알려주시겠어요?');
+
+-- =================================================================================
+-- 초기화 완료 확인
+-- =================================================================================
+
+-- 생성된 테이블 수 확인
+SELECT 'Database initialization completed!' as message;
+SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'dochi';
+SELECT 'Sample data inserted successfully!' as message;
