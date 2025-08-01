@@ -22,6 +22,7 @@ import ProfileEditPage from './pages/ProfileEditPage';
 import PasswordChangePage from './pages/PasswordChangePage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
+import TodakTodakChatbot from './components/TodakTodakChatbot';
 
 const App = () => {
   return (
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/voice-demo" element={<VoiceDemoPage />} />
             <Route path="/stt" element={<STTPage />} />
             <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
+            <Route path="/chat" element={<TodakTodakChatbot />} />
           </Routes>
         </main>
       </div>
