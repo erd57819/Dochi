@@ -294,143 +294,162 @@ const ProfileEditPage = () => {
 
         {/* 메인 컨텐츠 */}
         <div className="flex justify-center px-4 py-12">
-          <div className="w-full max-w-[500px]">
-            {/* 프로필 섹션 */}
-            <div className="text-center mb-8">
-              {/* 프로필 이미지 */}
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  {imagePreview ? (
-                    <div className="w-[140px] h-[140px] rounded-full overflow-hidden border-4 border-white shadow-lg">
-                      <img 
-                        src={imagePreview} 
-                        alt="프로필 이미지" 
-                        className="w-full h-full object-cover"
-                      />
+          <div className="w-full max-w-[900px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              
+              {/* 왼쪽: 프로필 정보 */}
+              <div className="flex flex-col items-center">
+                {/* 프로필 섹션 */}
+                <div className="text-center mb-8 w-full">
+                  {/* 프로필 이미지 */}
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
+                      {imagePreview ? (
+                        <div className="w-[140px] h-[140px] rounded-full overflow-hidden border-4 border-white shadow-lg">
+                          <img 
+                            src={imagePreview} 
+                            alt="프로필 이미지" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-[140px] h-[140px] rounded-full flex items-center justify-center bg-gray-200 border-4 border-white shadow-lg">
+                          <span className="text-4xl text-gray-500">🗄️</span>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="w-[140px] h-[140px] rounded-full flex items-center justify-center bg-gray-200 border-4 border-white shadow-lg">
-                      <span className="text-4xl text-gray-500">🗄️</span>
+                  </div>
+
+                  {/* 프로필 사진 선택 옵션 */}
+                  <div className="mb-6">
+                    <div className="flex justify-center">
+                      <label className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-6 py-3 rounded-lg font-medium cursor-pointer transition-colors">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        {imagePreview ? '사진 변경' : '사진 업로드'}
+                      </label>
                     </div>
-                  )}
+                  </div>
+
+                  {/* 사용자 정보 */}
+                  <h2 className="text-2xl font-bold text-black mb-2">
+                    {userInfo.name && userInfo.name !== 'string' ? userInfo.name : '이름 없음'}, {userInfo.age > 0 ? `${userInfo.age}세` : ''}{userInfo.age > 0 && userInfo.gender && userInfo.gender !== 'NONE' ? ', ' : ''}{userInfo.gender === 'MALE' ? '남성' : userInfo.gender === 'FEMALE' ? '여성' : ''}
+                  </h2>
+                  <p className="text-[#666] text-sm">
+                    {formatDate(userInfo.created_at)}
+                  </p>
                 </div>
               </div>
 
-              {/* 프로필 사진 선택 옵션 */}
-              <div className="mb-6">
-                <div className="flex justify-center">
-                  <label className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-6 py-3 rounded-lg font-medium cursor-pointer transition-colors">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageUpload}
-                      className="hidden"
+              {/* 오른쪽: 입력 폼 */}
+              <div className="flex flex-col">
+                {/* 에러 메시지 */}
+                {error && (
+                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-center">
+                    {error}
+                  </div>
+                )}
+
+                {/* 입력 폼 */}
+                <div className="space-y-6 flex-1">
+                  {/* 닉네임 */}
+                  <div>
+                    <label className="block text-left text-[#333] font-medium mb-2">
+                      닉네임
+                    </label>
+                    <input
+                      type="text"
+                      name="nickname"
+                      value={formData.nickname}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-lg border border-[#d1d5db] focus:border-[#D2691E] focus:outline-none bg-white text-base"
+                      placeholder="닉네임을 입력해주세요"
                     />
-                    {imagePreview ? '사진 변경' : '사진 업로드'}
-                  </label>
+                  </div>
+
+                  {/* 아이디 */}
+                  <div>
+                    <label className="block text-left text-[#333] font-medium mb-2">
+                      아이디
+                    </label>
+                    <input
+                      type="text"
+                      value={userInfo.userId}
+                      disabled
+                      className="w-full px-4 py-3 rounded-lg border border-[#e5e7eb] bg-[#f9fafb] text-[#666] text-base"
+                    />
+                  </div>
+
+                  {/* 이메일 */}
+                  <div>
+                    <label className="block text-left text-[#333] font-medium mb-2">
+                      이메일
+                    </label>
+                    <input
+                      type="email"
+                      value={userInfo.email}
+                      disabled
+                      className="w-full px-4 py-3 rounded-lg border border-[#e5e7eb] bg-[#f9fafb] text-[#666] text-base"
+                    />
+                  </div>
+
+                  {/* 주소 */}
+                  <div>
+                    <label className="block text-left text-[#333] font-medium mb-2">
+                      주소
+                    </label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={formData.address}
+                      readOnly
+                      onClick={openDaumPostcode}
+                      className="w-full px-4 py-3 rounded-lg border border-[#d1d5db] cursor-pointer bg-white"
+                      placeholder="주소를 검색해주세요"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* 사용자 정보 */}
-              <h2 className="text-2xl font-bold text-black mb-2">
-                {userInfo.name && userInfo.name !== 'string' ? userInfo.name : '이름 없음'}, {userInfo.age > 0 ? `${userInfo.age}세` : ''}{userInfo.age > 0 && userInfo.gender && userInfo.gender !== 'NONE' ? ', ' : ''}{userInfo.gender === 'MALE' ? '남성' : userInfo.gender === 'FEMALE' ? '여성' : ''}
-              </h2>
-              <p className="text-[#666] text-sm">
-                {formatDate(userInfo.created_at)}
-              </p>
-            </div>
-
-            {/* 에러 메시지 */}
-            {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-center">
-                {error}
-              </div>
-            )}
-
-            {/* 입력 폼 */}
-            <div className="space-y-6">
-              {/* 닉네임 */}
-              <div>
-                <label className="block text-left text-[#333] font-medium mb-2">
-                  닉네임
-                </label>
-                <input
-                  type="text"
-                  name="nickname"
-                  value={formData.nickname}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 rounded-lg border border-[#d1d5db] focus:border-[#D2691E] focus:outline-none bg-white text-base"
-                  placeholder="닉네임을 입력해주세요"
-                />
-              </div>
-
-              {/* 아이디 */}
-              <div>
-                <label className="block text-left text-[#333] font-medium mb-2">
-                  아이디
-                </label>
-                <input
-                  type="text"
-                  value={userInfo.userId}
-                  disabled
-                  className="w-full px-4 py-3 rounded-lg border border-[#e5e7eb] bg-[#f9fafb] text-[#666] text-base"
-                />
-              </div>
-
-              {/* 이메일 */}
-              <div>
-                <label className="block text-left text-[#333] font-medium mb-2">
-                  이메일
-                </label>
-                <input
-                  type="email"
-                  value={userInfo.email}
-                  disabled
-                  className="w-full px-4 py-3 rounded-lg border border-[#e5e7eb] bg-[#f9fafb] text-[#666] text-base"
-                />
-              </div>
-
-              {/* 주소 */}
-              <div>
-                <label className="block text-left text-[#333] font-medium mb-2">
-                  주소
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  readOnly
-                  onClick={openDaumPostcode}
-                  className="w-full px-4 py-3 rounded-lg border border-[#d1d5db] cursor-pointer bg-white"
-                  placeholder="주소를 검색해주세요"
-                />
-              </div>
-            </div>
-
-            {/* 저장 및 회원탈퇴 버튼 */}
-            <div className="space-y-4 mt-12">
-              {/* 저장 버튼 */}
-              <div className="flex justify-center">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-12 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 min-w-[200px]"
-                >
-                  {saving ? '저장 중...' : '프로필 저장'}
-                </button>
+                {/* 저장 및 회원탈퇴 버튼 */}
+                <div className="mt-8">
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 flex-1 max-w-[140px]"
+                      style={{ 
+                        backgroundColor: '#2563eb', 
+                        color: 'white',
+                        border: 'none'
+                      }}
+                      onMouseEnter={(e) => !saving && (e.target.style.backgroundColor = '#1d4ed8')}
+                      onMouseLeave={(e) => !saving && (e.target.style.backgroundColor = '#2563eb')}
+                    >
+                      {saving ? '저장 중...' : '프로필 저장'}
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="px-8 py-3 rounded-lg font-medium transition-colors flex-1 max-w-[140px]"
+                      style={{ 
+                        backgroundColor: '#dc2626', 
+                        color: 'white',
+                        border: 'none'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
+                    >
+                      회원탈퇴
+                    </button>
+                  </div>
+                </div>
               </div>
               
-              {/* 회원탈퇴 버튼 */}
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="text-red-500 hover:text-red-700 text-sm px-4 py-2 rounded-lg transition-colors hover:bg-red-50"
-                >
-                  회원탈퇴
-                </button>
-              </div>
             </div>
-
           </div>
         </div>
       </div>
