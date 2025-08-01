@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import MyPageNavigation from "../components/MyPageNavigation";
 import myPageApi from "../services/myPageApi";
+import useAuthStore from "../stores/AuthStore";
 
 const ProfileEditPage = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
   const [formData, setFormData] = useState({
     nickname: "",
     address: ""
@@ -17,21 +21,12 @@ const ProfileEditPage = () => {
     created_at: ""
   });
   const [originalData, setOriginalData] = useState({});
-  const [isEditing, setIsEditing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedAvatar, setSelectedAvatar] = useState(0);
-
-  // 고슴도치 아바타 옵션들
-  const avatarOptions = [
-    { id: 0, emoji: "🦔", bg: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" },
-    { id: 1, emoji: "🦔", bg: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" },
-    { id: 2, emoji: "🦔", bg: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" },
-    { id: 3, emoji: "🦔", bg: "linear-gradient(135deg, #10b981 0%, #059669 100%)" },
-    { id: 4, emoji: "🦔", bg: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" },
-    { id: 5, emoji: "🦔", bg: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" },
-  ];
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   // 사용자 정보 로드
   useEffect(() => {
@@ -70,10 +65,9 @@ const ProfileEditPage = () => {
       setFormData(editableData);
       setOriginalData(editableData);
       
-      // 프로필 이미지에서 아바타 ID 추출
+      // 프로필 이미지 설정
       if (userData.profileImage) {
-        const avatarId = parseInt(userData.profileImage.replace('avatar_', '')) || 0;
-        setSelectedAvatar(avatarId);
+        setImagePreview(userData.profileImage);
       }
     } catch (err) {
       console.error('사용자 정보 로드 실패:', err);
@@ -102,8 +96,92 @@ const ProfileEditPage = () => {
       }
     }).open();
   };
-  const handleAvatarSelect = (avatarId) => {
-    setSelectedAvatar(avatarId);
+  
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 파일 크기 및 형식 유효성 검사
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    
+    if (file.size > maxSize) {
+      setError('이미지 크기는 5MB 이하로 업로드해주세요.');
+      return;
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+      setError('JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.');
+      return;
+    }
+
+    try {
+      // 미리보기를 위한 로컬 URL 생성
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+      setUploadedImage(file);
+      setError(null);
+    } catch (err) {
+      console.error('이미지 업로드 오류:', err);
+      setError('이미지 업로드에 실패했습니다.');
+    }
+  };
+
+  // S3에 이미지 업로드하는 함수
+  const uploadImageToS3 = async (file) => {
+    try {
+      // 1. Presigned URL 생성
+      const imageInfo = {
+        fileName: file.name,
+        contentType: file.type
+      };
+      
+      const urlResponse = await myPageApi.generateProfileImageUploadUrl(imageInfo);
+      const { presignedUrl, imageKey } = urlResponse.data;
+      
+      // 2. S3에 이미지 업로드
+      const uploadResponse = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type
+        }
+      });
+      
+      if (!uploadResponse.ok) {
+        console.error('S3 업로드 실패 상세:', uploadResponse.status, uploadResponse.statusText);
+        throw new Error(`S3 업로드 실패: ${uploadResponse.status}`);
+      }
+      
+      console.log('✅ S3 업로드 성공');
+      
+      // 3. 업로드 완료 처리
+      await myPageApi.completeProfileImageUpload(imageKey);
+      
+      return imageKey;
+    } catch (error) {
+      console.error('S3 이미지 업로드 실패:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      await myPageApi.deleteUser();
+      
+      // 로컬스토리지에서 토큰 제거
+      logout();
+      
+      // 로그인 페이지로 리다이렉트
+      navigate('/', { replace: true });
+      
+      alert('회원탈퇴가 완료되었습니다.');
+    } catch (err) {
+      console.error('회원탈퇴 실패:', err);
+      alert('회원탈퇴에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setShowDeleteModal(false);
+    }
   };
 
   const handleSave = async () => {
@@ -116,36 +194,56 @@ const ProfileEditPage = () => {
       setSaving(true);
       setError(null);
       
-      const updateData = {
-        ...formData,
-        profileImage: `avatar_${selectedAvatar}`
-      };
+      let hasError = false;
+      let errorMessage = '';
       
-      await myPageApi.updateUserInfo(updateData);
+      // 1. 사용자 정보가 변경된 경우만 업데이트
+      const isDataChanged = formData.nickname !== originalData.nickname || formData.address !== originalData.address;
+      
+      if (isDataChanged) {
+        try {
+          await myPageApi.updateUserInfo(formData);
+          console.log('✅ 사용자 정보 업데이트 성공');
+        } catch (err) {
+          hasError = true;
+          errorMessage = err.message || '사용자 정보 업데이트에 실패했습니다.';
+          console.error('❌ 사용자 정보 업데이트 실패:', err);
+        }
+      }
+      
+      // 2. 이미지가 업로드된 경우 S3에 업로드 및 DB 업데이트
+      if (uploadedImage && !hasError) {
+        try {
+          await uploadImageToS3(uploadedImage);
+          console.log('✅ 이미지 업로드 성공');
+        } catch (err) {
+          console.error('❌ 이미지 업로드 실패:', err);
+          // 이미지 업로드 실패는 전체 저장을 막지 않음
+          errorMessage = hasError ? errorMessage : '이미지 업로드에 실패했지만 다른 정보는 저장되었습니다.';
+        }
+      }
+      
+      if (hasError) {
+        throw new Error(errorMessage);
+      }
       
       setOriginalData(formData);
-      setUserInfo(prev => ({
-        ...prev,
-        profileImage: `avatar_${selectedAvatar}`
-      }));
-      setIsEditing(false);
-      alert("정보가 성공적으로 수정되었습니다.");
+      // 사용자 정보 새로고침
+      await loadUserInfo();
+      
+      if (uploadedImage && errorMessage.includes('이미지 업로드에 실패')) {
+        alert('사용자 정보는 업데이트되었지만 \n이미지 업로드에 실패했습니다. \n다시 시도해주세요.');
+      } else if (isDataChanged || uploadedImage) {
+        alert('프로필이 성공적으로 저장되었습니다.');
+      } else {
+        alert('변경된 내용이 없습니다.');
+      }
+      
     } catch (err) {
       console.error('사용자 정보 수정 실패:', err);
       setError(err.message || '정보 수정에 실패했습니다.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setFormData(originalData);
-    setIsEditing(false);
-    setError(null);
-    // 아바타도 원래대로
-    if (userInfo.profileImage) {
-      const avatarId = parseInt(userInfo.profileImage.replace('avatar_', '')) || 0;
-      setSelectedAvatar(avatarId);
     }
   };
 
@@ -197,43 +295,41 @@ const ProfileEditPage = () => {
         {/* 메인 컨텐츠 */}
         <div className="flex justify-center px-4 py-12">
           <div className="w-full max-w-[500px]">
-            
-
-
             {/* 프로필 섹션 */}
             <div className="text-center mb-8">
               {/* 프로필 이미지 */}
               <div className="flex justify-center mb-6">
-                <div 
-                  className="w-[140px] h-[140px] rounded-full flex items-center justify-center text-6xl border-4 border-white shadow-lg"
-                  style={{ background: avatarOptions[selectedAvatar]?.bg }}
-                >
-                  {avatarOptions[selectedAvatar]?.emoji}
+                <div className="relative">
+                  {imagePreview ? (
+                    <div className="w-[140px] h-[140px] rounded-full overflow-hidden border-4 border-white shadow-lg">
+                      <img 
+                        src={imagePreview} 
+                        alt="프로필 이미지" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-[140px] h-[140px] rounded-full flex items-center justify-center bg-gray-200 border-4 border-white shadow-lg">
+                      <span className="text-4xl text-gray-500">🗄️</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* 프로필 사진 변경 옵션 (편집 모드일 때만) */}
-              {isEditing && (
-                <div className="mb-6">
-                  <p className="text-sm text-[#666] mb-3">프로필 사진 선택</p>
-                  <div className="flex justify-center gap-3 flex-wrap">
-                    {avatarOptions.map((avatar) => (
-                      <button
-                        key={avatar.id}
-                        onClick={() => handleAvatarSelect(avatar.id)}
-                        className={`w-[60px] h-[60px] rounded-full flex items-center justify-center text-2xl border-2 transition-all ${
-                          selectedAvatar === avatar.id 
-                            ? 'border-[#D2691E] shadow-lg scale-110' 
-                            : 'border-gray-300 hover:border-[#D2691E]'
-                        }`}
-                        style={{ background: avatar.bg }}
-                      >
-                        {avatar.emoji}
-                      </button>
-                    ))}
-                  </div>
+              {/* 프로필 사진 선택 옵션 */}
+              <div className="mb-6">
+                <div className="flex justify-center">
+                  <label className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-6 py-3 rounded-lg font-medium cursor-pointer transition-colors">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    {imagePreview ? '사진 변경' : '사진 업로드'}
+                  </label>
                 </div>
-              )}
+              </div>
 
               {/* 사용자 정보 */}
               <h2 className="text-2xl font-bold text-black mb-2">
@@ -263,11 +359,7 @@ const ProfileEditPage = () => {
                   name="nickname"
                   value={formData.nickname}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 rounded-lg border text-base ${
-                    isEditing 
-                      ? "border-[#d1d5db] focus:border-[#D2691E] focus:outline-none bg-white" 
-                      : "border-[#e5e7eb] bg-[#f9fafb] text-[#666]"
-                  }`}
+                  className="w-full px-4 py-3 rounded-lg border border-[#d1d5db] focus:border-[#D2691E] focus:outline-none bg-white text-base"
                   placeholder="닉네임을 입력해주세요"
                 />
               </div>
@@ -315,38 +407,61 @@ const ProfileEditPage = () => {
               </div>
             </div>
 
-            {/* 버튼 */}
-            <div className="flex justify-center mt-12">
-              {!isEditing ? (
+            {/* 저장 및 회원탈퇴 버튼 */}
+            <div className="space-y-4 mt-12">
+              {/* 저장 버튼 */}
+              <div className="flex justify-center">
                 <button
-                  onClick={() => setIsEditing(true)}
-                  className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-8 py-3 rounded-lg font-medium transition-colors min-w-[120px]"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-12 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 min-w-[200px]"
                 >
-                  변경 사항 저장
+                  {saving ? '저장 중...' : '프로필 저장'}
                 </button>
-              ) : (
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleCancel}
-                    disabled={saving}
-                    className="bg-[#f3f4f6] hover:bg-[#e5e7eb] text-[#374151] px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 min-w-[100px]"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 min-w-[120px]"
-                  >
-                    {saving ? '저장 중...' : '변경 사항 저장'}
-                  </button>
-                </div>
-              )}
+              </div>
+              
+              {/* 회원탈퇴 버튼 */}
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="text-red-500 hover:text-red-700 text-sm px-4 py-2 rounded-lg transition-colors hover:bg-red-50"
+                >
+                  회원탈퇴
+                </button>
+              </div>
             </div>
 
           </div>
         </div>
       </div>
+
+      {/* 회원탈퇴 확인 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-center mb-4">회원탈퇴</h3>
+            <p className="text-gray-600 text-center mb-6">
+              정말로 탈퇴하시겠습니까?<br/>
+              탈퇴 후에는 모든 데이터가 삭제되며<br/>
+              복구할 수 없습니다.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-medium transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition-colors"
+              >
+                탈퇴하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
