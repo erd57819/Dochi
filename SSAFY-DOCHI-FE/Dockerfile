@@ -7,10 +7,12 @@ WORKDIR /app
 # package.json과 package-lock.json 복사
 COPY package*.json ./
 
-# npm 캐시 정리 및 의존성 설치
+# npm 캐시 정리 및 의존성 설치 (Rollup 바이너리 문제 해결)
 RUN npm cache clean --force && \
-    npm ci --only=production=false --no-audit --no-fund && \
-    npm rebuild
+    rm -rf node_modules && \
+    rm -f package-lock.json && \
+    npm install --force --verbose && \
+    npm ls @rollup/rollup-linux-x64-gnu || true
 
 # 소스 코드 복사
 COPY . .
