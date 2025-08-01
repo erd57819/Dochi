@@ -25,16 +25,26 @@ public class OpenViduController {
     @PostMapping("/token")
     public ApiResponse<?> createToken(
             @RequestParam String room,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal(required = false) CustomUserDetails userDetails
     ) {
-        // identity를 사용자별로 고유하게 구성 (예: "user-7")
-        String identity = "user-" + userDetails.getId();
+        // identity를 사용자별로 고유하게 구성
+        String identity;
+        Long userId;
+        
+        if (userDetails != null) {
+            identity = "user-" + userDetails.getId();
+            userId = userDetails.getId();
+        } else {
+            // 인증되지 않은 사용자를 위한 임시 처리
+            identity = "guest-" + System.currentTimeMillis();
+            userId = 0L; // 게스트 사용자
+        }
 
         String token = openViduService.createToken(
                 room,
                 identity,
                 List.of("join", "publish", "subscribe"),
-                userDetails.getId()
+                userId
         );
 
         return ApiResponseGenerator.success(new OpenViduTokenResDto(token), HttpStatus.OK);
