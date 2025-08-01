@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = '/ai';
 
 export const useVoiceProcessing = () => {
   const [isRecording, setIsRecording] = useState(false);

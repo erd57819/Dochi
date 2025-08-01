@@ -7,3 +7,4 @@ python-dotenv
 pydub
 ffmpeg-python
 openai
+SpeechRecognition

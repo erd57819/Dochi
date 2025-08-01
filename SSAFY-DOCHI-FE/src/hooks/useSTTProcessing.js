@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-// API 엔드포인트 설정 (백엔드 우선)
+// API 엔드포인트 설정 (AI 서버 직접 연결)
 const API_ENDPOINTS = [
-  '/dochi/ai',  // AI 서비스 (백엔드를 통해 프록시)
-  '/dochi'      // 백엔드 직접
+  '/ai',        // AI 서비스 직접 연결
+  '/dochi'      // 백엔드 (fallback)
 ];
 
 export const useSTTProcessing = () => {
@@ -61,12 +61,12 @@ export const useSTTProcessing = () => {
       }
 
       const formData = new FormData();
-      formData.append('audio_file', audioBlob, 'recording.webm');
+      formData.append('audioFile', audioBlob, 'recording.webm');
       formData.append('model', 'whisper-1');
       
       if (analyzeContent) {
-        formData.append('analyze_emotion', 'true');
-        formData.append('analyze_conflict', 'true');
+        formData.append('analyzeEmotion', 'true');
+        formData.append('analyzeDonflict', 'true');
       }
 
       const endpoint = analyzeContent ? '/stt/transcribe-and-analyze' : '/stt/transcribe';
@@ -83,7 +83,10 @@ export const useSTTProcessing = () => {
 
       const result = await response.json();
       
-      setTranscript(result.transcript);
+      // 결과를 상태에 강제로 업데이트
+      if (result.transcript) {
+        setTranscript(result.transcript);
+      }
       setProcessingTime(result.processing_time || 0);
       
       if (analyzeContent && result.emotion_analysis) {
@@ -94,7 +97,7 @@ export const useSTTProcessing = () => {
         });
       }
 
-      console.log('STT 완료:', result.transcript);
+      // 콘솔 로그 제거하고 UI에만 표시되도록 함
       return result;
 
     } catch (err) {

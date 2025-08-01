@@ -23,7 +23,7 @@ function SummaryPage() {
 
     try {
       // FastAPI 서버의 요약 API 엔드포인트
-      const response = await axios.post('http://localhost:8000/api/summary/', {
+      const response = await axios.post('/ai/api/summary/', {
         original_text: originalText, 
       });
       setSummaryText(response.data.summary_text);
