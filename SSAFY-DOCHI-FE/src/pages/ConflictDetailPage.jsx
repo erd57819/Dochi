@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 import useAuthStore from '../stores/AuthStore';
+import { videoCallApi } from '../services/videoCallApi';
 
 const ConflictDetailPage = () => {
   const { conflictId } = useParams();
@@ -118,6 +119,58 @@ const ConflictDetailPage = () => {
     return texts[willingness] || '선택 안함';
   };
 
+  // 화상채팅 방 생성
+  const createVideoCallRoom = async () => {
+    try {
+      setIsLoading(true);
+      
+      // 갈등 ID와 함께 화상채팅 방 생성
+      const response = await videoCallApi.createRoom(conflictId);
+      console.log('화상채팅 방 생성 응답:', response); // 디버깅용
+      
+      // API 응답 구조에 맞게 데이터 추출
+      const roomData = response.data || response;
+      
+      if (roomData && roomData.roomCode) {
+        // 화상채팅 링크 생성
+        const videoCallLink = `${window.location.origin}/video-call/${roomData.roomCode}`;
+        
+        // 링크를 클립보드에 복사 (HTTP/HTTPS 환경 모두 지원)
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(videoCallLink);
+          } else {
+            // HTTP 환경에서 fallback 방법
+            const textArea = document.createElement('textarea');
+            textArea.value = videoCallLink;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+          }
+        } catch (clipboardError) {
+          console.log('클립보드 복사 실패:', clipboardError);
+        }
+        
+        alert(`화상채팅 방이 생성되었습니다!\n\n방 코드: ${roomData.roomCode}\n링크: ${videoCallLink}\n\n링크가 클립보드에 복사되었습니다.\n상대방에게 공유하여 함께 참여하세요!`);
+        
+        // 화상채팅 페이지로 이동
+        navigate(`/video-call/${roomData.roomCode}`);
+      } else {
+        console.error('roomCode가 없습니다:', roomData);
+        throw new Error('방 생성에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('화상채팅 방 생성 오류:', error);
+      alert('화상채팅 방 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 5단계 해결 로드맵 (AI가 갈등 유형별로 추천)
   const getResolutionRoadmap = (conflictType) => {
     const roadmaps = {
@@ -164,7 +217,7 @@ const ConflictDetailPage = () => {
         description: '실시간 화상 통화로 대면 대화하기',
         priority: 1,
         suitable: '직접적인 소통이 필요한 경우',
-        action: () => alert('화상 채팅 기능은 준비 중입니다!')
+        action: createVideoCallRoom
       },
       {
         name: 'AI 챗봇 상담', 

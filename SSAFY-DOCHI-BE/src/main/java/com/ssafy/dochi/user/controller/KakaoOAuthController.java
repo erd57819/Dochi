@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.ssafy.dochi.common.template.ApiResponse;
 @RestController
-@RequestMapping("/oauth")
+@RequestMapping("/api/oauth")
 public class KakaoOAuthController {
     private final KakaoOAuthService kakaoOAuthService;
 

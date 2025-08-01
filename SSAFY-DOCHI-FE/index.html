@@ -4,7 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>참견도치 - AI 갈등 중재 플랫폼</title>
+
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
+    <script>
+      // global polyfill for Node.js modules in browser
+      if (typeof global === 'undefined') {
+        window.global = window;
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

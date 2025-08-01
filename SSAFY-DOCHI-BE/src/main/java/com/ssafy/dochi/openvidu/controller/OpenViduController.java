@@ -9,13 +9,15 @@ import com.ssafy.dochi.user.domain.User;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/openvidu")
+@RequestMapping("/api/openvidu")
 @RequiredArgsConstructor
 @Tag(name = "OpenViduController", description = "LiveKit 토큰 발급")
 public class OpenViduController {
@@ -24,17 +26,30 @@ public class OpenViduController {
 
     @PostMapping("/token")
     public ApiResponse<?> createToken(
-            @RequestParam String room,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @RequestParam String room
     ) {
-        // identity를 사용자별로 고유하게 구성 (예: "user-7")
-        String identity = "user-" + userDetails.getId();
+        // SecurityContext에서 인증 정보 가져오기
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        String identity;
+        Long userId;
+        
+        if (authentication != null && authentication.isAuthenticated() && 
+            authentication.getPrincipal() instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            identity = "user-" + userDetails.getId();
+            userId = userDetails.getId();
+        } else {
+            // 인증되지 않은 사용자를 위한 임시 처리
+            identity = "guest-" + System.currentTimeMillis();
+            userId = 0L; // 게스트 사용자
+        }
 
         String token = openViduService.createToken(
                 room,
                 identity,
                 List.of("join", "publish", "subscribe"),
-                userDetails.getId()
+                userId
         );
 
         return ApiResponseGenerator.success(new OpenViduTokenResDto(token), HttpStatus.OK);
