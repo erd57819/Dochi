@@ -3,62 +3,66 @@ package com.ssafy.dochi.openvidu.service;
 import com.ssafy.dochi.openvidu.dao.UserSessionDao;
 import com.ssafy.dochi.openvidu.domain.UserSession;
 import com.ssafy.dochi.openvidu.exception.OpenViduException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import io.openvidu.java.client.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class OpenViduService {
 
-    @Value("${livekit.api.key}")
-    private String apiKey;
+    @Value("${openvidu.url}")
+    private String openviduUrl;
 
-    @Value("${livekit.api.secret}")
-    private String apiSecret;
+    @Value("${openvidu.secret}")
+    private String openviduSecret;
 
     private final UserSessionDao userSessionDao;
 
-    // LiveKit용 JWT 생성
+    // OpenVidu용 토큰 생성
     public String createToken(String roomName, String identity, List<String> permissions, Long userId) {
         try {
-            Map<String, Object> videoClaims = Map.of(
-                    "room", roomName,
-                    "identity", identity,
-                    "permissions", permissions
-            );
+            // OpenVidu 객체 생성
+            OpenVidu openVidu = new OpenVidu(openviduUrl, openviduSecret);
+            
+            // 세션 생성 또는 가져오기
+            Session session = openVidu.getActiveSession(roomName);
+            if (session == null) {
+                SessionProperties sessionProperties = new SessionProperties.Builder()
+                        .customSessionId(roomName)
+                        .build();
+                session = openVidu.createSession(sessionProperties);
+            }
+            
+            // 연결 속성 설정
+            ConnectionProperties connectionProperties = new ConnectionProperties.Builder()
+                    .type(ConnectionType.WEBRTC)
+                    .data("user_data=" + identity)
+                    .role(OpenViduRole.PUBLISHER)
+                    .build();
+            
+            // 토큰 생성
+            Connection connection = session.createConnection(connectionProperties);
+            String token = connection.getToken();
+            
+            // 인증된 사용자만 세션 저장
+            if (userId != null) {
+                userSessionDao.insertSession(UserSession.builder()
+                        .sessionId(roomName)
+                        .userId(userId)
+                        .expiresAt(LocalDateTime.now().plusHours(1))
+                        .build());
+            }
 
-            Date now = new Date();
-            Date exp = new Date(now.getTime() + 1000L * 60 * 60); // 1시간
-
-            Key key = Keys.hmacShaKeyFor(apiSecret.getBytes(StandardCharsets.UTF_8));
-
-            userSessionDao.insertSession(UserSession.builder()
-                    .sessionId(roomName)
-                    .userId(userId)
-                    .expiresAt(exp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
-                    .build());
-
-
-            return Jwts.builder()
-                    .setSubject(apiKey)
-                    .claim("video", videoClaims)
-                    .setIssuedAt(now)
-                    .setExpiration(exp)
-                    .signWith(key, SignatureAlgorithm.HS256)
-                    .compact();
+            return token;
         } catch (Exception e) {
-            throw new OpenViduException("LiveKit 토큰 생성 실패", e);
+            throw new OpenViduException("OpenVidu 토큰 생성 실패", e);
         }
     }
 }
