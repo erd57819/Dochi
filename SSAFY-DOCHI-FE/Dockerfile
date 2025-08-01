@@ -7,8 +7,10 @@ WORKDIR /app
 # package.json과 package-lock.json 복사
 COPY package*.json ./
 
-# 의존성 설치
-RUN npm install
+# npm 캐시 정리 및 의존성 설치
+RUN npm cache clean --force && \
+    npm ci --only=production=false --no-audit --no-fund && \
+    npm rebuild
 
 # 소스 코드 복사
 COPY . .
