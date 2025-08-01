@@ -25,6 +25,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/dochi/, '/api')
+      },
+      '/ai': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/ai/, '')
       }
     }
   }

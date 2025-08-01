@@ -202,21 +202,29 @@ const STTChat = () => {
       </div>
 
       {/* 결과 섹션 */}
-      {transcript && (
-        <div className="mb-6 p-6 bg-gray-50 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-              📝 변환 결과
+      {(transcript || isProcessing) && (
+        <div className="mb-8 p-8 bg-white rounded-[20px] border border-[#e5e7eb] shadow-[0px_4px_6px_rgba(0,0,0,0.1)]">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold flex items-center" 
+                style={{ 
+                  fontFamily: 'Pretendard-Bold, Helvetica',
+                  background: 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+              🎤 음성인식 결과
             </h3>
             <div className="flex items-center space-x-4">
               {processingTime > 0 && (
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-[#999999]" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
                   처리시간: {processingTime.toFixed(2)}초
                 </span>
               )}
               <button
                 onClick={clearResults}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className="px-4 py-2 rounded-[10px] text-sm border border-[#e5e7eb] hover:bg-[#f9f9f9] transition-colors"
+                style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}
               >
                 지우기
               </button>
@@ -224,30 +232,63 @@ const STTChat = () => {
           </div>
           
           {/* 변환된 텍스트 */}
-          <div className="mb-4 p-4 bg-white rounded-lg border">
-            <h4 className="font-medium text-gray-800 mb-2">🎤 음성 → 텍스트:</h4>
-            <p className="text-gray-800 leading-relaxed">{transcript}</p>
+          <div className="mb-6 p-6 bg-gradient-to-br from-[#fef7ed] to-[#fff7ed] rounded-[15px] border border-[#fed7aa]">
+            <h4 className="text-lg font-bold mb-4 text-[#ea580c]" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+              📝 변환된 텍스트
+            </h4>
+            {isProcessing ? (
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 border-3 border-[#f97316] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[#f97316] text-lg" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
+                  음성을 텍스트로 변환하는 중...
+                </p>
+              </div>
+            ) : transcript ? (
+              <div className="p-4 bg-white rounded-[10px] border border-[#fed7aa]/50">
+                <p className="text-[#374151] text-lg leading-relaxed" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
+                  {transcript}
+                </p>
+              </div>
+            ) : (
+              <p className="text-[#9ca3af] text-center py-4" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
+                변환된 텍스트가 여기에 표시됩니다.
+              </p>
+            )}
           </div>
 
           {/* 분석 결과 (분석 모드인 경우) */}
           {analysisResult && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* 감정 분석 */}
               {analysisResult.emotion && (
-                <div className={`p-4 rounded-lg border ${getEmotionColor(analysisResult.emotion.emotion)}`}>
-                  <h4 className="font-medium mb-2">😊 감정 분석</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium">감정:</span> {analysisResult.emotion.emotion}
+                <div className="p-6 bg-gradient-to-br from-[#fef3c7] to-[#fef7ed] rounded-[15px] border border-[#fbbf24]">
+                  <h4 className="text-lg font-bold mb-4 text-[#d97706]" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                    😊 감정 분석 결과
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white rounded-[10px] border border-[#fbbf24]/30">
+                      <span className="text-sm text-[#92400e] font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>감정</span>
+                      <p className="text-lg font-bold text-[#451a03]" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                        {analysisResult.emotion.emotion}
+                      </p>
                     </div>
-                    <div>
-                      <span className="font-medium">신뢰도:</span> {Math.round(analysisResult.emotion.confidence * 100)}%
+                    <div className="p-4 bg-white rounded-[10px] border border-[#fbbf24]/30">
+                      <span className="text-sm text-[#92400e] font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>신뢰도</span>
+                      <p className="text-lg font-bold text-[#451a03]" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                        {Math.round(analysisResult.emotion.confidence * 100)}%
+                      </p>
                     </div>
-                    <div>
-                      <span className="font-medium">강도:</span> {Math.round(analysisResult.emotion.intensity * 100)}%
+                    <div className="p-4 bg-white rounded-[10px] border border-[#fbbf24]/30">
+                      <span className="text-sm text-[#92400e] font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>감정 강도</span>
+                      <p className="text-lg font-bold text-[#451a03]" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                        {Math.round(analysisResult.emotion.intensity * 100)}%
+                      </p>
                     </div>
-                    <div>
-                      <span className="font-medium">키워드:</span> {analysisResult.emotion.detected_keywords.join(', ') || '없음'}
+                    <div className="p-4 bg-white rounded-[10px] border border-[#fbbf24]/30">
+                      <span className="text-sm text-[#92400e] font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>키워드</span>
+                      <p className="text-lg font-bold text-[#451a03]" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                        {analysisResult.emotion.detected_keywords.join(', ') || '없음'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -255,32 +296,56 @@ const STTChat = () => {
 
               {/* 갈등 위험도 */}
               {analysisResult.conflictRisk && (
-                <div className={`p-4 rounded-lg border ${getRiskColor(analysisResult.conflictRisk)}`}>
-                  <h4 className="font-medium mb-2">⚠️ 갈등 위험도</h4>
-                  <div className="flex items-center space-x-4 text-sm">
-                    <span className="font-medium">
-                      위험도: 
-                      <span className="ml-1 px-2 py-1 rounded text-xs bg-white">
+                <div className={`p-6 rounded-[15px] border ${
+                  analysisResult.conflictRisk === 'high' 
+                    ? 'bg-gradient-to-br from-[#fef2f2] to-[#fee2e2] border-[#fca5a5]' 
+                    : analysisResult.conflictRisk === 'medium'
+                    ? 'bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] border-[#fcd34d]'
+                    : 'bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border-[#86efac]'
+                }`}>
+                  <h4 className={`text-lg font-bold mb-4 ${
+                    analysisResult.conflictRisk === 'high' ? 'text-[#dc2626]' : 
+                    analysisResult.conflictRisk === 'medium' ? 'text-[#d97706]' : 'text-[#16a34a]'
+                  }`} style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                    ⚠️ 갈등 위험도 분석
+                  </h4>
+                  <div className="p-4 bg-white rounded-[10px] border border-white/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#374151] font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>
+                        위험도 등급
+                      </span>
+                      <span className={`px-4 py-2 rounded-[8px] font-bold text-white ${
+                        analysisResult.conflictRisk === 'high' ? 'bg-[#dc2626]' : 
+                        analysisResult.conflictRisk === 'medium' ? 'bg-[#d97706]' : 'bg-[#16a34a]'
+                      }`} style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
                         {analysisResult.conflictRisk === 'high' ? '높음' : 
                          analysisResult.conflictRisk === 'medium' ? '중간' : '낮음'}
                       </span>
-                    </span>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* 제안사항 */}
               {analysisResult.suggestions && analysisResult.suggestions.length > 0 && (
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-800 mb-3">💡 개선 제안</h4>
-                  <ul className="space-y-2">
+                <div className="p-6 bg-gradient-to-br from-[#eff6ff] to-[#dbeafe] rounded-[15px] border border-[#93c5fd]">
+                  <h4 className="text-lg font-bold mb-4 text-[#1d4ed8]" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                    💡 대화 개선 제안
+                  </h4>
+                  <div className="space-y-3">
                     {analysisResult.suggestions.map((suggestion, index) => (
-                      <li key={index} className="text-sm text-blue-700 flex items-start">
-                        <span className="text-blue-500 mr-2 mt-1">•</span>
-                        <span>{suggestion}</span>
-                      </li>
+                      <div key={index} className="p-4 bg-white rounded-[10px] border border-[#93c5fd]/30 flex items-start space-x-3">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#FF6C50] to-[#FFC269] flex items-center justify-center flex-shrink-0 mt-1">
+                          <span className="text-white text-sm font-bold" style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}>
+                            {index + 1}
+                          </span>
+                        </div>
+                        <p className="text-[#374151] leading-relaxed" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
+                          {suggestion}
+                        </p>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
             </div>
