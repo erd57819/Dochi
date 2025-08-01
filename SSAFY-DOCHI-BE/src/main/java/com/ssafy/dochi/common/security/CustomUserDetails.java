@@ -65,6 +65,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getEmailVerified(); // 이메일 인증 여부로 활성화 상태 확인
+        return user.isEmailVerified(); // 이메일 인증 여부로 활성화 상태 확인
     }
 }
