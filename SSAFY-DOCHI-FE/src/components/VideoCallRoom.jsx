@@ -24,7 +24,8 @@ const VideoCallRoom = () => {
   
   // LiveKit 서버 URL
   const LIVEKIT_URL = 'ws://localhost:7880';
-  const API_BASE_URL = 'http://localhost:8080';
+  // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
+  const API_BASE_URL = '';
   
   // 로컬 비디오 ref
   const localVideoRef = useRef(null);
