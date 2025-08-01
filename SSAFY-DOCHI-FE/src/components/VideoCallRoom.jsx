@@ -125,7 +125,7 @@ const VideoCallRoom = () => {
     try {
       console.log('토큰 요청 시작...', { roomName, hasToken: !!token });
       
-      const response = await fetch(`${API_BASE_URL}/openvidu/token`, {
+      const response = await fetch(`${API_BASE_URL}/dochi/openvidu/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

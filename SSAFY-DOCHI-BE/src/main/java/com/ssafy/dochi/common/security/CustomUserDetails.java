@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-// 임시 Mock 클래스 - 유저 모듈 완성되면 교체 예정
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
     private final User user;
@@ -32,7 +31,6 @@ public class CustomUserDetails implements UserDetails {
     }
 
     public String getName() {
-        // TODO Auto-generated method stub
         return user.getName();
     }
 
@@ -42,18 +40,31 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        // TODO Auto-generated method stub
         return user.getPassword();
     }
 
     @Override
     public String getUsername() {
-        // TODO Auto-generated method stub
-        return null;
+        return user.getUserId(); // 로그인 ID 반환
     }
 
+    @Override
+    public boolean isAccountNonExpired() {
+        return true; // 계정 만료 여부 - true: 만료되지 않음
+    }
 
+    @Override
+    public boolean isAccountNonLocked() {
+        return true; // 계정 잠금 여부 - true: 잠금되지 않음
+    }
 
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true; // 비밀번호 만료 여부 - true: 만료되지 않음
+    }
 
-
+    @Override
+    public boolean isEnabled() {
+        return user.isEmailVerified(); // 이메일 인증 여부로 활성화 상태 확인
+    }
 }

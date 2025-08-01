@@ -1,4 +1,37 @@
 -- =================================================================================
+-- 데이터베이스 초기화
+-- =================================================================================
+
+-- 데이터베이스 사용 (Docker 환경에서 자동 생성됨)
+USE dochi;
+
+-- 기존 테이블이 있다면 삭제 (순서 중요: 외래키 참조 역순)
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS `final_analysis_reports`;
+DROP TABLE IF EXISTS `session_summaries`;
+DROP TABLE IF EXISTS `ai_interventions`;
+DROP TABLE IF EXISTS `stt_transcripts`;
+DROP TABLE IF EXISTS `emotion_analysis_logs`;
+DROP TABLE IF EXISTS `sessions`;
+DROP TABLE IF EXISTS `user_conflicts`;
+DROP TABLE IF EXISTS `ai_analysis_results`;
+DROP TABLE IF EXISTS `video_call_sessions`;
+DROP TABLE IF EXISTS `video_call_rooms`;
+DROP TABLE IF EXISTS `chat_messages`;
+DROP TABLE IF EXISTS `chat_rooms`;
+DROP TABLE IF EXISTS `notices`;
+DROP TABLE IF EXISTS `comment_likes`;
+DROP TABLE IF EXISTS `post_likes`;
+DROP TABLE IF EXISTS `comments`;
+DROP TABLE IF EXISTS `community_posts`;
+DROP TABLE IF EXISTS `email_verification`;
+DROP TABLE IF EXISTS `user_sessions`;
+DROP TABLE IF EXISTS `users`;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- =================================================================================
 -- 사용자 관련 테이블
 -- =================================================================================
 
@@ -317,3 +350,65 @@ CREATE TABLE `video_call_sessions` (
                                        FOREIGN KEY (`room_id`) REFERENCES `video_call_rooms`(`id`) ON DELETE CASCADE,
                                        FOREIGN KEY (`conflict_id`) REFERENCES `user_conflicts`(`id`) ON DELETE SET NULL
 );
+
+-- =================================================================================
+-- 샘플 데이터 삽입
+-- =================================================================================
+
+-- 테스트 사용자 데이터
+INSERT INTO `users` (
+    `user_id`, `name`, `nickname`, `email`, `password`, `age`, `gender`, `role`, `email_verified`
+) VALUES 
+-- 비밀번호는 모두 'password123'의 BCrypt 해시값
+('testuser1', '김철수', '철수킹', 'testuser1@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 25, 'MALE', 'USER', TRUE),
+('testuser2', '이영희', '영희짱', 'testuser2@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 23, 'FEMALE', 'USER', TRUE),
+('admin', '관리자', '어드민', 'admin@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 30, 'NONE', 'ADMIN', TRUE);
+
+-- 갈등 카드 샘플 데이터
+INSERT INTO `user_conflicts` (
+    `user_id`, `title`, `description`, `conflict_type`, `conflict_when`, `conflict_frequency`, 
+    `desired_outcome`, `priority`, `talk_willingness`, `initial_emotion`, `intensity`
+) VALUES 
+(1, '동료와의 업무 분담 문제', '프로젝트에서 업무를 공평하게 나누지 않아서 갈등이 생겼습니다.', 'WORK', 3, 2, 
+ '서로 이해하고 공평한 업무 분담을 원합니다.', 'SOLUTION', 'YES', 'FRUSTRATION', 6),
+(2, '룸메이트와의 생활 패턴 차이', '생활 패턴이 달라서 서로 불편함을 느끼고 있습니다.', 'FRIEND', 7, 5, 
+ '서로 배려하며 지낼 수 있는 방법을 찾고 싶습니다.', 'RELATIONSHIP', 'MAYBE', 'SADNESS', 4);
+
+-- 커뮤니티 게시글 샘플 데이터
+INSERT INTO `community_posts` (
+    `user_id`, `category`, `title`, `content`, `view_count`, `tags`
+) VALUES 
+(1, 'ADVICE_REQUEST', '직장 상사와의 갈등 해결 방법', '상사와 의견 차이로 인한 갈등이 있습니다. 어떻게 해결하면 좋을까요?', 15, '["직장", "상사", "의견차이"]'),
+(2, 'SUCCESS_STORIES', '친구와의 오해 해결 후기', '오랜 친구와의 오해를 풀고 더 돈독해진 경험을 공유합니다.', 32, '["친구", "오해해결", "성공사례"]');
+
+-- 공지사항 샘플 데이터
+INSERT INTO `notices` (
+    `user_id`, `title`, `content`, `category`, `is_important`, `view_count`
+) VALUES 
+(3, '서비스 오픈 안내', '참견도치 서비스가 정식 오픈되었습니다! 많은 이용 부탁드립니다.', 'ANNOUNCEMENT', TRUE, 127),
+(3, '시스템 점검 안내', '더 나은 서비스 제공을 위해 시스템 점검을 실시합니다.', 'MAINTENANCE', FALSE, 45);
+
+-- 챗봇 채팅방 샘플 데이터
+INSERT INTO `chat_rooms` (
+    `user_id`, `title`
+) VALUES 
+(1, '갈등 해결 상담'),
+(2, '관계 개선 조언');
+
+-- 챗봇 메시지 샘플 데이터
+INSERT INTO `chat_messages` (
+    `chat_room_id`, `sender_type`, `message`
+) VALUES 
+(1, 'USER', '안녕하세요! 직장에서 갈등이 있어서 도움이 필요해요.'),
+(1, 'BOT', '안녕하세요! 직장 갈등에 대해 도움을 드릴게요. 어떤 상황인지 자세히 말씀해 주세요.'),
+(2, 'USER', '친구와의 관계를 개선하고 싶어요.'),
+(2, 'BOT', '친구와의 관계 개선을 원하시는군요. 현재 어떤 문제가 있는지 알려주시겠어요?');
+
+-- =================================================================================
+-- 초기화 완료 확인
+-- =================================================================================
+
+-- 생성된 테이블 수 확인
+SELECT 'Database initialization completed!' as message;
+SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'dochi';
+SELECT 'Sample data inserted successfully!' as message;
