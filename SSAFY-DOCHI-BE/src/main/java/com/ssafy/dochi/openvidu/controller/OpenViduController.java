@@ -42,7 +42,7 @@ public class OpenViduController {
         } else {
             // 인증되지 않은 사용자를 위한 임시 처리
             identity = "guest-" + System.currentTimeMillis();
-            userId = 0L; // 게스트 사용자
+            userId = null; // 게스트 사용자는 세션 저장하지 않음
         }
 
         String token = openViduService.createToken(
