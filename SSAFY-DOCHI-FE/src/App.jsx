@@ -9,7 +9,8 @@ import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
-// import ComfortPage from './pages/ComfortPage';
+import ComfortPage from './pages/ComfortPage';
+import ComfortChatPage from './pages/ComfortChatPage';
 import VoiceChatPage from './pages/VoiceChatPage';
 import VideoRoomPage from './pages/VideoRoomPage';
 import VoiceDemoPage from './pages/VoiceDemoPage';
@@ -22,7 +23,7 @@ import ProfileEditPage from './pages/ProfileEditPage';
 import PasswordChangePage from './pages/PasswordChangePage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
-import TodakTodakChatbot from './components/TodakTodakChatbot';
+
 
 const App = () => {
   return (
@@ -43,7 +44,8 @@ const App = () => {
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
-            {/* <Route path="/comfort" element={<ComfortPage />} /> */}
+            <Route path="/comfort" element={<ComfortPage />} />
+            <Route path="/comfort/chat" element={<ComfortChatPage />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<ProfileEditPage />} />
             <Route path="/mypage/password" element={<PasswordChangePage />} />
@@ -52,7 +54,7 @@ const App = () => {
             <Route path="/voice-demo" element={<VoiceDemoPage />} />
             <Route path="/stt" element={<STTPage />} />
             <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
-            <Route path="/chat" element={<TodakTodakChatbot />} />
+
           </Routes>
         </main>
       </div>
