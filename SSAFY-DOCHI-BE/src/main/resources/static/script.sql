@@ -284,22 +284,51 @@ CREATE TABLE `comment_likes` (
 
 -- 챗봇 채팅방
 CREATE TABLE `chat_rooms` (
-    `id`         BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `user_id`    BIGINT       NOT NULL COMMENT '채팅방 생성자 ID (FK)',
-    `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `user_id` BIGINT NOT NULL,
+    `title` VARCHAR(255) NOT NULL, -- 갈등 주제 제목
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
+
 
 -- 챗봇 메시지
 CREATE TABLE `chat_messages` (
     `id`           BIGINT                 NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `user_id` BIGINT                 NOT NULL COMMENT 'user ID (FK)',
+    `chat_room_id` BIGINT                 NOT NULL COMMENT '채팅방 ID (FK)',  --
+    `user_id`      BIGINT                 NOT NULL COMMENT 'user ID (FK)',
     `sender_type`  ENUM('USER', 'BOT')    NOT NULL COMMENT '발신자 타입',
     `message`      TEXT                   NOT NULL,
     `created_at`   DATETIME               NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`chat_room_id`) REFERENCES `chat_rooms`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`chat_room_id`) REFERENCES `chat_rooms`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
+
+-- 채팅방 자동 삭제 스케줄링 기능
+SET GLOBAL event_scheduler = ON;
+
+DELIMITER //
+
+CREATE EVENT IF NOT EXISTS delete_old_chat_rooms
+ON SCHEDULE EVERY 1 DAY -- 매일 한 번 실행
+DO
+BEGIN
+    -- 삭제 대상 채팅방 ID 조회
+DELETE FROM chat_messages
+WHERE chat_room_id IN (
+    SELECT id FROM (
+                       SELECT id FROM chat_rooms
+                       WHERE updated_at < DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                   ) AS expired_rooms
+);
+
+DELETE FROM chat_rooms
+WHERE updated_at < DATE_SUB(NOW(), INTERVAL 6 MONTH);
+END;
+//
+
+DELIMITER ;
 
 -- 공지사항
 CREATE TABLE `notices` (

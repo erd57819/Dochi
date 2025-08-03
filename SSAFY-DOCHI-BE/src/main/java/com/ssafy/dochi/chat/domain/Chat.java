@@ -7,13 +7,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatMessage {
+public class Chat {
     private Long id;
-
+    private Long chatRoomId;
     private Long userId;
-    private String senderType;  // USER or BOT
+    private String senderType; // USER, BOT
     private String message;
     private LocalDateTime timestamp;
-    private Long chatRoomId;
-    private LocalDateTime createdAt;
 }
