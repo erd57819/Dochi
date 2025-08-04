@@ -55,36 +55,21 @@ services:
       - dochi-network
 
 
-  # == OPENVIDU SERVER ==
+  # == LIVEKIT SERVER (OpenVidu v3) ==
   openvidu-server:
-    image: openvidu/openvidu-server-kms
+    image: livekit/livekit-server:latest
     container_name: dochi-openvidu
     restart: unless-stopped
     ports:
-      - "${HTTPS_PORT:-4443}:4443"
-      - "${HTTP_PORT:-5443}:5443"
+      - "7880:7880"
+      - "7881:7881" 
+      - "50000-50100:50000-50100/udp"
     environment:
-      - DOMAIN_OR_PUBLIC_IP=${DOMAIN_OR_PUBLIC_IP:-localhost}
-      - CERTIFICATE_TYPE=${CERTIFICATE_TYPE:-selfsigned}
-      - OPENVIDU_SECRET=${OPENVIDU_SECRET:-MY_SECRET}
-      - OPENVIDU_RECORDING=false
-      - OPENVIDU_RECORDING_PUBLIC_ACCESS=false
-      - OPENVIDU_WEBHOOK=false
-      - OPENVIDU_STREAMS_VIDEO_MAX_RECV_BANDWIDTH=1000
-      - OPENVIDU_STREAMS_VIDEO_MIN_RECV_BANDWIDTH=300
-      - OPENVIDU_STREAMS_VIDEO_MAX_SEND_BANDWIDTH=1000
-      - OPENVIDU_STREAMS_VIDEO_MIN_SEND_BANDWIDTH=300
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - openvidu-recordings:/opt/openvidu/recordings
+      LIVEKIT_KEYS: "APIAhgcveqdsqqe: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
+    command: 
+      - --dev
     networks:
       - dochi-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "-k", "https://localhost:4443/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
 
   # Spring Boot 백엔드
@@ -115,8 +100,8 @@ services:
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
       - AI_SERVICE_URL=http://ai-service:8002
-      - OPENVIDU_URL=https://openvidu-server:4443
-      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
+      - LIVEKIT_API_KEY=APIAhgcveqdsqqe
+      - LIVEKIT_API_SECRET=BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
     networks:
       - dochi-network
     restart: unless-stopped
@@ -124,6 +109,7 @@ services:
       - mysql
       - redis
       - ai-service
+      - openvidu-server
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
