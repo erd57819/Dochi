@@ -56,9 +56,10 @@ services:
 
 
   # == LIVEKIT SERVER (OpenVidu v3) ==
-
   openvidu-server:
     image: livekit/livekit-server:latest
+    container_name: dochi-openvidu
+    restart: unless-stopped
     ports:
       - "7880:7880"
       - "7881:7881"
@@ -66,13 +67,15 @@ services:
     environment:
       LIVEKIT_KEYS: "APIAhgcveqdsqqe:BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
       LIVEKIT_CONFIG: |
-          rtc:
-            udp_port: 50000
-            tcp_port: 7881
-            use_external_ip: true
+        rtc:
+          udp_port: 50000
+          tcp_port: 7881
+          use_external_ip: true
     command:
       - --bind=0.0.0.0
       - --port=7880
+    networks:
+      - dochi-network
 
 
 
