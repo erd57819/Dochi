@@ -47,21 +47,38 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev }) => {
           />
         </div>
 
-        {/* 갈등 해결 의지 */}
+        {/* 갈등 해결 방향 */}
         <div>
           <label className="block text-2xl font-semibold text-gray-700 mb-6">
             갈등 해결 방향
           </label>
-          <textarea
-            name="desiredOutcome"
-            value={formData.desiredOutcome}
-            onChange={(e) => onChange({ desiredOutcome: e.target.value })}
-            rows={4}
-            placeholder="어떤 방향으로 갈등을 해결하고 싶으세요?"
-            className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-xl
-              transition-all duration-200 text-lg text-gray-800 resize-none
-              focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-100"
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { value: 'NONE', label: '상관없음', emoji: '🤷' },
+              { value: 'RELATIONSHIP', label: '관계회복이 중요', emoji: '🤝' },
+              { value: 'PROBLEM_SOLVING', label: '문제 해결이 중요', emoji: '🛠️' },
+              { value: 'INNER_PEACE', label: '내 마음의 평화가 중요', emoji: '🧘' },
+              { value: 'PREVENTION', label: '재발 방지가 중요', emoji: '🛡️' }
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onChange({ desiredOutcome: option.value })}
+                className={`
+                  p-4 rounded-xl border-2 transition-all duration-200 text-left
+                  ${formData.desiredOutcome === option.value
+                    ? 'border-amber-700 bg-amber-50 transform scale-105'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                  }
+                `}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{option.emoji}</span>
+                  <span className="font-medium text-lg">{option.label}</span>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 대화 의지 */}
@@ -120,7 +137,7 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev }) => {
         <button
           onClick={onNext}
           style={{
-            backgroundColor: '#F97316',
+            backgroundColor: '#8B4513',
             color: '#FFFFFF',
             padding: '0.75rem 2rem',
             borderRadius: '0.75rem',
@@ -131,12 +148,12 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev }) => {
             transition: 'all 0.2s'
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#EA580C';
+            e.target.style.backgroundColor = '#654321';
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#F97316';
+            e.target.style.backgroundColor = '#8B4513';
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
           }}

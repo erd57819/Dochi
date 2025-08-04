@@ -18,7 +18,7 @@ const ProgressIndicator = ({ currentStep, totalSteps = 4 }) => {
             <div
               className="h-full transition-all duration-500 ease-out rounded-full"
               style={{
-                width: `${(currentStep / totalSteps) * 100}%`,
+                width: currentStep === 1 ? '0%' : `${((currentStep - 1 + 0.5) / totalSteps) * 100}%`,
                 background: 'linear-gradient(108deg, rgba(191,125,44,1) 0%, rgba(139,69,19,1) 100%)'
               }}
             />

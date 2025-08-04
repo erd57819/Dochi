@@ -196,7 +196,7 @@ const Step5AIAnalysis = ({
         <button
           onClick={onSave}
           style={{
-            backgroundColor: '#22C55E',
+            backgroundColor: '#8B4513',
             color: '#FFFFFF',
             padding: '0.75rem 2rem',
             borderRadius: '0.75rem',
@@ -207,12 +207,12 @@ const Step5AIAnalysis = ({
             transition: 'all 0.2s'
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#16A34A';
+            e.target.style.backgroundColor = '#654321';
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#22C55E';
+            e.target.style.backgroundColor = '#8B4513';
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
           }}

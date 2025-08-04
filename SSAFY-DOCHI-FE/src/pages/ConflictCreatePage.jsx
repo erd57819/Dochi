@@ -207,7 +207,7 @@ const ConflictCreatePage = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 min-h-[700px] relative">
+        <div className="bg-white rounded-3xl p-8 min-h-[700px] relative">
           {/* 고슴도치 이미지 - 왼쪽 하단 */}
           <div className="absolute bottom-6 left-6 z-0">
             <img src={hedgehogImg} alt="고슴도치" className="w-48 h-48 object-contain opacity-80" />
