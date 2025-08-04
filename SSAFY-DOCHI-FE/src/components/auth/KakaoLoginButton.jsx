@@ -1,5 +1,5 @@
 import React from 'react';
-import { getKakaoAuthUrl } from '../../config/kakaoConfig';
+import { getKakaoAuthUrl } from '../../config/kakaoConfig.js';
 
 const KakaoLoginButton = () => {
   const handleKakaoLogin = () => {

@@ -7,17 +7,17 @@ import com.ssafy.dochi.chat.domain.Chat;
 import com.ssafy.dochi.chat.domain.ChatRoom;
 import com.ssafy.dochi.chat.dto.request.ChatReqDto;
 import com.ssafy.dochi.chat.dto.response.ChatResDto;
+import com.ssafy.dochi.config.GmsAiClient;
+import com.ssafy.dochi.config.GmsImageClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +26,8 @@ public class ChatService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
     private final ChatDao chatDao;
-    private final ChatClient chatClient;
+    private final GmsAiClient gmsAiClient;
+    private final GmsImageClient gmsImageClient;
 
     private static final Duration SESSION_TTL = Duration.ofHours(2);
     private static final String REDIS_PREFIX = "chat:";
@@ -37,22 +38,22 @@ public class ChatService {
                 .title(title)
                 .createdAt(LocalDateTime.now())
                 .build();
-
-        chatDao.saveChatRoom(room); // keyProperty="id"로 id 자동 세팅됨
+        chatDao.saveChatRoom(room);
         return room.getId();
     }
 
     public ChatResDto chat(Long userId, ChatReqDto dto) {
         String sessionId = dto.getSessionId();
         List<String> history = getHistory(sessionId);
-
         String prompt = buildPrompt(dto.getMode(), history, dto.getMessage());
-        String aiResponse = chatClient.prompt().user(prompt).call().content();
-
+        String aiResponse;
+        if ("COMIC".equals(dto.getMode())) {
+            aiResponse = gmsImageClient.generateImage(prompt);
+        } else {
+            aiResponse = gmsAiClient.ask(prompt, "gpt-4o");
+        }
         saveMessage(sessionId, "USER", dto.getMessage());
         saveMessage(sessionId, "BOT", aiResponse);
-
-
         return ChatResDto.builder()
                 .senderType("BOT")
                 .message(aiResponse)
@@ -78,10 +79,28 @@ public class ChatService {
 
     private void saveMessage(String sessionId, String senderType, String message) {
         String key = REDIS_PREFIX + sessionId;
-        List<String> history = getHistory(sessionId);
-        history.add(senderType + ": " + message);
         try {
-            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(history), SESSION_TTL);
+            Object raw = redisTemplate.opsForValue().get(key);
+            String summary = "";
+            List<String> recent = new ArrayList<>();
+
+            if (raw != null) {
+                Map<String, Object> parsed = objectMapper.readValue(raw.toString(), new TypeReference<>() {});
+                summary = (String) parsed.getOrDefault("summary", "");
+                recent = (List<String>) parsed.getOrDefault("recent", new ArrayList<>());
+            }
+
+            recent.add(senderType + ": " + message);
+            if (recent.size() > 6) {
+                String toSummarize = String.join("\n", recent.subList(0, recent.size() - 2));
+                summary = summarize(toSummarize, summary);
+                recent = recent.subList(recent.size() - 2, recent.size());
+            }
+
+            Map<String, Object> toStore = new HashMap<>();
+            toStore.put("summary", summary);
+            toStore.put("recent", recent);
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(toStore), SESSION_TTL);
         } catch (Exception e) {
             log.error("Redis 저장 실패", e);
         }
@@ -91,9 +110,28 @@ public class ChatService {
         Object raw = redisTemplate.opsForValue().get(REDIS_PREFIX + sessionId);
         if (raw == null) return new ArrayList<>();
         try {
-            return objectMapper.readValue(raw.toString(), new TypeReference<>() {});
+            Map<String, Object> parsed = objectMapper.readValue(raw.toString(), new TypeReference<>() {});
+            String summary = (String) parsed.getOrDefault("summary", "");
+            List<String> recent = (List<String>) parsed.getOrDefault("recent", new ArrayList<>());
+            List<String> full = new ArrayList<>();
+            if (!summary.isBlank()) full.add("요약: " + summary);
+            full.addAll(recent);
+            return full;
         } catch (Exception e) {
+            log.error("Redis 불러오기 실패", e);
             return new ArrayList<>();
+        }
+    }
+
+    private String summarize(String newContent, String oldSummary) {
+        try {
+            String prompt = "다음은 이전 요약이야:\n" + oldSummary + "\n\n" +
+                    "그리고 다음은 새로 들어온 대화야:\n" + newContent + "\n\n" +
+                    "이 둘을 합쳐서 300자 이내로 간결하게 요약해줘.";
+            return gmsAiClient.ask(prompt, "gpt-4o");
+        } catch (Exception e) {
+            log.warn("요약 실패, 이전 요약 유지", e);
+            return oldSummary;
         }
     }
 
@@ -102,7 +140,7 @@ public class ChatService {
         String system = switch (mode) {
             case "COMFORT_ONLY" -> "너는 무조건 따뜻하게 공감해주는 AI야. 판단하지 마.";
             case "TIMELINE" -> "갈등의 시기별 흐름을 질문을 통해 정리해줘.";
-            case "COMIC" -> "다음 대화를 네컷 만화로 정리해줘. 각 컷은 상황을 묘사하고, 마지막 컷은 감정적으로 마무리해줘.";
+            case "COMIC" -> "지금까지 대화를 기반으로 갈등 상황을 네컷 만화로 그려줘. 1. 각 컷은 상황을 묘사했으면 좋겠고 최대한 사용자의 대화와 비슷하게 그려서 사용자가 보고 거울치료되게, 상황을 객관적으로 볼 수 있게 해줘. 2. 고슴도치 3D 캐릭터로 귀엽게 네컷 만화 생성해주면 좋겠어 3. 글자가 필요하다면 한글로 쓰되 최대한 글자 쓰지말고 그림으로만 이해할 수 있게 그려줘";
             default -> "너는 갈등 조언자야. 사용자에게 공감하고 구체적인 조언을 줘.";
         };
         return system + "\n\n[이전 대화]\n" + joinedHistory + "\n\n[현재 질문]\n" + input;
@@ -121,5 +159,4 @@ public class ChatService {
         chatDao.deleteMessagesByRoomId(chatRoomId);
         chatDao.deleteRoomById(chatRoomId);
     }
-
 }

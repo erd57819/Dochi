@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import useAuthStore from '../../stores/AuthStore';
-import kakaoAuthService from '../../services/kakaoAuthService';
+import useAuthStore from '../stores/AuthStore.js';
+import kakaoAuthService from '../services/kakaoAuthService.js';
 
 const KakaoCallbackPage = () => {
   const navigate = useNavigate();
@@ -21,6 +21,9 @@ const KakaoCallbackPage = () => {
         setTimeout(() => navigate('/login'), 2000);
         return;
       }
+      
+      console.log('받은 카카오 코드:', code);
+      console.log('API 요청 URL:', `${process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : ''}/oauth?code=${code}`);
       
       if (!code) {
         setError('카카오 인증 코드를 받을 수 없습니다.');

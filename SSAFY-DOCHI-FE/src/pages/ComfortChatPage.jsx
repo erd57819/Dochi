@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../stores/AuthStore';
-import useComfortStore from '../stores/ComfortStore';
-import comfortService from '../services/comfortService';
+import useAuthStore from '../stores/AuthStore.js';
+import useComfortStore from '../stores/ComfortStore.js';
+import comfortService from '../services/comfortService.js';
 
 const ComfortChatPage = () => {
   const navigate = useNavigate();

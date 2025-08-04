@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../../stores/AuthStore';
-import kakaoAuthService from '../../services/kakaoAuthService';
-import { getKakaoWithdrawUrl } from '../../config/kakaoConfig';
+import useAuthStore from '../../stores/AuthStore.js';
+import kakaoAuthService from '../../services/kakaoAuthService.js';
+import { getKakaoWithdrawUrl } from '../../config/kakaoConfig.js';
 
 const KakaoWithdrawButton = () => {
   const navigate = useNavigate();

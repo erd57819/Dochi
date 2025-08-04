@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useAuthStore from '../stores/AuthStore';
-import { API_BASE_URL } from '../config/api';
+import useAuthStore from '../stores/AuthStore.js';
+import { API_BASE_URL } from '../config/api.js';
 import KakaoLoginButton from '../components/auth/KakaoLoginButton';
 
 const LoginPage = () => {
@@ -42,11 +42,10 @@ const LoginPage = () => {
         const loginData = result.data || result.response?.response || result.response || result;
         const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId } = loginData;
         
-        // JWT 토큰을 localStorage에 저장
-        localStorage.setItem('accessToken', accessToken);
+        // JWT 토큰을 localStorage에 저장 (AuthStore에서 처리됨)
         localStorage.setItem('refreshToken', refreshToken);
         
-        // 유저 정보를 스토어에 저장
+        // 유저 정보와 토큰을 스토어에 저장
         logIn({ 
           userId: userId, 
           name: name,
@@ -54,7 +53,7 @@ const LoginPage = () => {
           email: email,
           profileImage: profileImage,
           isSocial: isSocial
-        });
+        }, accessToken);
         
         alert('로그인 성공!');
         navigate('/');

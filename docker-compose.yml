@@ -65,9 +65,13 @@ services:
       - "7881:7881" 
       - "50000-50100:50000-50100/udp"
     environment:
-      LIVEKIT_KEYS: "APIAhgcveqdsqqe: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
+      - LIVEKIT_KEYS=APIAhgcveqdsqqe:BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
     command: 
-      - --dev
+      - --bind=0.0.0.0
+      - --port=7880
+      - --rtc-port-range-start=50000
+      - --rtc-port-range-end=50100
+      - --rtc-tcp-port=7881
     networks:
       - dochi-network
 
@@ -102,6 +106,7 @@ services:
       - AI_SERVICE_URL=http://ai-service:8002
       - LIVEKIT_API_KEY=APIAhgcveqdsqqe
       - LIVEKIT_API_SECRET=BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
+      - GMS_KEY=${GMS_KEY}
     networks:
       - dochi-network
     restart: unless-stopped
@@ -162,9 +167,10 @@ services:
       dockerfile: Dockerfile
     container_name: dochi-nginx
     ports:
-      - "1443:80" # http
-      - "8090:443" # https
+      - "8090:443" # https (배포환경용)
+      # - "80:80"    # http (리디렉션용) - 포트 충돌로 비활성화
     volumes:
+      # Let's Encrypt 인증서 마운트 (배포환경용)
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - nginx-logs:/var/log/nginx
     depends_on:
@@ -173,6 +179,9 @@ services:
     networks:
       - dochi-network
     restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: any
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
@@ -190,7 +199,7 @@ volumes:
   openvidu-recordings:
     driver: local
 
-# == NETWORKS ==tnwjdgownj
+# == NETWORKS ==
 networks:
   dochi-network:
     name: dochi-network

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api';
-import useAuthStore from '../stores/AuthStore';
-import { videoCallApi } from '../services/videoCallApi';
+import { API_BASE_URL } from '../config/api.js';
+import useAuthStore from '../stores/AuthStore.js';
+import { videoCallApi } from '../services/videoCallApi.js';
 
 const ConflictDetailPage = () => {
   const { conflictId } = useParams();
