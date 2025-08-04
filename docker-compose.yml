@@ -165,7 +165,7 @@ services:
     container_name: dochi-nginx
     ports:
       - "8090:443" # https (배포환경용)
-      - "80:80"    # http (리디렉션용)
+      # - "80:80"    # http (리디렉션용) - 포트 충돌로 비활성화
     volumes:
       # Let's Encrypt 인증서 마운트 (배포환경용)
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -176,6 +176,9 @@ services:
     networks:
       - dochi-network
     restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: any
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
