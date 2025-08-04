@@ -58,7 +58,7 @@ services:
   # == LIVEKIT SERVER (OpenVidu v3) ==
 
   openvidu-server:
-    image: livekit/livekit-server:1.9.0
+    image: livekit/livekit-server:latest
     ports:
       - "7880:7880"
       - "7881:7881"
