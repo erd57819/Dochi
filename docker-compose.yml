@@ -104,6 +104,7 @@ services:
       - AI_SERVICE_URL=http://ai-service:8002
       - LIVEKIT_API_KEY=APIAhgcveqdsqqe
       - LIVEKIT_API_SECRET=BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
+      - GMS_KEY=${GMS_KEY}
     networks:
       - dochi-network
     restart: unless-stopped
