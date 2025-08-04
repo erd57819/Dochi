@@ -82,7 +82,19 @@ const VideoCallRoom = () => {
   // 컴포넌트 마운트시 자동 참가
   useEffect(() => {
     if (isLoggedIn) {
-      joinRoom();
+      {!isConnected && !error && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-white text-center">
+              <p className="mb-4">화상통화를 시작하려면 버튼을 눌러주세요</p>
+              <button
+                  onClick={joinRoom} // ✅ 사용자의 클릭 이후에 실행
+                  className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-medium"
+              >
+                연결 시작
+              </button>
+            </div>
+          </div>
+      )}
     } else {
       setError('로그인이 필요합니다');
     }
@@ -294,7 +306,7 @@ const VideoCallRoom = () => {
           setIsLocalSpeaking(average > threshold);
           
           animationFrameRef.current = requestAnimationFrame(detectSpeaking);
-        }
+        }s
       };
       
       detectSpeaking();
