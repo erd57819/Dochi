@@ -65,9 +65,9 @@ services:
       - "7881:7881" 
       - "50000-50100:50000-50100/udp"
     volumes:
-      - ./livekit.yaml:/etc/livekit.yaml:ro
+      - ${PWD}/livekit.yaml:/livekit.yaml:ro
     command: 
-      - --config=/etc/livekit.yaml
+      - --config=/livekit.yaml
       - --bind=0.0.0.0
     networks:
       - dochi-network
