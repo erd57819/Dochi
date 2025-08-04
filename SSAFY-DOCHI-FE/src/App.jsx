@@ -4,6 +4,8 @@ import Nav from './components/Nav';
 import MainPage from './pages/MainPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import KakaoCallbackPage from './pages/KakaoCallbackPage';
+import KakaoWithdrawCallbackPage from './pages/KakaoWithdrawCallbackPage';
 import NoticePage from './pages/NoticePage';
 import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
@@ -35,6 +37,8 @@ const App = () => {
             <Route path="/" element={<MainPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/kakao/callback" element={<KakaoCallbackPage />} />
+            <Route path="/kakao/withdraw" element={<KakaoWithdrawCallbackPage />} />
             <Route path="/notice" element={<NoticePage />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/community/create" element={<CreatePostPage />} />

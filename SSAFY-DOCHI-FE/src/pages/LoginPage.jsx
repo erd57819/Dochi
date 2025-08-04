@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore';
 import { API_BASE_URL } from '../config/api';
+import KakaoLoginButton from '../components/auth/KakaoLoginButton';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -118,9 +119,7 @@ const LoginPage = () => {
             <button className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
               G
             </button>
-            <button className="p-3 bg-yellow-400 text-black rounded-lg hover:bg-yellow-500">
-              K
-            </button>
+            <KakaoLoginButton />
             <Link 
               to="/signup"
               className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"

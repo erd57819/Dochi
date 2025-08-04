@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.dochi.chat.dao.ChatDao">
+
+    <!-- 1. 사용자의 가장 최근 채팅방 ID 조회 -->
+    <select id="findChatRoomIdByUserId" resultType="long">
+        SELECT id FROM chat_rooms
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+            LIMIT 1
+    </select>
+
+    <!-- 2. 새로운 채팅방 저장 -->
+    <insert id="saveChatRoom" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_rooms (user_id, title)
+        VALUES (#{userId}, #{title})
+    </insert>
+
+    <!-- 3. 채팅 메시지 저장 -->
+    <insert id="saveChat" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_messages (chat_room_id, user_id, sender_type, message, created_at)
+        VALUES (#{chatRoomId}, #{userId}, #{senderType}, #{message}, #{timestamp})
+    </insert>
+
+    <!-- 4. 채팅방 ID 기준 채팅 메시지 전체 조회 -->
+    <select id="findAllByChatRoomId" resultType="com.ssafy.dochi.chat.domain.Chat">
+        SELECT id, chat_room_id, user_id, sender_type, message, created_at AS timestamp
+        FROM chat_messages
+        WHERE chat_room_id = #{chatRoomId}
+        ORDER BY created_at ASC
+    </select>
+
+    <!-- 5. 사용자 ID 기준 모든 채팅방 조회 -->
+    <select id="findAllRoomsByUserId" resultType="com.ssafy.dochi.chat.domain.ChatRoom">
+        SELECT id, user_id, title, created_at, updated_at
+        FROM chat_rooms
+        WHERE user_id = #{userId}
+        ORDER BY updated_at DESC
+    </select>
+
+    <!-- 6. 채팅방 메시지 전체 삭제 -->
+    <delete id="deleteMessagesByRoomId">
+        DELETE FROM chat_messages
+        WHERE chat_room_id = #{chatRoomId}
+    </delete>
+
+    <!-- 7. 채팅방 자체 삭제 -->
+    <delete id="deleteRoomById">
+        DELETE FROM chat_rooms
+        WHERE id = #{chatRoomId}
+    </delete>
+
+</mapper>
