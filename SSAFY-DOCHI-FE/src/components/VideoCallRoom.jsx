@@ -178,7 +178,7 @@ const VideoCallRoom = () => {
     });
     
     // 연결 해제
-    room.on(RoomEvent.Disconnected, (reason) => {
+    room.on(RoomEvent.Disconnected, ( n) => {
       console.log('룸 연결 해제:', reason);
       setIsConnected(false);
       setParticipants([]);
