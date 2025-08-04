@@ -66,8 +66,10 @@ services:
       - "50000-50100:50000-50100/udp"
     environment:
       LIVEKIT_KEYS: "APIAhgcveqdsqqe: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
+      LIVEKIT_LOG_LEVEL: debug
     command: 
       - --dev
+      - --bind=0.0.0.0
     networks:
       - dochi-network
 
