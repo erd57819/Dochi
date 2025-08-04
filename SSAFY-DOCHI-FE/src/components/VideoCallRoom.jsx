@@ -27,7 +27,7 @@ const VideoCallRoom = () => {
   const participantName = '사용자1';
   
   // LiveKit 서버 URL - EC2 환경에 맞게 수정
-  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io:7880';
+  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io:7881';
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
