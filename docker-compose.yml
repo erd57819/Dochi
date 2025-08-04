@@ -167,7 +167,8 @@ services:
       - "1443:80" # http
       - "8090:443" # https
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # Let's Encrypt 인증서가 있는 경우에만 주석 해제
+      # - /etc/letsencrypt:/etc/letsencrypt:ro
       - nginx-logs:/var/log/nginx
     depends_on:
       - frontend
