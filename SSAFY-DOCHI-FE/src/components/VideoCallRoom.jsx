@@ -26,8 +26,8 @@ const VideoCallRoom = () => {
   const roomName = 'test-room';
   const participantName = '사용자1';
   
-  // LiveKit 서버 URL - EC2 환경에 맞게 수정
-  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io:7881';
+  // LiveKit 서버 URL - nginx 프록시를 통해 연결
+  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io:8090/openvidu';
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
