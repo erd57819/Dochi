@@ -1,10 +1,10 @@
 // src/config/livekit.js
 export const LIVEKIT_CONFIG = {
   // LiveKit 서버 URL - nginx 프록시를 통해 연결
-  LIVEKIT_URL: 'wss://i13c209.p.ssafy.io:8090/openvidu',
+  LIVEKIT_URL: 'wss://i13c209.p.ssafy.io:8090/livekit',
   
   // 백엔드 토큰 발급 엔드포인트
-  TOKEN_ENDPOINT: '/dochi/openvidu/token',
+  TOKEN_ENDPOINT: '/dochi/video-call/token',
   
   // 기본 룸 설정
   DEFAULT_ROOM_OPTIONS: {
