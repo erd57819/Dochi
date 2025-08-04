@@ -32,7 +32,7 @@ const VideoCallRoom = () => {
   const participantName = '사용자1';
   
   // LiveKit 서버 URL - nginx 프록시를 통해 연결
-  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io/openvidu';
+  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io/livekit';
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
