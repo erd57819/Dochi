@@ -27,7 +27,7 @@ const VideoCallRoom = () => {
   const participantName = '사용자1';
   
   // LiveKit 서버 URL - nginx 프록시를 통해 연결
-  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io:8090/openvidu';
+  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io/openvidu';
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
@@ -214,14 +214,13 @@ const VideoCallRoom = () => {
     try {
       console.log('토큰 요청 시작...', { roomName, hasToken: !!token });
       
-      const response = await fetch(`${API_BASE_URL}/dochi/openvidu/token`, {
+      const response = await fetch(`${API_BASE_URL}/dochi/video-call/token?room=${encodeURIComponent(roomName)}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
           // JWT 토큰이 있으면 Authorization 헤더 추가
           ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: `room=${encodeURIComponent(roomName)}`
+        }
       });
       
       console.log('토큰 응답 상태:', response.status);
@@ -236,7 +235,11 @@ const VideoCallRoom = () => {
       console.log('토큰 응답 데이터:', data);
       
       // 백엔드 응답 구조에 맞춰 수정
-      if (data.status === 200 && data.data && data.data.token) {
+      if (data.status === 200 && data.data) {
+        // VideoCallRoomCreateResDto에서 token 가져오기
+        return data.data.token;
+      } else if (data.data && data.data.token) {
+        // 대체 응답 구조
         return data.data.token;
       } else {  
         throw new Error('토큰 발급 실패: ' + (data.message || 'Unknown error'));

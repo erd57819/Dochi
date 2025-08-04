@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/video-call")
 @RequiredArgsConstructor
@@ -49,5 +51,15 @@ public class VideoCallController {
     public ApiResponse<?> endCall(@PathVariable String roomCode) {
         boolean result = videoCallService.endCall(roomCode);
         return ApiResponseGenerator.success(result, HttpStatus.OK);
+    }
+
+    // LiveKit 토큰 직접 발급 엔드포인트 (기존 프론트엔드 호환용)
+    @PostMapping("/token")
+    public ApiResponse<?> generateToken(
+            @RequestParam String room,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        String token = videoCallService.joinRoom(room, userDetails.getId());
+        return ApiResponseGenerator.success(Map.of("token", token), HttpStatus.OK);
     }
 }
