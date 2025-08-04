@@ -4,7 +4,7 @@ export const kakaoAuthService = {
   // 카카오 로그인 처리
   loginWithKakao: async (code) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/oauth?code=${code}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/oauth?code=${code}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
