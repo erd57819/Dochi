@@ -1,7 +1,7 @@
 // src/config/livekit.js
 export const LIVEKIT_CONFIG = {
   // LiveKit 서버 URL
-  LIVEKIT_URL: 'ws://localhost:7880',
+  LIVEKIT_URL: 'wss://localhost:7880',
   
   // 백엔드 토큰 발급 엔드포인트
   TOKEN_ENDPOINT: '/dochi/openvidu/token',
