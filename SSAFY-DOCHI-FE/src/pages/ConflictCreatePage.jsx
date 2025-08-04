@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api';
-import useAuthStore from '../stores/AuthStore';
+import { API_BASE_URL } from '../config/api.js';
+import useAuthStore from '../stores/AuthStore.js';
 import ProgressIndicator from '../components/conflict/ProgressIndicator';
 import Step1ConflictType from '../components/conflict/Step1ConflictType';
 import Step2ConflictDetail from '../components/conflict/Step2ConflictDetail';

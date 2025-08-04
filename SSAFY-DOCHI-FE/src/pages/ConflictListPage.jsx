@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api';
-import useAuthStore from '../stores/AuthStore';
+import { API_BASE_URL } from '../config/api.js';
+import useAuthStore from '../stores/AuthStore.js';
 
 const ConflictListPage = () => {
   const navigate = useNavigate();

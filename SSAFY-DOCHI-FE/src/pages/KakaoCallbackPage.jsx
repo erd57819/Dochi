@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import useAuthStore from '../../stores/AuthStore';
-import kakaoAuthService from '../../services/kakaoAuthService';
+import useAuthStore from '../stores/AuthStore.js';
+import kakaoAuthService from '../services/kakaoAuthService.js';
 
 const KakaoCallbackPage = () => {
   const navigate = useNavigate();

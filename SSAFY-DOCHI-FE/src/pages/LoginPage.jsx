@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useAuthStore from '../stores/AuthStore';
-import { API_BASE_URL } from '../config/api';
+import useAuthStore from '../stores/AuthStore.js';
+import { API_BASE_URL } from '../config/api.js';
 import KakaoLoginButton from '../components/auth/KakaoLoginButton';
 
 const LoginPage = () => {
