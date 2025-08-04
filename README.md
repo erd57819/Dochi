@@ -299,3 +299,16 @@ cd ai-server && pip install -r requirements.txt && uvicorn main:app
 - [📊 시스템 모니터링](https://monitor.chamgyeondochi.com)
 - [🐛 이슈 트래커](https://gitlab.com/team-harmony/chamgyeondochi/-/issues)
 
+
+### 📡 현재 설정된 전체 포트 정보 정리
+(구조만 가져왔음, 현재 설정과는 다릅니다다)
+| 구성 요소           | 컨테이너 포트 | 호스트 포트 | 설명                          |
+|--------------------|----------------|--------------|-------------------------------|
+| **Spring Boot**    | `8080`         | `18085`      | Nginx에서 프록시 대상         |
+| **Jenkins**        | `8080`         | `9012`       | Jenkins UI                    |
+| Jenkins Agent      | `50000`        | `50000`      | 에이전트 통신용              |
+| **PostgreSQL**     | `5432`         | `15432`      | 앱이나 외부에서 DB 접근      |
+| **TimescaleDB**    | `5432`         | `15433`      | 시계열 데이터용 DB           |
+| **Nginx**          | `443`          | `443`        | HTTPS 요청 수신 및 프록시    |
+| Nginx (HTTP → SSL) | `80`           | `80`         | HTTP → HTTPS 리다이렉션용    |
+
