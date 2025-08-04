@@ -65,8 +65,7 @@ services:
       - "7881:7881"
       - "50000-50100:50000-50100/udp"
     environment:
-      LIVEKIT_API_KEY: APIAhgcveqdsqqe
-      LIVEKIT_API_SECRET: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
+      LIVEKIT_KEYS: "APIAhgcveqdsqqe:BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
       LIVEKIT_CONFIG: |
         rtc:
           udp_port: 50000
