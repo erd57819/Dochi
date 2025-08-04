@@ -61,12 +61,12 @@ services:
     container_name: dochi-openvidu
     restart: unless-stopped
     ports:
-      - "7880:7880"                    # HTTP/WebSocket
-      - "7881:7881"                    # TCP WebRTC
-      - "50000-50100:50000-50100/udp" # UDP WebRTC
+      - "7880:7880"
+      - "7881:7881"
+      - "50000-50100:50000-50100/udp"
     environment:
-      - LIVEKIT_KEYS=APIAhgcveqdsqqe:BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
-      - LIVEKIT_CONFIG=|
+      LIVEKIT_KEYS: "APIAhgcveqdsqqe:BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
+      LIVEKIT_CONFIG: |
         rtc:
           udp_port: 50000
           port_range:
