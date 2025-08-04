@@ -60,8 +60,8 @@ const ConflictCreatePage = () => {
 
   // AI 분석 요청
   const handleAnalyzeConflict = async () => {
-  setIsLoading(true);
-  setCurrentStep(4);
+    setIsLoading(true);
+    setCurrentStep(4);
 
     try {
       const payload = {
@@ -79,6 +79,11 @@ const ConflictCreatePage = () => {
         talkWillingness: formData.talkWillingness || 'NONE',
         initialEmotion: formData.initialEmotion || '무표정'
       };
+
+      // sessionStorage에 데이터 저장
+      sessionStorage.setItem('tempTitle', payload.title);
+      sessionStorage.setItem('tempDescription', payload.description);
+      sessionStorage.setItem('tempConflictType', payload.conflictType);
 
       console.log("보내는 데이터:", JSON.stringify(payload, null, 2));
 
@@ -119,6 +124,10 @@ const ConflictCreatePage = () => {
       setAiSummary(analysisData.summary || '요약을 생성할 수 없습니다.');
       setAiSolutions(analysisData.solutions || '해결방안을 생성할 수 없습니다.');
 
+      // AI 분석 결과 sessionStorage에 저장
+      sessionStorage.setItem('tempAiSummary', analysisData.summary || '요약을 생성할 수 없습니다.');
+      sessionStorage.setItem('tempAiSolutions', analysisData.solutions || '해결방안을 생성할 수 없습니다.');
+
       // 고급 AI 분석 요청
       try {
         const advancedResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/${conflictId}`, {
@@ -138,10 +147,13 @@ const ConflictCreatePage = () => {
         console.error('고급 AI 분석 오류:', error);
       }
 
+      // AI 분석 완료 후 바로 리포트 페이지로 이동
+      navigate(`/conflicts/analysis/${conflictId}`);
+
     } catch (error) {
       console.error('갈등 분석 오류:', error);
       alert(error.message || '갈등 분석 중 오류가 발생했습니다.');
-      setCurrentStep(4);
+      setCurrentStep(3); // 이전 단계로 돌아가기
     } finally {
       setIsLoading(false);
     }
@@ -238,6 +250,7 @@ const ConflictCreatePage = () => {
               onChange={handleFormChange}
               onNext={handleNextStep}
               onPrev={handlePrevStep}
+              isLoading={isLoading}
             />
           )}
 
@@ -251,6 +264,7 @@ const ConflictCreatePage = () => {
               isLoading={isLoading}
               onSave={handleFinalSave}
               onPrev={() => setCurrentStep(1)}
+              tempConflictId={tempConflictId}
             />
           )}
         </div>

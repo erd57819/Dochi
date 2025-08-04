@@ -2,7 +2,36 @@ import React from 'react';
 import EmotionSelector from './EmotionSelector';
 import IntensitySlider from './IntensitySlider';
 
-const Step4EmotionState = ({ formData, onChange, onNext, onPrev }) => {
+const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="animate-fadeIn">
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-amber-200 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl">🤖</span>
+            </div>
+          </div>
+          <h3 className="mt-4 text-xl font-semibold text-gray-800">AI가 분석 중입니다...</h3>
+          <p className="mt-2 text-gray-600">잠시만 기다려주세요</p>
+        </div>
+        
+        <style jsx>{`
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+          
+          .animate-spin {
+            animation: spin 2s linear infinite;
+            border-top-color: #8B4513;
+          }
+        `}</style>
+      </div>
+    );
+  }
   return (
     <div className="animate-fade-in opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
       {/* 이전 버튼 - 텍스트만 */}

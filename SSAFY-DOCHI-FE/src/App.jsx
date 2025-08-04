@@ -11,6 +11,8 @@ import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
+import ConflictResultPage from './pages/ConflictResultPage';
+import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
 import ComfortPage from './pages/ComfortPage';
 import ComfortChatPage from './pages/ComfortChatPage';
 import VoiceChatPage from './pages/VoiceChatPage';
@@ -45,6 +47,8 @@ const App = () => {
             <Route path="/community/post/:postId" element={<PostDetailPage />} />
             <Route path="/service" element={<ConflictCreatePage />} />
             <Route path="/conflicts/create" element={<ConflictCreatePage />} />
+            <Route path="/conflicts/result/:id" element={<ConflictResultPage />} />
+            <Route path="/conflicts/analysis/:tempId" element={<ConflictAnalysisResultPage />} />
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
