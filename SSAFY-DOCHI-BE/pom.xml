@@ -22,6 +22,8 @@
 
     <properties>
         <java.version>17</java.version>
+        <spring-ai.version>1.0.0-M6</spring-ai.version>
+
     </properties>
 
     <dependencies>
@@ -42,6 +44,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
@@ -169,7 +172,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-messaging</artifactId>
         </dependency>
-        
+
         <!-- dotenv for .env file support -->
         <dependency>
             <groupId>io.github.cdimascio</groupId>
@@ -198,6 +201,27 @@
             <version>2.30.0</version>
         </dependency>
 
+        <!-- AI -->
+
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-core</artifactId>-->
+<!--            <version>1.0.0-M6</version>-->
+<!--        </dependency>-->
+
+        <!-- OpenAI Chat 지원 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+
+
+<!--        LocalDateTime JSON 직렬화 오류 해결-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
 
     </dependencies>
 

@@ -1,6 +1,8 @@
 package com.ssafy.dochi.user.service;
 
 
+import com.ssafy.dochi.chat.dao.ChatDao;
+import com.ssafy.dochi.chat.domain.ChatRoom;
 import com.ssafy.dochi.common.security.CustomUserDetails;
 import com.ssafy.dochi.common.security.JwtTokenProvider;
 import com.ssafy.dochi.user.dao.EmailVerificationDao;
@@ -28,7 +30,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailVerificationDao emailVerificationDao;
     private final EmailVerificationService emailVerificationService;
-//  private final ChatDao chatDao;
+    private final ChatDao chatDao;
 
     public UserLoginResDto login(UserLoginReqDto reqDto) {
 
@@ -106,9 +108,6 @@ public class UserService {
         // DB에 멤버 저장
         User user = new User(reqDto.getUserId(),reqDto.getName(), reqDto.getNickname(), reqDto.getEmail(), encodedPassword, reqDto.getAge(), reqDto.getGender(), reqDto.getAddress(), reqDto.getProfileImage(),false);
         userDao.save(user);
-
-        //채팅방 생성
-//        chatDao.saveChatRoom(ChatRoom.builder().memberId(user.getId()).build());
 
     }
 
