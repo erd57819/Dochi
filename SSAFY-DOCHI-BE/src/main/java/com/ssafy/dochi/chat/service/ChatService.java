@@ -7,9 +7,10 @@ import com.ssafy.dochi.chat.domain.Chat;
 import com.ssafy.dochi.chat.domain.ChatRoom;
 import com.ssafy.dochi.chat.dto.request.ChatReqDto;
 import com.ssafy.dochi.chat.dto.response.ChatResDto;
+import com.ssafy.dochi.config.GmsAiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
+//import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,11 +27,12 @@ public class ChatService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
     private final ChatDao chatDao;
-    private final ChatClient chatClient;
+    private final GmsAiClient gmsAiClient;
 
     private static final Duration SESSION_TTL = Duration.ofHours(2);
     private static final String REDIS_PREFIX = "chat:";
-
+    private static final int MAX_HISTORY_ENTRIES = 10; // 최대 히스토리 개수 제한
+    private static final int MAX_PROMPT_LENGTH = 3000;
     public Long createChatRoom(Long userId, String title) {
         ChatRoom room = ChatRoom.builder()
                 .userId(userId)
@@ -47,7 +49,7 @@ public class ChatService {
         List<String> history = getHistory(sessionId);
 
         String prompt = buildPrompt(dto.getMode(), history, dto.getMessage());
-        String aiResponse = chatClient.prompt().user(prompt).call().content();
+        String aiResponse = gmsAiClient.ask(prompt,"gpt-4o");
 
         saveMessage(sessionId, "USER", dto.getMessage());
         saveMessage(sessionId, "BOT", aiResponse);
@@ -98,6 +100,14 @@ public class ChatService {
     }
 
     private String buildPrompt(String mode, List<String> history, String input) {
+
+        List<String> recentHistory = new ArrayList<>();
+        if (history.size() > 6) { // USER + BOT 쌍이므로 최근 3쌍만
+            recentHistory = history.subList(history.size() - 6, history.size());
+        } else {
+            recentHistory = history;
+        }
+
         String joinedHistory = String.join("\n", history);
         String system = switch (mode) {
             case "COMFORT_ONLY" -> "너는 무조건 따뜻하게 공감해주는 AI야. 판단하지 마.";
@@ -106,6 +116,7 @@ public class ChatService {
             default -> "너는 갈등 조언자야. 사용자에게 공감하고 구체적인 조언을 줘.";
         };
         return system + "\n\n[이전 대화]\n" + joinedHistory + "\n\n[현재 질문]\n" + input;
+//        return system + "\n\n[현재 질문]\n" + input;
     }
 
     public List<ChatRoom> getRooms(Long userId) {
