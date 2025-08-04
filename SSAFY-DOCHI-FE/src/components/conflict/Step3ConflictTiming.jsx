@@ -10,21 +10,23 @@ const Step3ConflictTiming = ({ formData, onChange, onNext, onPrev }) => {
     { value: 365, label: '1년 이상', emoji: '🗂️' }
   ];
 
-  const cycleOptions = [
-    { value: 0, label: '1일 이내', emoji: '☀️' },
-    { value: 1, label: '매일', emoji: '🔄' },
-    { value: 4, label: '3~4일', emoji: '📍' },
-    { value: 7, label: '매주', emoji: '📋' },
-    { value: 30, label: '매월', emoji: '📅' }
-  ];
-
   return (
     <div className="animate-fadeIn">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      {/* 이전 버튼 - 텍스트만 */}
+      <div className="mb-6">
+        <span
+          onClick={onPrev}
+          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
+        >
+          ← 이전으로
+        </span>
+      </div>
+      
+      <div className="mb-8 text-center">
+        <h2 className="text-4xl font-bold text-gray-800 mb-4">
           갈등 발생 시기
         </h2>
-        <p className="text-gray-600">
+        <p className="text-xl text-gray-600">
           갈등이 언제, 얼마나 자주 발생하는지 알려주세요
         </p>
       </div>
@@ -32,25 +34,25 @@ const Step3ConflictTiming = ({ formData, onChange, onNext, onPrev }) => {
       <div className="space-y-8">
         {/* 갈등 발생 시점 */}
         <div>
-          <label className="block text-lg font-semibold text-gray-700 mb-4">
+          <label className="block text-2xl font-semibold text-gray-700 mb-6">
             갈등 발생 시점
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {frequencyOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => onChange({ conflictWhen: option.value })}
                 className={`
-                  p-4 rounded-xl border-2 transition-all duration-200
+                  p-6 rounded-xl border-2 transition-all duration-200
                   ${formData.conflictWhen === option.value
                     ? 'border-orange-500 bg-orange-50 shadow-md transform scale-105'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                   }
                 `}
               >
-                <div className="text-2xl mb-2">{option.emoji}</div>
-                <div className="font-medium text-sm">{option.label}</div>
+                <div className="text-4xl mb-3">{option.emoji}</div>
+                <div className="font-medium text-lg">{option.label}</div>
               </button>
             ))}
           </div>
@@ -58,7 +60,7 @@ const Step3ConflictTiming = ({ formData, onChange, onNext, onPrev }) => {
 
         {/* 갈등 주기 */}
         <div>
-          <label className="block text-lg font-semibold text-gray-700 mb-4">
+          <label className="block text-2xl font-semibold text-gray-700 mb-6">
             갈등으로부터 지난 시간
           </label>
           <div className="bg-gray-50 p-6 rounded-2xl">
@@ -74,7 +76,7 @@ const Step3ConflictTiming = ({ formData, onChange, onNext, onPrev }) => {
                   background: `linear-gradient(to right, #f97316 0%, #f97316 ${((formData.conflictFrequency || 1) / 365) * 100}%, #e5e7eb ${((formData.conflictFrequency || 1) / 365) * 100}%, #e5e7eb 100%)`
                 }}
               />
-              <div className="flex justify-between mt-4 text-sm text-gray-600">
+              <div className="flex justify-between mt-4 text-lg text-gray-600">
                 <span>1일 이내</span>
                 <span>어제</span>
                 <span>3~4일 전</span>
@@ -82,8 +84,8 @@ const Step3ConflictTiming = ({ formData, onChange, onNext, onPrev }) => {
                 <span>지난 달</span>
               </div>
             </div>
-            <div className="mt-4 text-center">
-              <span className="text-2xl font-bold text-orange-600">
+            <div className="mt-6 text-center">
+              <span className="text-4xl font-bold text-orange-600">
                 {formData.conflictFrequency || 1}일 전
               </span>
             </div>
@@ -91,19 +93,30 @@ const Step3ConflictTiming = ({ formData, onChange, onNext, onPrev }) => {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-between">
-        <button
-          onClick={onPrev}
-          className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl
-            hover:bg-gray-50 transition-all duration-200 font-medium"
-        >
-          이전으로
-        </button>
+      <div className="mt-8 flex justify-end mb-32">
         <button
           onClick={onNext}
-          className="px-8 py-3 bg-orange-500 text-white rounded-xl
-            hover:bg-orange-600 shadow-lg hover:shadow-xl
-            transform hover:-translate-y-0.5 transition-all duration-200 font-medium"
+          style={{
+            backgroundColor: '#F97316',
+            color: '#FFFFFF',
+            padding: '0.75rem 2rem',
+            borderRadius: '0.75rem',
+            fontWeight: '500',
+            cursor: 'pointer',
+            border: 'none',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#EA580C';
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = '#F97316';
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+          }}
         >
           다음 단계로
         </button>

@@ -5,9 +5,9 @@ import useAuthStore from '../stores/AuthStore';
 import ProgressIndicator from '../components/conflict/ProgressIndicator';
 import Step1ConflictType from '../components/conflict/Step1ConflictType';
 import Step2ConflictDetail from '../components/conflict/Step2ConflictDetail';
-import Step3ConflictTiming from '../components/conflict/Step3ConflictTiming';
 import Step4EmotionState from '../components/conflict/Step4EmotionState';
 import Step5AIAnalysis from '../components/conflict/Step5AIAnalysis';
+import hedgehogImg from '../assets/conflict.png';
 
 const ConflictCreatePage = () => {
   const navigate = useNavigate();
@@ -45,9 +45,9 @@ const ConflictCreatePage = () => {
   };
 
   const handleNextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
-    } else if (currentStep === 4) {
+    } else if (currentStep === 3) {
       handleAnalyzeConflict();
     }
   };
@@ -61,7 +61,7 @@ const ConflictCreatePage = () => {
   // AI 분석 요청
   const handleAnalyzeConflict = async () => {
   setIsLoading(true);
-  setCurrentStep(5);
+  setCurrentStep(4);
 
     try {
       const payload = {
@@ -181,23 +181,37 @@ const ConflictCreatePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        {/* 갈등 목록으로 돌아가기 버튼 - 맨 위 */}
+        <div className="mb-8">
+          <span
+            onClick={() => navigate('/conflicts')}
+            className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
+          >
+            ← 갈등 목록으로 돌아가기
+          </span>
+        </div>
+        
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-100 rounded-full mb-4">
-            <span className="text-4xl">🦔</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">갈등 유형을 골라주세요</h1>
-          <p className="text-gray-600">
+        <div className="text-center mb-10">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">
+            <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+              갈등 유형을 골라주세요
+            </span>
+          </h1>
+          <p className="text-sm text-gray-600 mb-4">
             갈등 상황을 단계별로 작성해주시면 AI가 분석해드릴게요
           </p>
+          {/* Progress Indicator */}
+          <ProgressIndicator currentStep={currentStep} totalSteps={4} />
         </div>
 
-        {/* Progress Indicator */}
-        <ProgressIndicator currentStep={currentStep} totalSteps={5} />
-
         {/* Main Content Area */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 min-h-[500px]">
+        <div className="bg-white rounded-3xl shadow-xl p-8 min-h-[700px] relative">
+          {/* 고슴도치 이미지 - 왼쪽 하단 */}
+          <div className="absolute bottom-6 left-6 z-0">
+            <img src={hedgehogImg} alt="고슴도치" className="w-48 h-48 object-contain opacity-80" />
+          </div>
           {/* Step 1: 갈등 유형 */}
           {currentStep === 1 && (
             <Step1ConflictType
@@ -207,7 +221,7 @@ const ConflictCreatePage = () => {
             />
           )}
 
-          {/* Step 2: 갈등 상세 */}
+          {/* Step 2: 갈등 상세 + 발생 시기 */}
           {currentStep === 2 && (
             <Step2ConflictDetail
               formData={formData}
@@ -217,18 +231,8 @@ const ConflictCreatePage = () => {
             />
           )}
 
-          {/* Step 3: 발생 시점 */}
+          {/* Step 3: 감정 상태 */}
           {currentStep === 3 && (
-            <Step3ConflictTiming
-              formData={formData}
-              onChange={handleFormChange}
-              onNext={handleNextStep}
-              onPrev={handlePrevStep}
-            />
-          )}
-
-          {/* Step 4: 감정 상태 */}
-          {currentStep === 4 && (
             <Step4EmotionState
               formData={formData}
               onChange={handleFormChange}
@@ -237,8 +241,8 @@ const ConflictCreatePage = () => {
             />
           )}
 
-          {/* Step 5: AI 분석 */}
-          {currentStep === 5 && (
+          {/* Step 4: AI 분석 */}
+          {currentStep === 4 && (
             <Step5AIAnalysis
               formData={formData}
               aiSummary={aiSummary}
@@ -249,16 +253,6 @@ const ConflictCreatePage = () => {
               onPrev={() => setCurrentStep(1)}
             />
           )}
-        </div>
-
-        {/* 뒤로가기 버튼 */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/conflicts')}
-            className="text-gray-500 hover:text-gray-700 font-medium transition-colors"
-          >
-            ← 갈등 목록으로 돌아가기
-          </button>
         </div>
       </div>
     </div>

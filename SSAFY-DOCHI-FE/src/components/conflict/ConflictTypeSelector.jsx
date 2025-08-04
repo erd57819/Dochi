@@ -13,23 +13,24 @@ const conflictTypes = [
 
 const ConflictTypeSelector = ({ value, onChange }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
       {conflictTypes.map((type) => (
         <button
           key={type.value}
           type="button"
           onClick={() => onChange(type.value)}
+          style={{ paddingTop: '1.5rem', paddingBottom: '1.5rem', paddingLeft: '0.75rem', paddingRight: '0.75rem' }}
           className={`
-            relative p-4 rounded-2xl border-2 transition-all duration-200 
+            relative rounded-2xl border-2 transition-all duration-200 
             ${value === type.value 
               ? 'border-orange-500 bg-orange-50 shadow-lg transform scale-105' 
               : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
             }
           `}
         >
-          <div className="text-2xl mb-2">{type.icon}</div>
-          <div className="font-medium text-sm">{type.label}</div>
-          <div className="text-xs text-gray-500 mt-1">{type.description}</div>
+          <div className="text-4xl mb-3">{type.icon}</div>
+          <div className="font-medium text-lg">{type.label}</div>
+          <div className="text-sm text-gray-500 mt-2">{type.description}</div>
           {value === type.value && (
             <div className="absolute top-2 right-2">
               <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">

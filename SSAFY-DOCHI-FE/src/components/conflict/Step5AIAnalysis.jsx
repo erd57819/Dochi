@@ -41,11 +41,21 @@ const Step5AIAnalysis = ({
 
   return (
     <div className="animate-fadeIn">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      {/* 이전 버튼 - 텍스트만 */}
+      <div className="mb-6">
+        <span
+          onClick={onPrev}
+          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
+        >
+          ← 다시 작성하기
+        </span>
+      </div>
+      
+      <div className="mb-8 text-center">
+        <h2 className="text-4xl font-bold text-gray-800 mb-4">
           AI 분석 결과
         </h2>
-        <p className="text-gray-600">
+        <p className="text-xl text-gray-600">
           AI가 분석한 갈등 상황과 해결 방안입니다
         </p>
       </div>
@@ -182,19 +192,30 @@ const Step5AIAnalysis = ({
         </div>
       </div>
 
-      <div className="mt-8 flex justify-between">
-        <button
-          onClick={onPrev}
-          className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl
-            hover:bg-gray-50 transition-all duration-200 font-medium"
-        >
-          다시 작성하기
-        </button>
+      <div className="mt-8 flex justify-end mb-32">
         <button
           onClick={onSave}
-          className="px-8 py-3 bg-green-500 text-white rounded-xl
-            hover:bg-green-600 shadow-lg hover:shadow-xl
-            transform hover:-translate-y-0.5 transition-all duration-200 font-medium"
+          style={{
+            backgroundColor: '#22C55E',
+            color: '#FFFFFF',
+            padding: '0.75rem 2rem',
+            borderRadius: '0.75rem',
+            fontWeight: '500',
+            cursor: 'pointer',
+            border: 'none',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#16A34A';
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = '#22C55E';
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+          }}
         >
           갈등 카드 저장하기
         </button>
