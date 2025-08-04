@@ -164,7 +164,6 @@ services:
       dockerfile: Dockerfile
     container_name: dochi-nginx
     ports:
-      - "1443:80" # http (로컬 개발용)
       - "8090:443" # https (배포환경용)
     volumes:
       # Let's Encrypt 인증서 마운트 (배포환경용)
