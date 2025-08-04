@@ -63,14 +63,19 @@ public class OpenViduService {
             
             // 인증된 사용자만 세션 저장 (중복 확인 후 삽입)
             if (userId != null) {
-                // 이미 존재하는 세션인지 확인
-                boolean exists = userSessionDao.existsBySessionIdAndUserId(roomName, userId);
-                if (!exists) {
-                    userSessionDao.insertSession(UserSession.builder()
-                            .sessionId(roomName)
-                            .userId(userId)
-                            .expiresAt(LocalDateTime.now().plusHours(1))
-                            .build());
+                try {
+                    // 이미 존재하는 세션인지 확인
+                    boolean exists = userSessionDao.existsBySessionIdAndUserId(roomName, userId);
+                    if (!exists) {
+                        userSessionDao.insertSession(UserSession.builder()
+                                .sessionId(roomName)
+                                .userId(userId)
+                                .expiresAt(LocalDateTime.now().plusHours(1))
+                                .build());
+                    }
+                } catch (Exception dbException) {
+                    // 데이터베이스 저장 실패해도 토큰은 반환 (로그만 기록)
+                    System.err.println("DB 세션 저장 실패 (토큰은 정상 생성): " + dbException.getMessage());
                 }
             }
 

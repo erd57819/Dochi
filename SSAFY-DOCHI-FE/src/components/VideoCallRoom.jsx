@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import useAuthStore from '../stores/AuthStore';
+import apiClient from '../config/axios';
 
 const VideoCallRoom = () => {
   // 인증 스토어에서 토큰 가져오기
@@ -31,8 +32,10 @@ const VideoCallRoom = () => {
   const roomName = getRoomIdFromUrl();
   const participantName = '사용자1';
   
-  // LiveKit 서버 URL - nginx 프록시를 통해 연결
-  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io/livekit';
+  // LiveKit 서버 URL - nginx 프록시 통해 연결
+  const LIVEKIT_URL = window.location.hostname === 'localhost' 
+    ? 'ws://localhost:7880'  // 로컬 개발
+    : 'wss://i13c209.p.ssafy.io:8090/livekit';  // 배포 환경 (nginx 프록시)
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
@@ -45,39 +48,74 @@ const VideoCallRoom = () => {
   const animationFrameRef = useRef(null);
   const remoteAnalysersRef = useRef(new Map()); // 원격 참가자별 분석기 저장
 
-  // 로컬 비디오 트랙 연결을 위한 useEffect
+  // 로컬 비디오 트랙 연결을 위한 useEffect - 실제 연결 수행
   useEffect(() => {
-    if (localVideoRef.current && localVideoTrack) {
-      console.log('비디오 트랙을 연결합니다:', localVideoTrack);
-      console.log('비디오 트랙 상세:', {
-        track: localVideoTrack.track,
-        videoTrack: localVideoTrack.videoTrack,
-        mediaStreamTrack: localVideoTrack.track?.mediaStreamTrack
-      });
-      
-      try {
-        // LiveKit에서는 track.mediaStreamTrack로 접근
-        const actualTrack = localVideoTrack.track || localVideoTrack.videoTrack;
-        if (actualTrack && actualTrack.mediaStreamTrack) {
-          const stream = new MediaStream([actualTrack.mediaStreamTrack]);
+    console.log('=== useEffect for localVideoTrack ===', {
+      hasVideoRef: !!localVideoRef.current,
+      hasVideoTrack: !!localVideoTrack,
+      videoTrack: localVideoTrack
+    });
+    
+    const connectVideo = async () => {
+      if (localVideoTrack && localVideoTrack.track && localVideoRef.current) {
+        console.log('useEffect에서 비디오 연결 실행');
+        const mediaTrack = localVideoTrack.track.mediaStreamTrack;
+        
+        if (mediaTrack) {
+          console.log('useEffect: MediaStreamTrack을 비디오 엘리먼트에 연결');
+          const stream = new MediaStream([mediaTrack]);
           localVideoRef.current.srcObject = stream;
-          // 명시적으로 play() 호출
-          localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
-          console.log('비디오 트랙 연결 성공');
-        } else if (localVideoTrack.mediaStreamTrack) {
-          // 대체 방법
-          const stream = new MediaStream([localVideoTrack.mediaStreamTrack]);
-          localVideoRef.current.srcObject = stream;
-          localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
-          console.log('대체 방법으로 비디오 트랙 연결 성공');
+          
+          try {
+            await localVideoRef.current.play();
+            console.log('useEffect: 비디오 재생 성공!');
+          } catch (playError) {
+            console.log('useEffect: 비디오 자동재생 제한:', playError);
+          }
         } else {
-          console.error('MediaStreamTrack을 찾을 수 없습니다');
+          console.error('useEffect: MediaStreamTrack을 찾을 수 없음');
         }
-      } catch (error) {
-        console.error('비디오 트랙 연결 실패:', error);
+      } else {
+        console.log('useEffect: 조건 불만족', {
+          hasVideoTrack: !!localVideoTrack,
+          hasTrack: !!(localVideoTrack?.track),
+          hasVideoRef: !!localVideoRef.current
+        });
       }
-    }
+    };
+    
+    connectVideo();
   }, [localVideoTrack]);
+
+  // video ref가 준비되었을 때 다시 연결 시도
+  useEffect(() => {
+    console.log('=== useEffect for video ref mount ===');
+    
+    const connectVideoWhenReady = async () => {
+      if (localVideoRef.current && localVideoTrack && localVideoTrack.track) {
+        console.log('video ref가 준비됨! 지연된 비디오 연결 수행');
+        const mediaTrack = localVideoTrack.track.mediaStreamTrack;
+        
+        if (mediaTrack) {
+          console.log('지연 연결: MediaStreamTrack을 비디오 엘리먼트에 연결');
+          const stream = new MediaStream([mediaTrack]);
+          localVideoRef.current.srcObject = stream;
+          
+          try {
+            await localVideoRef.current.play();
+            console.log('지연 연결: 비디오 재생 성공!');
+          } catch (playError) {
+            console.log('지연 연결: 비디오 자동재생 제한:', playError);
+          }
+        }
+      }
+    };
+
+    // 약간의 지연을 주어 DOM이 완전히 마운트되도록 함
+    const timer = setTimeout(connectVideoWhenReady, 100);
+    
+    return () => clearTimeout(timer);
+  }, [isConnected]); // isConnected가 true가 되면 video 요소도 렌더링됨
 
   // 컴포넌트 마운트시 정리만 등록 (자동 연결 제거)
   useEffect(() => {
@@ -126,7 +164,12 @@ const VideoCallRoom = () => {
   const setupRoomEvents = (room) => {
     // 참가자 연결
     room.on(RoomEvent.ParticipantConnected, (participant) => {
-      console.log('참가자 연결:', participant.identity);
+      console.log('=== 새 참가자 연결 ===', {
+        identity: participant.identity,
+        sid: participant.sid,
+        audioTracks: participant.audioTracks.size,
+        videoTracks: participant.videoTracks.size
+      });
       updateParticipants(room);
     });
     
@@ -138,25 +181,53 @@ const VideoCallRoom = () => {
     
     // 트랙 구독
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-      console.log('트랙 구독:', track.kind, participant.identity);
+      console.log('=== 트랙 구독 이벤트 ===', {
+        trackKind: track.kind,
+        participantId: participant.identity,
+        track: track,
+        mediaStreamTrack: track.mediaStreamTrack
+      });
       
       if (track.kind === Track.Kind.Video) {
-        const videoElement = document.getElementById(`video-${participant.identity}`);
-        if (videoElement && track.mediaStreamTrack) {
-          const stream = new MediaStream([track.mediaStreamTrack]);
-          videoElement.srcObject = stream;
-          // 명시적으로 play() 호출
-          videoElement.play().catch(e => console.log('원격 비디오 자동재생 제한:', e));
-        }
-      } else if (track.kind === Track.Kind.Audio) {
-        const audioElement = document.getElementById(`audio-${participant.identity}`);
-        if (audioElement && track.mediaStreamTrack) {
-          const stream = new MediaStream([track.mediaStreamTrack]);
-          audioElement.srcObject = stream;
+        // 약간의 지연을 주어 DOM 요소가 준비되도록 함
+        setTimeout(() => {
+          const videoElement = document.getElementById(`video-${participant.identity}`);
+          console.log('원격 비디오 요소 찾기:', {
+            elementId: `video-${participant.identity}`,
+            element: videoElement,
+            hasMediaStreamTrack: !!track.mediaStreamTrack
+          });
           
-          // 원격 참가자 말하고 있는지 감지 설정
-          setupRemoteAudioLevelDetection(track, participant.identity);
-        }
+          if (videoElement && track.mediaStreamTrack) {
+            console.log('원격 비디오 연결 시작');
+            const stream = new MediaStream([track.mediaStreamTrack]);
+            videoElement.srcObject = stream;
+            // 명시적으로 play() 호출
+            videoElement.play()
+              .then(() => console.log('원격 비디오 재생 성공:', participant.identity))
+              .catch(e => console.log('원격 비디오 자동재생 제한:', e));
+          } else {
+            console.error('원격 비디오 연결 실패:', {
+              hasElement: !!videoElement,
+              hasTrack: !!track.mediaStreamTrack
+            });
+          }
+        }, 200);
+        
+      } else if (track.kind === Track.Kind.Audio) {
+        setTimeout(() => {
+          const audioElement = document.getElementById(`audio-${participant.identity}`);
+          console.log('원격 오디오 요소 찾기:', audioElement);
+          
+          if (audioElement && track.mediaStreamTrack) {
+            console.log('원격 오디오 연결');
+            const stream = new MediaStream([track.mediaStreamTrack]);
+            audioElement.srcObject = stream;
+            
+            // 원격 참가자 말하고 있는지 감지 설정
+            setupRemoteAudioLevelDetection(track, participant.identity);
+          }
+        }, 200);
       }
     });
     
@@ -217,35 +288,19 @@ const VideoCallRoom = () => {
     try {
       console.log('토큰 요청 시작...', { roomName, hasToken: !!token });
       
-      const response = await fetch(`${API_BASE_URL}/dochi/video-call/token?room=${encodeURIComponent(roomName)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // JWT 토큰이 있으면 Authorization 헤더 추가
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
-      });
+      const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
       
-      console.log('토큰 응답 상태:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('토큰 요청 에러:', response.status, errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('토큰 응답 데이터:', data);
+      console.log('토큰 응답 데이터:', response.data);
       
       // 백엔드 응답 구조에 맞춰 수정
-      if (data.status === 200 && data.data) {
+      if (response.data.status === 200 && response.data.data) {
         // VideoCallRoomCreateResDto에서 token 가져오기
-        return data.data.token;
-      } else if (data.data && data.data.token) {
+        return response.data.data.token;
+      } else if (response.data.data && response.data.data.token) {
         // 대체 응답 구조
-        return data.data.token;
+        return response.data.data.token;
       } else {  
-        throw new Error('토큰 발급 실패: ' + (data.message || 'Unknown error'));
+        throw new Error('토큰 발급 실패: ' + (response.data.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('토큰 요청 실패:', error);
@@ -376,9 +431,46 @@ const VideoCallRoom = () => {
   // 로컬 미디어 활성화
   const enableLocalMedia = async (room) => {
     try {
+      console.log('=== enableLocalMedia 시작 ===');
+      
       // 카메라 활성화
       const videoTrack = await room.localParticipant.setCameraEnabled(true);
       console.log('카메라 트랙 생성됨:', videoTrack);
+      console.log('카메라 트랙 타입:', typeof videoTrack);
+      console.log('카메라 트랙 속성들:', Object.keys(videoTrack || {}));
+      
+      // LiveKit Track의 실제 MediaStreamTrack에 직접 접근
+      if (videoTrack && videoTrack.track) {
+        console.log('videoTrack.track:', videoTrack.track);
+        console.log('videoTrack.track 속성들:', Object.keys(videoTrack.track));
+        
+        // LiveKit Track의 내부 MediaStreamTrack 찾기
+        const mediaTrack = videoTrack.track.mediaStreamTrack;
+        console.log('mediaStreamTrack:', mediaTrack);
+        console.log('localVideoRef.current 상태:', localVideoRef.current);
+        
+        if (mediaTrack) {
+          if (localVideoRef.current) {
+            console.log('MediaStreamTrack을 직접 비디오 엘리먼트에 연결');
+            const stream = new MediaStream([mediaTrack]);
+            localVideoRef.current.srcObject = stream;
+            
+            // 비디오 재생 시작
+            try {
+              await localVideoRef.current.play();
+              console.log('비디오 재생 성공!');
+            } catch (playError) {
+              console.log('비디오 자동재생 제한:', playError);
+            }
+          } else {
+            console.log('video ref가 아직 준비되지 않음. 나중에 연결하도록 state에 저장');
+            // video ref가 준비되지 않았으므로 track만 저장하고 useEffect에서 처리
+          }
+        } else {
+          console.error('MediaStreamTrack을 찾을 수 없음');
+        }
+      }
+      
       setLocalVideoTrack(videoTrack);
       
       // 마이크 활성화
@@ -390,8 +482,115 @@ const VideoCallRoom = () => {
         setupAudioLevelDetection(audioTrack);
       }
       
+      console.log('=== enableLocalMedia 완료 ===');
+      
     } catch (error) {
       console.error('미디어 활성화 실패:', error);
+    }
+  };
+
+  // 비디오 트랙 연결 헬퍼 함수
+  const attachVideoTrack = (videoTrack, videoElement) => {
+    console.log('비디오 트랙 연결 시도:', videoTrack);
+    console.log('비디오 엘리먼트:', videoElement);
+    console.log('videoTrack 속성들:', Object.keys(videoTrack || {}));
+    
+    if (!videoTrack || !videoElement) {
+      console.log('비디오 트랙 또는 엘리먼트가 없음');
+      return;
+    }
+
+    try {
+      // 방법 1: LiveKit의 attach 메서드 사용
+      if (typeof videoTrack.attach === 'function') {
+        console.log('방법 1: attach 메서드 사용');
+        videoTrack.attach(videoElement);
+        console.log('attach 성공!');
+        return;
+      }
+
+      // 방법 2: videoTrack.track을 통한 접근 (이전 로그에서 확인됨)
+      if (videoTrack.track) {
+        console.log('방법 2: videoTrack.track 탐색 중...');
+        console.log('videoTrack.track 속성들:', Object.keys(videoTrack.track));
+        
+        // track 객체에서 MediaStreamTrack 찾기
+        const trackPossibles = [
+          videoTrack.track.mediaStreamTrack,
+          videoTrack.track._track,
+          videoTrack.track.track,
+          videoTrack.track
+        ];
+
+        for (let i = 0; i < trackPossibles.length; i++) {
+          const possibleTrack = trackPossibles[i];
+          if (possibleTrack && possibleTrack instanceof MediaStreamTrack) {
+            console.log(`방법 2-${i}: track에서 MediaStreamTrack 발견`);
+            const stream = new MediaStream([possibleTrack]);
+            videoElement.srcObject = stream;
+            videoElement.play().catch(e => console.log('자동재생 제한:', e));
+            console.log('track 방식 성공!');
+            return;
+          }
+        }
+
+        // track이 LiveKit Track 인스턴스인 경우 attach 시도
+        if (typeof videoTrack.track.attach === 'function') {
+          console.log('방법 2-attach: track.attach 메서드 사용');
+          videoTrack.track.attach(videoElement);
+          console.log('track.attach 성공!');
+          return;
+        }
+      }
+
+      // 방법 3: 직접 mediaStreamTrack 접근
+      const directTracks = [
+        videoTrack.mediaStreamTrack,
+        videoTrack._mediaStreamTrack,
+        videoTrack._track?.mediaStreamTrack
+      ];
+
+      for (let i = 0; i < directTracks.length; i++) {
+        const mediaStreamTrack = directTracks[i];
+        if (mediaStreamTrack && mediaStreamTrack instanceof MediaStreamTrack) {
+          console.log(`방법 3-${i}: 직접 MediaStreamTrack 발견`);
+          const stream = new MediaStream([mediaStreamTrack]);
+          videoElement.srcObject = stream;
+          videoElement.play().catch(e => console.log('자동재생 제한:', e));
+          console.log('직접 MediaStream 방식 성공!');
+          return;
+        }
+      }
+
+      // 방법 4: videoTrack이 이미 MediaStreamTrack인 경우
+      if (videoTrack instanceof MediaStreamTrack) {
+        console.log('방법 4: videoTrack 자체가 MediaStreamTrack');
+        const stream = new MediaStream([videoTrack]);
+        videoElement.srcObject = stream;
+        videoElement.play().catch(e => console.log('자동재생 제한:', e));
+        console.log('직접 videoTrack 방식 성공!');
+        return;
+      }
+
+      console.error('모든 방법 실패. 전체 객체 구조 출력:');
+      console.log('videoTrack:', videoTrack);
+      console.log('videoTrack.track:', videoTrack.track);
+      
+      // 마지막 시도: getUserMedia로 새 스트림 생성
+      console.log('마지막 시도: 직접 getUserMedia 사용');
+      navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 480 }, 
+        audio: false 
+      }).then(stream => {
+        videoElement.srcObject = stream;
+        videoElement.play().catch(e => console.log('자동재생 제한:', e));
+        console.log('직접 getUserMedia 성공!');
+      }).catch(err => {
+        console.error('getUserMedia도 실패:', err);
+      });
+
+    } catch (error) {
+      console.error('비디오 트랙 연결 중 오류:', error);
     }
   };
 
@@ -423,19 +622,26 @@ const VideoCallRoom = () => {
         
         if (localVideoRef.current) {
           if (videoTrack) {
-            const actualTrack = videoTrack.track || videoTrack.videoTrack || videoTrack;
-            if (actualTrack && actualTrack.mediaStreamTrack) {
-              const stream = new MediaStream([actualTrack.mediaStreamTrack]);
-              localVideoRef.current.srcObject = stream;
-              // 명시적으로 play() 호출
-              localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
-            } else if (videoTrack.mediaStreamTrack) {
-              const stream = new MediaStream([videoTrack.mediaStreamTrack]);
-              localVideoRef.current.srcObject = stream;
-              localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+            // LiveKit의 최신 방식: track.attach() 사용
+            if (videoTrack.attach) {
+              videoTrack.attach(localVideoRef.current);
+              console.log('카메라 토글: attach 방식으로 연결');
+            } else {
+              // 대체 방법
+              const mediaStreamTrack = videoTrack.mediaStreamTrack || 
+                                     videoTrack.track?.mediaStreamTrack;
+              if (mediaStreamTrack) {
+                const stream = new MediaStream([mediaStreamTrack]);
+                localVideoRef.current.srcObject = stream;
+                localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+                console.log('카메라 토글: MediaStream 방식으로 연결');
+              }
             }
           } else {
-            localVideoRef.current.srcObject = null;
+            // 카메라 끄기
+            if (localVideoRef.current.srcObject) {
+              localVideoRef.current.srcObject = null;
+            }
           }
         }
       } catch (error) {
