@@ -4,5 +4,5 @@ rtc:
   port_range_start: 50000
   port_range_end: 50100
 keys:
-  devkey: devsecret
+  APIAhgcveqdsqqe: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
 development: true
