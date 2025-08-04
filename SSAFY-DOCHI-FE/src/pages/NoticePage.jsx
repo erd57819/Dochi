@@ -1,41 +1,44 @@
 import React, { useState, useEffect } from 'react';
+import { noticeApi } from '../services/noticeApi';
 
 const NoticePage = () => {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [error, setError] = useState(null);
 
-  // TODO: 백엔드 API 연동
+  // 백엔드 API 연동 - 카테고리 변경시에도 재조회
   useEffect(() => {
-    // 임시 데이터
-    const mockNotices = [
-      {
-        id: 1,
-        title: '참견도치 서비스 오픈 안내',
-        content: '안녕하세요. 참견도치 서비스가 정식으로 오픈되었습니다.',
-        category: 'ANNOUNCEMENT',
-        isImportant: true,
-        viewCount: 150,
-        createdAt: '2024-01-15',
-        publishDate: '2024-01-15'
-      },
-      {
-        id: 2,
-        title: '시스템 점검 안내',
-        content: '서버 점검으로 인한 서비스 일시 중단 안내입니다.',
-        category: 'MAINTENANCE',
-        isImportant: false,
-        viewCount: 89,
-        createdAt: '2024-01-10',
-        publishDate: '2024-01-10'
+    const fetchNotices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // 카테고리 필터 적용
+        const category = selectedCategory === 'ALL' ? '' : selectedCategory;
+        const response = await noticeApi.getNotices(0, 20, '', category); // 첫 페이지, 20개 조회
+        console.log('공지사항 조회 응답:', response);
+        
+        // 백엔드 응답 구조에 맞게 수정
+        if (response && response.notices) {
+          setNotices(response.notices);
+        } else if (Array.isArray(response)) {
+          setNotices(response);
+        } else {
+          console.warn('예상과 다른 응답 구조:', response);
+          setNotices([]);
+        }
+      } catch (error) {
+        console.error('공지사항 조회 실패:', error);
+        setError('공지사항을 불러오는 중 오류가 발생했습니다.');
+        setNotices([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    
-    setTimeout(() => {
-      setNotices(mockNotices);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    };
+
+    fetchNotices();
+  }, [selectedCategory]); // selectedCategory 변경시에도 재조회
 
   const categories = [
     { value: 'ALL', label: '전체' },
@@ -45,9 +48,8 @@ const NoticePage = () => {
     { value: 'MAINTENANCE', label: '점검' }
   ];
 
-  const filteredNotices = selectedCategory === 'ALL' 
-    ? notices 
-    : notices.filter(notice => notice.category === selectedCategory);
+  // 서버에서 필터링하므로 클라이언트 필터링 제거
+  const filteredNotices = notices;
 
   if (loading) {
     return (
@@ -67,6 +69,11 @@ const NoticePage = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">공지사항</h1>
           <p className="text-gray-600">참견도치의 새로운 소식을 확인해보세요</p>
+          {error && (
+            <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              ⚠️ {error}
+            </div>
+          )}
         </div>
 
         {/* 카테고리 필터 */}

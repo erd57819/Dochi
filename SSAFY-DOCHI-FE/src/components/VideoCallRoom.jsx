@@ -14,6 +14,10 @@ const VideoCallRoom = () => {
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [error, setError] = useState(null);
   
+  // 말하고 있는 참가자 추적 (Discord-like 기능)
+  const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
+  const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
+  
   // 컨트롤 상태
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
@@ -22,13 +26,53 @@ const VideoCallRoom = () => {
   const roomName = 'test-room';
   const participantName = '사용자1';
   
-  // LiveKit 서버 URL
-  const LIVEKIT_URL = 'ws://localhost:7880';
+  // LiveKit 서버 URL - EC2 환경에 맞게 수정
+  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io:7881';
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
   // 로컬 비디오 ref
   const localVideoRef = useRef(null);
+  
+  // 오디오 분석용 refs
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const remoteAnalysersRef = useRef(new Map()); // 원격 참가자별 분석기 저장
+
+  // 로컬 비디오 트랙 연결을 위한 useEffect
+  useEffect(() => {
+    if (localVideoRef.current && localVideoTrack) {
+      console.log('비디오 트랙을 연결합니다:', localVideoTrack);
+      console.log('비디오 트랙 상세:', {
+        track: localVideoTrack.track,
+        videoTrack: localVideoTrack.videoTrack,
+        mediaStreamTrack: localVideoTrack.track?.mediaStreamTrack
+      });
+      
+      try {
+        // LiveKit에서는 track.mediaStreamTrack로 접근
+        const actualTrack = localVideoTrack.track || localVideoTrack.videoTrack;
+        if (actualTrack && actualTrack.mediaStreamTrack) {
+          const stream = new MediaStream([actualTrack.mediaStreamTrack]);
+          localVideoRef.current.srcObject = stream;
+          // 명시적으로 play() 호출
+          localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+          console.log('비디오 트랙 연결 성공');
+        } else if (localVideoTrack.mediaStreamTrack) {
+          // 대체 방법
+          const stream = new MediaStream([localVideoTrack.mediaStreamTrack]);
+          localVideoRef.current.srcObject = stream;
+          localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+          console.log('대체 방법으로 비디오 트랙 연결 성공');
+        } else {
+          console.error('MediaStreamTrack을 찾을 수 없습니다');
+        }
+      } catch (error) {
+        console.error('비디오 트랙 연결 실패:', error);
+      }
+    }
+  }, [localVideoTrack]);
 
   // 컴포넌트 마운트시 자동 참가
   useEffect(() => {
@@ -95,13 +139,20 @@ const VideoCallRoom = () => {
       
       if (track.kind === Track.Kind.Video) {
         const videoElement = document.getElementById(`video-${participant.identity}`);
-        if (videoElement) {
-          track.attach(videoElement);
+        if (videoElement && track.mediaStreamTrack) {
+          const stream = new MediaStream([track.mediaStreamTrack]);
+          videoElement.srcObject = stream;
+          // 명시적으로 play() 호출
+          videoElement.play().catch(e => console.log('원격 비디오 자동재생 제한:', e));
         }
       } else if (track.kind === Track.Kind.Audio) {
         const audioElement = document.getElementById(`audio-${participant.identity}`);
-        if (audioElement) {
-          track.attach(audioElement);
+        if (audioElement && track.mediaStreamTrack) {
+          const stream = new MediaStream([track.mediaStreamTrack]);
+          audioElement.srcObject = stream;
+          
+          // 원격 참가자 말하고 있는지 감지 설정
+          setupRemoteAudioLevelDetection(track, participant.identity);
         }
       }
     });
@@ -109,7 +160,18 @@ const VideoCallRoom = () => {
     // 트랙 구독 해제
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       console.log('트랙 구독 해제:', track.kind, participant.identity);
-      track.detach();
+      // MediaStream 방식에서는 srcObject를 null로 설정
+      if (track.kind === Track.Kind.Video) {
+        const videoElement = document.getElementById(`video-${participant.identity}`);
+        if (videoElement) {
+          videoElement.srcObject = null;
+        }
+      } else if (track.kind === Track.Kind.Audio) {
+        const audioElement = document.getElementById(`audio-${participant.identity}`);
+        if (audioElement) {
+          audioElement.srcObject = null;
+        }
+      }
     });
     
     // 연결 해제
@@ -117,6 +179,33 @@ const VideoCallRoom = () => {
       console.log('룸 연결 해제:', reason);
       setIsConnected(false);
       setParticipants([]);
+      setSpeakingParticipants(new Set());
+      setIsLocalSpeaking(false);
+    });
+    
+    // 오디오 레벨 추적 (말하고 있는지 감지)
+    room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+      // 참가자별 오디오 레벨 체크
+      const speaking = new Set();
+      
+      // 로컬 참가자 체크
+      if (room.localParticipant.audioTracks.size > 0) {
+        const localAudioTrack = Array.from(room.localParticipant.audioTracks.values())[0]?.track;
+        if (localAudioTrack && localAudioTrack.isMuted === false) {
+          // 실제 오디오 레벨은 복잡하므로 마이크가 켜져있으면 잠시 speaking으로 표시
+          // 실제 구현에서는 Web Audio API를 사용해야 함
+        }
+      }
+      
+      // 원격 참가자들 체크
+      room.remoteParticipants.forEach((participant) => {
+        participant.audioTracks.forEach((publication) => {
+          if (publication.track && !publication.isMuted) {
+            // 오디오 트랙이 있고 음소거되지 않았으면 speaking으로 간주
+            // 실제로는 오디오 레벨을 측정해야 함
+          }
+        });
+      });
     });
   };
 
@@ -147,9 +236,9 @@ const VideoCallRoom = () => {
       console.log('토큰 응답 데이터:', data);
       
       // 백엔드 응답 구조에 맞춰 수정
-      if (data.success && data.data && data.data.token) {
+      if (data.status === 200 && data.data && data.data.token) {
         return data.data.token;
-      } else {
+      } else {  
         throw new Error('토큰 발급 실패: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
@@ -158,21 +247,122 @@ const VideoCallRoom = () => {
     }
   };
 
+  // 오디오 레벨 감지를 위한 함수
+  const setupAudioLevelDetection = (audioTrack) => {
+    const actualTrack = audioTrack?.track || audioTrack?.audioTrack || audioTrack;
+    const mediaStreamTrack = actualTrack?.mediaStreamTrack || audioTrack?.mediaStreamTrack;
+    
+    if (!mediaStreamTrack) {
+      console.log('오디오 MediaStreamTrack을 찾을 수 없습니다:', audioTrack);
+      return;
+    }
+    
+    try {
+      // AudioContext 생성
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const mediaStreamSource = audioContext.createMediaStreamSource(
+        new MediaStream([mediaStreamTrack])
+      );
+      
+      mediaStreamSource.connect(analyser);
+      analyser.fftSize = 256;
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      
+      // 오디오 레벨 감지 루프
+      const detectSpeaking = () => {
+        if (analyserRef.current) {
+          analyserRef.current.getByteFrequencyData(dataArray);
+          
+          // 평균 오디오 레벨 계산
+          const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+          const threshold = 20; // 말하고 있다고 판단하는 임계값
+          
+          setIsLocalSpeaking(average > threshold);
+          
+          animationFrameRef.current = requestAnimationFrame(detectSpeaking);
+        }
+      };
+      
+      detectSpeaking();
+    } catch (error) {
+      console.error('오디오 레벨 감지 설정 실패:', error);
+    }
+  };
+
+  // 원격 참가자 오디오 레벨 감지
+  const setupRemoteAudioLevelDetection = (audioTrack, participantId) => {
+    const mediaStreamTrack = audioTrack?.mediaStreamTrack;
+    if (!mediaStreamTrack) {
+      console.log('원격 오디오 MediaStreamTrack을 찾을 수 없습니다:', participantId, audioTrack);
+      return;
+    }
+    
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const mediaStreamSource = audioContext.createMediaStreamSource(
+        new MediaStream([mediaStreamTrack])
+      );
+      
+      mediaStreamSource.connect(analyser);
+      analyser.fftSize = 256;
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      // 원격 참가자별 분석기 저장
+      remoteAnalysersRef.current.set(participantId, { audioContext, analyser });
+      
+      // 오디오 레벨 감지 루프
+      const detectRemoteSpeaking = () => {
+        if (analyser && remoteAnalysersRef.current.has(participantId)) {
+          analyser.getByteFrequencyData(dataArray);
+          
+          const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+          const threshold = 15; // 원격은 좀 더 낮은 임계값
+          
+          setSpeakingParticipants(prev => {
+            const newSpeaking = new Set(prev);
+            if (average > threshold) {
+              newSpeaking.add(participantId);
+            } else {
+              newSpeaking.delete(participantId);
+            }
+            return newSpeaking;
+          });
+          
+          requestAnimationFrame(detectRemoteSpeaking);
+        }
+      };
+      
+      detectRemoteSpeaking();
+    } catch (error) {
+      console.error('원격 오디오 레벨 감지 설정 실패:', error);
+    }
+  };
+
   // 로컬 미디어 활성화
   const enableLocalMedia = async (room) => {
     try {
       // 카메라 활성화
       const videoTrack = await room.localParticipant.setCameraEnabled(true);
+      console.log('카메라 트랙 생성됨:', videoTrack);
       setLocalVideoTrack(videoTrack);
-      
-      // 로컬 비디오 연결
-      if (localVideoRef.current && videoTrack) {
-        videoTrack.attach(localVideoRef.current);
-      }
       
       // 마이크 활성화
       const audioTrack = await room.localParticipant.setMicrophoneEnabled(true);
       setLocalAudioTrack(audioTrack);
+      
+      // 오디오 레벨 감지 설정
+      if (audioTrack) {
+        setupAudioLevelDetection(audioTrack);
+      }
       
     } catch (error) {
       console.error('미디어 활성화 실패:', error);
@@ -203,10 +393,21 @@ const VideoCallRoom = () => {
       try {
         const videoTrack = await room.localParticipant.setCameraEnabled(!isCameraOn);
         setIsCameraOn(!isCameraOn);
+        setLocalVideoTrack(videoTrack);
         
         if (localVideoRef.current) {
           if (videoTrack) {
-            videoTrack.attach(localVideoRef.current);
+            const actualTrack = videoTrack.track || videoTrack.videoTrack || videoTrack;
+            if (actualTrack && actualTrack.mediaStreamTrack) {
+              const stream = new MediaStream([actualTrack.mediaStreamTrack]);
+              localVideoRef.current.srcObject = stream;
+              // 명시적으로 play() 호출
+              localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+            } else if (videoTrack.mediaStreamTrack) {
+              const stream = new MediaStream([videoTrack.mediaStreamTrack]);
+              localVideoRef.current.srcObject = stream;
+              localVideoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+            }
           } else {
             localVideoRef.current.srcObject = null;
           }
@@ -219,6 +420,20 @@ const VideoCallRoom = () => {
 
   // 룸 나가기
   const leaveRoom = async () => {
+    // 오디오 분석 정리
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    
+    // 원격 참가자 오디오 분석기 정리
+    remoteAnalysersRef.current.forEach(({ audioContext }) => {
+      audioContext.close();
+    });
+    remoteAnalysersRef.current.clear();
+    
     if (room) {
       await room.disconnect();
       setRoom(null);
@@ -226,6 +441,8 @@ const VideoCallRoom = () => {
       setParticipants([]);
       setLocalVideoTrack(null);
       setLocalAudioTrack(null);
+      setSpeakingParticipants(new Set());
+      setIsLocalSpeaking(false);
       
       // 로컬 비디오 정리
       if (localVideoRef.current) {
@@ -295,7 +512,9 @@ const VideoCallRoom = () => {
       {isConnected && (
         <div className="flex-1 p-4">
           {/* 로컬 비디오 (나) */}
-          <div className="w-full h-64 bg-black rounded-lg relative overflow-hidden mb-4">
+          <div className={`w-full h-64 bg-black rounded-lg relative overflow-hidden mb-4 transition-all duration-300 ${
+            isLocalSpeaking && isMicOn ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
+          }`}>
             <video
               ref={localVideoRef}
               autoPlay
@@ -303,8 +522,13 @@ const VideoCallRoom = () => {
               muted
               className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded">
-              <span className="text-sm">{participantName} (나)</span>
+            <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
+              isLocalSpeaking && isMicOn ? 'bg-green-600 bg-opacity-70' : ''
+            }`}>
+              <span className="text-sm">
+                {isLocalSpeaking && isMicOn && '🎤 '}
+                {participantName} (나)
+              </span>
             </div>
             {!isCameraOn && (
               <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
@@ -316,25 +540,33 @@ const VideoCallRoom = () => {
           {/* 원격 참가자들 */}
           {participants.length > 0 && (
             <div className="grid grid-cols-2 gap-4">
-              {participants.map((participant) => (
-                <div key={participant.identity} className="relative">
-                  <div className="w-full h-48 bg-black rounded-lg relative overflow-hidden">
-                    <video
-                      id={`video-${participant.identity}`}
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                    <audio
-                      id={`audio-${participant.identity}`}
-                      autoPlay
-                    />
-                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                      {participant.identity}
+              {participants.map((participant) => {
+                const isSpeaking = speakingParticipants.has(participant.identity);
+                return (
+                  <div key={participant.identity} className="relative">
+                    <div className={`w-full h-48 bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
+                      isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
+                    }`}>
+                      <video
+                        id={`video-${participant.identity}`}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                      <audio
+                        id={`audio-${participant.identity}`}
+                        autoPlay
+                      />
+                      <div className={`absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs ${
+                        isSpeaking ? 'bg-green-600 bg-opacity-70' : ''
+                      }`}>
+                        {isSpeaking && '🎤 '}
+                        {participant.identity}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
