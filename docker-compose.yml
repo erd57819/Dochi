@@ -162,8 +162,8 @@ services:
       dockerfile: Dockerfile
     container_name: dochi-nginx
     ports:
-      - "8090:80"
-      - "1443:443"
+      - "1443:80" # http
+      - "8090:443" # https
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - nginx-logs:/var/log/nginx
