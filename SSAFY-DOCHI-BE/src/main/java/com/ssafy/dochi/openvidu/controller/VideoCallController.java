@@ -63,6 +63,7 @@ public class VideoCallController {
         if (userDetails == null) {
             return ApiResponseGenerator.fail("인증이 필요합니다", HttpStatus.UNAUTHORIZED);
         }
+
         
         String token = videoCallService.joinRoom(room, userDetails.getId());
         return ApiResponseGenerator.success(Map.of("token", token), HttpStatus.OK);

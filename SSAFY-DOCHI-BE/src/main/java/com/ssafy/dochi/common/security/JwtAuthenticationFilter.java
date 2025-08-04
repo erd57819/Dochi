@@ -39,6 +39,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             filterChain.doFilter(request, response);
             return;
         }
+
         String jwt = request.getHeader(HEADER);
         // 헤더에서 JWT를 받아오고 토큰이 없으면 다음 필터로 넘어감.
         if (path.startsWith("/member/login") ||
