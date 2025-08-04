@@ -35,7 +35,7 @@ const VideoCallRoom = () => {
   // LiveKit 서버 URL - nginx 프록시 통해 연결
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
     ? 'ws://localhost:7880'  // 로컬 개발
-    : 'wss://i13c209.p.ssafy.io/livekit/rtc';  // 배포 환경 (nginx 프록시)
+    : 'wss://i13c209.p.ssafy.io/livekit';  // 배포 환경 (nginx 프록시)
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
@@ -142,6 +142,7 @@ const VideoCallRoom = () => {
       
       // 3. 백엔드에서 토큰 가져오기
       const liverkitToken = await getTokenFromServer(roomName);
+      console.log('받은 token:', liverkitToken);  // 👈 여기에 출력
       
       // 4. LiveKit 서버 연결
       await newRoom.connect(LIVEKIT_URL, liverkitToken);
