@@ -22,8 +22,13 @@ const VideoCallRoom = () => {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   
-  // 설정
-  const roomName = 'test-room';
+  // 설정 - URL에서 방 ID 추출
+  const getRoomIdFromUrl = () => {
+    const pathSegments = window.location.pathname.split('/');
+    return pathSegments[pathSegments.length - 1] || 'test-room';
+  };
+  
+  const roomName = getRoomIdFromUrl();
   const participantName = '사용자1';
   
   // LiveKit 서버 URL - nginx 프록시를 통해 연결
