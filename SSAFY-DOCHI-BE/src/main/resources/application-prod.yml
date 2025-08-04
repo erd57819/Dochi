@@ -82,10 +82,6 @@ livekit:
     key: ${LIVEKIT_API_KEY}
     secret: ${LIVEKIT_API_SECRET}
 
-# OpenVidu 설정 (WebRTC 화상통화용)
-openvidu:
-  url: ${OPENVIDU_URL:http://openvidu-server:4443}
-  secret: ${OPENVIDU_SECRET}
 
 # 로깅 설정 (운영 환경)
 logging:
