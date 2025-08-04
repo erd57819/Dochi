@@ -192,7 +192,7 @@ volumes:
   openvidu-recordings:
     driver: local
 
-# == NETWORKS ==tnwjdgownj
+# == NETWORKS ==
 networks:
   dochi-network:
     name: dochi-network
