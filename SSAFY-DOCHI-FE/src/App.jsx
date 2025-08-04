@@ -4,12 +4,15 @@ import Nav from './components/Nav';
 import MainPage from './pages/MainPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import KakaoCallbackPage from './pages/KakaoCallbackPage';
+import KakaoWithdrawCallbackPage from './pages/KakaoWithdrawCallbackPage';
 import NoticePage from './pages/NoticePage';
 import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
-// import ComfortPage from './pages/ComfortPage';
+import ComfortPage from './pages/ComfortPage';
+import ComfortChatPage from './pages/ComfortChatPage';
 import VoiceChatPage from './pages/VoiceChatPage';
 import VideoRoomPage from './pages/VideoRoomPage';
 import VoiceDemoPage from './pages/VoiceDemoPage';
@@ -23,6 +26,7 @@ import PasswordChangePage from './pages/PasswordChangePage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
 
+
 const App = () => {
   return (
     <Router>
@@ -33,6 +37,8 @@ const App = () => {
             <Route path="/" element={<MainPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/kakao/callback" element={<KakaoCallbackPage />} />
+            <Route path="/kakao/withdraw" element={<KakaoWithdrawCallbackPage />} />
             <Route path="/notice" element={<NoticePage />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/community/create" element={<CreatePostPage />} />
@@ -42,7 +48,8 @@ const App = () => {
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
-            {/* <Route path="/comfort" element={<ComfortPage />} /> */}
+            <Route path="/comfort" element={<ComfortPage />} />
+            <Route path="/comfort/chat" element={<ComfortChatPage />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<ProfileEditPage />} />
             <Route path="/mypage/password" element={<PasswordChangePage />} />
@@ -51,6 +58,7 @@ const App = () => {
             <Route path="/voice-demo" element={<VoiceDemoPage />} />
             <Route path="/stt" element={<STTPage />} />
             <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
+
           </Routes>
         </main>
       </div>

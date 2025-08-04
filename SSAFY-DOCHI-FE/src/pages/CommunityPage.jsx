@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useAuthStore from '../stores/AuthStore';
-import { communityApi, likeApi } from '../services/communityApi';
+import useAuthStore from '../stores/AuthStore.js';
+import { communityApi, likeApi } from '../services/communityApi.js';
 
 const CommunityPage = () => {
   const navigate = useNavigate();

@@ -22,12 +22,17 @@ const VideoCallRoom = () => {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   
-  // 설정
-  const roomName = 'test-room';
+  // 설정 - URL에서 방 ID 추출
+  const getRoomIdFromUrl = () => {
+    const pathSegments = window.location.pathname.split('/');
+    return pathSegments[pathSegments.length - 1] || 'test-room';
+  };
+  
+  const roomName = getRoomIdFromUrl();
   const participantName = '사용자1';
   
   // LiveKit 서버 URL - nginx 프록시를 통해 연결
-  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io/openvidu';
+  const LIVEKIT_URL = 'wss://i13c209.p.ssafy.io/livekit';
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
   
@@ -74,11 +79,9 @@ const VideoCallRoom = () => {
     }
   }, [localVideoTrack]);
 
-  // 컴포넌트 마운트시 자동 참가
+  // 컴포넌트 마운트시 정리만 등록 (자동 연결 제거)
   useEffect(() => {
-    if (isLoggedIn) {
-      joinRoom();
-    } else {
+    if (!isLoggedIn) {
       setError('로그인이 필요합니다');
     }
     
@@ -250,8 +253,8 @@ const VideoCallRoom = () => {
     }
   };
 
-  // 오디오 레벨 감지를 위한 함수
-  const setupAudioLevelDetection = (audioTrack) => {
+  // 오디오 레벨 감지를 위한 함수 (사용자 제스처 후에만 실행)
+  const setupAudioLevelDetection = async (audioTrack) => {
     const actualTrack = audioTrack?.track || audioTrack?.audioTrack || audioTrack;
     const mediaStreamTrack = actualTrack?.mediaStreamTrack || audioTrack?.mediaStreamTrack;
     
@@ -261,8 +264,18 @@ const VideoCallRoom = () => {
     }
     
     try {
-      // AudioContext 생성
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // AudioContext 생성 또는 기존 것 사용
+      let audioContext = audioContextRef.current;
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioContextRef.current = audioContext;
+      }
+      
+      // AudioContext가 suspended 상태면 resume
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
       const analyser = audioContext.createAnalyser();
       const mediaStreamSource = audioContext.createMediaStreamSource(
         new MediaStream([mediaStreamTrack])
@@ -274,7 +287,6 @@ const VideoCallRoom = () => {
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       
-      audioContextRef.current = audioContext;
       analyserRef.current = analyser;
       
       // 오디오 레벨 감지 루프
@@ -298,8 +310,8 @@ const VideoCallRoom = () => {
     }
   };
 
-  // 원격 참가자 오디오 레벨 감지
-  const setupRemoteAudioLevelDetection = (audioTrack, participantId) => {
+  // 원격 참가자 오디오 레벨 감지 (기존 AudioContext 재사용)
+  const setupRemoteAudioLevelDetection = async (audioTrack, participantId) => {
     const mediaStreamTrack = audioTrack?.mediaStreamTrack;
     if (!mediaStreamTrack) {
       console.log('원격 오디오 MediaStreamTrack을 찾을 수 없습니다:', participantId, audioTrack);
@@ -307,7 +319,18 @@ const VideoCallRoom = () => {
     }
     
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // 기존 AudioContext 사용 또는 새로 생성
+      let audioContext = audioContextRef.current;
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioContextRef.current = audioContext;
+      }
+      
+      // AudioContext가 suspended 상태면 resume
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
       const analyser = audioContext.createAnalyser();
       const mediaStreamSource = audioContext.createMediaStreamSource(
         new MediaStream([mediaStreamTrack])
@@ -489,8 +512,17 @@ const VideoCallRoom = () => {
       {!isConnected && !error && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-white text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p>화상통화 연결 중...</p>
+            <h2 className="text-2xl font-bold mb-4">🎥 화상통화 시작</h2>
+            <p className="text-lg mb-6">화상통화를 시작하려면 버튼을 클릭하세요</p>
+            <button 
+              onClick={joinRoom}
+              className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-white font-medium text-lg transition-colors"
+            >
+              📞 연결 시작
+            </button>
+            <p className="text-sm text-gray-400 mt-4">
+              * 마이크와 카메라 권한이 필요합니다
+            </p>
           </div>
         </div>
       )}

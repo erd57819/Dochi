@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MyPageNavigation from "../components/MyPageNavigation";
 import myPageApi from "../services/myPageApi";
-import useAuthStore from "../stores/AuthStore";
+import useAuthStore from "../stores/AuthStore.js";
 
 const ProfileEditPage = () => {
   const navigate = useNavigate();

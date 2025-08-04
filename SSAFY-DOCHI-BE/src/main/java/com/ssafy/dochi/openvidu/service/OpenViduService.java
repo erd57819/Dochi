@@ -61,13 +61,17 @@ public class OpenViduService {
                     .signWith(key, SignatureAlgorithm.HS256)
                     .compact();
             
-            // 인증된 사용자만 세션 저장
+            // 인증된 사용자만 세션 저장 (중복 확인 후 삽입)
             if (userId != null) {
-                userSessionDao.insertSession(UserSession.builder()
-                        .sessionId(roomName)
-                        .userId(userId)
-                        .expiresAt(LocalDateTime.now().plusHours(1))
-                        .build());
+                // 이미 존재하는 세션인지 확인
+                boolean exists = userSessionDao.existsBySessionIdAndUserId(roomName, userId);
+                if (!exists) {
+                    userSessionDao.insertSession(UserSession.builder()
+                            .sessionId(roomName)
+                            .userId(userId)
+                            .expiresAt(LocalDateTime.now().plusHours(1))
+                            .build());
+                }
             }
 
             return token;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import useAuthStore from '../stores/AuthStore';
+import useAuthStore from '../stores/AuthStore.js';
 import img16 from "@/assets/image-16.png";
 import gameIcon from "@/assets/game.png";
 
