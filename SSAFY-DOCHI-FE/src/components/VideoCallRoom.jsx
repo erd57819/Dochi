@@ -184,66 +184,8 @@ const VideoCallRoom = () => {
         }
       });
       
-      // 2. 기존 로직: 모든 원격 참가자의 트랙들을 다시 연결 시도
-      if (room.remoteParticipants && room.remoteParticipants.forEach) {
-        room.remoteParticipants.forEach((participant) => {
-          if (!participant) {
-            console.warn('참가자가 null/undefined:', participant);
-            return;
-          }
-
-          const videoTracks = participant.videoTracks;
-          if (!(videoTracks instanceof Map)) {
-            console.warn('videoTracks가 Map이 아님:', videoTracks);
-            return;
-          }
-
-          videoTracks.forEach((publication) => {
-            const mediaTrack = publication?.track?.mediaStreamTrack;
-            if (!mediaTrack) return;
-
-            const videoRef = remoteVideoRefs.current.get(participant.identity);
-            if (videoRef?.current && !videoRef.current.srcObject) {
-              try {
-                console.log('비디오 트랙 재연결:', participant.identity);
-                const stream = new MediaStream([mediaTrack]);
-                videoRef.current.srcObject = stream;
-                videoRef.current.play().catch((e) =>
-                    console.warn('비디오 자동재생 제한:', e)
-                );
-              } catch (e) {
-                console.error('비디오 트랙 연결 실패:', e);
-              }
-            }
-          });
-
-          // 오디오 트랙 재연결 - 같은 방식으로 안전성 검사
-          const audioTracks = participant.audioTracks;
-          if (!(audioTracks instanceof Map)) {
-            console.warn('audioTracks가 Map이 아님:', audioTracks);
-            return;
-          }
-
-          audioTracks.forEach((publication) => {
-            const mediaTrack = publication?.track?.mediaStreamTrack;
-            if (!mediaTrack) return;
-
-            const audioRef = remoteAudioRefs.current.get(participant.identity);
-            if (audioRef?.current && !audioRef.current.srcObject) {
-              try {
-                console.log('오디오 트랙 재연결:', participant.identity);
-                const stream = new MediaStream([mediaTrack]);
-                audioRef.current.srcObject = stream;
-                
-                // 오디오 레벨 감지 설정
-                setupRemoteAudioLevelDetection(publication.track, participant.identity);
-              } catch (e) {
-                console.error('오디오 트랙 연결 실패:', e);
-              }
-            }
-          });
-        });
-      }
+      // 2. 안전성: trackSubscribed 이벤트에서만 트랙 연결하므로 수동 순회 제거
+      // (participant.videoTracks가 undefined일 수 있어 .size 에러 발생 방지)
 
     } catch (error) {
       console.error('참가자 재연결 중 에러:', error);
