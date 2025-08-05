@@ -26,6 +26,12 @@ const VideoCallRoom = () => {
   const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
   const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
   
+  // 표정 분석 및 갈등 감지
+  const [emotionScores, setEmotionScores] = useState({}); // {participantId: {angry: 0, sad: 0, happy: 0}}
+  const [conflictLevel, setConflictLevel] = useState(0); // 0-100 갈등 수준
+  const [lastMediationTime, setLastMediationTime] = useState(0);
+  const [pendingMediation, setPendingMediation] = useState(false);
+  
   // 컨트롤 상태
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
@@ -577,7 +583,11 @@ const VideoCallRoom = () => {
 
   // 음성 인식 결과 처리
   const handleSpeechResult = async (speaker, text) => {
-    const timestamp = new Date().toLocaleTimeString();
+    const timestamp = new Date().toLocaleTimeString('ko-KR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
     const newConversation = {
       id: Date.now(),
       speaker,
@@ -589,8 +599,11 @@ const VideoCallRoom = () => {
     setConversations(prev => [...prev, newConversation]);
     conversationLogRef.current.push(newConversation);
     
-    // AI 중재가 활성화되어 있으면 분석 요청
-    if (aiMediationEnabled) {
+    // 갈등 감지 및 중재 타이밍 결정
+    const shouldMediate = await analyzeConflictAndTiming(text, speaker);
+    
+    // AI 중재가 활성화되어 있고 중재가 필요한 경우
+    if (aiMediationEnabled && shouldMediate) {
       try {
         const aiSuggestion = await requestAiMediation(text, speaker);
         if (aiSuggestion) {
@@ -601,6 +614,7 @@ const VideoCallRoom = () => {
                 : conv
             )
           );
+          setLastMediationTime(Date.now());
         }
       } catch (error) {
         console.error('AI 중재 요청 실패:', error);
@@ -609,6 +623,68 @@ const VideoCallRoom = () => {
     
     // 음성 인식 완료 후 현재 음성 초기화
     setCurrentSpeech({ speaker: null, text: '' });
+  };
+  
+  // 갈등 분석 및 중재 타이밍 결정
+  const analyzeConflictAndTiming = async (text, speaker) => {
+    // 1. 텍스트 기반 갈등 지표
+    const conflictKeywords = [
+      { words: ['화나', '짜증', '분노', '열받'], weight: 30 },
+      { words: ['왜', '도대체', '진짜'], weight: 20 },
+      { words: ['너만', '항상', '맨날', '절대'], weight: 25 },
+      { words: ['미안', '죄송', '잘못'], weight: -10 },
+      { words: ['알겠', '이해', '그래'], weight: -15 }
+    ];
+    
+    let textConflictScore = 0;
+    conflictKeywords.forEach(({ words, weight }) => {
+      if (words.some(word => text.includes(word))) {
+        textConflictScore += weight;
+      }
+    });
+    
+    // 2. 대화 패턴 분석
+    const recentConversations = conversationLogRef.current.slice(-5);
+    const rapidExchanges = recentConversations.filter((conv, i) => {
+      if (i === 0) return false;
+      const prevTime = new Date(recentConversations[i-1].timestamp).getTime();
+      const currTime = new Date(conv.timestamp).getTime();
+      return (currTime - prevTime) < 5000; // 5초 이내 빠른 주고받기
+    }).length;
+    
+    // 3. 갈등 수준 업데이트
+    const newConflictLevel = Math.min(100, Math.max(0, 
+      conflictLevel + textConflictScore + (rapidExchanges * 10)
+    ));
+    setConflictLevel(newConflictLevel);
+    
+    // 4. 중재 타이밍 결정 규칙
+    const timeSinceLastMediation = Date.now() - lastMediationTime;
+    const minMediationInterval = 30000; // 최소 30초 간격
+    
+    // 중재가 필요한 경우:
+    if (timeSinceLastMediation < minMediationInterval) {
+      return false; // 너무 자주 중재하지 않음
+    }
+    
+    if (newConflictLevel > 70) {
+      return true; // 갈등 수준이 높음
+    }
+    
+    if (textConflictScore > 40) {
+      return true; // 현재 메시지가 매우 부정적
+    }
+    
+    if (rapidExchanges >= 3 && newConflictLevel > 40) {
+      return true; // 빠른 대화 + 중간 수준 갈등
+    }
+    
+    // 긍정적 대화는 갈등 수준 감소
+    if (textConflictScore < 0) {
+      setConflictLevel(Math.max(0, conflictLevel - 5));
+    }
+    
+    return false;
   };
 
   // AI 중재 서비스 요청
@@ -1219,6 +1295,31 @@ const VideoCallRoom = () => {
                 </div>
               </div>
               
+              {/* 갈등 수준 표시 */}
+              {sttEnabled && conversations.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span>갈등 수준</span>
+                    <span>{conflictLevel}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-500 ${
+                        conflictLevel < 30 ? 'bg-green-500' :
+                        conflictLevel < 60 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${conflictLevel}%` }}
+                    />
+                  </div>
+                  {conflictLevel > 60 && (
+                    <div className="text-xs text-red-400 mt-1">
+                      ⚠️ 대화 분위기가 좋지 않습니다
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {/* 현재 말하고 있는 내용 */}
               {currentSpeech.text && (
                 <div className="bg-gray-700 rounded p-2 mb-2">
@@ -1230,34 +1331,65 @@ const VideoCallRoom = () => {
               )}
             </div>
 
-            {/* 대화 기록 */}
-            <div className="flex-1 overflow-y-auto space-y-2">
+            {/* 대화 기록 - 카톡 스타일 */}
+            <div className="flex-1 overflow-y-auto px-2 py-3">
               {conversations.length === 0 ? (
                 <div className="text-gray-400 text-sm text-center py-8">
                   {sttEnabled ? '대화를 시작해보세요!' : 'STT를 활성화하면 대화가 기록됩니다.'}
                 </div>
               ) : (
-                conversations.map((conv) => (
-                  <div key={conv.id} className="bg-gray-700 rounded p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-medium ${
-                        conv.speaker === participantName ? 'text-green-400' : 'text-blue-400'
-                      }`}>
-                        {conv.speaker}
-                      </span>
-                      <span className="text-xs text-gray-400">{conv.timestamp}</span>
-                    </div>
-                    <div className="text-sm text-white mb-2">{conv.text}</div>
+                <div className="space-y-2">
+                  {conversations.map((conv, index) => {
+                    const isMe = conv.speaker === participantName;
+                    const showAiSuggestion = conv.aiSuggestion && (
+                      index === conversations.length - 1 || // 마지막 메시지거나
+                      conversations[index + 1]?.aiSuggestion // 다음 메시지도 AI 제안이 있을 때
+                    );
                     
-                    {/* AI 중재 제안 */}
-                    {conv.aiSuggestion && (
-                      <div className="bg-blue-900 bg-opacity-50 rounded p-2 mt-2">
-                        <div className="text-xs text-blue-300 mb-1">🤖 AI 제안</div>
-                        <div className="text-xs text-blue-100">{conv.aiSuggestion}</div>
+                    return (
+                      <div key={conv.id}>
+                        {/* 대화 메시지 */}
+                        <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
+                          <div className={`max-w-[70%] ${isMe ? 'order-2' : 'order-1'}`}>
+                            <div className={`inline-block px-3 py-2 rounded-2xl ${
+                              isMe 
+                                ? 'bg-yellow-400 text-black rounded-tr-sm' 
+                                : 'bg-gray-600 text-white rounded-tl-sm'
+                            }`}>
+                              <div className="text-sm">{conv.text}</div>
+                            </div>
+                            <div className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                              {conv.timestamp}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* AI 중재 제안 */}
+                        {showAiSuggestion && (
+                          <div className="flex justify-center my-3">
+                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-3 max-w-[85%] shadow-lg">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs text-white font-semibold">🤖 AI 중재 도우미</span>
+                              </div>
+                              <div className="text-sm text-white">{conv.aiSuggestion}</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))
+                    );
+                  })}
+                  
+                  {/* 갈등 수준 표시 */}
+                  {conflictLevel > 50 && (
+                    <div className="flex justify-center my-3">
+                      <div className="bg-red-600 bg-opacity-20 border border-red-500 rounded-lg p-2 text-center">
+                        <div className="text-xs text-red-400">
+                          ⚠️ 갈등 수준: {conflictLevel}%
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
