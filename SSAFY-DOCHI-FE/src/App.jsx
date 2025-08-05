@@ -20,6 +20,7 @@ import STTPage from './pages/STTPage';
 import STTVideoRoomPage from './pages/STTVideoRoomPage';
 import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
+import GamePage from './pages/GamePage';
 import MyPage from './pages/MyPage';
 import ProfileEditPage from './pages/ProfileEditPage';
 import PasswordChangePage from './pages/PasswordChangePage';
@@ -58,7 +59,7 @@ const App = () => {
             <Route path="/voice-demo" element={<VoiceDemoPage />} />
             <Route path="/stt" element={<STTPage />} />
             <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
-
+            <Route path="/game" element={<GamePage />} />
           </Routes>
         </main>
       </div>

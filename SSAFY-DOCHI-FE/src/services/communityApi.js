@@ -12,10 +12,10 @@ const getAuthHeaders = () => {
   };
 };
 
-// 현재 사용자 ID 가져오기
+// 현재 사용자 ID 조회
 const getCurrentUserId = () => {
   const user = useAuthStore.getState().user;
-  return user?.id || localStorage.getItem('userId') || 2; // 데이터베이스에 존재하는 사용자 ID로 변경
+  return user?.id || null;
 };
 
 // 날짜 포맷팅 함수
@@ -303,15 +303,16 @@ export const commentApi = {
 // 좋아요 API
 export const likeApi = {
   // 게시글 좋아요 토글
-  async togglePostLike(postId, likeType) {
+  async togglePostLike(postId, userId, likeType) {
     try {
       // ✅ 백엔드 매핑 확인 필요
+      console.log('👍 좋아요 요청 데이터:', { postId, userId, likeType });
       const response = await fetch(`${API_BASE_URL}/likes/posts`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
           postId: postId,
-          userId: getCurrentUserId(),
+          userId: userId,
           likeType: likeType
         })
       });
@@ -363,7 +364,12 @@ export const likeApi = {
   // 게시글 좋아요 통계 조회
   async getPostLikeStats(postId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/likes/posts/${postId}?userId=${getCurrentUserId()}`, {
+      const userId = getCurrentUserId();
+      const url = userId 
+        ? `${API_BASE_URL}/likes/posts/${postId}?userId=${userId}`
+        : `${API_BASE_URL}/likes/posts/${postId}`;
+        
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -398,7 +404,12 @@ export const likeApi = {
   // 댓글 좋아요 통계 조회
   async getCommentLikeStats(commentId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/likes/comments/${commentId}?userId=${getCurrentUserId()}`, {
+      const userId = getCurrentUserId();
+      const url = userId 
+        ? `${API_BASE_URL}/likes/comments/${commentId}?userId=${userId}`
+        : `${API_BASE_URL}/likes/comments/${commentId}`;
+        
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

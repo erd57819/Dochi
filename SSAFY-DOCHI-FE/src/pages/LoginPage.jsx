@@ -41,12 +41,23 @@ const LoginPage = () => {
         // ApiResponse 구조에 맞게 접근 - data 필드 사용
         const loginData = result.data || result.response?.response || result.response || result;
         const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId } = loginData;
-        
+        // JWT 토큰에서 memberId 추출
+         console.log('🔍 파싱 직전 accessToken 변수:', accessToken);
+        let memberId = null;
+        try {
+          const payload = JSON.parse(atob(accessToken.split('.')[1]));
+          memberId = payload.memberId;
+        } catch (error) {
+          console.error('JWT 토큰 파싱 실패:', error);
+        }
+
         // JWT 토큰을 localStorage에 저장 (AuthStore에서 처리됨)
+        localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         
         // 유저 정보와 토큰을 스토어에 저장
         logIn({ 
+          id: memberId,
           userId: userId, 
           name: name,
           nickname: nickname,
