@@ -18,6 +18,7 @@ const VideoCallRoom = () => {
   // 말하고 있는 참가자 추적 (Discord-like 기능)
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
   const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
+  const [lastSpeaker, setLastSpeaker] = useState(null); // 마지막으로 말한 사람 추적
   
   // STT 및 AI 중재 기능
   const [sttEnabled, setSttEnabled] = useState(false);
@@ -444,9 +445,17 @@ const VideoCallRoom = () => {
           
           // 평균 오디오 레벨 계산
           const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-          const threshold = 20; // 말하고 있다고 판단하는 임계값
+          const threshold = 30; // 말하고 있다고 판단하는 임계값 (조정됨)
           
-          setIsLocalSpeaking(average > threshold);
+          const wasSpeaking = isLocalSpeaking;
+          const nowSpeaking = average > threshold;
+          
+          setIsLocalSpeaking(nowSpeaking);
+          
+          // 말하기 시작했을 때 마지막 화자 업데이트
+          if (!wasSpeaking && nowSpeaking) {
+            setLastSpeaker(participantName);
+          }
           
           animationFrameRef.current = requestAnimationFrame(detectSpeaking);
         }
@@ -456,6 +465,48 @@ const VideoCallRoom = () => {
     } catch (error) {
       console.error('오디오 레벨 감지 설정 실패:', error);
     }
+  };
+
+  // 현재 말하고 있는 사람 감지
+  const detectCurrentSpeaker = () => {
+    // 1. 로컬 사용자가 말하고 있는지 확인
+    if (isLocalSpeaking && isMicOn) {
+      return participantName;
+    }
+    
+    // 2. 원격 참가자 중 말하고 있는 사람 확인
+    if (speakingParticipants.size > 0) {
+      // 여러 명이 동시에 말하는 경우 가장 최근 화자 사용
+      const speakers = Array.from(speakingParticipants);
+      
+      // 마지막 화자가 현재도 말하고 있으면 유지
+      if (lastSpeaker && speakers.some(id => getParticipantDisplayName(id) === lastSpeaker)) {
+        return lastSpeaker;
+      }
+      
+      // 아니면 첫 번째 화자 사용
+      if (speakers.length > 0) {
+        const speakerIdentity = speakers[0];
+        return getParticipantDisplayName(speakerIdentity);
+      }
+    }
+    
+    // 3. 아무도 말하지 않으면 마지막 화자 사용 (있으면)
+    if (lastSpeaker) {
+      return lastSpeaker;
+    }
+    
+    // 4. 최종 기본값 (로컬 사용자)
+    return participantName;
+  };
+  
+  // 참가자 이름 변환 함수
+  const getParticipantDisplayName = (identity) => {
+    if (identity === `user-${useAuthStore.getState().user?.id}`) {
+      return participantName;
+    }
+    const participantIndex = participants.findIndex(p => p.identity === identity);
+    return participantIndex >= 0 ? `참가자${participantIndex + 1}` : identity;
   };
 
   // STT 기능 초기화
@@ -490,12 +541,15 @@ const VideoCallRoom = () => {
       }
       
       if (finalTranscript) {
-        handleSpeechResult(participantName, finalTranscript);
+        // 현재 말하고 있는 사람 확인
+        const currentSpeaker = detectCurrentSpeaker();
+        handleSpeechResult(currentSpeaker, finalTranscript);
       }
       
       // 실시간 음성 표시
+      const currentSpeaker = detectCurrentSpeaker();
       setCurrentSpeech({
-        speaker: participantName,
+        speaker: currentSpeaker,
         text: interimTranscript || finalTranscript
       });
     };
@@ -636,17 +690,25 @@ const VideoCallRoom = () => {
           analyser.getByteFrequencyData(dataArray);
           
           const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-          const threshold = 15; // 원격은 좀 더 낮은 임계값
+          const threshold = 25; // 원격 참가자 임계값 (조정됨)
+          
+          const wasSpeaking = speakingParticipants.has(participantId);
+          const nowSpeaking = average > threshold;
           
           setSpeakingParticipants(prev => {
             const newSpeaking = new Set(prev);
-            if (average > threshold) {
+            if (nowSpeaking) {
               newSpeaking.add(participantId);
             } else {
               newSpeaking.delete(participantId);
             }
             return newSpeaking;
           });
+          
+          // 말하기 시작했을 때 마지막 화자 업데이트
+          if (!wasSpeaking && nowSpeaking) {
+            setLastSpeaker(getParticipantDisplayName(participantId));
+          }
           
           requestAnimationFrame(detectRemoteSpeaking);
         }
@@ -1109,7 +1171,7 @@ const VideoCallRoom = () => {
                         }`}>
                           <span className="text-sm">
                             {isSpeaking && '🎤 '}
-                            {participant.identity}
+                            {getParticipantDisplayName(participant.identity)}
                           </span>
                         </div>
                       </div>
