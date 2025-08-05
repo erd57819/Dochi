@@ -46,6 +46,10 @@ const VideoCallRoom = () => {
   const remoteVideoRefs = useRef(new Map()); // participantId -> videoRef
   const remoteAudioRefs = useRef(new Map()); // participantId -> audioRef
   
+  // 대기중인 트랙들 저장 (DOM 준비 전에 도착한 트랙들)
+  const pendingVideoTracks = useRef(new Map()); // participantId -> track
+  const pendingAudioTracks = useRef(new Map()); // participantId -> track
+  
   // 오디오 분석용 refs
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -123,40 +127,96 @@ const VideoCallRoom = () => {
 
   // 참가자 변경시 대기중인 트랙들 재연결 시도
   useEffect(() => {
-    if (!room) return;
+    if (!room || !room.remoteParticipants) {
+      console.log('=== 참가자 재연결 시도 중단: room 또는 remoteParticipants 없음 ===');
+      return;
+    }
     
-    console.log('=== 참가자 변경 감지, 트랙 재연결 시도 ===');
+    console.log('=== 참가자 변경 감지, 트랙 재연결 시도 ===', {
+      roomConnected: room.state,
+      remoteParticipantsCount: room.remoteParticipants.size
+    });
     
-    // 모든 원격 참가자의 트랙들을 다시 연결 시도
-    room.remoteParticipants.forEach((participant) => {
-      // 비디오 트랙 재연결
-      participant.videoTracks.forEach((publication) => {
-        if (publication.track && publication.track.mediaStreamTrack) {
-          const videoRef = remoteVideoRefs.current.get(participant.identity);
-          if (videoRef?.current && !videoRef.current.srcObject) {
-            console.log('참가자 변경시 비디오 트랙 재연결:', participant.identity);
-            const stream = new MediaStream([publication.track.mediaStreamTrack]);
+    try {
+      // 1. 대기중인 트랙들 먼저 처리 (새로 추가된 참가자들)
+      participants.forEach((participant) => {
+        const participantId = participant.identity;
+        
+        // 대기중인 비디오 트랙 연결
+        const pendingVideoTrack = pendingVideoTracks.current.get(participantId);
+        if (pendingVideoTrack) {
+          const videoRef = remoteVideoRefs.current.get(participantId);
+          if (videoRef?.current && pendingVideoTrack.mediaStreamTrack) {
+            console.log('대기중이던 비디오 트랙 연결:', participantId);
+            const stream = new MediaStream([pendingVideoTrack.mediaStreamTrack]);
             videoRef.current.srcObject = stream;
             videoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+            
+            // 대기열에서 제거
+            pendingVideoTracks.current.delete(participantId);
+          }
+        }
+        
+        // 대기중인 오디오 트랙 연결
+        const pendingAudioTrack = pendingAudioTracks.current.get(participantId);
+        if (pendingAudioTrack) {
+          const audioRef = remoteAudioRefs.current.get(participantId);
+          if (audioRef?.current && pendingAudioTrack.mediaStreamTrack) {
+            console.log('대기중이던 오디오 트랙 연결:', participantId);
+            const stream = new MediaStream([pendingAudioTrack.mediaStreamTrack]);
+            audioRef.current.srcObject = stream;
+            
+            // 오디오 레벨 감지 설정
+            setupRemoteAudioLevelDetection(pendingAudioTrack, participantId);
+            
+            // 대기열에서 제거
+            pendingAudioTracks.current.delete(participantId);
           }
         }
       });
       
-      // 오디오 트랙 재연결
-      participant.audioTracks.forEach((publication) => {
-        if (publication.track && publication.track.mediaStreamTrack) {
-          const audioRef = remoteAudioRefs.current.get(participant.identity);
-          if (audioRef?.current && !audioRef.current.srcObject) {
-            console.log('참가자 변경시 오디오 트랙 재연결:', participant.identity);
-            const stream = new MediaStream([publication.track.mediaStreamTrack]);
-            audioRef.current.srcObject = stream;
-            
-            // 오디오 레벨 감지 설정
-            setupRemoteAudioLevelDetection(publication.track, participant.identity);
-          }
+      // 2. 기존 로직: 모든 원격 참가자의 트랙들을 다시 연결 시도
+      room.remoteParticipants.forEach((participant) => {
+        if (!participant) {
+          console.warn('참가자가 null/undefined:', participant);
+          return;
+        }
+        
+        // 비디오 트랙 재연결 - null 체크 강화
+        if (participant.videoTracks && participant.videoTracks.size > 0) {
+          participant.videoTracks.forEach((publication) => {
+            if (publication?.track?.mediaStreamTrack) {
+              const videoRef = remoteVideoRefs.current.get(participant.identity);
+              if (videoRef?.current && !videoRef.current.srcObject) {
+                console.log('참가자 변경시 비디오 트랙 재연결:', participant.identity);
+                const stream = new MediaStream([publication.track.mediaStreamTrack]);
+                videoRef.current.srcObject = stream;
+                videoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+              }
+            }
+          });
+        }
+        
+        // 오디오 트랙 재연결 - null 체크 강화
+        if (participant.audioTracks && participant.audioTracks.size > 0) {
+          participant.audioTracks.forEach((publication) => {
+            if (publication?.track?.mediaStreamTrack) {
+              const audioRef = remoteAudioRefs.current.get(participant.identity);
+              if (audioRef?.current && !audioRef.current.srcObject) {
+                console.log('참가자 변경시 오디오 트랙 재연결:', participant.identity);
+                const stream = new MediaStream([publication.track.mediaStreamTrack]);
+                audioRef.current.srcObject = stream;
+                
+                // 오디오 레벨 감지 설정
+                setupRemoteAudioLevelDetection(publication.track, participant.identity);
+              }
+            }
+          });
         }
       });
-    });
+    } catch (error) {
+      console.error('참가자 재연결 중 에러:', error);
+    }
   }, [participants, room]);
 
   // 컴포넌트 마운트시 정리만 등록 (자동 연결 제거)
@@ -244,8 +304,9 @@ const VideoCallRoom = () => {
             .then(() => console.log('원격 비디오 재생 성공:', participant.identity))
             .catch(e => console.log('원격 비디오 자동재생 제한:', e));
         } else {
-          console.log('원격 비디오 Ref 아직 준비 안됨, 나중에 연결 시도:', participant.identity);
-          // useEffect에서 participants 변경시 다시 연결 시도
+          console.log('원격 비디오 Ref 아직 준비 안됨, 대기열에 저장:', participant.identity);
+          // DOM이 준비되지 않았으므로 대기열에 저장
+          pendingVideoTracks.current.set(participant.identity, track);
         }
         
       } else if (track.kind === Track.Kind.Audio) {
@@ -260,7 +321,9 @@ const VideoCallRoom = () => {
           // 원격 참가자 말하고 있는지 감지 설정
           setupRemoteAudioLevelDetection(track, participant.identity);
         } else {
-          console.log('원격 오디오 Ref 아직 준비 안됨:', participant.identity);
+          console.log('원격 오디오 Ref 아직 준비 안됨, 대기열에 저장:', participant.identity);
+          // DOM이 준비되지 않았으므로 대기열에 저장
+          pendingAudioTracks.current.set(participant.identity, track);
         }
       }
     });
@@ -468,6 +531,15 @@ const VideoCallRoom = () => {
     try {
       console.log('=== enableLocalMedia 시작 ===');
       
+      // 기존 로컬 스트림이 있다면 정리
+      if (localVideoRef.current?.srcObject) {
+        const existingStream = localVideoRef.current.srcObject;
+        existingStream.getTracks().forEach(track => {
+          track.stop();
+        });
+        localVideoRef.current.srcObject = null;
+      }
+      
       // 카메라 활성화
       const videoTrack = await room.localParticipant.setCameraEnabled(true);
       console.log('카메라 트랙 생성됨:', videoTrack);
@@ -648,6 +720,10 @@ const VideoCallRoom = () => {
     remoteVideoRefs.current.delete(participantId);
     remoteAudioRefs.current.delete(participantId);
     remoteAnalysersRef.current.delete(participantId);
+    
+    // 대기중인 트랙들도 정리
+    pendingVideoTracks.current.delete(participantId);
+    pendingAudioTracks.current.delete(participantId);
   };
 
   // 참가자 목록 업데이트
@@ -744,6 +820,10 @@ const VideoCallRoom = () => {
     });
     remoteVideoRefs.current.clear();
     remoteAudioRefs.current.clear();
+    
+    // 대기중인 트랙들도 정리
+    pendingVideoTracks.current.clear();
+    pendingAudioTracks.current.clear();
     
     if (room) {
       await room.disconnect();
