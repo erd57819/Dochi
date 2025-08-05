@@ -19,6 +19,12 @@ const VideoCallRoom = () => {
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
   const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
   
+  // STT 및 AI 중재 기능
+  const [sttEnabled, setSttEnabled] = useState(false);
+  const [conversations, setConversations] = useState([]); // [{speaker, text, timestamp, aiSuggestion}]
+  const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
+  const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
+  
   // 컨트롤 상태
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
@@ -55,6 +61,11 @@ const VideoCallRoom = () => {
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const remoteAnalysersRef = useRef(new Map()); // 원격 참가자별 분석기 저장
+  
+  // STT 관련 refs
+  const recognitionRef = useRef(null);
+  const speechTimeoutRef = useRef(null);
+  const conversationLogRef = useRef([]);
 
   // 로컬 비디오 트랙 연결을 위한 useEffect - 실제 연결 수행
   useEffect(() => {
@@ -447,6 +458,143 @@ const VideoCallRoom = () => {
     }
   };
 
+  // STT 기능 초기화
+  const initializeSpeechRecognition = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      console.warn('음성 인식이 지원되지 않는 브라우저입니다.');
+      return false;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'ko-KR';
+    
+    recognition.onstart = () => {
+      console.log('음성 인식 시작');
+    };
+    
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      
+      if (finalTranscript) {
+        handleSpeechResult(participantName, finalTranscript);
+      }
+      
+      // 실시간 음성 표시
+      setCurrentSpeech({
+        speaker: participantName,
+        text: interimTranscript || finalTranscript
+      });
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('음성 인식 오류:', event.error);
+    };
+    
+    recognition.onend = () => {
+      if (sttEnabled) {
+        // STT가 활성화되어 있으면 자동으로 재시작
+        setTimeout(() => {
+          try {
+            recognition.start();
+          } catch (error) {
+            console.warn('음성 인식 재시작 실패:', error);
+          }
+        }, 100);
+      }
+    };
+    
+    recognitionRef.current = recognition;
+    return true;
+  };
+
+  // 음성 인식 결과 처리
+  const handleSpeechResult = async (speaker, text) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const newConversation = {
+      id: Date.now(),
+      speaker,
+      text,
+      timestamp,
+      aiSuggestion: null
+    };
+    
+    setConversations(prev => [...prev, newConversation]);
+    conversationLogRef.current.push(newConversation);
+    
+    // AI 중재가 활성화되어 있으면 분석 요청
+    if (aiMediationEnabled) {
+      try {
+        const aiSuggestion = await requestAiMediation(text, speaker);
+        if (aiSuggestion) {
+          setConversations(prev => 
+            prev.map(conv => 
+              conv.id === newConversation.id 
+                ? { ...conv, aiSuggestion }
+                : conv
+            )
+          );
+        }
+      } catch (error) {
+        console.error('AI 중재 요청 실패:', error);
+      }
+    }
+    
+    // 음성 인식 완료 후 현재 음성 초기화
+    setCurrentSpeech({ speaker: null, text: '' });
+  };
+
+  // AI 중재 서비스 요청
+  const requestAiMediation = async (text, speaker) => {
+    try {
+      const response = await apiClient.post('/ai/mediation', {
+        roomCode: roomName,
+        speaker,
+        text,
+        conversationHistory: conversationLogRef.current.slice(-10) // 최근 10개 대화만 전송
+      });
+      
+      if (response.data.status === 200) {
+        return response.data.data.suggestion;
+      }
+    } catch (error) {
+      console.error('AI 중재 서비스 오류:', error);
+    }
+    return null;
+  };
+
+  // STT 토글 함수
+  const toggleSTT = () => {
+    if (!sttEnabled) {
+      const initialized = initializeSpeechRecognition();
+      if (initialized) {
+        setSttEnabled(true);
+        recognitionRef.current?.start();
+      }
+    } else {
+      setSttEnabled(false);
+      recognitionRef.current?.stop();
+    }
+  };
+
+  // AI 중재 토글 함수
+  const toggleAiMediation = () => {
+    setAiMediationEnabled(!aiMediationEnabled);
+  };
+
   // 원격 참가자 오디오 레벨 감지 (기존 AudioContext 재사용)
   const setupRemoteAudioLevelDetection = async (audioTrack, participantId) => {
     const mediaStreamTrack = audioTrack?.mediaStreamTrack;
@@ -777,6 +925,18 @@ const VideoCallRoom = () => {
 
   // 룸 나가기
   const leaveRoom = async () => {
+    // STT 정리
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    if (speechTimeoutRef.current) {
+      clearTimeout(speechTimeoutRef.current);
+    }
+    setSttEnabled(false);
+    setAiMediationEnabled(false);
+    setConversations([]);
+    setCurrentSpeech({ speaker: null, text: '' });
+    
     // 오디오 분석 정리
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -892,7 +1052,7 @@ const VideoCallRoom = () => {
         </div>
       )}
 
-      {/* 메인 비디오 영역 - 좌우 배치 */}
+      {/* 메인 영역 - 3분할 (비디오 + STT) */}
       {isConnected && (
         <div className="flex-1 p-4 flex gap-4">
           {/* 로컬 비디오 (나) - 왼쪽 */}
@@ -923,7 +1083,7 @@ const VideoCallRoom = () => {
             </div>
           </div>
 
-          {/* 원격 참가자들 - 오른쪽 */}
+          {/* 원격 참가자들 - 가운데 */}
           <div className="flex-1">
             {participants.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 h-full">
@@ -964,6 +1124,89 @@ const VideoCallRoom = () => {
                   <p className="text-sm mt-2">다른 브라우저 탭에서 같은 URL로 접속해보세요!</p>
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* STT 및 AI 중재 패널 - 오른쪽 */}
+          <div className="w-80 bg-gray-800 rounded-lg p-4 flex flex-col">
+            {/* STT 컨트롤 */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-white font-semibold">🎤 대화 기록</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={toggleSTT}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      sttEnabled 
+                        ? 'bg-green-600 text-white hover:bg-green-700' 
+                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                    }`}
+                  >
+                    {sttEnabled ? '🎤 ON' : '🎤 OFF'}
+                  </button>
+                  <button
+                    onClick={toggleAiMediation}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      aiMediationEnabled 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                    }`}
+                  >
+                    {aiMediationEnabled ? '🤖 AI ON' : '🤖 AI OFF'}
+                  </button>
+                </div>
+              </div>
+              
+              {/* 현재 말하고 있는 내용 */}
+              {currentSpeech.text && (
+                <div className="bg-gray-700 rounded p-2 mb-2">
+                  <div className="text-xs text-gray-400 mb-1">실시간 음성</div>
+                  <div className="text-sm text-white">
+                    <span className="text-green-400">{currentSpeech.speaker}:</span> {currentSpeech.text}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 대화 기록 */}
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {conversations.length === 0 ? (
+                <div className="text-gray-400 text-sm text-center py-8">
+                  {sttEnabled ? '대화를 시작해보세요!' : 'STT를 활성화하면 대화가 기록됩니다.'}
+                </div>
+              ) : (
+                conversations.map((conv) => (
+                  <div key={conv.id} className="bg-gray-700 rounded p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-medium ${
+                        conv.speaker === participantName ? 'text-green-400' : 'text-blue-400'
+                      }`}>
+                        {conv.speaker}
+                      </span>
+                      <span className="text-xs text-gray-400">{conv.timestamp}</span>
+                    </div>
+                    <div className="text-sm text-white mb-2">{conv.text}</div>
+                    
+                    {/* AI 중재 제안 */}
+                    {conv.aiSuggestion && (
+                      <div className="bg-blue-900 bg-opacity-50 rounded p-2 mt-2">
+                        <div className="text-xs text-blue-300 mb-1">🤖 AI 제안</div>
+                        <div className="text-xs text-blue-100">{conv.aiSuggestion}</div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* 대화 기록 삭제 버튼 */}
+            {conversations.length > 0 && (
+              <button
+                onClick={() => setConversations([])}
+                className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+              >
+                대화 기록 삭제
+              </button>
             )}
           </div>
         </div>
@@ -1014,6 +1257,14 @@ const VideoCallRoom = () => {
           <span>카메라: {isCameraOn ? 'ON' : 'OFF'}</span>
           <span className="mx-2">|</span>
           <span>참가자: {participants.length + 1}명</span>
+          <span className="mx-2">|</span>
+          <span className={sttEnabled ? 'text-green-400' : 'text-gray-400'}>
+            STT: {sttEnabled ? 'ON' : 'OFF'}
+          </span>
+          <span className="mx-2">|</span>
+          <span className={aiMediationEnabled ? 'text-blue-400' : 'text-gray-400'}>
+            AI 중재: {aiMediationEnabled ? 'ON' : 'OFF'}
+          </span>
         </div>
       </div>
     </div>
