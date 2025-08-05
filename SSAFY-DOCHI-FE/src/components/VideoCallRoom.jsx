@@ -187,44 +187,64 @@ const VideoCallRoom = () => {
       // 2. 기존 로직: 모든 원격 참가자의 트랙들을 다시 연결 시도
       if (room.remoteParticipants && room.remoteParticipants.forEach) {
         room.remoteParticipants.forEach((participant) => {
-        if (!participant) {
-          console.warn('참가자가 null/undefined:', participant);
-          return;
-        }
-        
-        // 비디오 트랙 재연결 - null 체크 강화
-        if (participant.videoTracks && participant.videoTracks.size > 0) {
-          participant.videoTracks.forEach((publication) => {
-            if (publication?.track?.mediaStreamTrack) {
-              const videoRef = remoteVideoRefs.current.get(participant.identity);
-              if (videoRef?.current && !videoRef.current.srcObject) {
-                console.log('참가자 변경시 비디오 트랙 재연결:', participant.identity);
-                const stream = new MediaStream([publication.track.mediaStreamTrack]);
+          if (!participant) {
+            console.warn('참가자가 null/undefined:', participant);
+            return;
+          }
+
+          const videoTracks = participant.videoTracks;
+          if (!(videoTracks instanceof Map)) {
+            console.warn('videoTracks가 Map이 아님:', videoTracks);
+            return;
+          }
+
+          videoTracks.forEach((publication) => {
+            const mediaTrack = publication?.track?.mediaStreamTrack;
+            if (!mediaTrack) return;
+
+            const videoRef = remoteVideoRefs.current.get(participant.identity);
+            if (videoRef?.current && !videoRef.current.srcObject) {
+              try {
+                console.log('비디오 트랙 재연결:', participant.identity);
+                const stream = new MediaStream([mediaTrack]);
                 videoRef.current.srcObject = stream;
-                videoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+                videoRef.current.play().catch((e) =>
+                    console.warn('비디오 자동재생 제한:', e)
+                );
+              } catch (e) {
+                console.error('비디오 트랙 연결 실패:', e);
               }
             }
           });
-        }
-        
-        // 오디오 트랙 재연결 - null 체크 강화
-        if (participant.audioTracks && participant.audioTracks.size > 0) {
-          participant.audioTracks.forEach((publication) => {
-            if (publication?.track?.mediaStreamTrack) {
-              const audioRef = remoteAudioRefs.current.get(participant.identity);
-              if (audioRef?.current && !audioRef.current.srcObject) {
-                console.log('참가자 변경시 오디오 트랙 재연결:', participant.identity);
-                const stream = new MediaStream([publication.track.mediaStreamTrack]);
+
+          // 오디오 트랙 재연결 - 같은 방식으로 안전성 검사
+          const audioTracks = participant.audioTracks;
+          if (!(audioTracks instanceof Map)) {
+            console.warn('audioTracks가 Map이 아님:', audioTracks);
+            return;
+          }
+
+          audioTracks.forEach((publication) => {
+            const mediaTrack = publication?.track?.mediaStreamTrack;
+            if (!mediaTrack) return;
+
+            const audioRef = remoteAudioRefs.current.get(participant.identity);
+            if (audioRef?.current && !audioRef.current.srcObject) {
+              try {
+                console.log('오디오 트랙 재연결:', participant.identity);
+                const stream = new MediaStream([mediaTrack]);
                 audioRef.current.srcObject = stream;
                 
                 // 오디오 레벨 감지 설정
                 setupRemoteAudioLevelDetection(publication.track, participant.identity);
+              } catch (e) {
+                console.error('오디오 트랙 연결 실패:', e);
               }
             }
           });
-        }
         });
       }
+
     } catch (error) {
       console.error('참가자 재연결 중 에러:', error);
     }
@@ -278,11 +298,13 @@ const VideoCallRoom = () => {
   const setupRoomEvents = (room) => {
     // 참가자 연결
     room.on(RoomEvent.ParticipantConnected, (participant) => {
+      const audioTracksSize = participant.audioTracks?.size || 0;
+      const videoTracksSize = participant.videoTracks?.size || 0;
       console.log('=== 새 참가자 연결 ===', {
         identity: participant.identity,
         sid: participant.sid,
-        audioTracks: participant.audioTracks.size,
-        videoTracks: participant.videoTracks.size
+        audioTracks: audioTracksSize,
+        videoTracks: videoTracksSize
       });
       updateParticipants(room);
     });
@@ -372,7 +394,8 @@ const VideoCallRoom = () => {
       const speaking = new Set();
       
       // 로컬 참가자 체크
-      if (room.localParticipant.audioTracks.size > 0) {
+      const localAudioTracksSize = room.localParticipant?.audioTracks?.size || 0;
+      if (localAudioTracksSize > 0) {
         const localAudioTrack = Array.from(room.localParticipant.audioTracks.values())[0]?.track;
         if (localAudioTrack && localAudioTrack.isMuted === false) {
           // 실제 오디오 레벨은 복잡하므로 마이크가 켜져있으면 잠시 speaking으로 표시
