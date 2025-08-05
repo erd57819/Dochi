@@ -42,6 +42,14 @@ const VideoCallRoom = () => {
   // 로컬 비디오 ref
   const localVideoRef = useRef(null);
   
+  // 원격 참가자별 video/audio ref 관리
+  const remoteVideoRefs = useRef(new Map()); // participantId -> videoRef
+  const remoteAudioRefs = useRef(new Map()); // participantId -> audioRef
+  
+  // 대기중인 트랙들 저장 (DOM 준비 전에 도착한 트랙들)
+  const pendingVideoTracks = useRef(new Map()); // participantId -> track
+  const pendingAudioTracks = useRef(new Map()); // participantId -> track
+  
   // 오디오 분석용 refs
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -117,6 +125,73 @@ const VideoCallRoom = () => {
     return () => clearTimeout(timer);
   }, [isConnected]); // isConnected가 true가 되면 video 요소도 렌더링됨
 
+  // 참가자 변경시 대기중인 트랙들 재연결 시도
+  useEffect(() => {
+    if (!room || !room.remoteParticipants) {
+      console.log('=== 참가자 재연결 시도 중단: room 또는 remoteParticipants 없음 ===');
+      return;
+    }
+    
+    // size 접근 전 안전성 검사 추가
+    let participantsCount = 0;
+    try {
+      participantsCount = room.remoteParticipants?.size || 0;
+    } catch (error) {
+      console.warn('remoteParticipants.size 접근 실패:', error);
+      return;
+    }
+    
+    console.log('=== 참가자 변경 감지, 트랙 재연결 시도 ===', {
+      roomConnected: room.state,
+      remoteParticipantsCount: participantsCount
+    });
+    
+    try {
+      // 1. 대기중인 트랙들 먼저 처리 (새로 추가된 참가자들)
+      participants.forEach((participant) => {
+        const participantId = participant.identity;
+        
+        // 대기중인 비디오 트랙 연결
+        const pendingVideoTrack = pendingVideoTracks.current.get(participantId);
+        if (pendingVideoTrack) {
+          const videoRef = remoteVideoRefs.current.get(participantId);
+          if (videoRef?.current && pendingVideoTrack.mediaStreamTrack) {
+            console.log('대기중이던 비디오 트랙 연결:', participantId);
+            const stream = new MediaStream([pendingVideoTrack.mediaStreamTrack]);
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
+            
+            // 대기열에서 제거
+            pendingVideoTracks.current.delete(participantId);
+          }
+        }
+        
+        // 대기중인 오디오 트랙 연결
+        const pendingAudioTrack = pendingAudioTracks.current.get(participantId);
+        if (pendingAudioTrack) {
+          const audioRef = remoteAudioRefs.current.get(participantId);
+          if (audioRef?.current && pendingAudioTrack.mediaStreamTrack) {
+            console.log('대기중이던 오디오 트랙 연결:', participantId);
+            const stream = new MediaStream([pendingAudioTrack.mediaStreamTrack]);
+            audioRef.current.srcObject = stream;
+            
+            // 오디오 레벨 감지 설정
+            setupRemoteAudioLevelDetection(pendingAudioTrack, participantId);
+            
+            // 대기열에서 제거
+            pendingAudioTracks.current.delete(participantId);
+          }
+        }
+      });
+      
+      // 2. 안전성: trackSubscribed 이벤트에서만 트랙 연결하므로 수동 순회 제거
+      // (participant.videoTracks가 undefined일 수 있어 .size 에러 발생 방지)
+
+    } catch (error) {
+      console.error('참가자 재연결 중 에러:', error);
+    }
+  }, [participants, room]);
+
   // 컴포넌트 마운트시 정리만 등록 (자동 연결 제거)
   useEffect(() => {
     if (!isLoggedIn) {
@@ -165,11 +240,13 @@ const VideoCallRoom = () => {
   const setupRoomEvents = (room) => {
     // 참가자 연결
     room.on(RoomEvent.ParticipantConnected, (participant) => {
+      const audioTracksSize = participant.audioTracks?.size || 0;
+      const videoTracksSize = participant.videoTracks?.size || 0;
       console.log('=== 새 참가자 연결 ===', {
         identity: participant.identity,
         sid: participant.sid,
-        audioTracks: participant.audioTracks.size,
-        videoTracks: participant.videoTracks.size
+        audioTracks: audioTracksSize,
+        videoTracks: videoTracksSize
       });
       updateParticipants(room);
     });
@@ -190,61 +267,56 @@ const VideoCallRoom = () => {
       });
       
       if (track.kind === Track.Kind.Video) {
-        // 약간의 지연을 주어 DOM 요소가 준비되도록 함
-        setTimeout(() => {
-          const videoElement = document.getElementById(`video-${participant.identity}`);
-          console.log('원격 비디오 요소 찾기:', {
-            elementId: `video-${participant.identity}`,
-            element: videoElement,
-            hasMediaStreamTrack: !!track.mediaStreamTrack
-          });
+        // Ref 기반 비디오 연결 - DOM 동기화 문제 해결
+        const videoRef = getOrCreateVideoRef(participant.identity);
+        
+        if (videoRef.current && track.mediaStreamTrack) {
+          console.log('원격 비디오 Ref 연결 시작:', participant.identity);
+          const stream = new MediaStream([track.mediaStreamTrack]);
+          videoRef.current.srcObject = stream;
           
-          if (videoElement && track.mediaStreamTrack) {
-            console.log('원격 비디오 연결 시작');
-            const stream = new MediaStream([track.mediaStreamTrack]);
-            videoElement.srcObject = stream;
-            // 명시적으로 play() 호출
-            videoElement.play()
-              .then(() => console.log('원격 비디오 재생 성공:', participant.identity))
-              .catch(e => console.log('원격 비디오 자동재생 제한:', e));
-          } else {
-            console.error('원격 비디오 연결 실패:', {
-              hasElement: !!videoElement,
-              hasTrack: !!track.mediaStreamTrack
-            });
-          }
-        }, 200);
+          videoRef.current.play()
+            .then(() => console.log('원격 비디오 재생 성공:', participant.identity))
+            .catch(e => console.log('원격 비디오 자동재생 제한:', e));
+        } else {
+          console.log('원격 비디오 Ref 아직 준비 안됨, 대기열에 저장:', participant.identity);
+          // DOM이 준비되지 않았으므로 대기열에 저장
+          pendingVideoTracks.current.set(participant.identity, track);
+        }
         
       } else if (track.kind === Track.Kind.Audio) {
-        setTimeout(() => {
-          const audioElement = document.getElementById(`audio-${participant.identity}`);
-          console.log('원격 오디오 요소 찾기:', audioElement);
+        // Ref 기반 오디오 연결
+        const audioRef = getOrCreateAudioRef(participant.identity);
+        
+        if (audioRef.current && track.mediaStreamTrack) {
+          console.log('원격 오디오 Ref 연결:', participant.identity);
+          const stream = new MediaStream([track.mediaStreamTrack]);
+          audioRef.current.srcObject = stream;
           
-          if (audioElement && track.mediaStreamTrack) {
-            console.log('원격 오디오 연결');
-            const stream = new MediaStream([track.mediaStreamTrack]);
-            audioElement.srcObject = stream;
-            
-            // 원격 참가자 말하고 있는지 감지 설정
-            setupRemoteAudioLevelDetection(track, participant.identity);
-          }
-        }, 200);
+          // 원격 참가자 말하고 있는지 감지 설정
+          setupRemoteAudioLevelDetection(track, participant.identity);
+        } else {
+          console.log('원격 오디오 Ref 아직 준비 안됨, 대기열에 저장:', participant.identity);
+          // DOM이 준비되지 않았으므로 대기열에 저장
+          pendingAudioTracks.current.set(participant.identity, track);
+        }
       }
     });
     
     // 트랙 구독 해제
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       console.log('트랙 구독 해제:', track.kind, participant.identity);
-      // MediaStream 방식에서는 srcObject를 null로 설정
+      
+      // Ref 기반 정리
       if (track.kind === Track.Kind.Video) {
-        const videoElement = document.getElementById(`video-${participant.identity}`);
-        if (videoElement) {
-          videoElement.srcObject = null;
+        const videoRef = remoteVideoRefs.current.get(participant.identity);
+        if (videoRef?.current) {
+          videoRef.current.srcObject = null;
         }
       } else if (track.kind === Track.Kind.Audio) {
-        const audioElement = document.getElementById(`audio-${participant.identity}`);
-        if (audioElement) {
-          audioElement.srcObject = null;
+        const audioRef = remoteAudioRefs.current.get(participant.identity);
+        if (audioRef?.current) {
+          audioRef.current.srcObject = null;
         }
       }
     });
@@ -264,7 +336,8 @@ const VideoCallRoom = () => {
       const speaking = new Set();
       
       // 로컬 참가자 체크
-      if (room.localParticipant.audioTracks.size > 0) {
+      const localAudioTracksSize = room.localParticipant?.audioTracks?.size || 0;
+      if (localAudioTracksSize > 0) {
         const localAudioTrack = Array.from(room.localParticipant.audioTracks.values())[0]?.track;
         if (localAudioTrack && localAudioTrack.isMuted === false) {
           // 실제 오디오 레벨은 복잡하므로 마이크가 켜져있으면 잠시 speaking으로 표시
@@ -434,6 +507,15 @@ const VideoCallRoom = () => {
     try {
       console.log('=== enableLocalMedia 시작 ===');
       
+      // 기존 로컬 스트림이 있다면 정리
+      if (localVideoRef.current?.srcObject) {
+        const existingStream = localVideoRef.current.srcObject;
+        existingStream.getTracks().forEach(track => {
+          track.stop();
+        });
+        localVideoRef.current.srcObject = null;
+      }
+      
       // 카메라 활성화
       const videoTrack = await room.localParticipant.setCameraEnabled(true);
       console.log('카메라 트랙 생성됨:', videoTrack);
@@ -595,9 +677,43 @@ const VideoCallRoom = () => {
     }
   };
 
+  // 참가자별 ref 생성/삭제 관리
+  const getOrCreateVideoRef = (participantId) => {
+    if (!remoteVideoRefs.current.has(participantId)) {
+      remoteVideoRefs.current.set(participantId, React.createRef());
+    }
+    return remoteVideoRefs.current.get(participantId);
+  };
+
+  const getOrCreateAudioRef = (participantId) => {
+    if (!remoteAudioRefs.current.has(participantId)) {
+      remoteAudioRefs.current.set(participantId, React.createRef());
+    }
+    return remoteAudioRefs.current.get(participantId);
+  };
+
+  const cleanupParticipantRefs = (participantId) => {
+    remoteVideoRefs.current.delete(participantId);
+    remoteAudioRefs.current.delete(participantId);
+    remoteAnalysersRef.current.delete(participantId);
+    
+    // 대기중인 트랙들도 정리
+    pendingVideoTracks.current.delete(participantId);
+    pendingAudioTracks.current.delete(participantId);
+  };
+
   // 참가자 목록 업데이트
   const updateParticipants = (room) => {
     const remoteParticipants = Array.from(room.remoteParticipants.values());
+    
+    // 기존 참가자들 중 현재 없는 참가자의 ref 정리
+    const currentParticipantIds = new Set(remoteParticipants.map(p => p.identity));
+    for (const [participantId] of remoteVideoRefs.current) {
+      if (!currentParticipantIds.has(participantId)) {
+        cleanupParticipantRefs(participantId);
+      }
+    }
+    
     setParticipants(remoteParticipants);
   };
 
@@ -666,6 +782,24 @@ const VideoCallRoom = () => {
       audioContext.close();
     });
     remoteAnalysersRef.current.clear();
+    
+    // 원격 참가자 video/audio ref 정리
+    remoteVideoRefs.current.forEach((videoRef) => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    });
+    remoteAudioRefs.current.forEach((audioRef) => {
+      if (audioRef.current) {
+        audioRef.current.srcObject = null;
+      }
+    });
+    remoteVideoRefs.current.clear();
+    remoteAudioRefs.current.clear();
+    
+    // 대기중인 트랙들도 정리
+    pendingVideoTracks.current.clear();
+    pendingAudioTracks.current.clear();
     
     if (room) {
       await room.disconnect();
@@ -790,13 +924,13 @@ const VideoCallRoom = () => {
                       isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
                     }`}>
                       <video
-                        id={`video-${participant.identity}`}
+                        ref={getOrCreateVideoRef(participant.identity)}
                         autoPlay
                         playsInline
                         className="w-full h-full object-cover"
                       />
                       <audio
-                        id={`audio-${participant.identity}`}
+                        ref={getOrCreateAudioRef(participant.identity)}
                         autoPlay
                       />
                       <div className={`absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs ${
