@@ -865,45 +865,13 @@ const VideoCallRoom = () => {
         setSttEnabled(true);
         recognitionRef.current?.start();
         
-        // 테스트용: 가짜 원격 참가자 메시지 시뮬레이션
-        startFakeRemoteMessages();
       }
     } else {
       setSttEnabled(false);
       recognitionRef.current?.stop();
-      stopFakeRemoteMessages();
     }
   };
 
-  // 테스트용 가짜 원격 메시지
-  const fakeRemoteMessagesRef = useRef(null);
-  const fakeMessages = [
-    "안녕하세요!",
-    "오늘 회의 어떻게 진행할까요?",
-    "그 문제는 조금 복잡한 것 같은데요",
-    "다른 방법을 생각해보면 어떨까요?",
-    "네, 좋은 아이디어네요"
-  ];
-
-  const startFakeRemoteMessages = () => {
-    let messageIndex = 0;
-    fakeRemoteMessagesRef.current = setInterval(() => {
-      if (participants.length > 0) {
-        const remoteParticipant = getParticipantDisplayName(participants[0].identity);
-        const fakeMessage = fakeMessages[messageIndex % fakeMessages.length];
-        
-        handleSpeechResult(remoteParticipant, fakeMessage);
-        messageIndex++;
-      }
-    }, 15000); // 15초마다 가짜 메시지
-  };
-
-  const stopFakeRemoteMessages = () => {
-    if (fakeRemoteMessagesRef.current) {
-      clearInterval(fakeRemoteMessagesRef.current);
-      fakeRemoteMessagesRef.current = null;
-    }
-  };
 
   // AI 중재 토글 함수
   const toggleAiMediation = () => {
@@ -1486,14 +1454,6 @@ const VideoCallRoom = () => {
                 </div>
               </div>
               
-              {/* 테스트 모드 안내 */}
-              {sttEnabled && participants.length > 0 && (
-                <div className="bg-yellow-600 bg-opacity-20 border border-yellow-500 rounded p-2 mb-2">
-                  <div className="text-xs text-yellow-300">
-                    🧪 테스트 모드: 상대방 메시지가 15초마다 자동 생성됩니다
-                  </div>
-                </div>
-              )}
               
               {/* 갈등 수준 표시 */}
               {sttEnabled && conversations.length > 0 && (
@@ -1520,26 +1480,99 @@ const VideoCallRoom = () => {
                 </div>
               )}
               
-              {/* 표정 분석 결과 */}
+              {/* 실시간 감정 분석 그래프 */}
               {isConnected && Object.keys(emotionScores).length > 0 && (
                 <div className="mb-3">
-                  <div className="text-xs text-gray-400 mb-2">😊 표정 분석</div>
+                  <div className="text-xs text-gray-400 mb-3 flex items-center gap-2">
+                    <span>😊 실시간 감정 분석</span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  </div>
                   {Object.entries(emotionScores).map(([name, scores]) => (
-                    <div key={name} className="mb-2">
-                      <div className="text-xs text-gray-300 mb-1">{name}</div>
-                      <div className="flex gap-1 text-xs">
-                        {scores.angry > 10 && (
-                          <span className="bg-red-600 px-1 rounded">😠 {scores.angry}%</span>
-                        )}
-                        {scores.sad > 10 && (
-                          <span className="bg-blue-600 px-1 rounded">😢 {scores.sad}%</span>
-                        )}
-                        {scores.happy > 10 && (
-                          <span className="bg-green-600 px-1 rounded">😊 {scores.happy}%</span>
-                        )}
-                        {scores.surprised > 15 && (
-                          <span className="bg-yellow-600 px-1 rounded">😮 {scores.surprised}%</span>
-                        )}
+                    <div key={name} className="mb-4 p-3 bg-gray-700 rounded-lg">
+                      <div className="text-sm text-white mb-3 font-medium">{name}</div>
+                      <div className="space-y-2">
+                        {/* 행복 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-green-400 w-8">😊</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.happy}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.happy}%</span>
+                        </div>
+                        
+                        {/* 분노 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-red-400 w-8">😠</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-red-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.angry}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.angry}%</span>
+                        </div>
+                        
+                        {/* 슬픔 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-blue-400 w-8">😢</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-blue-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.sad}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.sad}%</span>
+                        </div>
+                        
+                        {/* 놀람 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-yellow-400 w-8">😮</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-yellow-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.surprised}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.surprised}%</span>
+                        </div>
+                        
+                        {/* 중립 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 w-8">😐</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-gray-400 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.neutral}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.neutral}%</span>
+                        </div>
+                      </div>
+                      
+                      {/* 주도 감정 표시 */}
+                      <div className="mt-2 pt-2 border-t border-gray-600">
+                        <div className="text-xs text-gray-400 mb-1">주도 감정</div>
+                        {(() => {
+                          const emotions = [
+                            { name: '행복', value: scores.happy, emoji: '😊', color: 'text-green-400' },
+                            { name: '분노', value: scores.angry, emoji: '😠', color: 'text-red-400' },
+                            { name: '슬픔', value: scores.sad, emoji: '😢', color: 'text-blue-400' },
+                            { name: '놀람', value: scores.surprised, emoji: '😮', color: 'text-yellow-400' },
+                            { name: '중립', value: scores.neutral, emoji: '😐', color: 'text-gray-400' }
+                          ];
+                          const dominant = emotions.reduce((max, current) => 
+                            current.value > max.value ? current : max
+                          );
+                          return (
+                            <div className={`text-sm ${dominant.color} flex items-center gap-1`}>
+                              <span>{dominant.emoji}</span>
+                              <span>{dominant.name} ({dominant.value}%)</span>
+                            </div>
+                          );
+                        })()} 
                       </div>
                     </div>
                   ))}
