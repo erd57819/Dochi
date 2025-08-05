@@ -9,6 +9,7 @@ import KakaoWithdrawCallbackPage from './pages/KakaoWithdrawCallbackPage';
 import NoticePage from './pages/NoticePage';
 import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
+import EditPostPage from './pages/EditPostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
 import ConflictResultPage from './pages/ConflictResultPage';
@@ -47,6 +48,7 @@ const App = () => {
             <Route path="/notice" element={<NoticePage />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/community/create" element={<CreatePostPage />} />
+            <Route path="/community/edit/:postId" element={<EditPostPage />} />
             <Route path="/community/post/:postId" element={<PostDetailPage />} />
             <Route path="/service" element={<ConflictCreatePage />} />
             <Route path="/conflicts/create" element={<ConflictCreatePage />} />

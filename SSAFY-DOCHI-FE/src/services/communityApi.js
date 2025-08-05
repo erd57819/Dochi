@@ -149,6 +149,87 @@ export const communityApi = {
     }
   },
 
+  // 게시글 삭제
+  async deletePost(postId) {
+    try {
+      console.log('🗑️ 게시글 삭제 요청:', postId);
+      
+      const headers = getAuthHeaders();
+      const url = `${API_BASE_URL}/community/${postId}`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: headers
+      });
+
+      console.log('📊 게시글 삭제 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('❌ 삭제 에러 응답 데이터:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      console.log('✅ 게시글 삭제 성공 응답:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ 게시글 삭제 에러:', error);
+      throw error;
+    }
+  },
+
+  // 게시글 수정
+  async updatePost(postId, postData) {
+    try {
+      console.log('✏️ 게시글 수정 요청:', postId, postData);
+      
+      const headers = getAuthHeaders();
+      const url = `${API_BASE_URL}/community/${postId}`;
+      
+      const requestBody = {
+        title: postData.title,
+        content: postData.content,
+        category: postData.category || 'GENERAL'
+      };
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('📊 게시글 수정 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('❌ 수정 에러 응답 데이터:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      console.log('✅ 게시글 수정 성공 응답:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ 게시글 수정 에러:', error);
+      throw error;
+    }
+  },
+
   // 게시글 작성
   async createPost(postData) {
     try {
