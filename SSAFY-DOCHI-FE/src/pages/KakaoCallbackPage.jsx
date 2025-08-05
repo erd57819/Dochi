@@ -50,7 +50,7 @@ const KakaoCallbackPage = () => {
         localStorage.setItem('refreshToken', refreshToken);
         console.log(' 저장된 accessToken:', localStorage.getItem('accessToken'));
 
-        logIn({ userId, name, nickname, email, profileImage, isSocial });
+        logIn({ userId, name, nickname, email, profileImage, isSocial }, accessToken);
 
         alert('카카오 로그인 성공!');
         navigate('/', { replace: true });
