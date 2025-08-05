@@ -1,12 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Dict
 
 class SpeechProcessingRequest(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    
     speakerId: str
     roomId: str
     conversationContext: str = "[]"
 
 class SpeechProcessingResponse(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    
     transcript: str
     confidence: float
     emotionAnalysis: Dict
@@ -15,12 +19,16 @@ class SpeechProcessingResponse(BaseModel):
     processedAt: str
 
 class RealtimeChunkRequest(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    
     speakerId: str
     roomId: str
     chunkSequence: int = 0
     isFinal: bool = False
 
 class RealtimeChunkResponse(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    
     partialTranscript: str
     confidence: float
     chunkSequence: int
