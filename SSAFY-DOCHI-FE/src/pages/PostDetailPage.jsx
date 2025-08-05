@@ -132,6 +132,22 @@ const PostDetailPage = () => {
     }
   };
 
+  // 게시글 삭제
+  const handleDeletePost = async () => {
+    if (!window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      await communityApi.deletePost(postId);
+      alert('게시글이 삭제되었습니다.');
+      navigate('/community');
+    } catch (error) {
+      console.error('게시글 삭제 실패:', error);
+      alert(error.message || '게시글 삭제에 실패했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -204,10 +220,16 @@ const PostDetailPage = () => {
               </button>
               {isLoggedIn && user && (post.userId === user.id || user.role === 'ADMIN') && (
                 <div className="flex gap-2">
-                  <button className="px-4 py-2 text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors text-sm">
+                  <button 
+                    onClick={() => navigate(`/community/edit/${postId}`)}
+                    className="px-4 py-2 text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                  >
                     수정
                   </button>
-                  <button className="px-4 py-2 text-red-600 bg-red-100 rounded-lg hover:bg-red-200 transition-colors text-sm">
+                  <button 
+                    onClick={handleDeletePost}
+                    className="px-4 py-2 text-red-600 bg-red-100 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                  >
                     삭제
                   </button>
                 </div>
