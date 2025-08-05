@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import useAuthStore from '../stores/AuthStore';
 import apiClient from '../config/axios';
+import * as faceapi from 'face-api.js';
 
 const VideoCallRoom = () => {
   // 인증 스토어에서 토큰 가져오기
@@ -18,6 +19,19 @@ const VideoCallRoom = () => {
   // 말하고 있는 참가자 추적 (Discord-like 기능)
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
   const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
+  const [lastSpeaker, setLastSpeaker] = useState(null); // 마지막으로 말한 사람 추적
+  
+  // STT 및 AI 중재 기능
+  const [sttEnabled, setSttEnabled] = useState(false);
+  const [conversations, setConversations] = useState([]); // [{speaker, text, timestamp, aiSuggestion}]
+  const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
+  const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
+  
+  // 표정 분석 및 갈등 감지
+  const [emotionScores, setEmotionScores] = useState({}); // {participantId: {angry: 0, sad: 0, happy: 0}}
+  const [conflictLevel, setConflictLevel] = useState(0); // 0-100 갈등 수준
+  const [lastMediationTime, setLastMediationTime] = useState(0);
+  const [pendingMediation, setPendingMediation] = useState(false);
   
   // 컨트롤 상태
   const [isMicOn, setIsMicOn] = useState(true);
@@ -55,6 +69,16 @@ const VideoCallRoom = () => {
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const remoteAnalysersRef = useRef(new Map()); // 원격 참가자별 분석기 저장
+  
+  // STT 관련 refs
+  const recognitionRef = useRef(null);
+  const speechTimeoutRef = useRef(null);
+  const conversationLogRef = useRef([]);
+  
+  // 표정 분석 관련 refs
+  const faceApiModelsLoaded = useRef(false);
+  const emotionDetectionInterval = useRef(null);
+  const remoteEmotionIntervals = useRef(new Map());
 
   // 로컬 비디오 트랙 연결을 위한 useEffect - 실제 연결 수행
   useEffect(() => {
@@ -192,16 +216,36 @@ const VideoCallRoom = () => {
     }
   }, [participants, room]);
 
-  // 컴포넌트 마운트시 정리만 등록 (자동 연결 제거)
+  // 컴포넌트 마운트시 face-api.js 모델 로드
   useEffect(() => {
     if (!isLoggedIn) {
       setError('로그인이 필요합니다');
     }
     
+    // Face-API 모델 로드
+    loadFaceApiModels();
+    
     return () => {
       leaveRoom();
     };
   }, [isLoggedIn]);
+
+  // Face-API 모델 로드
+  const loadFaceApiModels = async () => {
+    try {
+      console.log('Face-API 모델 로딩 시작...');
+      
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceExpressionNet.loadFromUri('/models')
+      ]);
+      
+      faceApiModelsLoaded.current = true;
+      console.log('Face-API 모델 로딩 완료');
+    } catch (error) {
+      console.error('Face-API 모델 로딩 실패:', error);
+    }
+  };
 
   // 룸 참가 함수
   const joinRoom = async () => {
@@ -228,6 +272,11 @@ const VideoCallRoom = () => {
       setRoom(newRoom);
       setIsConnected(true);
       
+      // 표정 분석 시작
+      setTimeout(() => {
+        startEmotionDetection();
+      }, 2000); // 비디오 연결 후 2초 뒤 시작
+      
       console.log('룸 연결 성공!');
       
     } catch (error) {
@@ -248,6 +297,11 @@ const VideoCallRoom = () => {
         audioTracks: audioTracksSize,
         videoTracks: videoTracksSize
       });
+      
+      // 참가자 ref 미리 생성 (DOM 준비)
+      getOrCreateVideoRef(participant.identity);
+      getOrCreateAudioRef(participant.identity);
+      
       updateParticipants(room);
     });
     
@@ -265,6 +319,19 @@ const VideoCallRoom = () => {
         track: track,
         mediaStreamTrack: track.mediaStreamTrack
       });
+      
+      // 참가자 목록 업데이트 (새 참가자가 트랙을 publish한 경우)
+      updateParticipants(room);
+      
+      // 새 참가자 비디오 트랙 시 표정 분석 시작
+      if (track.kind === Track.Kind.Video && faceApiModelsLoaded.current) {
+        setTimeout(() => {
+          const videoRef = remoteVideoRefs.current.get(participant.identity);
+          if (videoRef?.current) {
+            startRemoteEmotionDetection(participant.identity, videoRef.current);
+          }
+        }, 1000);
+      }
       
       if (track.kind === Track.Kind.Video) {
         // Ref 기반 비디오 연결 - DOM 동기화 문제 해결
@@ -425,9 +492,17 @@ const VideoCallRoom = () => {
           
           // 평균 오디오 레벨 계산
           const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-          const threshold = 20; // 말하고 있다고 판단하는 임계값
+          const threshold = 30; // 말하고 있다고 판단하는 임계값 (조정됨)
           
-          setIsLocalSpeaking(average > threshold);
+          const wasSpeaking = isLocalSpeaking;
+          const nowSpeaking = average > threshold;
+          
+          setIsLocalSpeaking(nowSpeaking);
+          
+          // 말하기 시작했을 때 마지막 화자 업데이트
+          if (!wasSpeaking && nowSpeaking) {
+            setLastSpeaker(participantName);
+          }
           
           animationFrameRef.current = requestAnimationFrame(detectSpeaking);
         }
@@ -437,6 +512,370 @@ const VideoCallRoom = () => {
     } catch (error) {
       console.error('오디오 레벨 감지 설정 실패:', error);
     }
+  };
+
+  // 현재 말하고 있는 사람 감지
+  const detectCurrentSpeaker = () => {
+    // 1. 로컬 사용자가 말하고 있는지 확인
+    if (isLocalSpeaking && isMicOn) {
+      return participantName;
+    }
+    
+    // 2. 원격 참가자 중 말하고 있는 사람 확인
+    if (speakingParticipants.size > 0) {
+      // 여러 명이 동시에 말하는 경우 가장 최근 화자 사용
+      const speakers = Array.from(speakingParticipants);
+      
+      // 마지막 화자가 현재도 말하고 있으면 유지
+      if (lastSpeaker && speakers.some(id => getParticipantDisplayName(id) === lastSpeaker)) {
+        return lastSpeaker;
+      }
+      
+      // 아니면 첫 번째 화자 사용
+      if (speakers.length > 0) {
+        const speakerIdentity = speakers[0];
+        return getParticipantDisplayName(speakerIdentity);
+      }
+    }
+    
+    // 3. 아무도 말하지 않으면 마지막 화자 사용 (있으면)
+    if (lastSpeaker) {
+      return lastSpeaker;
+    }
+    
+    // 4. 최종 기본값 (로컬 사용자)
+    return participantName;
+  };
+  
+  // 참가자 이름 변환 함수
+  const getParticipantDisplayName = (identity) => {
+    if (identity === `user-${useAuthStore.getState().user?.id}`) {
+      return participantName;
+    }
+    const participantIndex = participants.findIndex(p => p.identity === identity);
+    return participantIndex >= 0 ? `참가자${participantIndex + 1}` : identity;
+  };
+
+  // STT 기능 초기화
+  const initializeSpeechRecognition = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      console.warn('음성 인식이 지원되지 않는 브라우저입니다.');
+      return false;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'ko-KR';
+    
+    recognition.onstart = () => {
+      console.log('음성 인식 시작');
+    };
+    
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      
+      if (finalTranscript) {
+        // 현재 말하고 있는 사람 확인
+        const currentSpeaker = detectCurrentSpeaker();
+        handleSpeechResult(currentSpeaker, finalTranscript);
+      }
+      
+      // 실시간 음성 표시
+      const currentSpeaker = detectCurrentSpeaker();
+      setCurrentSpeech({
+        speaker: currentSpeaker,
+        text: interimTranscript || finalTranscript
+      });
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('음성 인식 오류:', event.error);
+    };
+    
+    recognition.onend = () => {
+      if (sttEnabled) {
+        // STT가 활성화되어 있으면 자동으로 재시작
+        setTimeout(() => {
+          try {
+            recognition.start();
+          } catch (error) {
+            console.warn('음성 인식 재시작 실패:', error);
+          }
+        }, 100);
+      }
+    };
+    
+    recognitionRef.current = recognition;
+    return true;
+  };
+
+  // 음성 인식 결과 처리
+  const handleSpeechResult = async (speaker, text) => {
+    const timestamp = new Date().toLocaleTimeString('ko-KR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    const newConversation = {
+      id: Date.now(),
+      speaker,
+      text,
+      timestamp,
+      aiSuggestion: null
+    };
+    
+    setConversations(prev => [...prev, newConversation]);
+    conversationLogRef.current.push(newConversation);
+    
+    // 갈등 감지 및 중재 타이밍 결정
+    const shouldMediate = await analyzeConflictAndTiming(text, speaker);
+    
+    // AI 중재가 활성화되어 있고 중재가 필요한 경우
+    if (aiMediationEnabled && shouldMediate) {
+      try {
+        const aiSuggestion = await requestAiMediation(text, speaker);
+        if (aiSuggestion) {
+          setConversations(prev => 
+            prev.map(conv => 
+              conv.id === newConversation.id 
+                ? { ...conv, aiSuggestion }
+                : conv
+            )
+          );
+          setLastMediationTime(Date.now());
+        }
+      } catch (error) {
+        console.error('AI 중재 요청 실패:', error);
+      }
+    }
+    
+    // 음성 인식 완료 후 현재 음성 초기화
+    setCurrentSpeech({ speaker: null, text: '' });
+  };
+  
+  // 표정 분석 시작
+  const startEmotionDetection = () => {
+    if (!faceApiModelsLoaded.current) {
+      console.warn('Face-API 모델이 아직 로드되지 않았습니다.');
+      return;
+    }
+
+    // 로컬 비디오 표정 분석
+    if (localVideoRef.current) {
+      startLocalEmotionDetection();
+    }
+
+    // 원격 참가자 표정 분석
+    participants.forEach(participant => {
+      const videoRef = remoteVideoRefs.current.get(participant.identity);
+      if (videoRef?.current) {
+        startRemoteEmotionDetection(participant.identity, videoRef.current);
+      }
+    });
+  };
+
+  // 로컬 표정 분석
+  const startLocalEmotionDetection = () => {
+    if (emotionDetectionInterval.current) {
+      clearInterval(emotionDetectionInterval.current);
+    }
+
+    emotionDetectionInterval.current = setInterval(async () => {
+      if (localVideoRef.current && faceApiModelsLoaded.current) {
+        try {
+          const detections = await faceapi
+            .detectAllFaces(localVideoRef.current, new faceapi.TinyFaceDetectorOptions())
+            .withFaceExpressions();
+
+          if (detections.length > 0) {
+            const expressions = detections[0].expressions;
+            updateEmotionScores(participantName, expressions);
+          }
+        } catch (error) {
+          console.error('로컬 표정 분석 오류:', error);
+        }
+      }
+    }, 1000); // 1초마다 분석
+  };
+
+  // 원격 참가자 표정 분석
+  const startRemoteEmotionDetection = (participantId, videoElement) => {
+    // 기존 인터벌 정리
+    const existingInterval = remoteEmotionIntervals.current.get(participantId);
+    if (existingInterval) {
+      clearInterval(existingInterval);
+    }
+
+    const interval = setInterval(async () => {
+      if (videoElement && faceApiModelsLoaded.current) {
+        try {
+          const detections = await faceapi
+            .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
+            .withFaceExpressions();
+
+          if (detections.length > 0) {
+            const expressions = detections[0].expressions;
+            const displayName = getParticipantDisplayName(participantId);
+            updateEmotionScores(displayName, expressions);
+          }
+        } catch (error) {
+          console.error(`${participantId} 표정 분석 오류:`, error);
+        }
+      }
+    }, 1000);
+
+    remoteEmotionIntervals.current.set(participantId, interval);
+  };
+
+  // 감정 점수 업데이트
+  const updateEmotionScores = (participantName, expressions) => {
+    setEmotionScores(prev => ({
+      ...prev,
+      [participantName]: {
+        angry: Math.round(expressions.angry * 100),
+        sad: Math.round(expressions.sad * 100),
+        happy: Math.round(expressions.happy * 100),
+        surprised: Math.round(expressions.surprised * 100),
+        neutral: Math.round(expressions.neutral * 100)
+      }
+    }));
+  };
+
+  // 표정 분석 중지
+  const stopEmotionDetection = () => {
+    if (emotionDetectionInterval.current) {
+      clearInterval(emotionDetectionInterval.current);
+      emotionDetectionInterval.current = null;
+    }
+
+    remoteEmotionIntervals.current.forEach(interval => {
+      clearInterval(interval);
+    });
+    remoteEmotionIntervals.current.clear();
+  };
+
+  // 갈등 분석 및 중재 타이밍 결정
+  const analyzeConflictAndTiming = async (text, speaker) => {
+    // 1. 텍스트 기반 갈등 지표
+    const conflictKeywords = [
+      { words: ['화나', '짜증', '분노', '열받'], weight: 30 },
+      { words: ['왜', '도대체', '진짜'], weight: 20 },
+      { words: ['너만', '항상', '맨날', '절대'], weight: 25 },
+      { words: ['미안', '죄송', '잘못'], weight: -10 },
+      { words: ['알겠', '이해', '그래'], weight: -15 }
+    ];
+    
+    let textConflictScore = 0;
+    conflictKeywords.forEach(({ words, weight }) => {
+      if (words.some(word => text.includes(word))) {
+        textConflictScore += weight;
+      }
+    });
+    
+    // 2. 대화 패턴 분석
+    const recentConversations = conversationLogRef.current.slice(-5);
+    const rapidExchanges = recentConversations.filter((conv, i) => {
+      if (i === 0) return false;
+      const prevTime = new Date(recentConversations[i-1].timestamp).getTime();
+      const currTime = new Date(conv.timestamp).getTime();
+      return (currTime - prevTime) < 5000; // 5초 이내 빠른 주고받기
+    }).length;
+    
+    // 3. 표정 기반 갈등 지표
+    let emotionConflictScore = 0;
+    const speakerEmotions = emotionScores[speaker];
+    if (speakerEmotions) {
+      emotionConflictScore += speakerEmotions.angry * 0.5; // 화남 50% 가중치
+      emotionConflictScore += speakerEmotions.sad * 0.2; // 슬픔 20% 가중치  
+      emotionConflictScore -= speakerEmotions.happy * 0.3; // 기쁨 -30% 가중치
+    }
+
+    // 4. 갈등 수준 업데이트 (텍스트 + 대화패턴 + 표정)
+    const newConflictLevel = Math.min(100, Math.max(0, 
+      conflictLevel + textConflictScore + (rapidExchanges * 10) + emotionConflictScore
+    ));
+    setConflictLevel(newConflictLevel);
+    
+    // 4. 중재 타이밍 결정 규칙
+    const timeSinceLastMediation = Date.now() - lastMediationTime;
+    const minMediationInterval = 30000; // 최소 30초 간격
+    
+    // 중재가 필요한 경우:
+    if (timeSinceLastMediation < minMediationInterval) {
+      return false; // 너무 자주 중재하지 않음
+    }
+    
+    if (newConflictLevel > 70) {
+      return true; // 갈등 수준이 높음
+    }
+    
+    if (textConflictScore > 40) {
+      return true; // 현재 메시지가 매우 부정적
+    }
+    
+    if (rapidExchanges >= 3 && newConflictLevel > 40) {
+      return true; // 빠른 대화 + 중간 수준 갈등
+    }
+    
+    // 긍정적 대화는 갈등 수준 감소
+    if (textConflictScore < 0) {
+      setConflictLevel(Math.max(0, conflictLevel - 5));
+    }
+    
+    return false;
+  };
+
+  // AI 중재 서비스 요청
+  const requestAiMediation = async (text, speaker) => {
+    try {
+      const response = await apiClient.post('/ai/mediation', {
+        roomCode: roomName,
+        speaker,
+        text,
+        conversationHistory: conversationLogRef.current.slice(-10) // 최근 10개 대화만 전송
+      });
+      
+      if (response.data.status === 200) {
+        return response.data.data.suggestion;
+      }
+    } catch (error) {
+      console.error('AI 중재 서비스 오류:', error);
+    }
+    return null;
+  };
+
+  // STT 토글 함수
+  const toggleSTT = () => {
+    if (!sttEnabled) {
+      const initialized = initializeSpeechRecognition();
+      if (initialized) {
+        setSttEnabled(true);
+        recognitionRef.current?.start();
+        
+      }
+    } else {
+      setSttEnabled(false);
+      recognitionRef.current?.stop();
+    }
+  };
+
+
+  // AI 중재 토글 함수
+  const toggleAiMediation = () => {
+    setAiMediationEnabled(!aiMediationEnabled);
   };
 
   // 원격 참가자 오디오 레벨 감지 (기존 AudioContext 재사용)
@@ -480,17 +919,25 @@ const VideoCallRoom = () => {
           analyser.getByteFrequencyData(dataArray);
           
           const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-          const threshold = 15; // 원격은 좀 더 낮은 임계값
+          const threshold = 25; // 원격 참가자 임계값 (조정됨)
+          
+          const wasSpeaking = speakingParticipants.has(participantId);
+          const nowSpeaking = average > threshold;
           
           setSpeakingParticipants(prev => {
             const newSpeaking = new Set(prev);
-            if (average > threshold) {
+            if (nowSpeaking) {
               newSpeaking.add(participantId);
             } else {
               newSpeaking.delete(participantId);
             }
             return newSpeaking;
           });
+          
+          // 말하기 시작했을 때 마지막 화자 업데이트
+          if (!wasSpeaking && nowSpeaking) {
+            setLastSpeaker(getParticipantDisplayName(participantId));
+          }
           
           requestAnimationFrame(detectRemoteSpeaking);
         }
@@ -769,6 +1216,24 @@ const VideoCallRoom = () => {
 
   // 룸 나가기
   const leaveRoom = async () => {
+    // 표정 분석 정리
+    stopEmotionDetection();
+    setEmotionScores({});
+    setConflictLevel(0);
+    
+    // STT 정리
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    if (speechTimeoutRef.current) {
+      clearTimeout(speechTimeoutRef.current);
+    }
+    stopFakeRemoteMessages(); // 가짜 메시지 정리
+    setSttEnabled(false);
+    setAiMediationEnabled(false);
+    setConversations([]);
+    setCurrentSpeech({ speaker: null, text: '' });
+    
     // 오디오 분석 정리
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -884,75 +1349,319 @@ const VideoCallRoom = () => {
         </div>
       )}
 
-      {/* 메인 비디오 영역 */}
+      {/* 메인 영역 - 3분할 (비디오 + STT) */}
       {isConnected && (
-        <div className="flex-1 p-4">
-          {/* 로컬 비디오 (나) */}
-          <div className={`w-full h-64 bg-black rounded-lg relative overflow-hidden mb-4 transition-all duration-300 ${
-            isLocalSpeaking && isMicOn ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
-          }`}>
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
-              isLocalSpeaking && isMicOn ? 'bg-green-600 bg-opacity-70' : ''
+        <div className="flex-1 p-4 flex gap-4">
+          {/* 로컬 비디오 (나) - 왼쪽 */}
+          <div className="flex-1">
+            <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
+              isLocalSpeaking && isMicOn ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
             }`}>
-              <span className="text-sm">
-                {isLocalSpeaking && isMicOn && '🎤 '}
-                {participantName} (나)
-              </span>
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
+                isLocalSpeaking && isMicOn ? 'bg-green-600 bg-opacity-70' : ''
+              }`}>
+                <span className="text-sm">
+                  {isLocalSpeaking && isMicOn && '🎤 '}
+                  {participantName} (나)
+                </span>
+              </div>
+              {!isCameraOn && (
+                <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
+                  <span className="text-white text-lg">📵 카메라 꺼짐</span>
+                </div>
+              )}
             </div>
-            {!isCameraOn && (
-              <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
-                <span className="text-white text-lg">📵 카메라 꺼짐</span>
+          </div>
+
+          {/* 원격 참가자들 - 가운데 */}
+          <div className="flex-1">
+            {participants.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 h-full">
+                {participants.map((participant) => {
+                  const isSpeaking = speakingParticipants.has(participant.identity);
+                  return (
+                    <div key={participant.identity} className="relative h-full">
+                      <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
+                        isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
+                      }`}>
+                        <video
+                          ref={getOrCreateVideoRef(participant.identity)}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <audio
+                          ref={getOrCreateAudioRef(participant.identity)}
+                          autoPlay
+                        />
+                        <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
+                          isSpeaking ? 'bg-green-600 bg-opacity-70' : ''
+                        }`}>
+                          <span className="text-sm">
+                            {isSpeaking && '🎤 '}
+                            {getParticipantDisplayName(participant.identity)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                <div className="text-center text-gray-400">
+                  <p>다른 참가자를 기다리는 중...</p>
+                  <p className="text-sm mt-2">다른 브라우저 탭에서 같은 URL로 접속해보세요!</p>
+                </div>
               </div>
             )}
           </div>
 
-          {/* 원격 참가자들 */}
-          {participants.length > 0 && (
-            <div className="grid grid-cols-2 gap-4">
-              {participants.map((participant) => {
-                const isSpeaking = speakingParticipants.has(participant.identity);
-                return (
-                  <div key={participant.identity} className="relative">
-                    <div className={`w-full h-48 bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
-                      isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
-                    }`}>
-                      <video
-                        ref={getOrCreateVideoRef(participant.identity)}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-                      <audio
-                        ref={getOrCreateAudioRef(participant.identity)}
-                        autoPlay
-                      />
-                      <div className={`absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs ${
-                        isSpeaking ? 'bg-green-600 bg-opacity-70' : ''
-                      }`}>
-                        {isSpeaking && '🎤 '}
-                        {participant.identity}
+          {/* STT 및 AI 중재 패널 - 오른쪽 */}
+          <div className="w-80 bg-gray-800 rounded-lg p-4 flex flex-col">
+            {/* STT 컨트롤 */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-white font-semibold">🎤 대화 기록</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={toggleSTT}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      sttEnabled 
+                        ? 'bg-green-600 text-white hover:bg-green-700' 
+                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                    }`}
+                  >
+                    {sttEnabled ? '🎤 ON' : '🎤 OFF'}
+                  </button>
+                  <button
+                    onClick={toggleAiMediation}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      aiMediationEnabled 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                    }`}
+                  >
+                    {aiMediationEnabled ? '🤖 AI ON' : '🤖 AI OFF'}
+                  </button>
+                </div>
+              </div>
+              
+              
+              {/* 갈등 수준 표시 */}
+              {sttEnabled && conversations.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span>갈등 수준</span>
+                    <span>{conflictLevel}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-500 ${
+                        conflictLevel < 30 ? 'bg-green-500' :
+                        conflictLevel < 60 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${conflictLevel}%` }}
+                    />
+                  </div>
+                  {conflictLevel > 60 && (
+                    <div className="text-xs text-red-400 mt-1">
+                      ⚠️ 대화 분위기가 좋지 않습니다
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* 실시간 감정 분석 그래프 */}
+              {isConnected && Object.keys(emotionScores).length > 0 && (
+                <div className="mb-3">
+                  <div className="text-xs text-gray-400 mb-3 flex items-center gap-2">
+                    <span>😊 실시간 감정 분석</span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  </div>
+                  {Object.entries(emotionScores).map(([name, scores]) => (
+                    <div key={name} className="mb-4 p-3 bg-gray-700 rounded-lg">
+                      <div className="text-sm text-white mb-3 font-medium">{name}</div>
+                      <div className="space-y-2">
+                        {/* 행복 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-green-400 w-8">😊</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.happy}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.happy}%</span>
+                        </div>
+                        
+                        {/* 분노 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-red-400 w-8">😠</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-red-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.angry}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.angry}%</span>
+                        </div>
+                        
+                        {/* 슬픔 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-blue-400 w-8">😢</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-blue-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.sad}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.sad}%</span>
+                        </div>
+                        
+                        {/* 놀람 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-yellow-400 w-8">😮</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-yellow-500 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.surprised}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.surprised}%</span>
+                        </div>
+                        
+                        {/* 중립 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 w-8">😐</span>
+                          <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-gray-400 h-2 rounded-full transition-all duration-500" 
+                              style={{ width: `${scores.neutral}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-300 w-8">{scores.neutral}%</span>
+                        </div>
+                      </div>
+                      
+                      {/* 주도 감정 표시 */}
+                      <div className="mt-2 pt-2 border-t border-gray-600">
+                        <div className="text-xs text-gray-400 mb-1">주도 감정</div>
+                        {(() => {
+                          const emotions = [
+                            { name: '행복', value: scores.happy, emoji: '😊', color: 'text-green-400' },
+                            { name: '분노', value: scores.angry, emoji: '😠', color: 'text-red-400' },
+                            { name: '슬픔', value: scores.sad, emoji: '😢', color: 'text-blue-400' },
+                            { name: '놀람', value: scores.surprised, emoji: '😮', color: 'text-yellow-400' },
+                            { name: '중립', value: scores.neutral, emoji: '😐', color: 'text-gray-400' }
+                          ];
+                          const dominant = emotions.reduce((max, current) => 
+                            current.value > max.value ? current : max
+                          );
+                          return (
+                            <div className={`text-sm ${dominant.color} flex items-center gap-1`}>
+                              <span>{dominant.emoji}</span>
+                              <span>{dominant.name} ({dominant.value}%)</span>
+                            </div>
+                          );
+                        })()} 
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* 현재 말하고 있는 내용 */}
+              {currentSpeech.text && (
+                <div className="bg-gray-700 rounded p-2 mb-2">
+                  <div className="text-xs text-gray-400 mb-1">실시간 음성</div>
+                  <div className="text-sm text-white">
+                    <span className="text-green-400">{currentSpeech.speaker}:</span> {currentSpeech.text}
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
-          )}
 
-          {/* 참가자 없을 때 메시지 */}
-          {participants.length === 0 && (
-            <div className="text-center text-gray-400 mt-8">
-              <p>다른 참가자를 기다리는 중...</p>
-              <p className="text-sm mt-2">다른 브라우저 탭에서 같은 URL로 접속해보세요!</p>
+            {/* 대화 기록 - 카톡 스타일 */}
+            <div className="flex-1 overflow-y-auto px-2 py-3">
+              {conversations.length === 0 ? (
+                <div className="text-gray-400 text-sm text-center py-8">
+                  {sttEnabled ? '대화를 시작해보세요!' : 'STT를 활성화하면 대화가 기록됩니다.'}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {conversations.map((conv, index) => {
+                    const isMe = conv.speaker === participantName;
+                    const showAiSuggestion = conv.aiSuggestion && (
+                      index === conversations.length - 1 || // 마지막 메시지거나
+                      conversations[index + 1]?.aiSuggestion // 다음 메시지도 AI 제안이 있을 때
+                    );
+                    
+                    return (
+                      <div key={conv.id}>
+                        {/* 대화 메시지 */}
+                        <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
+                          <div className={`max-w-[70%] ${isMe ? 'order-2' : 'order-1'}`}>
+                            <div className={`inline-block px-3 py-2 rounded-2xl ${
+                              isMe 
+                                ? 'bg-yellow-400 text-black rounded-tr-sm' 
+                                : 'bg-gray-600 text-white rounded-tl-sm'
+                            }`}>
+                              <div className="text-sm">{conv.text}</div>
+                            </div>
+                            <div className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                              {conv.timestamp}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* AI 중재 제안 */}
+                        {showAiSuggestion && (
+                          <div className="flex justify-center my-3">
+                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-3 max-w-[85%] shadow-lg">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs text-white font-semibold">🤖 AI 중재 도우미</span>
+                              </div>
+                              <div className="text-sm text-white">{conv.aiSuggestion}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  {/* 갈등 수준 표시 */}
+                  {conflictLevel > 50 && (
+                    <div className="flex justify-center my-3">
+                      <div className="bg-red-600 bg-opacity-20 border border-red-500 rounded-lg p-2 text-center">
+                        <div className="text-xs text-red-400">
+                          ⚠️ 갈등 수준: {conflictLevel}%
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* 대화 기록 삭제 버튼 */}
+            {conversations.length > 0 && (
+              <button
+                onClick={() => setConversations([])}
+                className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+              >
+                대화 기록 삭제
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -1001,6 +1710,14 @@ const VideoCallRoom = () => {
           <span>카메라: {isCameraOn ? 'ON' : 'OFF'}</span>
           <span className="mx-2">|</span>
           <span>참가자: {participants.length + 1}명</span>
+          <span className="mx-2">|</span>
+          <span className={sttEnabled ? 'text-green-400' : 'text-gray-400'}>
+            STT: {sttEnabled ? 'ON' : 'OFF'}
+          </span>
+          <span className="mx-2">|</span>
+          <span className={aiMediationEnabled ? 'text-blue-400' : 'text-gray-400'}>
+            AI 중재: {aiMediationEnabled ? 'ON' : 'OFF'}
+          </span>
         </div>
       </div>
     </div>

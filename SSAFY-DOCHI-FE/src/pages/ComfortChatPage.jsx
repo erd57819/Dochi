@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore.js';
 import useComfortStore from '../stores/ComfortStore.js';
-import comfortService from '../services/comfortService.js';
 
 const ComfortChatPage = () => {
   const navigate = useNavigate();
@@ -13,28 +12,57 @@ const ComfortChatPage = () => {
   const {
     sessions,
     currentSessionId,
+    currentChatRoomId,
     messages,
     isLoading,
+    error,
     isSidebarOpen,
-    selectedModel,
+    selectedMode,
     showTimeline,
     showManhwa,
     createNewSession,
     loadSession,
     deleteSession,
-    addMessage,
+    sendMessage,
+    loadChatRooms,
+    exitCurrentSession,
     setLoading,
+    setError,
     toggleSidebar,
-    setSelectedModel,
+    setSelectedMode,
     setShowTimeline,
     setShowManhwa
   } = useComfortStore();
 
   useEffect(() => {
+    // 채팅방 목록 로드 (에러 발생 시 무시)
+    loadChatRooms().catch(() => {
+      console.log('채팅방 목록 로드 실패, 새 세션 생성으로 진행');
+    });
+  }, []);
+
+  useEffect(() => {
     // 초기 세션이 없으면 생성
-    if (sessions.length === 0) {
-      createNewSession();
-    }
+    const timer = setTimeout(() => {
+      if (sessions.length === 0) {
+        createNewSession();
+      }
+    }, 1000); // 1초 대기 후 세션 생성
+    
+    return () => clearTimeout(timer);
+  }, [sessions]);
+
+  useEffect(() => {
+    // 페이지 떠날 때 세션 종료
+    const handleBeforeUnload = () => {
+      exitCurrentSession();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      exitCurrentSession();
+    };
   }, []);
 
   useEffect(() => {
@@ -48,55 +76,19 @@ const ComfortChatPage = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    const userMessage = {
-      id: Date.now(),
-      sender: 'user',
-      content: inputValue,
-      timestamp: new Date()
-    };
-
-    addMessage(userMessage);
-    setInputValue('');
-    setLoading(true);
-
     try {
-      // 실제 API 호출 시 주석 해제
-      // const response = await comfortService.sendMessage(currentSessionId, inputValue, selectedModel);
-      // const botMessage = {
-      //   id: Date.now() + 1,
-      //   sender: 'bot',
-      //   content: response.message,
-      //   timestamp: new Date()
-      // };
-      
-      // 임시 응답 (백엔드 연결 전)
-      setTimeout(() => {
-        const botMessage = {
-          id: Date.now() + 1,
-          sender: 'bot',
-          content: getBotResponse(inputValue),
-          timestamp: new Date()
-        };
-        
-        addMessage(botMessage);
-        setLoading(false);
-      }, 1000);
+      await sendMessage(inputValue);
+      setInputValue('');
     } catch (error) {
       console.error('Failed to send message:', error);
-      setLoading(false);
-      // 에러 처리
     }
   };
 
-  const getBotResponse = (input) => {
-    const responses = [
-      "그런 일이 있으셨군요. 정말 힘드셨겠어요. 제가 옆에서 들어드릴게요.",
-      "당신의 마음이 느껴져요. 오늘 하루도 수고 많으셨어요.",
-      "그래도 이렇게 이야기를 나눌 수 있어서 다행이에요. 혼자가 아니라는 걸 기억해주세요.",
-      "때로는 그저 누군가 들어주는 것만으로도 위로가 되죠. 계속 이야기해주세요.",
-      "당신은 충분히 잘하고 있어요. 스스로를 너무 몰아세우지 마세요."
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+  const handleDeleteSession = async (chatRoomId) => {
+    const success = await deleteSession(chatRoomId);
+    if (!success) {
+      alert('최소 하나의 채팅방은 유지되어야 합니다.');
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -106,18 +98,9 @@ const ComfortChatPage = () => {
     }
   };
 
-  const handleDeleteSession = (sessionId) => {
-    const success = deleteSession(sessionId);
-    if (!success) {
-      alert('최소 하나의 채팅방은 유지되어야 합니다.');
-    }
-  };
-
   const generateTimeline = async () => {
     try {
-      // 실제 API 호출 시 주석 해제
-      // const response = await comfortService.generateTimeline(currentSessionId);
-      // 타임라인 데이터 처리
+      setSelectedMode('TIMELINE');
       setShowTimeline(true);
       setShowManhwa(false);
     } catch (error) {
@@ -127,14 +110,31 @@ const ComfortChatPage = () => {
 
   const generateManhwa = async () => {
     try {
-      // 실제 API 호출 시 주석 해제
-      // const response = await comfortService.generateManhwa(currentSessionId);
-      // 네컷만화 데이터 처리
+      setSelectedMode('COMIC');
       setShowManhwa(true);
       setShowTimeline(false);
     } catch (error) {
       console.error('Failed to generate manhwa:', error);
     }
+  };
+
+  // 메시지 렌더링 (모드별 처리)
+  const renderMessage = (message) => {
+    // COMIC 모드에서 이미지 URL인 경우 이미지로 표시
+    if (message.mode === 'COMIC' && message.content.startsWith('http')) {
+      return (
+        <img 
+          src={message.content} 
+          alt="AI 생성 만화" 
+          className="max-w-md rounded-lg" 
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'block';
+          }}
+        />
+      );
+    }
+    return <p className="whitespace-pre-wrap">{message.content}</p>;
   };
 
   return (
@@ -170,7 +170,7 @@ const ComfortChatPage = () => {
             <div
               key={session.id}
               className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                currentSessionId === session.id ? 'bg-orange-50' : ''
+                currentChatRoomId === session.id ? 'bg-orange-50' : ''
               }`}
             >
               <div className="flex justify-between items-center">
@@ -224,19 +224,34 @@ const ComfortChatPage = () => {
               타임라인
             </button>
             <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
+              value={selectedMode}
+              onChange={(e) => setSelectedMode(e.target.value)}
               className="px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              <option value="참견도치">참견도치</option>
-              <option value="위로도치">위로도치</option>
-              <option value="공감도치">공감도치</option>
+              <option value="NORMAL">일반 상담</option>
+              <option value="SITUATION_ORGANIZE">입장정리</option>
+              <option value="SIDE_TAKING">내편들기</option>
+              <option value="TIMELINE">타임라인</option>
+              <option value="COMIC">네컷만화</option>
             </select>
           </div>
         </div>
 
         {/* 메시지 영역 */}
         <div className="flex-1 overflow-y-auto p-6">
+          {/* 에러 메시지 */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+              <button 
+                onClick={() => setError(null)}
+                className="ml-2 text-red-500 hover:text-red-700"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          
           {messages.map((message) => (
             <div
               key={message.id}
@@ -248,7 +263,12 @@ const ComfortChatPage = () => {
                     <div className="w-8 h-8 bg-orange-200 rounded-full flex items-center justify-center mr-2">
                       🦔
                     </div>
-                    <span className="text-sm text-gray-600">{selectedModel}</span>
+                    <span className="text-sm text-gray-600">
+                      {selectedMode === 'NORMAL' ? '참견도치' : 
+                       selectedMode === 'SITUATION_ORGANIZE' ? '정리도치' :
+                       selectedMode === 'SIDE_TAKING' ? '편들기도치' :
+                       selectedMode === 'TIMELINE' ? '분석도치' : '그림도치'}
+                    </span>
                   </div>
                 )}
                 <div className={`px-4 py-2 rounded-lg ${
@@ -256,7 +276,12 @@ const ComfortChatPage = () => {
                     ? 'bg-orange-500 text-white' 
                     : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {message.content}
+                  {renderMessage(message)}
+                  {message.mode === 'COMIC' && message.content.startsWith('http') && (
+                    <p className="text-sm text-gray-600 mt-2" style={{ display: 'none' }}>
+                      이미지를 불러올 수 없습니다: {message.content}
+                    </p>
+                  )}
                 </div>
                 <span className="text-xs text-gray-500 mt-1 block">
                   {new Date(message.timestamp).toLocaleTimeString('ko-KR')}
@@ -267,10 +292,19 @@ const ComfortChatPage = () => {
           {isLoading && (
             <div className="flex justify-start mb-4">
               <div className="bg-gray-100 rounded-lg px-4 py-2">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {selectedMode === 'COMIC' ? '만화를 그리고 있어요...' :
+                     selectedMode === 'TIMELINE' ? '타임라인을 분석하고 있어요...' :
+                     selectedMode === 'SITUATION_ORGANIZE' ? '입장을 정리하고 있어요...' :
+                     selectedMode === 'SIDE_TAKING' ? '당신의 편에서 생각하고 있어요...' :
+                     '답변을 생성하고 있어요...'}
+                  </span>
                 </div>
               </div>
             </div>

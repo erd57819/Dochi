@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore.js';
 import kakaoAuthService from '../services/kakaoAuthService.js';
@@ -9,56 +9,54 @@ const KakaoCallbackPage = () => {
   const { logIn } = useAuthStore();
   const [error, setError] = useState(null);
 
+  const processedRef = useRef(false); // useRef로 상태 고정
+
   useEffect(() => {
     const handleKakaoCallback = async () => {
       const code = searchParams.get('code');
       const error = searchParams.get('error');
       const errorDescription = searchParams.get('error_description');
-      
-      // 카카오에서 에러 발생 시 처리
+
+      if (processedRef.current || !code) return; // 한 번 실행되면 막음
+      processedRef.current = true; // 이후 호출 금지
+
       if (error) {
         setError(errorDescription || '카카오 로그인을 취소했습니다.');
         setTimeout(() => navigate('/login'), 2000);
         return;
       }
-      
+
       console.log('받은 카카오 코드:', code);
       console.log('API 요청 URL:', `${import.meta.env.DEV ? 'http://localhost:8080' : ''}/oauth?code=${code}`);
-      
-      if (!code) {
-        setError('카카오 인증 코드를 받을 수 없습니다.');
-        setTimeout(() => navigate('/login'), 2000);
-        return;
-      }
 
       try {
-        // 백엔드로 코드를 전송하여 로그인 처리
         const result = await kakaoAuthService.loginWithKakao(code);
-        console.log('Kakao login response:', result); // 디버깅용 로그
-        
-        // ApiResponse 구조에 맞게 접근
-        const loginData = result.data || result.response?.response || result.response || result;
-        const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId } = loginData;
-        
-        // JWT 토큰을 localStorage에 저장
+        console.log('Kakao login response:', result);
+
+        const loginData = result?.data
+        const {
+                accessToken,
+                refreshToken,
+                profileImage,
+                name,
+                nickname,
+                social: isSocial,
+                email,
+                userId
+        } = loginData;
+
+        console.log(' accessToken:', loginData.accessToken);
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
-        
-        // 유저 정보를 스토어에 저장
-        logIn({ 
-          userId: userId, 
-          name: name,
-          nickname: nickname,
-          email: email,
-          profileImage: profileImage,
-          isSocial: isSocial
-        });
-        
+        console.log(' 저장된 accessToken:', localStorage.getItem('accessToken'));
+
+        logIn({ userId, name, nickname, email, profileImage, isSocial }, accessToken);
+
         alert('카카오 로그인 성공!');
-        navigate('/');
-      } catch (error) {
-        console.error('Kakao login error:', error);
-        setError(error.message || '카카오 로그인 처리 중 오류가 발생했습니다.');
+        navigate('/', { replace: true });
+      } catch (err) {
+        console.error('Kakao login error:', err);
+        setError(err.message || '카카오 로그인 처리 중 오류가 발생했습니다.');
         setTimeout(() => navigate('/login'), 3000);
       }
     };
@@ -72,7 +70,7 @@ const KakaoCallbackPage = () => {
         {error ? (
           <>
             <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-              <span className="text-2xl">❌</span>
+              <span className="text-2xl">x</span>
             </div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">오류가 발생했습니다</h2>
             <p className="text-gray-600 mb-4">{error}</p>
@@ -81,17 +79,11 @@ const KakaoCallbackPage = () => {
         ) : (
           <>
             <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4 animate-pulse">
-              <svg 
-                width="32" 
-                height="32" 
-                viewBox="0 0 20 20" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  clipRule="evenodd" 
-                  d="M10 1C4.477 1 0 4.484 0 8.597c0 2.524 1.689 4.759 4.27 6.104l-.857 3.116c-.046.167.104.308.258.237l3.816-1.806A10.836 10.836 0 0010 16.5c5.523 0 10-3.484 10-7.597C20 4.79 15.523 1 10 1" 
+              <svg width="32" height="32" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M10 1C4.477 1 0 4.484 0 8.597c0 2.524 1.689 4.759 4.27 6.104l-.857 3.116c-.046.167.104.308.258.237l3.816-1.806A10.836 10.836 0 0010 16.5c5.523 0 10-3.484 10-7.597C20 4.79 15.523 1 10 1"
                   fill="#3C1E1E"
                 />
               </svg>

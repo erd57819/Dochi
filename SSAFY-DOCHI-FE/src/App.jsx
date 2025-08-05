@@ -22,6 +22,7 @@ import STTPage from './pages/STTPage';
 import STTVideoRoomPage from './pages/STTVideoRoomPage';
 import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
+import GamePage from './pages/GamePage';
 import MyPage from './pages/MyPage';
 import ProfileEditPage from './pages/ProfileEditPage';
 import PasswordChangePage from './pages/PasswordChangePage';
