@@ -248,6 +248,11 @@ const VideoCallRoom = () => {
         audioTracks: audioTracksSize,
         videoTracks: videoTracksSize
       });
+      
+      // 참가자 ref 미리 생성 (DOM 준비)
+      getOrCreateVideoRef(participant.identity);
+      getOrCreateAudioRef(participant.identity);
+      
       updateParticipants(room);
     });
     
@@ -265,6 +270,9 @@ const VideoCallRoom = () => {
         track: track,
         mediaStreamTrack: track.mediaStreamTrack
       });
+      
+      // 참가자 목록 업데이트 (새 참가자가 트랙을 publish한 경우)
+      updateParticipants(room);
       
       if (track.kind === Track.Kind.Video) {
         // Ref 기반 비디오 연결 - DOM 동기화 문제 해결
@@ -884,75 +892,80 @@ const VideoCallRoom = () => {
         </div>
       )}
 
-      {/* 메인 비디오 영역 */}
+      {/* 메인 비디오 영역 - 좌우 배치 */}
       {isConnected && (
-        <div className="flex-1 p-4">
-          {/* 로컬 비디오 (나) */}
-          <div className={`w-full h-64 bg-black rounded-lg relative overflow-hidden mb-4 transition-all duration-300 ${
-            isLocalSpeaking && isMicOn ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
-          }`}>
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
-              isLocalSpeaking && isMicOn ? 'bg-green-600 bg-opacity-70' : ''
+        <div className="flex-1 p-4 flex gap-4">
+          {/* 로컬 비디오 (나) - 왼쪽 */}
+          <div className="flex-1">
+            <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
+              isLocalSpeaking && isMicOn ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
             }`}>
-              <span className="text-sm">
-                {isLocalSpeaking && isMicOn && '🎤 '}
-                {participantName} (나)
-              </span>
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
+                isLocalSpeaking && isMicOn ? 'bg-green-600 bg-opacity-70' : ''
+              }`}>
+                <span className="text-sm">
+                  {isLocalSpeaking && isMicOn && '🎤 '}
+                  {participantName} (나)
+                </span>
+              </div>
+              {!isCameraOn && (
+                <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
+                  <span className="text-white text-lg">📵 카메라 꺼짐</span>
+                </div>
+              )}
             </div>
-            {!isCameraOn && (
-              <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
-                <span className="text-white text-lg">📵 카메라 꺼짐</span>
+          </div>
+
+          {/* 원격 참가자들 - 오른쪽 */}
+          <div className="flex-1">
+            {participants.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 h-full">
+                {participants.map((participant) => {
+                  const isSpeaking = speakingParticipants.has(participant.identity);
+                  return (
+                    <div key={participant.identity} className="relative h-full">
+                      <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
+                        isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
+                      }`}>
+                        <video
+                          ref={getOrCreateVideoRef(participant.identity)}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <audio
+                          ref={getOrCreateAudioRef(participant.identity)}
+                          autoPlay
+                        />
+                        <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
+                          isSpeaking ? 'bg-green-600 bg-opacity-70' : ''
+                        }`}>
+                          <span className="text-sm">
+                            {isSpeaking && '🎤 '}
+                            {participant.identity}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                <div className="text-center text-gray-400">
+                  <p>다른 참가자를 기다리는 중...</p>
+                  <p className="text-sm mt-2">다른 브라우저 탭에서 같은 URL로 접속해보세요!</p>
+                </div>
               </div>
             )}
           </div>
-
-          {/* 원격 참가자들 */}
-          {participants.length > 0 && (
-            <div className="grid grid-cols-2 gap-4">
-              {participants.map((participant) => {
-                const isSpeaking = speakingParticipants.has(participant.identity);
-                return (
-                  <div key={participant.identity} className="relative">
-                    <div className={`w-full h-48 bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
-                      isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
-                    }`}>
-                      <video
-                        ref={getOrCreateVideoRef(participant.identity)}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-                      <audio
-                        ref={getOrCreateAudioRef(participant.identity)}
-                        autoPlay
-                      />
-                      <div className={`absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs ${
-                        isSpeaking ? 'bg-green-600 bg-opacity-70' : ''
-                      }`}>
-                        {isSpeaking && '🎤 '}
-                        {participant.identity}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* 참가자 없을 때 메시지 */}
-          {participants.length === 0 && (
-            <div className="text-center text-gray-400 mt-8">
-              <p>다른 참가자를 기다리는 중...</p>
-              <p className="text-sm mt-2">다른 브라우저 탭에서 같은 URL로 접속해보세요!</p>
-            </div>
-          )}
         </div>
       )}
 
