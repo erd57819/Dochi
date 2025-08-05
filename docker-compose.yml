@@ -62,18 +62,16 @@ services:
     restart: unless-stopped
     ports:
       - "7880:7880"
-      - "7881:7881" 
+      - "7881:7881"
       - "50000-50100:50000-50100/udp"
     environment:
       - LIVEKIT_KEYS=APIAhgcveqdsqqe: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
     command: 
       - --bind=0.0.0.0
       - --port=7880
-      - --rtc-port-range-start=50000
-      - --rtc-port-range-end=50100
-      - --rtc-tcp-port=7881
     networks:
       - dochi-network
+
 
 
   # Spring Boot 백엔드
