@@ -68,16 +68,16 @@ const ConflictCreatePage = () => {
         title: formData.title || '제목 없음',
         description: formData.description || '설명 없음',
         conflictType: formData.conflictType || 'ETC',
-        conflictWhen: isNaN(Number(formData.conflictWhen)) ? 0 : Number(formData.conflictWhen),
-        conflictFrequency: isNaN(Number(formData.conflictFrequency)) ? 0 : Number(formData.conflictFrequency),
-        intensity: parseInt(formData.intensity) || 0,
+        conflictWhen: Number(formData.conflictWhen) || 1,
+        conflictFrequency: Number(formData.conflictFrequency) || 1,
+        intensity: Number(formData.intensity) || 5,
         participants: formData.participants && formData.participants.trim() !== ''
           ? formData.participants
-          : '익명',
-        desiredOutcome: formData.desiredOutcome || '미입력',
+          : null,
+        desiredOutcome: formData.desiredOutcome || 'NONE',
         priority: formData.priority || 'NONE',
         talkWillingness: formData.talkWillingness || 'NONE',
-        initialEmotion: formData.initialEmotion || '무표정'
+        initialEmotion: formData.initialEmotion || 'NORMAL'
       };
 
       // sessionStorage에 데이터 저장
@@ -97,13 +97,19 @@ const ConflictCreatePage = () => {
         body: JSON.stringify(payload)
       });
 
+      console.log('Temp Response Status:', tempResponse.status);
+      const tempResponseText = await tempResponse.text();
+      console.log('Temp Response Body:', tempResponseText);
+
       if (!tempResponse.ok) {
-        throw new Error('갈등 데이터 임시 저장에 실패했습니다.');
+        throw new Error(`갈등 데이터 임시 저장 실패: ${tempResponse.status} - ${tempResponseText}`);
       }
 
-      const tempResult = await tempResponse.json();
-      const conflictId = tempResult.data || tempResult.response?.response;
+      const tempResult = JSON.parse(tempResponseText);
+      const conflictId = tempResult.data || tempResult.response?.response || tempResult.id;
       setTempConflictId(conflictId);
+
+      console.log('Generated Conflict ID:', conflictId);
 
       // 2단계: AI 분석 요청
       const analysisResponse = await fetch(`${API_BASE_URL}/conflict/analyze/${conflictId}`, {
@@ -114,19 +120,27 @@ const ConflictCreatePage = () => {
         }
       });
 
+      console.log('Analysis Response Status:', analysisResponse.status);
+
       if (!analysisResponse.ok) {
-        throw new Error('AI 분석에 실패했습니다.');
+        const analysisError = await analysisResponse.text();
+        console.log('Analysis Error:', analysisError);
+        throw new Error(`AI 분석 실패: ${analysisResponse.status}`);
       }
 
       const analysisResult = await analysisResponse.json();
-      const analysisData = analysisResult.data || analysisResult.response?.response;
+      console.log('Analysis Result:', analysisResult);
+      const analysisData = analysisResult.data || analysisResult.response?.response || analysisResult;
 
-      setAiSummary(analysisData.summary || '요약을 생성할 수 없습니다.');
-      setAiSolutions(analysisData.solutions || '해결방안을 생성할 수 없습니다.');
+      const aiSummary = analysisData.summary || analysisData.aiSummary || '요약을 생성할 수 없습니다.';
+      const aiSolutions = analysisData.solutions || analysisData.aiSolutions || '해결방안을 생성할 수 없습니다.';
+
+      setAiSummary(aiSummary);
+      setAiSolutions(aiSolutions);
 
       // AI 분석 결과 sessionStorage에 저장
-      sessionStorage.setItem('tempAiSummary', analysisData.summary || '요약을 생성할 수 없습니다.');
-      sessionStorage.setItem('tempAiSolutions', analysisData.solutions || '해결방안을 생성할 수 없습니다.');
+      sessionStorage.setItem('tempAiSummary', aiSummary);
+      sessionStorage.setItem('tempAiSolutions', aiSolutions);
 
       // 고급 AI 분석 요청
       try {
@@ -140,11 +154,14 @@ const ConflictCreatePage = () => {
 
         if (advancedResponse.ok) {
           const advancedResult = await advancedResponse.json();
-          const advancedData = advancedResult.data || advancedResult.response?.response;
+          const advancedData = advancedResult.data || advancedResult.response?.response || advancedResult;
           setAdvancedAnalysis(advancedData);
+        } else {
+          console.log('Advanced analysis failed, but continuing...');
         }
       } catch (error) {
         console.error('고급 AI 분석 오류:', error);
+        // 고급 분석 실패는 전체 플로우를 중단시키지 않음
       }
 
       // AI 분석 완료 후 바로 리포트 페이지로 이동

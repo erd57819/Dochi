@@ -19,17 +19,27 @@ const ConflictAnalysisResultPage = () => {
 
   const fetchTempConflictData = async () => {
     try {
-      // 임시 데이터 조회 - localStorage에서 가져오기 (실제 API 사용 시 수정 필요)
+      // sessionStorage에서 데이터 가져오기
       const tempData = {
-        title: sessionStorage.getItem('tempTitle') || '집안일 분담 관련 갈등',
-        description: sessionStorage.getItem('tempDescription') || '아내는 본인이 대부분의 집안일을 하고 있다고 느끼고, 남편은 퇴근 후 피곴하다는 이유로 적극적으로 참여하지 않음',
-        conflictType: sessionStorage.getItem('tempConflictType') || 'COUPLE',
-        aiSummary: sessionStorage.getItem('tempAiSummary') || '맞벌이 부부인데 집안일 분담 문제로 갈등 발생'
+        title: sessionStorage.getItem('tempTitle') || '갈등 제목',
+        description: sessionStorage.getItem('tempDescription') || '갈등 설명',
+        conflictType: sessionStorage.getItem('tempConflictType') || 'ETC',
+        aiSummary: sessionStorage.getItem('tempAiSummary') || '분석 결과를 불러오는 중입니다...',
+        aiSolutions: sessionStorage.getItem('tempAiSolutions') || '해결방안을 불러오는 중입니다...'
       };
       
+      console.log('Loaded temp data:', tempData);
       setConflictData(tempData);
     } catch (error) {
       console.error('임시 갈등 데이터 조회 실패:', error);
+      // 기본 데이터 설정
+      setConflictData({
+        title: '갈등 제목',
+        description: '갈등 설명',
+        conflictType: 'ETC',
+        aiSummary: '분석 결과를 가져오지 못했습니다.',
+        aiSolutions: '해결방안을 가져오지 못했습니다.'
+      });
     } finally {
       setIsLoading(false);
     }
