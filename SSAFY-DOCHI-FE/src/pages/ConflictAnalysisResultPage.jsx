@@ -89,187 +89,232 @@ const ConflictAnalysisResultPage = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700 mx-auto mb-4"></div>
           <p className="text-gray-600">결과를 불러오는 중...</p>
+          {/* 전문상담사 매칭 카드 */}
+          <div 
+            className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2 shadow-xl"
+            style={{ background: '#EE9278' }}
+          >
+            <h3 className="text-2xl font-bold mb-6">전문상담사 매칭</h3>
+            <p className="mb-8 leading-relaxed opacity-90">
+              나의 대화중재 기록을 확인하고<br/>
+              관리해요
+            </p>
+            <div className="absolute bottom-8 right-8">
+              <span className="text-2xl">→</span>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={hedgehogImg} alt="참견도치" className="w-10 h-10" />
-            <h1 className="text-2xl font-bold text-gray-800">참견도치</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleGoBack}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              갈등목록
-            </button>
-            <button className="text-gray-600 hover:text-gray-800">로그인</button>
-            <button className="text-gray-600 hover:text-gray-800">회원가입</button>
-            <button className="text-gray-600 hover:text-gray-800">갈등도치 커뮤니티</button>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen relative">
+      {/* 전체 배경 컨테이너 */}
+      <div className="absolute inset-0">
+        {/* 상단 배경 - F8D6B3 14% */}
+        <div 
+          className="absolute top-0 left-0 w-full" 
+          style={{ 
+            height: '45%',
+            backgroundColor: '#F8D6B3',
+            opacity: 0.14
+          }}
+        ></div>
+        
+        {/* 하단 배경 - 흰색 */}
+        <div 
+          className="absolute bottom-0 left-0 w-full" 
+          style={{ 
+            height: '55%',
+            backgroundColor: '#FFFFFF'
+          }}
+        ></div>
+      </div>
       {/* 메인 컨텐츠 */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-4 py-12 relative z-10">
         {/* 상단 메시지 */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-amber-700 mb-4">
+        <div className="text-center mb-6">
+          <h2 className="text-4xl font-bold mb-4" style={{ 
+            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             입력해주신 결과를 기반으로 리포트가 나왔어요
           </h2>
         </div>
 
         {/* 갈등 분석 카드 */}
-        <div className="bg-white rounded-3xl p-8 mb-12">
-          <h3 className="text-2xl font-bold text-center text-gray-800 mb-8">
+        <div className="p-12 mb-25">
+          <h3 className="text-3xl font-bold text-center mb-12" style={{ color: '#333333' }}>
             {conflictData?.title || '집안일 분담 관련 갈등'}
           </h3>
 
-          <div className="flex items-start gap-8">
+          <div className="flex items-start gap-20">
             {/* 고슴도치 이미지 */}
             <div className="flex-shrink-0">
-              <div className="w-48 h-48 bg-gray-200 rounded-full flex items-center justify-center">
-                <div className="flex gap-2">
-                  <span className="text-6xl">🦔</span>
-                  <span className="text-6xl">🦔</span>
-                </div>
+              <div 
+                className="w-60 h-60 rounded-full flex items-center justify-center shadow-lg"
+                style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
+              >
+                <img 
+                  src={hedgehogImg} 
+                  alt="갈등도치" 
+                  className="w-44 h-44 object-contain"
+                />
+              </div>
+              {/* 부부갈등 소제목 */}
+              <div className="text-center mt-6">
+                <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
+                  부부갈등
+                </h4>
               </div>
             </div>
 
             {/* 분석 내용 */}
-            <div className="flex-1 space-y-6">
+            <div className="flex-1 space-y-8">
               <div>
-                <h4 className="font-bold text-lg mb-2 flex items-center">
-                  <span className="w-2 h-2 bg-amber-600 rounded-full mr-2"></span>
-                  상황:
+                <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
+                  • 상황: 맞벌이 부부인데 집안일 분담 문제로 갈등 발생
                 </h4>
-                <p className="text-gray-700 leading-relaxed ml-4">
-                  {conflictData?.aiSummary || '맞벌이 부부인데 집안일 분담 문제로 갈등 발생'}
-                </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-lg mb-2 flex items-center">
-                  <span className="w-2 h-2 bg-amber-600 rounded-full mr-2"></span>
-                  원인:
+                <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
+                  • 원인: 아내는 본인이 대부분의 집안일을 하고 있다고 느끼고, 남편은 퇴근 후 피곤하다는 이유로 적극적으로 참여하지 않음
                 </h4>
-                <p className="text-gray-700 leading-relaxed ml-4">
-                  {conflictData?.description || '아내는 본인이 대부분의 집안일을 하고 있다고 느끼고, 남편은 퇴근 후 피곤하다는 이유로 적극적으로 참여하지 않음'}
-                </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-lg mb-2 flex items-center">
-                  <span className="w-2 h-2 bg-amber-600 rounded-full mr-2"></span>
-                  입장 정리:
+                <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
+                  • 입장 정리:
                 </h4>
-                <div className="space-y-3 ml-4">
-                  <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-                    <span className="font-medium text-blue-800">아내:</span>
-                    <span className="text-blue-700 ml-2">"나도 직장 다니는데 집안일을 도맡고 있어 너무 힘들어."</span>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
-                    <span className="font-medium text-green-800">남편:</span>
-                    <span className="text-green-700 ml-2">"일이 너무 힘들고 쉬고 싶어서 그랬지, 미안한 마음은 있어."</span>
+                <div className="ml-6 space-y-4">
+                  <div className="pl-4">
+                    <div className="mb-2">
+                      <span className="font-medium" style={{ color: '#8B4513' }}>아내:</span>
+                      <span className="ml-2" style={{ color: '#333333' }}>"나도 직장 다니는데 집안일을 도맡고 있어 너무 힘들어."</span>
+                    </div>
+                    <div>
+                      <span className="font-medium" style={{ color: '#8B4513' }}>남편:</span>
+                      <span className="ml-2" style={{ color: '#333333' }}>"일이 너무 힘들고 쉬고 싶어서 그랬지, 미안한 마음은 있어."</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <div className="inline-block bg-amber-100 px-6 py-2 rounded-full">
-              <h4 className="text-xl font-bold text-amber-800">
-                {conflictData?.conflictType === 'FAMILY' ? '가족갈등' : 
-                 conflictData?.conflictType === 'FRIEND' ? '친구갈등' :
-                 conflictData?.conflictType === 'COUPLE' ? '부부갈등' :
-                 conflictData?.conflictType === 'WORK' ? '직장갈등' : '기타갈등'}
-              </h4>
             </div>
           </div>
         </div>
 
         {/* 하단 메시지 */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-amber-700">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold" style={{ 
+            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             리포트를 기반으로 '맞춤 해결책'을 제안해드릴게요
           </h2>
         </div>
 
         {/* 서비스 카드들 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {/* 갈등해결하기 카드 */}
-          <div className="bg-amber-800 text-white rounded-2xl p-8 relative overflow-hidden cursor-pointer hover:bg-amber-900 transition-colors">
-            <h3 className="text-2xl font-bold mb-4">참견도치와 갈등 해결하기</h3>
-            <p className="text-amber-100 mb-6 leading-relaxed">
-              화상 대화 속 갈등과 대화를 위한, AI 갈등 도우미 갈등도치가 갈등 중재를 도와줄게요
-            </p>
-            <div className="absolute bottom-4 right-4">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-              </svg>
+        <div className="mb-16">
+          {/* 첫 번째 줄 - 2개 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* 갈등해결하기 카드 */}
+            <div 
+              className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2 shadow-xl"
+              style={{ background: '#83673f' }}
+            >
+              <h3 className="text-2xl font-bold mb-6">참견도치와 갈등 해결하기</h3>
+              <p className="mb-8 leading-relaxed opacity-90">
+                화상 대화 속 감정과 대화를 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
+              </p>
+              <div className="absolute bottom-8 right-8">
+                <span className="text-2xl">→</span>
+              </div>
+            </div>
+
+            {/* 갈등 커뮤니티 카드 */}
+            <div 
+              className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2 shadow-xl"
+              style={{ background: '#cd9f6e' }}
+            >
+              <h3 className="text-2xl font-bold mb-6">갈등 커뮤니티</h3>
+              <p className="mb-8 leading-relaxed opacity-90">
+                사람들의 다양한 갈등을<br/>
+                학인하고 함께 공유해보세요<br/>
+                전반한 토론도 참여까지 !
+              </p>
+              <div className="absolute bottom-8 right-8">
+                <span className="text-2xl">→</span>
+              </div>
             </div>
           </div>
 
-          {/* 갈등 커뮤니티 카드 */}
-          <div className="bg-amber-600 text-white rounded-2xl p-8 relative overflow-hidden cursor-pointer hover:bg-amber-700 transition-colors">
-            <h3 className="text-2xl font-bold mb-4">갈등 커뮤니티</h3>
-            <p className="text-amber-100 mb-6 leading-relaxed">
-              사람들의 다양한 갈등을 확인하고 함께 공유해보세요
-              전성한 투표로 갈정까지！
-            </p>
-            <div className="absolute bottom-4 right-4">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-              </svg>
+          {/* 두 번째 줄 - 3개 작은 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 5단계 해결 로드맵 카드 */}
+            <div 
+              className="rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2 shadow-xl"
+              style={{ background: '#f8d6b3', color: '#3d2b1f' }}
+            >
+              <h3 className="text-xl font-bold mb-4">5단계<br/>해결 로드맵</h3>
+              <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                비슷한 고민을 가진 사람<br/>
+                들과 이야기해보세요
+              </p>
+              <div className="absolute bottom-6 right-6">
+                <span className="text-xl">→</span>
+              </div>
             </div>
-          </div>
 
-          {/* 5단계 해결 로드맵 카드 */}
-          <div className="bg-amber-300 text-amber-900 rounded-2xl p-8 relative overflow-hidden cursor-pointer hover:bg-amber-400 transition-colors">
-            <h3 className="text-2xl font-bold mb-4">5단계<br/>해결 로드맵</h3>
-            <p className="text-amber-800 mb-6 leading-relaxed">
-              비슷한 고민을 가진 사람들과 이야기해보세요
-            </p>
-            <div className="absolute bottom-4 right-4">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-              </svg>
+            {/* 토닥토닥 서비스 카드 */}
+            <div 
+              className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2 shadow-xl"
+              style={{ background: '#7F5539' }}
+            >
+              <h3 className="text-xl font-bold mb-4">토닥토닥 서비스</h3>
+              <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
+              </p>
+              <div className="absolute bottom-6 right-6">
+                <span className="text-xl">→</span>
+              </div>
             </div>
-          </div>
 
-          {/* 토닥토닥 서비스 카드 */}
-          <div className="bg-amber-800 text-white rounded-2xl p-8 relative overflow-hidden cursor-pointer hover:bg-amber-900 transition-colors">
-            <h3 className="text-2xl font-bold mb-4">토닥토닥 서비스</h3>
-            <p className="text-amber-100 mb-6 leading-relaxed">
-              참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줄게요
-            </p>
-            <div className="absolute bottom-4 right-4">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-              </svg>
+            {/* 전문상담사 매칭 카드 */}
+            <div 
+              className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2 shadow-xl"
+              style={{ background: '#EE9278' }}
+            >
+              <h3 className="text-xl font-bold mb-4">전문상담사 매칭</h3>
+              <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                나의 대화중재 기록을 확인하고<br/>
+                관리해요
+              </p>
+              <div className="absolute bottom-6 right-6">
+                <span className="text-xl">→</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* 하단 버튼들 */}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-6">
           <button
             onClick={handleNewConflict}
-            className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
+            className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium"
+            style={{ background: '#696969' }}
           >
             다시 작성하기
           </button>
           <button
             onClick={handleSaveConflict}
-            className="px-6 py-3 bg-amber-700 text-white rounded-xl hover:bg-amber-800 transition-colors"
+            className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium"
+            style={{ background: '#8B4513' }}
             disabled={isLoading}
           >
             {isLoading ? '저장 중...' : '갈등 카드 저장하기'}

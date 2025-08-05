@@ -77,7 +77,7 @@ const ConflictCreatePage = () => {
         desiredOutcome: formData.desiredOutcome || 'NONE',
         priority: formData.priority || 'NONE',
         talkWillingness: formData.talkWillingness || 'NONE',
-        initialEmotion: formData.initialEmotion || 'NORMAL'
+        initialEmotion: formData.initialEmotion || 'ETC'
       };
 
       // sessionStorage에 데이터 저장
