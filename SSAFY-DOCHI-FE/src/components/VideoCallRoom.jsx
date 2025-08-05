@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import useAuthStore from '../stores/AuthStore';
 import apiClient from '../config/axios';
+import * as faceapi from 'face-api.js';
 
 const VideoCallRoom = () => {
   // 인증 스토어에서 토큰 가져오기
@@ -73,6 +74,11 @@ const VideoCallRoom = () => {
   const recognitionRef = useRef(null);
   const speechTimeoutRef = useRef(null);
   const conversationLogRef = useRef([]);
+  
+  // 표정 분석 관련 refs
+  const faceApiModelsLoaded = useRef(false);
+  const emotionDetectionInterval = useRef(null);
+  const remoteEmotionIntervals = useRef(new Map());
 
   // 로컬 비디오 트랙 연결을 위한 useEffect - 실제 연결 수행
   useEffect(() => {
@@ -210,16 +216,36 @@ const VideoCallRoom = () => {
     }
   }, [participants, room]);
 
-  // 컴포넌트 마운트시 정리만 등록 (자동 연결 제거)
+  // 컴포넌트 마운트시 face-api.js 모델 로드
   useEffect(() => {
     if (!isLoggedIn) {
       setError('로그인이 필요합니다');
     }
     
+    // Face-API 모델 로드
+    loadFaceApiModels();
+    
     return () => {
       leaveRoom();
     };
   }, [isLoggedIn]);
+
+  // Face-API 모델 로드
+  const loadFaceApiModels = async () => {
+    try {
+      console.log('Face-API 모델 로딩 시작...');
+      
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceExpressionNet.loadFromUri('/models')
+      ]);
+      
+      faceApiModelsLoaded.current = true;
+      console.log('Face-API 모델 로딩 완료');
+    } catch (error) {
+      console.error('Face-API 모델 로딩 실패:', error);
+    }
+  };
 
   // 룸 참가 함수
   const joinRoom = async () => {
@@ -245,6 +271,11 @@ const VideoCallRoom = () => {
       
       setRoom(newRoom);
       setIsConnected(true);
+      
+      // 표정 분석 시작
+      setTimeout(() => {
+        startEmotionDetection();
+      }, 2000); // 비디오 연결 후 2초 뒤 시작
       
       console.log('룸 연결 성공!');
       
@@ -291,6 +322,16 @@ const VideoCallRoom = () => {
       
       // 참가자 목록 업데이트 (새 참가자가 트랙을 publish한 경우)
       updateParticipants(room);
+      
+      // 새 참가자 비디오 트랙 시 표정 분석 시작
+      if (track.kind === Track.Kind.Video && faceApiModelsLoaded.current) {
+        setTimeout(() => {
+          const videoRef = remoteVideoRefs.current.get(participant.identity);
+          if (videoRef?.current) {
+            startRemoteEmotionDetection(participant.identity, videoRef.current);
+          }
+        }, 1000);
+      }
       
       if (track.kind === Track.Kind.Video) {
         // Ref 기반 비디오 연결 - DOM 동기화 문제 해결
@@ -625,6 +666,107 @@ const VideoCallRoom = () => {
     setCurrentSpeech({ speaker: null, text: '' });
   };
   
+  // 표정 분석 시작
+  const startEmotionDetection = () => {
+    if (!faceApiModelsLoaded.current) {
+      console.warn('Face-API 모델이 아직 로드되지 않았습니다.');
+      return;
+    }
+
+    // 로컬 비디오 표정 분석
+    if (localVideoRef.current) {
+      startLocalEmotionDetection();
+    }
+
+    // 원격 참가자 표정 분석
+    participants.forEach(participant => {
+      const videoRef = remoteVideoRefs.current.get(participant.identity);
+      if (videoRef?.current) {
+        startRemoteEmotionDetection(participant.identity, videoRef.current);
+      }
+    });
+  };
+
+  // 로컬 표정 분석
+  const startLocalEmotionDetection = () => {
+    if (emotionDetectionInterval.current) {
+      clearInterval(emotionDetectionInterval.current);
+    }
+
+    emotionDetectionInterval.current = setInterval(async () => {
+      if (localVideoRef.current && faceApiModelsLoaded.current) {
+        try {
+          const detections = await faceapi
+            .detectAllFaces(localVideoRef.current, new faceapi.TinyFaceDetectorOptions())
+            .withFaceExpressions();
+
+          if (detections.length > 0) {
+            const expressions = detections[0].expressions;
+            updateEmotionScores(participantName, expressions);
+          }
+        } catch (error) {
+          console.error('로컬 표정 분석 오류:', error);
+        }
+      }
+    }, 1000); // 1초마다 분석
+  };
+
+  // 원격 참가자 표정 분석
+  const startRemoteEmotionDetection = (participantId, videoElement) => {
+    // 기존 인터벌 정리
+    const existingInterval = remoteEmotionIntervals.current.get(participantId);
+    if (existingInterval) {
+      clearInterval(existingInterval);
+    }
+
+    const interval = setInterval(async () => {
+      if (videoElement && faceApiModelsLoaded.current) {
+        try {
+          const detections = await faceapi
+            .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
+            .withFaceExpressions();
+
+          if (detections.length > 0) {
+            const expressions = detections[0].expressions;
+            const displayName = getParticipantDisplayName(participantId);
+            updateEmotionScores(displayName, expressions);
+          }
+        } catch (error) {
+          console.error(`${participantId} 표정 분석 오류:`, error);
+        }
+      }
+    }, 1000);
+
+    remoteEmotionIntervals.current.set(participantId, interval);
+  };
+
+  // 감정 점수 업데이트
+  const updateEmotionScores = (participantName, expressions) => {
+    setEmotionScores(prev => ({
+      ...prev,
+      [participantName]: {
+        angry: Math.round(expressions.angry * 100),
+        sad: Math.round(expressions.sad * 100),
+        happy: Math.round(expressions.happy * 100),
+        surprised: Math.round(expressions.surprised * 100),
+        neutral: Math.round(expressions.neutral * 100)
+      }
+    }));
+  };
+
+  // 표정 분석 중지
+  const stopEmotionDetection = () => {
+    if (emotionDetectionInterval.current) {
+      clearInterval(emotionDetectionInterval.current);
+      emotionDetectionInterval.current = null;
+    }
+
+    remoteEmotionIntervals.current.forEach(interval => {
+      clearInterval(interval);
+    });
+    remoteEmotionIntervals.current.clear();
+  };
+
   // 갈등 분석 및 중재 타이밍 결정
   const analyzeConflictAndTiming = async (text, speaker) => {
     // 1. 텍스트 기반 갈등 지표
@@ -652,9 +794,18 @@ const VideoCallRoom = () => {
       return (currTime - prevTime) < 5000; // 5초 이내 빠른 주고받기
     }).length;
     
-    // 3. 갈등 수준 업데이트
+    // 3. 표정 기반 갈등 지표
+    let emotionConflictScore = 0;
+    const speakerEmotions = emotionScores[speaker];
+    if (speakerEmotions) {
+      emotionConflictScore += speakerEmotions.angry * 0.5; // 화남 50% 가중치
+      emotionConflictScore += speakerEmotions.sad * 0.2; // 슬픔 20% 가중치  
+      emotionConflictScore -= speakerEmotions.happy * 0.3; // 기쁨 -30% 가중치
+    }
+
+    // 4. 갈등 수준 업데이트 (텍스트 + 대화패턴 + 표정)
     const newConflictLevel = Math.min(100, Math.max(0, 
-      conflictLevel + textConflictScore + (rapidExchanges * 10)
+      conflictLevel + textConflictScore + (rapidExchanges * 10) + emotionConflictScore
     ));
     setConflictLevel(newConflictLevel);
     
@@ -713,10 +864,44 @@ const VideoCallRoom = () => {
       if (initialized) {
         setSttEnabled(true);
         recognitionRef.current?.start();
+        
+        // 테스트용: 가짜 원격 참가자 메시지 시뮬레이션
+        startFakeRemoteMessages();
       }
     } else {
       setSttEnabled(false);
       recognitionRef.current?.stop();
+      stopFakeRemoteMessages();
+    }
+  };
+
+  // 테스트용 가짜 원격 메시지
+  const fakeRemoteMessagesRef = useRef(null);
+  const fakeMessages = [
+    "안녕하세요!",
+    "오늘 회의 어떻게 진행할까요?",
+    "그 문제는 조금 복잡한 것 같은데요",
+    "다른 방법을 생각해보면 어떨까요?",
+    "네, 좋은 아이디어네요"
+  ];
+
+  const startFakeRemoteMessages = () => {
+    let messageIndex = 0;
+    fakeRemoteMessagesRef.current = setInterval(() => {
+      if (participants.length > 0) {
+        const remoteParticipant = getParticipantDisplayName(participants[0].identity);
+        const fakeMessage = fakeMessages[messageIndex % fakeMessages.length];
+        
+        handleSpeechResult(remoteParticipant, fakeMessage);
+        messageIndex++;
+      }
+    }, 15000); // 15초마다 가짜 메시지
+  };
+
+  const stopFakeRemoteMessages = () => {
+    if (fakeRemoteMessagesRef.current) {
+      clearInterval(fakeRemoteMessagesRef.current);
+      fakeRemoteMessagesRef.current = null;
     }
   };
 
@@ -1063,6 +1248,11 @@ const VideoCallRoom = () => {
 
   // 룸 나가기
   const leaveRoom = async () => {
+    // 표정 분석 정리
+    stopEmotionDetection();
+    setEmotionScores({});
+    setConflictLevel(0);
+    
     // STT 정리
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -1070,6 +1260,7 @@ const VideoCallRoom = () => {
     if (speechTimeoutRef.current) {
       clearTimeout(speechTimeoutRef.current);
     }
+    stopFakeRemoteMessages(); // 가짜 메시지 정리
     setSttEnabled(false);
     setAiMediationEnabled(false);
     setConversations([]);
@@ -1295,6 +1486,15 @@ const VideoCallRoom = () => {
                 </div>
               </div>
               
+              {/* 테스트 모드 안내 */}
+              {sttEnabled && participants.length > 0 && (
+                <div className="bg-yellow-600 bg-opacity-20 border border-yellow-500 rounded p-2 mb-2">
+                  <div className="text-xs text-yellow-300">
+                    🧪 테스트 모드: 상대방 메시지가 15초마다 자동 생성됩니다
+                  </div>
+                </div>
+              )}
+              
               {/* 갈등 수준 표시 */}
               {sttEnabled && conversations.length > 0 && (
                 <div className="mb-3">
@@ -1317,6 +1517,32 @@ const VideoCallRoom = () => {
                       ⚠️ 대화 분위기가 좋지 않습니다
                     </div>
                   )}
+                </div>
+              )}
+              
+              {/* 표정 분석 결과 */}
+              {isConnected && Object.keys(emotionScores).length > 0 && (
+                <div className="mb-3">
+                  <div className="text-xs text-gray-400 mb-2">😊 표정 분석</div>
+                  {Object.entries(emotionScores).map(([name, scores]) => (
+                    <div key={name} className="mb-2">
+                      <div className="text-xs text-gray-300 mb-1">{name}</div>
+                      <div className="flex gap-1 text-xs">
+                        {scores.angry > 10 && (
+                          <span className="bg-red-600 px-1 rounded">😠 {scores.angry}%</span>
+                        )}
+                        {scores.sad > 10 && (
+                          <span className="bg-blue-600 px-1 rounded">😢 {scores.sad}%</span>
+                        )}
+                        {scores.happy > 10 && (
+                          <span className="bg-green-600 px-1 rounded">😊 {scores.happy}%</span>
+                        )}
+                        {scores.surprised > 15 && (
+                          <span className="bg-yellow-600 px-1 rounded">😮 {scores.surprised}%</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
               
