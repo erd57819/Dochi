@@ -63,7 +63,7 @@ const CommunityPage = () => {
     }
 
     try {
-      const result = await likeApi.togglePostLike(postId, likeType);
+      const result = await likeApi.togglePostLike(postId, user.id, likeType);
       
       // 게시글 목록에서 해당 게시글의 좋아요 정보 업데이트
       setPosts(prevPosts => 
@@ -82,7 +82,7 @@ const CommunityPage = () => {
       console.log('게시글 좋아요 처리 성공:', result);
     } catch (error) {
       console.error('게시글 좋아요 처리 실패:', error);
-      alert('좋아요 처리에 실패했습니다.');
+      alert(error.message || '좋아요 처리에 실패했습니다.');
     }
   };
 
