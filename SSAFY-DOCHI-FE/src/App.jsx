@@ -25,6 +25,8 @@ import ConflictDetailPage from './pages/ConflictDetailPage';
 import MyPage from './pages/MyPage';
 import ProfileEditPage from './pages/ProfileEditPage';
 import PasswordChangePage from './pages/PasswordChangePage';
+import RoadmapPage from './pages/RoadmapPage';
+import ExpertMatchingPage from './pages/ExpertMatchingPage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
 
@@ -62,6 +64,8 @@ const App = () => {
             <Route path="/voice-demo" element={<VoiceDemoPage />} />
             <Route path="/stt" element={<STTPage />} />
             <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
+            <Route path="/roadmap" element={<RoadmapPage />} />
+            <Route path="/expert-matching" element={<ExpertMatchingPage />} />
 
           </Routes>
         </main>
