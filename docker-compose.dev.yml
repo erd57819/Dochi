@@ -111,8 +111,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /c/SSAFY/commonPJ/S13P11C209/mkcert/localhost.pem:/etc/ssl/certs/localhost.pem:ro
-      - /c/SSAFY/commonPJ/S13P11C209/mkcert/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
+      - ./mkcert/localhost.pem:/etc/ssl/certs/localhost.pem:ro
+      - ./mkcert/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
     depends_on:
       - dochi-frontend
       - dochi-backend
