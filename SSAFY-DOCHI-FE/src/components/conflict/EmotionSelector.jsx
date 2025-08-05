@@ -5,32 +5,26 @@ const EmotionSelector = ({ emotions, value, onChange }) => {
     { value: 'ANGER', label: '분노', icon: '😠' },
     { value: 'SADNESS', label: '슬픔', icon: '😢' },
     { value: 'FRUSTRATION', label: '좌절', icon: '😤' },
-    { value: 'FEAR', label: '불안', icon: '😰' },
-    { value: 'DISAPPOINTMENT', label: '실망', icon: '😞' },
-    { value: 'CONFUSION', label: '혼란', icon: '😵' },
-    { value: 'HURT', label: '상처', icon: '💔' },
-    { value: 'WORRY', label: '걱정', icon: '😟' },
-    { value: 'STRESS', label: '스트레스', icon: '😫' },
-    { value: 'LONELY', label: '외로움', icon: '😔' }
+    { value: 'ETC', label: '기타', icon: '🤔' }
   ];
 
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-4 gap-4">
       {emotionList.map((emotion) => (
         <button
           key={emotion.value}
           type="button"
           onClick={() => onChange(emotion.value)}
           className={`
-            p-3 rounded-xl transition-all duration-200
+            p-6 rounded-xl transition-all duration-200 border-2
             ${value === emotion.value 
-              ? 'bg-orange-100 border-2 border-orange-500 shadow-md' 
-              : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+              ? 'bg-amber-50 border-amber-700 shadow-md transform scale-105' 
+              : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
             }
           `}
         >
-          <div className="text-2xl mb-1">{emotion.icon}</div>
-          <div className="text-xs font-medium">{emotion.label}</div>
+          <div className="text-4xl mb-3">{emotion.icon}</div>
+          <div className="text-lg font-medium">{emotion.label}</div>
         </button>
       ))}
     </div>
