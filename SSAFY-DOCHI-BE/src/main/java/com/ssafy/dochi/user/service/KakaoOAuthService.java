@@ -49,7 +49,18 @@ public class KakaoOAuthService {
 
         if (optionalMember.isEmpty()) {
             String encodedPassword = passwordEncoder.encode(socialDefaultPassword);
-            user = new User(kakaoUser.getName(), kakaoUser.getEmail(), encodedPassword, true, kakaoUser.getProfileImageUrl());
+            user = new User(
+                    kakaoUser.getEmail(),
+                    kakaoUser.getName(),
+                    kakaoUser.getName(),
+                    kakaoUser.getEmail(),
+                    encodedPassword,
+                    0,
+                    "NONE",
+                    "NULL",
+                    kakaoUser.getProfileImageUrl(),
+                    true
+            );
             userDao.save(user);
             isNewUser = true;
         } else {
@@ -72,6 +83,7 @@ public class KakaoOAuthService {
     }
 
     private String getAccessToken(String code) {
+        System.out.println("➡ redirect_uri = " + redirectUri);
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
