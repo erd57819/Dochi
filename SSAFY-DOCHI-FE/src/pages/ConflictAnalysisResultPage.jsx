@@ -17,10 +17,146 @@ const ConflictAnalysisResultPage = () => {
     }
   }, [tempId]);
 
+  // AI 분석 함수들 - 실제 받은 데이터를 기반으로 분석
+  const generateAIAnalysis = (conflictData) => {
+    if (!conflictData) return {};
+
+    const { 
+      title, 
+      description, 
+      conflictType, 
+      intensity, 
+      initialEmotion, 
+      priority, 
+      talkWillingness, 
+      desiredOutcome 
+    } = conflictData;
+
+    // 감정 분석
+    const analyzeEmotion = () => {
+      const emotionMap = {
+        ANGER: '분노와 격한 감정',
+        SADNESS: '슬픔과 실망감',
+        FRUSTRATION: '좌절감과 답답함',
+        ETC: '복합적인 감정'
+      };
+      
+      const currentEmotion = emotionMap[initialEmotion] || '알 수 없는 감정';
+      const intensityText = intensity >= 8 ? '매우 강한' : intensity >= 6 ? '강한' : intensity >= 4 ? '보통' : '약한';
+      
+      // 갈등 내용에 따른 감정 분석 개선
+      let specificEmotion = '';
+      if (description.includes('사기') || description.includes('속았')) {
+        specificEmotion = '배신감과 분노, 그리고 믿었던 사람에 대한 실망감이';
+      } else if (description.includes('무시') || description.includes('차별')) {
+        specificEmotion = '무력감과 억울함이';
+      } else if (description.includes('돈') || description.includes('비용') || description.includes('경제')) {
+        specificEmotion = '경제적 부담감과 불공평함에 대한 분노가';
+      } else {
+        specificEmotion = `${currentEmotion}이`;
+      }
+      
+      return `현재 ${specificEmotion} ${intensityText} 갈등 강도(${intensity}/10)로 나타나고 있습니다. ${intensity >= 7 ? '즉각적인 해결이 필요한 상황입니다.' : '시간을 두고 차근차근 접근할 수 있는 상황입니다.'}`;
+    };
+
+    // 갈등 원인 분석
+    const analyzeConflict = () => {
+      // 갈등 내용에 따른 구체적 분석
+      let specificAnalysis = '';
+      
+      if (description.includes('사기') || description.includes('속았')) {
+        if (description.includes('메이플') || description.includes('게임')) {
+          specificAnalysis = '온라인 게임 내에서의 사기 행위로 인한 신뢰 파괴가 주요 원인입니다. 특히 알던 사람에게 당한 사기는 더욱 큰 배신감을 낳니다';
+        } else {
+          specificAnalysis = '사기 행위로 인한 신뢰 관계의 파괴가 주요 원인입니다';
+        }
+      } else {
+        const typeAnalysis = {
+          WORK: '업무 환경에서의 의견 차이와 역할 갈등',
+          FAMILY: '가족 구성원 간의 가치관 차이와 기대 불일치',
+          FRIEND: '친구 관계에서의 오해와 소통 부족',
+          COUPLE: '연인/부부 간의 감정적 거리감과 생활 패턴 차이',
+          NEIGHBOR: '생활 반경 내에서의 이해관계 충돌',
+          FINANCIAL: '금전적 가치관과 우선순위의 차이',
+          ONLINE: '온라인 소통의 한계와 오해, 익명성으로 인한 무책임한 행동',
+          ETC: '복합적인 원인'
+        };
+        specificAnalysis = typeAnalysis[conflictType] || '복합적인 원인';
+      }
+      
+      return `${specificAnalysis}이 갈등의 근본 원인으로 분석됩니다. 온라인 환경에서는 직접 대면하지 않은 채로 웅심이 커질 수 있으며, 문제 해결이 더욱 어려울 수 있습니다.`;
+    };
+
+    // 내 입장 분석
+    const analyzeMyPosition = () => {
+      const priorityContext = {
+        RELATIONSHIP: '관계 보전을 중시하면서도',
+        SOLUTION: '문제 해결을 우선시하면서',
+        SELF_CARE: '자신의 보호를 고려하면서',
+        PREVENTION: '재발 방지를 염두에 두면서',
+        NONE: '명확한 우선순위 없이'
+      };
+      
+      const talkContext = {
+        YES: '적극적으로 대화하고 싶어하며',
+        MAYBE: '상황에 따라 대화할 의향이 있으며',
+        NO: '현재는 대화하기 어려운 상황이지만',
+        NONE: '대화에 대한 입장이 불분명하며'
+      };
+      
+      // 갈등 내용에 따른 구체적 분석
+      let specificPosition = '';
+      if (description.includes('사기') || description.includes('속았')) {
+        specificPosition = '사기를 당한 피해자로서 배신감과 분노를 느끼며, 상대방으로부터 사과와 보상을 받고 싶어합니다. 또한 이런 일이 다시 반복되지 않기를 바란다';
+      } else if (description.includes('돈') || description.includes('비용')) {
+        specificPosition = '경제적 부담으로 인한 스트레스를 받고 있으며, 보다 공평한 비용 분담을 원하고 있다';
+      } else {
+        specificPosition = `"${desiredOutcome || '문제가 해결되기를 바라고 있다'}"라는 목표를 가지고 있다`;
+      }
+      
+      return `${priorityContext[priority] || '상황을 종합적으로 고려하면서'} ${talkContext[talkWillingness] || '상황을 지켜보고 있으며'}, ${specificPosition}. 현재 감정적으로 상처받은 상태로 명확한 해결책을 찾고자 합니다.`;
+    };
+
+    // 상대방 입장 추정
+    const estimatePartnerPosition = () => {
+      let partnerAnalysis = '';
+      
+      // 갈등 내용에 따른 구체적 분석
+      if (description.includes('사기') || description.includes('속았')) {
+        if (description.includes('메이플') || description.includes('게임')) {
+          partnerAnalysis = '온라인 게임에서의 사기 행위를 저지른 상대방은 자신의 행동이 상대방에게 얼마나 큰 상처를 주었는지 인식하지 못하고 있을 수 있습니다. 아니면 장난으로 생각하거나, 게임 내에서의 일이라 현실과 다르다고 합리화하고 있을 가능성도 있습니다';
+        } else {
+          partnerAnalysis = '사기 행위를 저지른 상대방은 자신의 행동에 대한 죄책감을 느끼거나, 아니면 발각되지 않을 것이라 생각하고 있을 수 있습니다';
+        }
+      } else if (conflictType === 'WORK') {
+        partnerAnalysis = '업리에 집중하다 보니 다른 사람의 감정을 고려할 여유가 없었을 수 있습니다';
+      } else if (conflictType === 'FAMILY') {
+        partnerAnalysis = '가족 내에서의 역할과 책임에 대한 다른 인식을 가지고 있을 수 있습니다';
+      } else if (conflictType === 'COUPLE') {
+        partnerAnalysis = '관계에서의 기대치와 소통 방식에 대한 다른 견해를 가지고 있을 수 있습니다';
+      } else {
+        partnerAnalysis = '각자의 상황과 배경이 다르기 때문에 문제에 대한 인식과 해결 방향에 차이가 있을 수 있습니다';
+      }
+      
+      // 갈등 강도에 따른 추가 분석
+      const intensityContext = intensity >= 7 
+        ? '갈등의 심각성을 아직 충분히 인식하지 못했거나, 자신의 지위나 이익을 지키려고 할 수 있습니다' 
+        : '시간이 지나면 자연스럽게 해결될 것이라고 생각하고 있을 수 있습니다';
+      
+      return `상대방은 ${partnerAnalysis}. ${intensityContext}. 직접적인 대면을 피하고 싶어하거나, 아직 문제의 심각성을 제대로 인식하지 못했을 가능성이 높습니다.`;
+    };
+
+    return {
+      emotionAnalysis: analyzeEmotion(),
+      conflictAnalysis: analyzeConflict(),
+      myPosition: analyzeMyPosition(),
+      partnerPosition: estimatePartnerPosition()
+    };
+  };
   const fetchTempConflictData = async () => {
     try {
-      // sessionStorage에서 데이터 가져오기
-      const tempData = {
+      // sessionStorage에서 데이터 가져오기 (실제 데이터 우선)
+      const basicData = {
         title: sessionStorage.getItem('tempTitle') || '갈등 제목',
         description: sessionStorage.getItem('tempDescription') || '갈등 설명',
         conflictType: sessionStorage.getItem('tempConflictType') || 'ETC',
@@ -28,38 +164,60 @@ const ConflictAnalysisResultPage = () => {
         aiSolutions: sessionStorage.getItem('tempAiSolutions') || '해결방안을 불러오는 중입니다...',
         // ConflictDetailPage 스타일로 추가 데이터
         createdAt: new Date().toISOString(),
-        intensity: sessionStorage.getItem('tempIntensity') || '7',
+        intensity: parseInt(sessionStorage.getItem('tempIntensity')) || 7,
         initialEmotion: sessionStorage.getItem('tempEmotion') || 'FRUSTRATION',
         priority: sessionStorage.getItem('tempPriority') || 'SOLUTION',
         talkWillingness: sessionStorage.getItem('tempTalkWillingness') || 'MAYBE',
         desiredOutcome: sessionStorage.getItem('tempDesiredOutcome') || '문제를 해결하고 싶어요',
-        // 가짜 AI 분석 데이터 (예시용)
-        emotionAnalysis: '현재 감정 상태는 주로 좌절감과 피로감이 주를 이루고 있습니다. 서로에 대한 이해와 배려가 필요한 상황으로 보입니다.',
-        conflictAnalysis: '집안일 분담에 대한 인식의 차이와 소통 부족이 주요 원인으로 분석됩니다. 양자간 역할 분담에 대한 명확한 합의가 필요합니다.',
-        // AI가 생성한 입장 정리 (실제로는 AI API에서 받아올 데이터)
-        myPosition: '집안일을 혼자 감당하기엔 너무 벅차고, 파트너의 도움과 이해가 필요한 상황입니다. 공평한 분담을 통해 서로 배려하며 살고 싶습니다.',
-        partnerPosition: '직장에서의 피로와 스트레스로 인해 집에서는 휴식을 취하고 싶어하는 마음이 있으나, 파트너의 부담을 덜어주어야 한다는 것도 알고 있습니다.',
-        relationshipHealthScore: 75,
-        communicationScore: 65,
-        trustScore: JSON.stringify({ score: 70, analysis: '기본적인 신뢰는 있으나 소통 개선이 필요합니다.' }),
+      };
+      
+      console.log('sessionStorage에서 가져온 기본 데이터:', basicData);
+
+      // 실제 데이터를 기반으로 AI 분석 수행
+      const aiAnalysis = generateAIAnalysis(basicData);
+      console.log('AI 분석 결과:', aiAnalysis);
+      
+      // AI 분석 결과를 sessionStorage에서 가져오되, 없으면 실시간 분석 결과 사용
+      const finalEmotionAnalysis = sessionStorage.getItem('tempEmotionAnalysis') || aiAnalysis.emotionAnalysis;
+      const finalConflictAnalysis = sessionStorage.getItem('tempConflictAnalysis') || aiAnalysis.conflictAnalysis;
+      const finalMyPosition = sessionStorage.getItem('tempMyPosition') || aiAnalysis.myPosition;
+      const finalPartnerPosition = sessionStorage.getItem('tempPartnerPosition') || aiAnalysis.partnerPosition;
+      
+      // 최종 데이터 조합
+      const tempData = {
+        ...basicData,
+        // AI 분석 결과 적용
+        emotionAnalysis: finalEmotionAnalysis,
+        conflictAnalysis: finalConflictAnalysis,
+        myPosition: finalMyPosition,
+        partnerPosition: finalPartnerPosition,
+        // 기본 지수들 (데이터 기반으로 산출)
+        relationshipHealthScore: Math.max(20, 100 - (basicData.intensity * 8) + (basicData.talkWillingness === 'YES' ? 20 : basicData.talkWillingness === 'MAYBE' ? 10 : 0)),
+        communicationScore: Math.max(10, 80 - (basicData.intensity * 6) + (basicData.talkWillingness === 'YES' ? 25 : basicData.talkWillingness === 'MAYBE' ? 15 : 0)),
+        trustScore: JSON.stringify({ 
+          score: Math.max(30, 90 - (basicData.intensity * 7) + (basicData.priority === 'RELATIONSHIP' ? 15 : 0)), 
+          analysis: '기본적인 신뢰는 있으나 소통 개선이 필요합니다.' 
+        }),
         cooperationScore: JSON.stringify({ 
-          score: 60, 
+          score: Math.max(25, 75 - (basicData.intensity * 5) + (basicData.priority === 'SOLUTION' ? 15 : 0)), 
           improvement_suggestions: [
-            '집안일 역할 분담표 작성하기',
-            '주간 가족 회의 시간 마련하기',
-            '서로의 업무 강도 이해하기'
+            '서로의 입장을 경청하는 시간 마련하기',
+            '갈등 상황에 대한 객관적 분석 시도하기',
+            '공통의 목표와 대안 찾아보기',
+            '전문가나 중재자의 도움 고려하기'
           ]
         }),
-        priorityRecommendation: '관계 유지와 문제 해결을 병행하는 접근법을 추천합니다. 먼저 서로의 입장을 충분히 듣고 이해한 후, 현실적인 해결방안을 함께 찾아보세요.',
+        priorityRecommendation: basicData.intensity >= 8 ? '즉각적인 전문가 도움과 직접적인 대화를 추천합니다.' : basicData.priority === 'RELATIONSHIP' ? '관계 유지와 문제 해결을 병행하는 접근법을 추천합니다.' : '문제 해결에 집중하면서 관계도 고려하는 균형적 접근을 추천합니다.',
         recommendedActions: JSON.stringify([
-          '집안일에 대한 서로의 인식과 기대치 점검하기',
-          '일주일 단위로 역할 분담 계획 세우기',
-          '서로의 업무 스케줄과 에너지 레벨 대화하기',
-          '외부 도움(가사 도움, 가전제품 활용) 방안 검토하기'
+          `${basicData.conflictType} 갈등의 특성을 이해하고 상황 분석하기`,
+          '자신의 감정을 정리하고 객관적 시각 갖기',
+          basicData.talkWillingness === 'YES' ? '적극적인 대화로 문제 해결 시도하기' : '대화 가능한 환경과 시점 마련하기',
+          '구체적이고 실현 가능한 해결책 모색하기',
+          '갈등 해결 후 관계 정상화 및 예방 계획 세우기'
         ])
       };
       
-      console.log('Loaded temp data:', tempData);
+      console.log('AI가 분석한 데이터:', tempData);
       setConflictData(tempData);
     } catch (error) {
       console.error('임시 갈등 데이터 조회 실패:', error);
@@ -164,23 +322,19 @@ const ConflictAnalysisResultPage = () => {
 
   // 각 서비스 페이지로 이동하는 핸들러들
   const handleConflictResolution = () => {
-    navigate('/conflict-resolution'); // 참견도치와 갈등 해결하기
+    navigate('/video-call'); // 갈등해결하기 -> video-call
+  };
+
+  const handleComfort = () => {
+    navigate('/comfort'); // 토닥토닥 -> comfort
   };
 
   const handleCommunity = () => {
-    navigate('/community'); // 갈등 커뮤니티 (토닥토닥 서비스 내용)
-  };
-
-  const handleRoadmap = () => {
-    navigate('/roadmap'); // 5단계 해결 로드맵
-  };
-
-  const handleChatbot = () => {
-    navigate('/chatbot'); // 토닥토닥 서비스 (커뮤니티 내용)
+    navigate('/community'); // 커뮤니티 -> community
   };
 
   const handleExpertMatching = () => {
-    navigate('/expert-matching'); // 전문상담사 매칭
+    navigate('/expert-matching'); // 상담사 -> expert-matching
   };
 
   const handleNewConflict = () => {
@@ -213,223 +367,238 @@ const ConflictAnalysisResultPage = () => {
   }
 
   return (
-    <div className="min-h-screen relative">
-      {/* 전체 배경 컨테이너 */}
-      <div className="absolute inset-0">
-        {/* 상단 배경 - F8D6B3 14% */}
+    <div className="relative min-h-screen">
+      {/* 상단 배경 영역 */}
+      <div className="w-full relative">
+        {/* 배경 오버레이 */}
         <div 
-          className="absolute top-0 left-0 w-full" 
+          className="absolute inset-0" 
           style={{ 
-            height: '45%',
             backgroundColor: '#F8D6B3',
-            opacity: 0.14
+            opacity: 0.14,
+            zIndex: 1
           }}
         ></div>
         
-        {/* 하단 배경 - 흰색 */}
-        <div 
-          className="absolute bottom-0 left-0 w-full" 
-          style={{ 
-            height: '55%',
-            backgroundColor: '#FFFFFF'
-          }}
-        ></div>
-      </div>
-      {/* 메인 컨텐츠 */}
-      <main className="max-w-5xl mx-auto px-4 py-12 relative z-10">
-        {/* 상단 메시지 */}
-        <div className="text-center mb-6">
-          <h2 className="text-4xl font-bold mb-4" style={{ 
-            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            입력해주신 결과를 기반으로 리포트가 나왔어요
-          </h2>
-        </div>
+        {/* 메인 컨텐츠 - 상단 부분 */}
+        <main className="max-w-5xl mx-auto px-4 py-12 relative z-10">
+          {/* 상단 메시지 */}
+          <div className="text-center mb-6">
+            <h2 className="text-4xl font-bold mb-4" style={{ 
+              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              입력해주신 결과를 기반으로 리포트가 나왔어요
+            </h2>
+          </div>
 
-        {/* 갈등 분석 카드 */}
-        <div className="p-12 mb-25">
-          <h3 className="text-3xl font-bold text-center mb-12" style={{ color: '#333333' }}>
-            {conflictData?.title || '집안일 분담 관련 갈등'}
-          </h3>
+          {/* 갈등 분석 카드 */}
+          <div className="p-12 mb-12">
+            <h3 className="text-3xl font-bold text-center mb-12" style={{ color: '#333333' }}>
+              {conflictData?.title || '갈등 제목'}
+            </h3>
 
-          <div className="flex items-start gap-20">
-            {/* 고슴도치 이미지 */}
-            <div className="flex-shrink-0">
-              <div 
-                className="w-60 h-60 rounded-full flex items-center justify-center shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
-              >
-                <img 
-                  src={hedgehogImg} 
-                  alt="갈등도치" 
-                  className="w-44 h-44 object-contain"
-                />
-              </div>
-              {/* 부부갈등 소제목 */}
-              <div className="text-center mt-6">
-                <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
-                  {getConflictTypeText(conflictData?.conflictType || 'ETC')}
-                </h4>
-              </div>
-            </div>
-
-            {/* 분석 내용 */}
-            <div className="flex-1 space-y-8">
-              <div>
-                <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
-                  • 상황: {conflictData?.aiSummary || '분석 결과가 없습니다'}
-                </h4>
+            <div className="flex items-start gap-20">
+              {/* 고슴도치 이미지 */}
+              <div className="flex-shrink-0">
+                <div 
+                  className="w-60 h-60 rounded-full flex items-center justify-center shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
+                >
+                  <img 
+                    src={hedgehogImg} 
+                    alt="갈등도치" 
+                    className="w-44 h-44 object-contain"
+                  />
+                </div>
+                {/* 갈등 유형 소제목 */}
+                <div className="text-center mt-6">
+                  <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
+                    {getConflictTypeText(conflictData?.conflictType || 'ETC')}
+                  </h4>
+                </div>
               </div>
 
-              <div>
-                <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
-                  • 원인: {conflictData?.description || '갈등 상황이 설명되지 않았습니다'}
-                </h4>
-              </div>
+              {/* 분석 내용 - 감정 분석, 갈등 분석, 입장 정리 */}
+              <div className="flex-1 space-y-8">
+                {/* 감정 분석 */}
+                <div>
+                  <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
+                    • 감정 분석:
+                  </h4>
+                  <p className="ml-6" style={{ color: '#333333' }}>
+                    {conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...'}
+                  </p>
+                </div>
 
-              <div>
-                <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
-                  • 입장 정리:
-                </h4>
-                <div className="ml-6 space-y-4">
-                  <div className="pl-4">
-                    <div className="mb-2">
-                      <span className="font-medium" style={{ color: '#8B4513' }}>내 입장:</span>
-                      <span className="ml-2" style={{ color: '#333333' }}>
-                        "{conflictData?.myPosition || conflictData?.desiredOutcome || '내 입장을 명확히 정리하고 싶어요.'}"
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-medium" style={{ color: '#8B4513' }}>상대방 입장:</span>
-                      <span className="ml-2" style={{ color: '#333333' }}>
-                        "{conflictData?.partnerPosition || conflictData?.aiSolutions || '상대방의 입장을 AI가 분석 중입니다.'}"
-                      </span>
+                {/* 갈등 분석 */}
+                <div>
+                  <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
+                    • 갈등 분석:
+                  </h4>
+                  <p className="ml-6" style={{ color: '#333333' }}>
+                    {conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...'}
+                  </p>
+                </div>
+
+                {/* 입장 정리 */}
+                <div>
+                  <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
+                    • 입장 정리:
+                  </h4>
+                  <div className="ml-6 space-y-4">
+                    <div className="pl-4">
+                      <div className="mb-3">
+                        <span className="font-medium" style={{ color: '#8B4513' }}>내 입장 (AI 분석):</span>
+                        <span className="ml-2" style={{ color: '#333333' }}>
+                          {conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium" style={{ color: '#8B4513' }}>상대방 입장 (AI 추정):</span>
+                        <span className="ml-2" style={{ color: '#333333' }}>
+                          {conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </main>
+      </div>
 
-        {/* 하단 메시지 */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold" style={{ 
-            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            리포트를 기반으로 '맞춤 해결책'을 제안해드릴게요
-          </h2>
-        </div>
+      {/* 하단 배경 영역 (흰색) */}
+      <div className="w-full relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#FFFFFF',
+            zIndex: 1
+          }}
+        ></div>
+        
+        <main className="max-w-5xl mx-auto px-4 relative z-10">
+          {/* 하단 메시지 */}
+          <div className="text-center mb-16 pt-12">
+            <h2 className="text-4xl font-bold" style={{ 
+              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              리포트를 기반으로 '맞춤 해결책'을 제안해드릴게요
+            </h2>
+          </div>
 
-        {/* 서비스 카드들 */}
-        <div className="mb-16">
-          {/* 첫 번째 줄 - 2개 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            {/* 갈등해결하기 카드 */}
-            <div 
-              className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
-              style={{ background: '#83673f' }}
-              onClick={handleConflictResolution}
-            >
-              <h3 className="text-2xl font-bold mb-6">참견도치와 갈등 해결하기</h3>
-              <p className="mb-8 leading-relaxed opacity-90">
-                화상 대화 속 감정과 대화를 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
-              </p>
-              <div className="absolute bottom-8 right-8">
-                <span className="text-2xl">→</span>
+          {/* 서비스 카드들 */}
+          <div className="mb-16">
+            {/* 첫 번째 줄 - 2개 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* 갈등해결하기 카드 */}
+              <div 
+                className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#83673f' }}
+                onClick={handleConflictResolution}
+              >
+                <h3 className="text-2xl font-bold mb-6">갈등해결하기</h3>
+                <p className="mb-8 leading-relaxed opacity-90">
+                  화상 대화 속 감정과 대화를 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
+                </p>
+                <div className="absolute bottom-8 right-8">
+                  <span className="text-2xl">→</span>
+                </div>
+              </div>
+
+              {/* 토닥토닥 서비스 카드 */}
+              <div 
+                className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#7F5539' }}
+                onClick={handleComfort}
+              >
+                <h3 className="text-2xl font-bold mb-6">토닥토닥 서비스</h3>
+                <p className="mb-8 leading-relaxed opacity-90">
+                  참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
+                </p>
+                <div className="absolute bottom-8 right-8">
+                  <span className="text-2xl">→</span>
+                </div>
               </div>
             </div>
 
-            {/* 토닥토닥 서비스 카드 */}
-            <div 
-              className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
-              style={{ background: '#7F5539' }}
-              onClick={handleCommunity}
-            >
-              <h3 className="text-2xl font-bold mb-6">토닥토닥 서비스</h3>
-              <p className="mb-8 leading-relaxed opacity-90">
-                참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
-              </p>
-              <div className="absolute bottom-8 right-8">
-                <span className="text-2xl">→</span>
+            {/* 두 번째 줄 - 3개 작은 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* 갈등 커뮤니티 카드 */}
+              <div 
+                className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#CD9F6E' }}
+                onClick={handleCommunity}
+              >
+                <h3 className="text-xl font-bold mb-4">갈등 커뮤니티</h3>
+                <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                  비슷한 고민을 가진 사람들과 이야기해보세요<br/>
+                </p>
+                <div className="absolute bottom-6 right-6">
+                  <span className="text-xl">→</span>
+                </div>
+              </div>
+
+              {/* 토닥토닥 (comfort) 카드 */}
+              <div 
+                className="rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#f8d6b3', color: '#3d2b1f' }}
+                onClick={handleComfort}
+              >
+                <h3 className="text-xl font-bold mb-4">토닥토닥</h3>
+                <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                  참견도치가 당신의 마음을 토닥토닥 위로해드려요
+                </p>
+                <div className="absolute bottom-6 right-6">
+                  <span className="text-xl">→</span>
+                </div>
+              </div>
+
+              {/* 전문상담사 매칭 카드 */}
+              <div 
+                className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#EE9278' }}
+                onClick={handleExpertMatching}
+              >
+                <h3 className="text-xl font-bold mb-4">전문상담사 매칭</h3>
+                <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                  더 깊은 상담이 필요하다면 전문 상담사와 매칭해보세요
+                </p>
+                <div className="absolute bottom-6 right-6">
+                  <span className="text-xl">→</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 두 번째 줄 - 3개 작은 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 5단계 해결 로드맵 카드 */}
-            <div 
-              className="rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
-              style={{ background: '#f8d6b3', color: '#3d2b1f' }}
-              onClick={handleRoadmap}
+          {/* 하단 버튼들 */}
+          <div className="flex justify-between gap-6 pb-12">
+            <button
+              onClick={handleNewConflict}
+              className="px-4 py-4 rounded-2xl hover:opacity-70 transition-all font-medium"
+              style={{ color: '#666666', background: 'transparent' }}
             >
-              <h3 className="text-xl font-bold mb-4">5단계<br/>해결 로드맵</h3>
-              <p className="mb-6 leading-relaxed opacity-90 text-sm">
-                AI 컨설턴트가 제시하는 5단계 갈등 해결 로드맵을 따라가며 갈등을 해결해보세요
-              </p>
-              <div className="absolute bottom-6 right-6">
-                <span className="text-xl">→</span>
-              </div>
-            </div>
-
-            {/* 갈등 커뮤니티 카드 */}
-            <div 
-              className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
-              style={{ background: '#CD9F6E' }}
-              onClick={handleExpertMatching}
+              다시 작성하기
+            </button>
+            <button
+              onClick={handleSaveConflict}
+              className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium"
+              style={{ background: '#BF7D2C' }}
+              disabled={isLoading}
             >
-              <h3 className="text-xl font-bold mb-4">갈등 커뮤니티</h3>
-              <p className="mb-6 leading-relaxed opacity-90 text-sm">
-                비슷한 고민을 가진 사람들과 이야기해보세요<br/>
-              </p>
-              <div className="absolute bottom-6 right-6">
-                <span className="text-xl">→</span>
-              </div>
-            </div>
-
-            {/* 전문상담사 매칭 카드 */}
-            <div 
-              className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
-              style={{ background: '#EE9278' }}
-              onClick={handleChatbot}
-            >
-              <h3 className="text-xl font-bold mb-4">전문상담사 매칭</h3>
-              <p className="mb-6 leading-relaxed opacity-90 text-sm">
-                더 깊은 상담이 필요하다면 전문 상담사와 매칭해보세요
-              </p>
-              <div className="absolute bottom-6 right-6">
-                <span className="text-xl">→</span>
-              </div>
-            </div>
+              {isLoading ? '저장 중...' : '갈등 카드 저장하기'}
+            </button>
           </div>
-        </div>
-
-        {/* 하단 버튼들 */}
-        <div className="flex justify-between gap-6">
-          <button
-            onClick={handleNewConflict}
-            className="px-4 py-4 rounded-2xl hover:opacity-70 transition-all font-medium"
-            style={{ color: '#666666', background: 'transparent' }}
-          >
-            다시 작성하기
-          </button>
-          <button
-            onClick={handleSaveConflict}
-            className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium"
-            style={{ background: '#BF7D2C' }}
-            disabled={isLoading}
-          >
-            {isLoading ? '저장 중...' : '갈등 카드 저장하기'}
-          </button>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
