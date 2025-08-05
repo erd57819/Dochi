@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  dochi-mysql:
+    image: mysql:8.0
+    container_name: dochi-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: dochi
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - dochi-network
+
+  dochi-redis:
+    image: redis:7-alpine
+    container_name: dochi-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - dochi-network
+
+  dochi-backend:
+    build:
+      context: ./SSAFY-DOCHI-BE
+      dockerfile: Dockerfile
+    container_name: dochi-backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:mysql://dochi-mysql:3306/dochi?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_REDIS_HOST=dochi-redis
+      - SPRING_REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+      - SOCIAL_PW=${SOCIAL_PW}
+      - EMAIL_USERNAME=${EMAIL_USERNAME}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - KAKAO_REST_API_KEY=${KAKAO_REST_API_KEY}
+      - KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}
+      - KAKAO_REDIRECT_WITHDRAW_URI=${KAKAO_REDIRECT_WITHDRAW_URI}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AI_SERVICE_URL=http://ai-service:8002
+      - LIVEKIT_API_KEY=APIAhgcveqdsqqe
+      - LIVEKIT_API_SECRET=BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE
+      - GMS_KEY=${GMS_KEY}
+    depends_on:
+      - dochi-mysql
+      - dochi-redis
+    ports:
+      - "8080:8080"
+    networks:
+      - dochi-network
+
+  dochi-frontend:
+    build:
+      context: ./SSAFY-DOCHI-FE
+      dockerfile: Dockerfile
+    container_name: dochi-frontend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3000:3000"
+    networks:
+      - dochi-network
+
+  dochi-ai-service:
+    build:
+      context: ./SSAFY-DOCJI-AI
+      dockerfile: Dockerfile
+    container_name: dochi-ai-service
+    ports:
+      - "8002:8002"
+    environment:
+      - GMS_KEY=${GMS_KEY}
+    networks:
+      - dochi-network
+
+  # == LIVEKIT SERVER (OpenVidu v3) ==
+  dochi-openvidu:
+    image: livekit/livekit-server:latest
+    container_name: dochi-openvidu
+    restart: unless-stopped
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "55000-55100:55000-55100/udp"
+    environment:
+      LIVEKIT_KEYS: "APIAhgcveqdsqqe: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
+      LIVEKIT_CONFIG: |
+        rtc:
+          udp_port: 50000
+          tcp_port: 7881
+          use_external_ip: true
+    command:
+      - --bind=0.0.0.0
+      - --port=7880
+    networks:
+      - dochi-network
+
+  dochi-nginx:
+    build:
+      context: ./nginx/dev
+      dockerfile: Dockerfile
+    container_name: dochi-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /c/SSAFY/commonPJ/S13P11C209/mkcert/localhost.pem:/etc/ssl/certs/localhost.pem:ro
+      - /c/SSAFY/commonPJ/S13P11C209/mkcert/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
+    depends_on:
+      - dochi-frontend
+      - dochi-backend
+      - dochi-ai-service
+      - dochi-openvidu
+    networks:
+      - dochi-network
+
+networks:
+  dochi-network:
+
+volumes:
+  mysql-data:
