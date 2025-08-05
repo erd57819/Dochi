@@ -170,8 +170,8 @@ services:
       dockerfile: Dockerfile
     container_name: dochi-nginx
     ports:
-      - "8090:443" # https (배포환경용)
-      # - "80:80"    # http (리디렉션용) - 포트 충돌로 비활성화
+      - "80:80"
+      - "443:443"
     volumes:
       # Let's Encrypt 인증서 마운트 (배포환경용)
       - /etc/letsencrypt:/etc/letsencrypt:ro

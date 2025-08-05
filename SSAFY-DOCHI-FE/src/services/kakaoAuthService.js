@@ -11,6 +11,7 @@ export const kakaoAuthService = {
         },
       });
 
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || '카카오 로그인에 실패했습니다.');
