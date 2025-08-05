@@ -132,9 +132,18 @@ const VideoCallRoom = () => {
       return;
     }
     
+    // size 접근 전 안전성 검사 추가
+    let participantsCount = 0;
+    try {
+      participantsCount = room.remoteParticipants?.size || 0;
+    } catch (error) {
+      console.warn('remoteParticipants.size 접근 실패:', error);
+      return;
+    }
+    
     console.log('=== 참가자 변경 감지, 트랙 재연결 시도 ===', {
       roomConnected: room.state,
-      remoteParticipantsCount: room.remoteParticipants.size
+      remoteParticipantsCount: participantsCount
     });
     
     try {
@@ -176,7 +185,8 @@ const VideoCallRoom = () => {
       });
       
       // 2. 기존 로직: 모든 원격 참가자의 트랙들을 다시 연결 시도
-      room.remoteParticipants.forEach((participant) => {
+      if (room.remoteParticipants && room.remoteParticipants.forEach) {
+        room.remoteParticipants.forEach((participant) => {
         if (!participant) {
           console.warn('참가자가 null/undefined:', participant);
           return;
@@ -213,7 +223,8 @@ const VideoCallRoom = () => {
             }
           });
         }
-      });
+        });
+      }
     } catch (error) {
       console.error('참가자 재연결 중 에러:', error);
     }
