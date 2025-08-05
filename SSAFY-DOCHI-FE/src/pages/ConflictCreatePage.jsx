@@ -5,9 +5,9 @@ import useAuthStore from '../stores/AuthStore.js';
 import ProgressIndicator from '../components/conflict/ProgressIndicator';
 import Step1ConflictType from '../components/conflict/Step1ConflictType';
 import Step2ConflictDetail from '../components/conflict/Step2ConflictDetail';
-import Step3ConflictTiming from '../components/conflict/Step3ConflictTiming';
 import Step4EmotionState from '../components/conflict/Step4EmotionState';
 import Step5AIAnalysis from '../components/conflict/Step5AIAnalysis';
+import hedgehogImg from '../assets/conflict.png';
 
 const ConflictCreatePage = () => {
   const navigate = useNavigate();
@@ -45,9 +45,9 @@ const ConflictCreatePage = () => {
   };
 
   const handleNextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
-    } else if (currentStep === 4) {
+    } else if (currentStep === 3) {
       handleAnalyzeConflict();
     }
   };
@@ -60,25 +60,30 @@ const ConflictCreatePage = () => {
 
   // AI 분석 요청
   const handleAnalyzeConflict = async () => {
-  setIsLoading(true);
-  setCurrentStep(5);
+    setIsLoading(true);
+    setCurrentStep(4);
 
     try {
       const payload = {
         title: formData.title || '제목 없음',
         description: formData.description || '설명 없음',
         conflictType: formData.conflictType || 'ETC',
-        conflictWhen: isNaN(Number(formData.conflictWhen)) ? 0 : Number(formData.conflictWhen),
-        conflictFrequency: isNaN(Number(formData.conflictFrequency)) ? 0 : Number(formData.conflictFrequency),
-        intensity: parseInt(formData.intensity) || 0,
+        conflictWhen: Number(formData.conflictWhen) || 1,
+        conflictFrequency: Number(formData.conflictFrequency) || 1,
+        intensity: Number(formData.intensity) || 5,
         participants: formData.participants && formData.participants.trim() !== ''
           ? formData.participants
-          : '익명',
-        desiredOutcome: formData.desiredOutcome || '미입력',
+          : null,
+        desiredOutcome: formData.desiredOutcome || 'NONE',
         priority: formData.priority || 'NONE',
         talkWillingness: formData.talkWillingness || 'NONE',
-        initialEmotion: formData.initialEmotion || '무표정'
+        initialEmotion: formData.initialEmotion || 'ETC'
       };
+
+      // sessionStorage에 데이터 저장
+      sessionStorage.setItem('tempTitle', payload.title);
+      sessionStorage.setItem('tempDescription', payload.description);
+      sessionStorage.setItem('tempConflictType', payload.conflictType);
 
       console.log("보내는 데이터:", JSON.stringify(payload, null, 2));
 
@@ -92,13 +97,19 @@ const ConflictCreatePage = () => {
         body: JSON.stringify(payload)
       });
 
+      console.log('Temp Response Status:', tempResponse.status);
+      const tempResponseText = await tempResponse.text();
+      console.log('Temp Response Body:', tempResponseText);
+
       if (!tempResponse.ok) {
-        throw new Error('갈등 데이터 임시 저장에 실패했습니다.');
+        throw new Error(`갈등 데이터 임시 저장 실패: ${tempResponse.status} - ${tempResponseText}`);
       }
 
-      const tempResult = await tempResponse.json();
-      const conflictId = tempResult.data || tempResult.response?.response;
+      const tempResult = JSON.parse(tempResponseText);
+      const conflictId = tempResult.data || tempResult.response?.response || tempResult.id;
       setTempConflictId(conflictId);
+
+      console.log('Generated Conflict ID:', conflictId);
 
       // 2단계: AI 분석 요청
       const analysisResponse = await fetch(`${API_BASE_URL}/conflict/analyze/${conflictId}`, {
@@ -109,15 +120,27 @@ const ConflictCreatePage = () => {
         }
       });
 
+      console.log('Analysis Response Status:', analysisResponse.status);
+
       if (!analysisResponse.ok) {
-        throw new Error('AI 분석에 실패했습니다.');
+        const analysisError = await analysisResponse.text();
+        console.log('Analysis Error:', analysisError);
+        throw new Error(`AI 분석 실패: ${analysisResponse.status}`);
       }
 
       const analysisResult = await analysisResponse.json();
-      const analysisData = analysisResult.data || analysisResult.response?.response;
+      console.log('Analysis Result:', analysisResult);
+      const analysisData = analysisResult.data || analysisResult.response?.response || analysisResult;
 
-      setAiSummary(analysisData.summary || '요약을 생성할 수 없습니다.');
-      setAiSolutions(analysisData.solutions || '해결방안을 생성할 수 없습니다.');
+      const aiSummary = analysisData.summary || analysisData.aiSummary || '요약을 생성할 수 없습니다.';
+      const aiSolutions = analysisData.solutions || analysisData.aiSolutions || '해결방안을 생성할 수 없습니다.';
+
+      setAiSummary(aiSummary);
+      setAiSolutions(aiSolutions);
+
+      // AI 분석 결과 sessionStorage에 저장
+      sessionStorage.setItem('tempAiSummary', aiSummary);
+      sessionStorage.setItem('tempAiSolutions', aiSolutions);
 
       // 고급 AI 분석 요청
       try {
@@ -131,17 +154,23 @@ const ConflictCreatePage = () => {
 
         if (advancedResponse.ok) {
           const advancedResult = await advancedResponse.json();
-          const advancedData = advancedResult.data || advancedResult.response?.response;
+          const advancedData = advancedResult.data || advancedResult.response?.response || advancedResult;
           setAdvancedAnalysis(advancedData);
+        } else {
+          console.log('Advanced analysis failed, but continuing...');
         }
       } catch (error) {
         console.error('고급 AI 분석 오류:', error);
+        // 고급 분석 실패는 전체 플로우를 중단시키지 않음
       }
+
+      // AI 분석 완료 후 바로 리포트 페이지로 이동
+      navigate(`/conflicts/analysis/${conflictId}`);
 
     } catch (error) {
       console.error('갈등 분석 오류:', error);
       alert(error.message || '갈등 분석 중 오류가 발생했습니다.');
-      setCurrentStep(4);
+      setCurrentStep(3); // 이전 단계로 돌아가기
     } finally {
       setIsLoading(false);
     }
@@ -181,23 +210,37 @@ const ConflictCreatePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        {/* 갈등 목록으로 돌아가기 버튼 - 맨 위 */}
+        <div className="mb-8">
+          <span
+            onClick={() => navigate('/conflicts')}
+            className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
+          >
+            ← 갈등 목록으로 돌아가기
+          </span>
+        </div>
+        
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-100 rounded-full mb-4">
-            <span className="text-4xl">🦔</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">갈등 유형을 골라주세요</h1>
-          <p className="text-gray-600">
+        <div className="text-center mb-10">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">
+            <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+              갈등 유형을 골라주세요
+            </span>
+          </h1>
+          <p className="text-sm text-gray-600 mb-4">
             갈등 상황을 단계별로 작성해주시면 AI가 분석해드릴게요
           </p>
+          {/* Progress Indicator */}
+          <ProgressIndicator currentStep={currentStep} totalSteps={4} />
         </div>
 
-        {/* Progress Indicator */}
-        <ProgressIndicator currentStep={currentStep} totalSteps={5} />
-
         {/* Main Content Area */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 min-h-[500px]">
+        <div className="bg-white rounded-3xl p-8 min-h-[700px] relative">
+          {/* 고슴도치 이미지 - 왼쪽 하단 */}
+          <div className="absolute bottom-6 left-6 z-0">
+            <img src={hedgehogImg} alt="고슴도치" className="w-48 h-48 object-contain opacity-80" />
+          </div>
           {/* Step 1: 갈등 유형 */}
           {currentStep === 1 && (
             <Step1ConflictType
@@ -207,7 +250,7 @@ const ConflictCreatePage = () => {
             />
           )}
 
-          {/* Step 2: 갈등 상세 */}
+          {/* Step 2: 갈등 상세 + 발생 시기 */}
           {currentStep === 2 && (
             <Step2ConflictDetail
               formData={formData}
@@ -217,28 +260,19 @@ const ConflictCreatePage = () => {
             />
           )}
 
-          {/* Step 3: 발생 시점 */}
+          {/* Step 3: 감정 상태 */}
           {currentStep === 3 && (
-            <Step3ConflictTiming
-              formData={formData}
-              onChange={handleFormChange}
-              onNext={handleNextStep}
-              onPrev={handlePrevStep}
-            />
-          )}
-
-          {/* Step 4: 감정 상태 */}
-          {currentStep === 4 && (
             <Step4EmotionState
               formData={formData}
               onChange={handleFormChange}
               onNext={handleNextStep}
               onPrev={handlePrevStep}
+              isLoading={isLoading}
             />
           )}
 
-          {/* Step 5: AI 분석 */}
-          {currentStep === 5 && (
+          {/* Step 4: AI 분석 */}
+          {currentStep === 4 && (
             <Step5AIAnalysis
               formData={formData}
               aiSummary={aiSummary}
@@ -247,18 +281,9 @@ const ConflictCreatePage = () => {
               isLoading={isLoading}
               onSave={handleFinalSave}
               onPrev={() => setCurrentStep(1)}
+              tempConflictId={tempConflictId}
             />
           )}
-        </div>
-
-        {/* 뒤로가기 버튼 */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/conflicts')}
-            className="text-gray-500 hover:text-gray-700 font-medium transition-colors"
-          >
-            ← 갈등 목록으로 돌아가기
-          </button>
         </div>
       </div>
     </div>

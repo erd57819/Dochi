@@ -11,6 +11,8 @@ import CommunityPage from './pages/CommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
+import ConflictResultPage from './pages/ConflictResultPage';
+import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
 import ComfortPage from './pages/ComfortPage';
 import ComfortChatPage from './pages/ComfortChatPage';
 import VoiceChatPage from './pages/VoiceChatPage';
@@ -24,6 +26,8 @@ import GamePage from './pages/GamePage';
 import MyPage from './pages/MyPage';
 import ProfileEditPage from './pages/ProfileEditPage';
 import PasswordChangePage from './pages/PasswordChangePage';
+import RoadmapPage from './pages/RoadmapPage';
+import ExpertMatchingPage from './pages/ExpertMatchingPage';
 import './App.css';
 import VideoCallRoom from './components/VideoCallRoom';
 
@@ -46,6 +50,8 @@ const App = () => {
             <Route path="/community/post/:postId" element={<PostDetailPage />} />
             <Route path="/service" element={<ConflictCreatePage />} />
             <Route path="/conflicts/create" element={<ConflictCreatePage />} />
+            <Route path="/conflicts/result/:id" element={<ConflictResultPage />} />
+            <Route path="/conflicts/analysis/:tempId" element={<ConflictAnalysisResultPage />} />
             <Route path="/conflicts" element={<ConflictListPage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
@@ -59,7 +65,9 @@ const App = () => {
             <Route path="/voice-demo" element={<VoiceDemoPage />} />
             <Route path="/stt" element={<STTPage />} />
             <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
-            <Route path="/game" element={<GamePage />} />
+            <Route path="/roadmap" element={<RoadmapPage />} />
+            <Route path="/expert-matching" element={<ExpertMatchingPage />} />
+
           </Routes>
         </main>
       </div>
