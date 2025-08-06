@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker-compose build:*)"
+      "Bash(docker-compose build:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 import useAuthStore from '../stores/AuthStore';
+import { videoCallApi } from '../services/videoCallApi.js';
 import hedgehogImg from '../assets/conflict.png';
 
 const ConflictAnalysisResultPage = () => {
@@ -191,23 +192,7 @@ const ConflictAnalysisResultPage = () => {
         conflictAnalysis: finalConflictAnalysis,
         myPosition: finalMyPosition,
         partnerPosition: finalPartnerPosition,
-        // 기본 지수들 (데이터 기반으로 산출)
-        relationshipHealthScore: Math.max(20, 100 - (basicData.intensity * 8) + (basicData.talkWillingness === 'YES' ? 20 : basicData.talkWillingness === 'MAYBE' ? 10 : 0)),
-        communicationScore: Math.max(10, 80 - (basicData.intensity * 6) + (basicData.talkWillingness === 'YES' ? 25 : basicData.talkWillingness === 'MAYBE' ? 15 : 0)),
-        trustScore: JSON.stringify({ 
-          score: Math.max(30, 90 - (basicData.intensity * 7) + (basicData.priority === 'RELATIONSHIP' ? 15 : 0)), 
-          analysis: '기본적인 신뢰는 있으나 소통 개선이 필요합니다.' 
-        }),
-        cooperationScore: JSON.stringify({ 
-          score: Math.max(25, 75 - (basicData.intensity * 5) + (basicData.priority === 'SOLUTION' ? 15 : 0)), 
-          improvement_suggestions: [
-            '서로의 입장을 경청하는 시간 마련하기',
-            '갈등 상황에 대한 객관적 분석 시도하기',
-            '공통의 목표와 대안 찾아보기',
-            '전문가나 중재자의 도움 고려하기'
-          ]
-        }),
-        priorityRecommendation: basicData.intensity >= 8 ? '즉각적인 전문가 도움과 직접적인 대화를 추천합니다.' : basicData.priority === 'RELATIONSHIP' ? '관계 유지와 문제 해결을 병행하는 접근법을 추천합니다.' : '문제 해결에 집중하면서 관계도 고려하는 균형적 접근을 추천합니다.',
+        priorityRecommendation: basicData.intensity >= 8 ? '즉각적 전문가 도움 필요' : basicData.priority === 'RELATIONSHIP' ? '관계 유지 중심 접근' : '문제 해결 중심 접근',
         recommendedActions: JSON.stringify([
           `${basicData.conflictType} 갈등의 특성을 이해하고 상황 분석하기`,
           '자신의 감정을 정리하고 객관적 시각 갖기',
@@ -241,28 +226,11 @@ const ConflictAnalysisResultPage = () => {
   };
 
   const handleSaveConflict = async () => {
-    if (!tempId) {
-      alert('임시 저장된 갈등 데이터가 없습니다.');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${tempId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-
-      if (response.ok) {
-        alert('갈등 카드가 성공적으로 생성되었습니다! 🦔');
-        navigate('/conflicts');
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '갈등 카드 생성에 실패했습니다.');
-      }
+      await saveConflict();
+      alert('갈등 카드가 성공적으로 생성되었습니다! 🦔');
+      navigate('/conflicts');
     } catch (error) {
       alert(error.message);
     } finally {
@@ -320,21 +288,185 @@ const ConflictAnalysisResultPage = () => {
     return texts[willingness] || '선택 안함';
   };
 
+  // 갈등 저장 함수
+  const saveConflict = async () => {
+    try {
+      // 1. 먼저 tempId로 저장 시도
+      if (tempId) {
+        const response = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${tempId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+
+        if (response.ok) {
+          return await response.json();
+        }
+      }
+
+      // 2. tempId가 없거나 실패한 경우, 기본 갈등 생성 API 사용
+      const conflictCreateData = {
+        title: sessionStorage.getItem('tempTitle') || '갈등 제목',
+        description: sessionStorage.getItem('tempDescription') || '갈등 설명',
+        conflictType: sessionStorage.getItem('tempConflictType') || 'ETC',
+        conflictWhen: parseInt(sessionStorage.getItem('tempConflictWhen')) || 7,
+        conflictFrequency: parseInt(sessionStorage.getItem('tempConflictFrequency')) || 3,
+        participants: sessionStorage.getItem('tempParticipants') || null,
+        intensity: parseInt(sessionStorage.getItem('tempIntensity')) || 7,
+        initialEmotion: sessionStorage.getItem('tempEmotion') || 'FRUSTRATION',
+        priority: sessionStorage.getItem('tempPriority') || 'SOLUTION',
+        talkWillingness: sessionStorage.getItem('tempTalkWillingness') || 'MAYBE',
+        desiredOutcome: sessionStorage.getItem('tempDesiredOutcome') || 'RELATIONSHIP',
+        aiSummary: sessionStorage.getItem('tempAiSummary') || '분석 결과'
+      };
+
+      const response = await fetch(`${API_BASE_URL}/conflict/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(conflictCreateData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '갈등 카드 생성에 실패했습니다.');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('갈등 저장 오류:', error);
+      throw error;
+    }
+  };
+
+  // 화상채팅 방 생성 (ConflictDetailPage와 동일한 로직)
+  const createVideoCallRoom = async () => {
+    try {
+      setIsLoading(true);
+      
+      // 1. 먼저 갈등을 저장하여 conflictId 획득
+      const conflictData = await saveConflict();
+      
+      if (!conflictData || !conflictData.data || !conflictData.data.id) {
+        throw new Error('갈등 저장에 실패했습니다.');
+      }
+      
+      const conflictId = conflictData.data.id;
+      
+      // 2. 저장된 conflictId로 화상채팅 방 생성 (ConflictDetailPage와 동일)
+      const response = await videoCallApi.createRoom(conflictId);
+      console.log('화상채팅 방 생성 응답:', response);
+      
+      // API 응답 구조에 맞게 데이터 추출
+      const roomData = response.data || response;
+      
+      if (roomData && roomData.roomCode) {
+        // 화상채팅 링크 생성
+        const videoCallLink = `${window.location.origin}/video-call/${roomData.roomCode}`;
+        
+        // 링크를 클립보드에 복사 (HTTP/HTTPS 환경 모두 지원)
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(videoCallLink);
+          } else {
+            // HTTP 환경에서 fallback 방법
+            const textArea = document.createElement('textarea');
+            textArea.value = videoCallLink;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+          }
+        } catch (clipboardError) {
+          console.log('클립보드 복사 실패:', clipboardError);
+        }
+        
+        alert(`화상채팅 방이 생성되었습니다!\n\n방 코드: ${roomData.roomCode}\n링크: ${videoCallLink}\n\n링크가 클립보드에 복사되었습니다.\n상대방에게 공유하여 함께 참여하세요!`);
+        
+        // 화상채팅 페이지로 이동
+        navigate(`/video-call/${roomData.roomCode}`);
+      } else {
+        console.error('roomCode가 없습니다:', roomData);
+        throw new Error('방 생성에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('화상채팅 방 생성 오류:', error);
+      alert('화상채팅 방 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 갈등 공유하기 함수 (ConflictDetailPage에서 가져온 함수)
+  const handleShareConflict = () => {
+    if (!conflictData) return;
+
+    const conflictTypeText = getConflictTypeText(conflictData.conflictType);
+    
+    // 자동 생성된 제목
+    const autoTitle = `[${conflictTypeText}] 갈등 상황 공유 - 조언 구합니다`;
+    
+    // 자동 생성된 내용 (찬반 투표 형식)
+    const autoContent = `안녕하세요! 갈등 상황을 공유하며 여러분의 의견을 듣고 싶습니다.
+
+📌 상황: ${conflictData.description}
+💢 갈등 강도: ${conflictData.intensity}/10
+🎯 목표: ${conflictData.desiredOutcome || '해결 방안을 찾고 싶어요'}
+
+📊 **여러분의 의견을 들려주세요:**
+
+**A안) 적극적 해결 방식**
+- 직접 대화를 통해 문제를 해결
+- 감정을 솔직하게 표현하고 소통
+- 빠른 해결을 위한 적극적 접근
+
+**B안) 신중한 접근 방식**  
+- 시간을 두고 상황을 정리한 후 접근
+- 중재자나 제3자의 도움 요청
+- 관계 손상을 최소화하는 방향으로 진행
+
+어떤 방식이 더 좋을지 댓글로 의견 부탁드립니다! 🙏
+
+#갈등해결 #조언구함 #${conflictTypeText}`;
+
+    // CreatePostPage로 이동하면서 데이터 전달
+    navigate('/community/create', {
+      state: {
+        prefilledData: {
+          title: autoTitle,
+          content: autoContent,
+          category: 'CONFLICT_SHARING'
+        }
+      }
+    });
+  };
+
   // 각 서비스 페이지로 이동하는 핸들러들
   const handleConflictResolution = () => {
-    navigate('/video-call'); // 갈등해결하기 -> video-call
+    createVideoCallRoom(); // 갈등해결하기 -> 화상채팅 방 생성
   };
 
   const handleComfort = () => {
-    navigate('/comfort'); // 토닥토닥 -> comfort
+    navigate('/comfort'); // 토닥토닥 -> comfort (챗봇)
   };
 
   const handleCommunity = () => {
-    navigate('/community'); // 커뮤니티 -> community
+    handleShareConflict(); // 갈등 커뮤니티 -> 갈등 내용을 커뮤니티로 공유
   };
 
   const handleExpertMatching = () => {
-    navigate('/expert-matching'); // 상담사 -> expert-matching
+    navigate('/expert-matching'); // 전문상담사 매칭 -> 더미페이지
+  };
+
+  const handleRoadmap = () => {
+    navigate('/roadmap'); // 로드맵 페이지로 이동
   };
 
   const handleNewConflict = () => {
@@ -422,49 +554,81 @@ const ConflictAnalysisResultPage = () => {
               </div>
 
               {/* 분석 내용 - 감정 분석, 갈등 분석, 입장 정리 */}
-              <div className="flex-1 space-y-8">
+              <div className="flex-1 space-y-6">
                 {/* 감정 분석 */}
-                <div>
-                  <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
-                    • 감정 분석:
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                    <span>😊</span> 감정 분석
                   </h4>
-                  <p className="ml-6" style={{ color: '#333333' }}>
+                  <p className="text-blue-700">
                     {conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...'}
                   </p>
                 </div>
 
                 {/* 갈등 분석 */}
-                <div>
-                  <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
-                    • 갈등 분석:
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                    <span>⚡</span> 갈등 분석
                   </h4>
-                  <p className="ml-6" style={{ color: '#333333' }}>
+                  <p className="text-purple-700">
                     {conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...'}
                   </p>
                 </div>
 
+
                 {/* 입장 정리 */}
-                <div>
-                  <h4 className="font-bold text-xl mb-4" style={{ color: '#333333' }}>
-                    • 입장 정리:
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>📝</span> 입장 정리
                   </h4>
-                  <div className="ml-6 space-y-4">
-                    <div className="pl-4">
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-lg p-4">
                       <div className="mb-3">
-                        <span className="font-medium" style={{ color: '#8B4513' }}>내 입장 (AI 분석):</span>
-                        <span className="ml-2" style={{ color: '#333333' }}>
+                        <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
+                        <p className="ml-2 mt-1 text-gray-700">
                           {conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.'}
-                        </span>
+                        </p>
                       </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
                       <div>
-                        <span className="font-medium" style={{ color: '#8B4513' }}>상대방 입장 (AI 추정):</span>
-                        <span className="ml-2" style={{ color: '#333333' }}>
+                        <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
+                        <p className="ml-2 mt-1 text-gray-700">
                           {conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.'}
-                        </span>
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* AI 우선순위 추천 */}
+                {conflictData?.priorityRecommendation && (
+                  <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-yellow-800 mb-3 flex items-center gap-2">
+                      <span>⭐</span> AI 우선순위 추천
+                    </h4>
+                    <p className="text-yellow-700 font-medium">{conflictData.priorityRecommendation}</p>
+                  </div>
+                )}
+
+                {/* AI 추천 행동 */}
+                {conflictData?.recommendedActions && (
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <span>💡</span> AI 추천 행동
+                    </h4>
+                    <ul className="space-y-2">
+                      {JSON.parse(conflictData.recommendedActions).map((action, index) => (
+                        <li key={index} className="flex items-start gap-3 text-gray-700">
+                          <span className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 mt-0.5">
+                            {index + 1}
+                          </span>
+                          <span>{action}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -547,15 +711,15 @@ const ConflictAnalysisResultPage = () => {
                 </div>
               </div>
 
-              {/* 토닥토닥 (comfort) 카드 */}
+              {/* 5단계 해결 로드맵 카드 */}
               <div 
                 className="rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
                 style={{ background: '#f8d6b3', color: '#3d2b1f' }}
-                onClick={handleComfort}
+                onClick={handleRoadmap}
               >
-                <h3 className="text-xl font-bold mb-4">토닥토닥</h3>
+                <h3 className="text-xl font-bold mb-4">5단계 로드맵</h3>
                 <p className="mb-6 leading-relaxed opacity-90 text-sm">
-                  참견도치가 당신의 마음을 토닥토닥 위로해드려요
+                  체계적인 갈등 해결을 위한 단계별 가이드를 확인하세요
                 </p>
                 <div className="absolute bottom-6 right-6">
                   <span className="text-xl">→</span>
