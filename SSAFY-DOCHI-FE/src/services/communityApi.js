@@ -386,7 +386,24 @@ export const likeApi = {
   // 게시글 좋아요 토글
   async togglePostLike(postId, userId, likeType) {
     try {
-      // ✅ 백엔드 매핑 확인 필요
+      // 🔍 디버깅 로그 추가
+      console.log('=== API 요청 디버깅 ===');
+      console.log('받은 파라미터 - postId:', postId);
+      console.log('받은 파라미터 - userId:', userId);
+      console.log('받은 파라미터 - likeType:', likeType);
+      
+      const requestBody = {
+        postId: postId,
+        userId: userId,
+        likeType: likeType
+      };
+      console.log('실제 전송 데이터:', requestBody);
+      console.log('=====================');
+      
+      // 🔑 인증 헤더 확인
+      const headers = getAuthHeaders();
+      console.log('인증 헤더:', headers);
+      
       console.log('👍 좋아요 요청 데이터:', { postId, userId, likeType });
       const response = await fetch(`${API_BASE_URL}/likes/posts`, {
         method: 'POST',

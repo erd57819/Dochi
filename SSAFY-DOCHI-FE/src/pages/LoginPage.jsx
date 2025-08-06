@@ -126,10 +126,10 @@ const LoginPage = () => {
         {/* 소셜 로그인 */}
         <div className="mt-6">
           <div className="flex items-center gap-4 justify-center">
-            <button className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+            {/* <button className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
               G
-            </button>
-            <KakaoLoginButton />
+            </button> */}
+            <KakaoLoginButton bg-yellow-500/>
             <Link 
               to="/signup"
               className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"

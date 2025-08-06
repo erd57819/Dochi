@@ -8,6 +8,8 @@ const ComfortChatPage = () => {
   const { user } = useAuthStore();
   const messagesEndRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
+  const [editingTitleId, setEditingTitleId] = useState(null);
+  const [editTitleValue, setEditTitleValue] = useState('');
   
   const {
     sessions,
@@ -26,6 +28,7 @@ const ComfortChatPage = () => {
     sendMessage,
     loadChatRooms,
     exitCurrentSession,
+    updateSessionTitle,
     setLoading,
     setError,
     toggleSidebar,
@@ -88,6 +91,32 @@ const ComfortChatPage = () => {
     const success = await deleteSession(chatRoomId);
     if (!success) {
       alert('최소 하나의 채팅방은 유지되어야 합니다.');
+    }
+  };
+
+  const handleStartEditTitle = (sessionId, currentTitle) => {
+    setEditingTitleId(sessionId);
+    setEditTitleValue(currentTitle);
+  };
+
+  const handleSaveTitle = async (sessionId) => {
+    if (editTitleValue.trim()) {
+      await updateSessionTitle(sessionId, editTitleValue.trim());
+    }
+    setEditingTitleId(null);
+    setEditTitleValue('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTitleId(null);
+    setEditTitleValue('');
+  };
+
+  const handleTitleKeyPress = (e, sessionId) => {
+    if (e.key === 'Enter') {
+      handleSaveTitle(sessionId);
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
     }
   };
 
@@ -169,13 +198,59 @@ const ComfortChatPage = () => {
           {sessions.map((session) => (
             <div
               key={session.id}
-              className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+              className={`group p-4 border-b hover:bg-gray-50 transition-colors ${
                 currentChatRoomId === session.id ? 'bg-orange-50' : ''
               }`}
             >
               <div className="flex justify-between items-center">
-                <div onClick={() => loadSession(session.id)} className="flex-1">
-                  <h3 className="font-medium text-gray-800 truncate">{session.title}</h3>
+                <div 
+                  onClick={() => editingTitleId !== session.id && loadSession(session.id)} 
+                  className="flex-1 cursor-pointer"
+                >
+                  {editingTitleId === session.id ? (
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={editTitleValue}
+                        onChange={(e) => setEditTitleValue(e.target.value)}
+                        onKeyDown={(e) => handleTitleKeyPress(e, session.id)}
+                        onBlur={() => handleSaveTitle(session.id)}
+                        className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleSaveTitle(session.id)}
+                        className="p-1 text-green-600 hover:text-green-800"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="p-1 text-red-600 hover:text-red-800"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-medium text-gray-800 truncate flex-1">{session.title}</h3>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEditTitle(session.id, session.title);
+                        }}
+                        className="p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                   <p className="text-sm text-gray-500 mt-1">
                     {new Date(session.createdAt).toLocaleString('ko-KR')}
                   </p>
@@ -185,7 +260,7 @@ const ComfortChatPage = () => {
                     e.stopPropagation();
                     handleDeleteSession(session.id);
                   }}
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  className="p-2 text-gray-400 hover:text-red-500 transition-colors ml-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -228,9 +303,8 @@ const ComfortChatPage = () => {
               onChange={(e) => setSelectedMode(e.target.value)}
               className="px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              <option value="NORMAL">일반 상담</option>
-              <option value="SITUATION_ORGANIZE">입장정리</option>
-              <option value="SIDE_TAKING">내편들기</option>
+              <option value="NORMAL">입장정리</option>
+              <option value="COMFORT_ONLY">내편들기</option>
               <option value="TIMELINE">타임라인</option>
               <option value="COMIC">네컷만화</option>
             </select>
@@ -264,9 +338,8 @@ const ComfortChatPage = () => {
                       🦔
                     </div>
                     <span className="text-sm text-gray-600">
-                      {selectedMode === 'NORMAL' ? '참견도치' : 
-                       selectedMode === 'SITUATION_ORGANIZE' ? '정리도치' :
-                       selectedMode === 'SIDE_TAKING' ? '편들기도치' :
+                      {selectedMode === 'NORMAL' ? '정리도치' : 
+                       selectedMode === 'COMFORT_ONLY' ? '편들기도치' :
                        selectedMode === 'TIMELINE' ? '분석도치' : '그림도치'}
                     </span>
                   </div>
@@ -301,9 +374,8 @@ const ComfortChatPage = () => {
                   <span className="text-sm text-gray-600">
                     {selectedMode === 'COMIC' ? '만화를 그리고 있어요...' :
                      selectedMode === 'TIMELINE' ? '타임라인을 분석하고 있어요...' :
-                     selectedMode === 'SITUATION_ORGANIZE' ? '입장을 정리하고 있어요...' :
-                     selectedMode === 'SIDE_TAKING' ? '당신의 편에서 생각하고 있어요...' :
-                     '답변을 생성하고 있어요...'}
+                     selectedMode === 'COMFORT_ONLY' ? '당신의 편에서 생각하고 있어요...' :
+                     '입장을 정리하고 있어요...'}
                   </span>
                 </div>
               </div>

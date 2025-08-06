@@ -166,3 +166,6 @@ backup_*.sql
 # === Docker 관련 ===
 # Docker 볼륨 및 임시 파일들
 .docker/
+
+
+.gemini/
