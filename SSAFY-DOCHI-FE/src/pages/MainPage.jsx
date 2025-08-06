@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
@@ -22,6 +22,7 @@ import todak from "@/assets/todak.png";
 export const MainPage = () => {
   const navigate = useNavigate();
   const containerRef = useRef(null);
+  const [currentSection, setCurrentSection] = useState(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -79,19 +80,66 @@ export const MainPage = () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
         isScrolling = false;
+        // 스크롤 완료 후 현재 섹션 업데이트
+        handleScroll();
       }, 1200); // 1.2초로 조정
     };
 
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop;
+      const sectionHeight = window.innerHeight;
+      
+      console.log('Scroll Top:', scrollTop, 'Section Height:', sectionHeight); // 디버깅용
+      
+      if (scrollTop < sectionHeight * 0.5) {
+        setCurrentSection(0);
+      } else if (scrollTop < sectionHeight * 1.5) {
+        setCurrentSection(1);
+      } else {
+        setCurrentSection(2);
+      }
+    };
+
     container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('scroll', handleScroll);
+    
+    // 초기 섹션 설정
+    handleScroll();
     
     return () => {
       container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
     };
   }, []);
 
+  const scrollToSection = (sectionIndex) => {
+    const container = containerRef.current;
+    if (!container) return;
+    
+    container.scrollTo({
+      top: sectionIndex * window.innerHeight,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <div ref={containerRef} className="bg-white flex flex-row justify-center w-full h-screen overflow-y-scroll" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
+      {/* Sticky Pagination */}
+      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-50 flex flex-col space-y-4">
+        {[0, 1, 2].map((index) => (
+          <div
+            key={index}
+            className={`w-3 h-3 rounded-full cursor-pointer transition-all duration-300 ${
+              currentSection === index 
+                ? 'bg-[#bf7d2c] scale-125' 
+                : 'bg-gray-300 hover:bg-gray-400'
+            }`}
+            onClick={() => scrollToSection(index)}
+          />
+        ))}
+      </div>
+      
       <div className="bg-white w-full max-w-[1296px] relative origin-top">
         
         {/* Main Hero Section - Swiper */}
