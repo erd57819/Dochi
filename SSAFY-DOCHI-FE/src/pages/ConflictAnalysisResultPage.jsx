@@ -7,182 +7,154 @@ import hedgehogImg from '../assets/conflict.png';
 
 const ConflictAnalysisResultPage = () => {
   const [conflictData, setConflictData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { tempId } = useParams();
-  const navigate = useNavigate();
-  const { token } = useAuthStore();
+  const [isLoading, setIsLoading]       = useState(true);
+  const { tempId }                      = useParams();
+  const navigate                        = useNavigate();
+  const { token }                       = useAuthStore();
 
-  useEffect(() => {
-    if (tempId) {
-      fetchTempConflictData();
+  // 백엔드에서 AI 분석이 실패했을 때의 개선된 폴백 처리
+  const generateImprovedFallback = (basicData) => {
+    console.log('백엔드 AI 분석 실패 - 개선된 폴백 분석 생성:', basicData);
+    
+    const intensityText = basicData.intensity >= 8 ? '매우 강한' : 
+                         basicData.intensity >= 6 ? '강한' : 
+                         basicData.intensity >= 4 ? '보통' : '약한';
+                         
+    const typeMap = {
+      WORK: '직장/업무',
+      FAMILY: '가족',
+      FRIEND: '친구',
+      COUPLE: '연인/부부',
+      NEIGHBOR: '이웃',
+      FINANCIAL: '금전',
+      ONLINE: '온라인',
+      ETC: '기타'
+    };
+    
+    const typeText = typeMap[basicData.conflictType] || '일반적인';
+    
+    // 갈등 내용 키워드 분석
+    const description = basicData.description.toLowerCase();
+    let emotionAnalysis = '';
+    let conflictAnalysis = '';
+    let myPosition = '';
+    let partnerPosition = '';
+    
+    // 감정 분석 생성
+    if (description.includes('동문서답') || description.includes('대화')) {
+      emotionAnalysis = `소통의 어려움으로 인한 ${intensityText} 좌절감과 답답함을 경험하고 있습니다. 대화가 원활하지 않아 감정적 거리감이 커지고 있는 상태입니다.`;
+    } else if (description.includes('화') || description.includes('분노')) {
+      emotionAnalysis = `현재 ${intensityText} 분노와 억울함을 느끼고 있으며, 감정 조절이 어려운 상황입니다. 갈등 강도 ${basicData.intensity}/10으로 즉각적인 해결이 필요합니다.`;
+    } else {
+      emotionAnalysis = `갈등 강도 ${basicData.intensity}/10의 ${intensityText} 감정적 상태를 경험하고 있습니다. 상황 해결을 위한 체계적인 접근이 필요합니다.`;
     }
-  }, [tempId]);
-
-  // AI 분석 함수들 - 실제 받은 데이터를 기반으로 분석
-  const generateAIAnalysis = (conflictData) => {
-    if (!conflictData) return {};
-
-    const { 
-      title, 
-      description, 
-      conflictType, 
-      intensity, 
-      initialEmotion, 
-      priority, 
-      talkWillingness, 
-      desiredOutcome 
-    } = conflictData;
-
-    // 감정 분석
-    const analyzeEmotion = () => {
-      const emotionMap = {
-        ANGER: '분노와 격한 감정',
-        SADNESS: '슬픔과 실망감',
-        FRUSTRATION: '좌절감과 답답함',
-        ETC: '복합적인 감정'
-      };
-      
-      const currentEmotion = emotionMap[initialEmotion] || '알 수 없는 감정';
-      const intensityText = intensity >= 8 ? '매우 강한' : intensity >= 6 ? '강한' : intensity >= 4 ? '보통' : '약한';
-      
-      // 갈등 내용에 따른 감정 분석 개선
-      let specificEmotion = '';
-      if (description.includes('사기') || description.includes('속았')) {
-        specificEmotion = '배신감과 분노, 그리고 믿었던 사람에 대한 실망감이';
-      } else if (description.includes('무시') || description.includes('차별')) {
-        specificEmotion = '무력감과 억울함이';
-      } else if (description.includes('돈') || description.includes('비용') || description.includes('경제')) {
-        specificEmotion = '경제적 부담감과 불공평함에 대한 분노가';
-      } else {
-        specificEmotion = `${currentEmotion}이`;
-      }
-      
-      return `현재 ${specificEmotion} ${intensityText} 갈등 강도(${intensity}/10)로 나타나고 있습니다. ${intensity >= 7 ? '즉각적인 해결이 필요한 상황입니다.' : '시간을 두고 차근차근 접근할 수 있는 상황입니다.'}`;
-    };
-
-    // 갈등 원인 분석
-    const analyzeConflict = () => {
-      // 갈등 내용에 따른 구체적 분석
-      let specificAnalysis = '';
-      
-      if (description.includes('사기') || description.includes('속았')) {
-        if (description.includes('메이플') || description.includes('게임')) {
-          specificAnalysis = '온라인 게임 내에서의 사기 행위로 인한 신뢰 파괴가 주요 원인입니다. 특히 알던 사람에게 당한 사기는 더욱 큰 배신감을 낳니다';
-        } else {
-          specificAnalysis = '사기 행위로 인한 신뢰 관계의 파괴가 주요 원인입니다';
-        }
-      } else {
-        const typeAnalysis = {
-          WORK: '업무 환경에서의 의견 차이와 역할 갈등',
-          FAMILY: '가족 구성원 간의 가치관 차이와 기대 불일치',
-          FRIEND: '친구 관계에서의 오해와 소통 부족',
-          COUPLE: '연인/부부 간의 감정적 거리감과 생활 패턴 차이',
-          NEIGHBOR: '생활 반경 내에서의 이해관계 충돌',
-          FINANCIAL: '금전적 가치관과 우선순위의 차이',
-          ONLINE: '온라인 소통의 한계와 오해, 익명성으로 인한 무책임한 행동',
-          ETC: '복합적인 원인'
-        };
-        specificAnalysis = typeAnalysis[conflictType] || '복합적인 원인';
-      }
-      
-      return `${specificAnalysis}이 갈등의 근본 원인으로 분석됩니다. 온라인 환경에서는 직접 대면하지 않은 채로 웅심이 커질 수 있으며, 문제 해결이 더욱 어려울 수 있습니다.`;
-    };
-
-    // 내 입장 분석
-    const analyzeMyPosition = () => {
-      const priorityContext = {
-        RELATIONSHIP: '관계 보전을 중시하면서도',
-        SOLUTION: '문제 해결을 우선시하면서',
-        SELF_CARE: '자신의 보호를 고려하면서',
-        PREVENTION: '재발 방지를 염두에 두면서',
-        NONE: '명확한 우선순위 없이'
-      };
-      
-      const talkContext = {
-        YES: '적극적으로 대화하고 싶어하며',
-        MAYBE: '상황에 따라 대화할 의향이 있으며',
-        NO: '현재는 대화하기 어려운 상황이지만',
-        NONE: '대화에 대한 입장이 불분명하며'
-      };
-      
-      // 갈등 내용에 따른 구체적 분석
-      let specificPosition = '';
-      if (description.includes('사기') || description.includes('속았')) {
-        specificPosition = '사기를 당한 피해자로서 배신감과 분노를 느끼며, 상대방으로부터 사과와 보상을 받고 싶어합니다. 또한 이런 일이 다시 반복되지 않기를 바란다';
-      } else if (description.includes('돈') || description.includes('비용')) {
-        specificPosition = '경제적 부담으로 인한 스트레스를 받고 있으며, 보다 공평한 비용 분담을 원하고 있다';
-      } else {
-        specificPosition = `"${desiredOutcome || '문제가 해결되기를 바라고 있다'}"라는 목표를 가지고 있다`;
-      }
-      
-      return `${priorityContext[priority] || '상황을 종합적으로 고려하면서'} ${talkContext[talkWillingness] || '상황을 지켜보고 있으며'}, ${specificPosition}. 현재 감정적으로 상처받은 상태로 명확한 해결책을 찾고자 합니다.`;
-    };
-
-    // 상대방 입장 추정
-    const estimatePartnerPosition = () => {
-      let partnerAnalysis = '';
-      
-      // 갈등 내용에 따른 구체적 분석
-      if (description.includes('사기') || description.includes('속았')) {
-        if (description.includes('메이플') || description.includes('게임')) {
-          partnerAnalysis = '온라인 게임에서의 사기 행위를 저지른 상대방은 자신의 행동이 상대방에게 얼마나 큰 상처를 주었는지 인식하지 못하고 있을 수 있습니다. 아니면 장난으로 생각하거나, 게임 내에서의 일이라 현실과 다르다고 합리화하고 있을 가능성도 있습니다';
-        } else {
-          partnerAnalysis = '사기 행위를 저지른 상대방은 자신의 행동에 대한 죄책감을 느끼거나, 아니면 발각되지 않을 것이라 생각하고 있을 수 있습니다';
-        }
-      } else if (conflictType === 'WORK') {
-        partnerAnalysis = '업리에 집중하다 보니 다른 사람의 감정을 고려할 여유가 없었을 수 있습니다';
-      } else if (conflictType === 'FAMILY') {
-        partnerAnalysis = '가족 내에서의 역할과 책임에 대한 다른 인식을 가지고 있을 수 있습니다';
-      } else if (conflictType === 'COUPLE') {
-        partnerAnalysis = '관계에서의 기대치와 소통 방식에 대한 다른 견해를 가지고 있을 수 있습니다';
-      } else {
-        partnerAnalysis = '각자의 상황과 배경이 다르기 때문에 문제에 대한 인식과 해결 방향에 차이가 있을 수 있습니다';
-      }
-      
-      // 갈등 강도에 따른 추가 분석
-      const intensityContext = intensity >= 7 
-        ? '갈등의 심각성을 아직 충분히 인식하지 못했거나, 자신의 지위나 이익을 지키려고 할 수 있습니다' 
-        : '시간이 지나면 자연스럽게 해결될 것이라고 생각하고 있을 수 있습니다';
-      
-      return `상대방은 ${partnerAnalysis}. ${intensityContext}. 직접적인 대면을 피하고 싶어하거나, 아직 문제의 심각성을 제대로 인식하지 못했을 가능성이 높습니다.`;
-    };
-
+    
+    // 갈등 분석 생성  
+    if (description.includes('동문서답') || description.includes('대화')) {
+      conflictAnalysis = `${typeText} 관계에서 서로 다른 소통 방식과 의사전달 패턴의 차이가 주요 원인입니다. 한쪽은 직접적인 소통을 원하지만 다른 쪽은 다른 방식으로 반응하여 의사소통 단절이 발생했습니다.`;
+    } else {
+      conflictAnalysis = `${typeText} 갈등으로, 근본적인 소통과 이해 부족이 주요 원인으로 보입니다. 서로의 관점과 필요를 이해하는 과정이 필요합니다.`;
+    }
+    
+    // 입장 분석 생성
+    if (basicData.conflictType === 'COUPLE' && description.includes('대화')) {
+      myPosition = '대화할 때 소통이 잘 안되는 상황에서 상대방이 동문서답을 한다고 느끼고 있으며, 의미 있는 대화를 하고 싶어합니다.';
+      partnerPosition = '상대방도 대화를 하려고 노력하고 있지만, 어떻게 대답해야 할지 모르거나 서로 다른 소통 방식을 선호할 가능성이 있습니다.';
+    } else {
+      myPosition = '갈등 상황에서 자신의 관점과 필요를 명확히 표현하고 해결을 원하고 있습니다.';
+      partnerPosition = '상대방도 나름의 이유와 관점을 가지고 있으며, 상황에 대한 다른 해석을 할 수 있습니다.';
+    }
+    
     return {
-      emotionAnalysis: analyzeEmotion(),
-      conflictAnalysis: analyzeConflict(),
-      myPosition: analyzeMyPosition(),
-      partnerPosition: estimatePartnerPosition()
+      emotion_analysis: emotionAnalysis,
+      conflict_analysis: conflictAnalysis,
+      my_position: myPosition,
+      partner_position: partnerPosition,
+      relationship_health_score: Math.max(20, 100 - (basicData.intensity * 8)),
+      communication_score: Math.max(10, 80 - (basicData.intensity * 6)),
+      trust_score: { score: Math.max(15, 70 - (basicData.intensity * 7)), analysis: '신뢰 회복을 위한 노력이 필요합니다.' },
+      cooperation_score: { score: Math.max(20, 75 - (basicData.intensity * 5)), improvement_suggestions: ['열린 대화', '상호 이해', '공통 목표 설정'] },
+      priority_recommendation: basicData.intensity >= 7 ? 'HIGH' : basicData.intensity >= 4 ? 'MEDIUM' : 'LOW',
+      recommended_actions: ['진정한 대화 시간 갖기', '상대방 입장 이해하기', '구체적인 해결방안 모색']
     };
   };
-  const fetchTempConflictData = async () => {
-    try {
-      // sessionStorage에서 데이터 가져오기 (실제 데이터 우선)
-      const basicData = {
-        title: sessionStorage.getItem('tempTitle') || '갈등 제목',
-        description: sessionStorage.getItem('tempDescription') || '갈등 설명',
-        conflictType: sessionStorage.getItem('tempConflictType') || 'ETC',
-        aiSummary: sessionStorage.getItem('tempAiSummary') || '분석 결과를 불러오는 중입니다...',
-        aiSolutions: sessionStorage.getItem('tempAiSolutions') || '해결방안을 불러오는 중입니다...',
-        // ConflictDetailPage 스타일로 추가 데이터
-        createdAt: new Date().toISOString(),
-        intensity: parseInt(sessionStorage.getItem('tempIntensity')) || 7,
-        initialEmotion: sessionStorage.getItem('tempEmotion') || 'FRUSTRATION',
-        priority: sessionStorage.getItem('tempPriority') || 'SOLUTION',
-        talkWillingness: sessionStorage.getItem('tempTalkWillingness') || 'MAYBE',
-        desiredOutcome: sessionStorage.getItem('tempDesiredOutcome') || '문제를 해결하고 싶어요',
-      };
-      
-      console.log('sessionStorage에서 가져온 기본 데이터:', basicData);
 
-      // 실제 데이터를 기반으로 AI 분석 수행
-      const aiAnalysis = generateAIAnalysis(basicData);
-      console.log('AI 분석 결과:', aiAnalysis);
+  const handleConflictResolution = () => {
+    navigate('/video-call');
+  };
+
+  // 토닥토닥 서비스로 이동
+  const handleComfort = () => {
+    navigate('/comfort');
+  };
+
+  // 커뮤니티 페이지로 이동
+  const handleCommunity = () => {
+    navigate('/community');
+  };
+
+  // 전문 상담사 매칭 페이지로 이동
+  const handleExpertMatching = () => {
+    navigate('/expert-matching');
+  };
+
+  // 다시 갈등 작성 페이지로 이동
+  const handleNewConflict = () => {
+    navigate('/conflicts/create');
+  };
+  useEffect(() => {
+    if (tempId) fetchTempConflictData();
+  }, [tempId]);
+
+  const fetchTempConflictData = async () => {
+    setIsLoading(true);
+
+    // 1) sessionStorage에서 입력 데이터 가져오기
+    const basicData = {
+      title:           sessionStorage.getItem('tempTitle')           || '갈등 제목',
+      description:     sessionStorage.getItem('tempDescription')     || '갈등 설명',
+      conflictType:    sessionStorage.getItem('tempConflictType')    || 'ETC',
+      aiSummary:       sessionStorage.getItem('tempAiSummary')       || '',
+      aiSolutions:     sessionStorage.getItem('tempAiSolutions')     || '',
+      createdAt:       new Date().toISOString(),
+      intensity:       parseInt(sessionStorage.getItem('tempIntensity')) || 5,
+      initialEmotion:  sessionStorage.getItem('tempEmotion')         || 'ANGER',
+      priority:        sessionStorage.getItem('tempPriority')        || 'NONE',
+      talkWillingness: sessionStorage.getItem('tempTalkWillingness') || 'YES',
+      desiredOutcome:  sessionStorage.getItem('tempDesiredOutcome')  || 'RELATIONSHIP'
+    };
+
+    try {
+      // 2) 기본 AI 요약/해결방안 호출
+      const basicRes = await fetch(
+        `${API_BASE_URL}/conflict/analyze/${tempId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type':  'application/json'
+          }
+        }
+      );
+      if (!basicRes.ok) throw new Error('기본 AI 분석 실패');
+      const basicJson = await basicRes.json();
+      const basicAi   = basicJson.data; // { summary, solutions }
+
+      // 3) 고급 AI 분석 호출
+      const advRes = await fetch(
+        `${API_BASE_URL}/conflict/analyze/advanced/${tempId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type':  'application/json'
+          }
+        }
+      );
+      if (!advRes.ok) throw new Error('고급 AI 분석 실패');
+      const advJson = await advRes.json();
       
-      // AI 분석 결과를 sessionStorage에서 가져오되, 없으면 실시간 분석 결과 사용
-      const finalEmotionAnalysis = sessionStorage.getItem('tempEmotionAnalysis') || aiAnalysis.emotionAnalysis;
-      const finalConflictAnalysis = sessionStorage.getItem('tempConflictAnalysis') || aiAnalysis.conflictAnalysis;
-      const finalMyPosition = sessionStorage.getItem('tempMyPosition') || aiAnalysis.myPosition;
-      const finalPartnerPosition = sessionStorage.getItem('tempPartnerPosition') || aiAnalysis.partnerPosition;
+      console.log('고급 분석 응답 전체:', JSON.stringify(advJson, null, 2));
       
       // 최종 데이터 조합
       const tempData = {
@@ -202,24 +174,78 @@ const ConflictAnalysisResultPage = () => {
         ])
       };
       
-      console.log('AI가 분석한 데이터:', tempData);
-      setConflictData(tempData);
-    } catch (error) {
-      console.error('임시 갈등 데이터 조회 실패:', error);
-      // 기본 데이터 설정
+      console.log('비어있는 값 확인:');
+      console.log('- emotionAnalysis 비어있음?', isEmptyOrError(emotionAnalysis));
+      console.log('- conflictAnalysis 비어있음?', isEmptyOrError(conflictAnalysis));
+      console.log('- myPosition 비어있음?', isEmptyOrError(myPosition));
+      console.log('- partnerPosition 비어있음?', isEmptyOrError(partnerPosition));
+      
+      // 비어있는 값이 있으면 폴백 사용
+      if (isEmptyOrError(emotionAnalysis) || isEmptyOrError(conflictAnalysis) || 
+          isEmptyOrError(myPosition) || isEmptyOrError(partnerPosition)) {
+        console.log('백엔드에서 빈 값 수신 - 폴백 분석 사용');
+        throw new Error('백엔드 AI 분석 결과가 비어있음');
+      }
+      const relationshipHealthScore = adv.relationship_health_score ?? adv.relationshipHealthScore ?? 0;
+      const communicationScore      = adv.communication_score      ?? adv.communicationScore      ?? 0;
+      const trustScoreRaw           = adv.trust_score              ?? adv.trustScore              ?? JSON.stringify({ score:0, analysis:'' });
+      const cooperationScoreRaw     = adv.cooperation_score        ?? adv.cooperationScore        ?? JSON.stringify({ score:0, improvement_suggestions:[] });
+      const priorityRecommendation  = adv.priority_recommendation  ?? adv.priorityRecommendation  ?? '';
+      const recommendedActionsRaw   = adv.recommended_actions      ?? adv.recommendedActions      ?? JSON.stringify([]);
+
+      // 5) JSON.parse 처리
+      const trustScore = typeof trustScoreRaw === 'string'
+        ? JSON.parse(trustScoreRaw)
+        : trustScoreRaw;
+      const cooperationScore = typeof cooperationScoreRaw === 'string'
+        ? JSON.parse(cooperationScoreRaw)
+        : cooperationScoreRaw;
+      const recommendedActions = Array.isArray(recommendedActionsRaw)
+        ? recommendedActionsRaw
+        : JSON.parse(recommendedActionsRaw);
+
+      // 6) 상태 업데이트
       setConflictData({
-        title: '갈등 제목',
-        description: '갈등 설명',
-        conflictType: 'ETC',
-        aiSummary: '분석 결과를 가져오지 못했습니다.',
-        aiSolutions: '해결방안을 가져오지 못했습니다.',
-        createdAt: new Date().toISOString(),
-        intensity: '5',
-        emotionAnalysis: '감정 분석 데이터가 없습니다.',
-        conflictAnalysis: '갈등 분석 데이터가 없습니다.',
-        relationshipHealthScore: 50,
-        communicationScore: 50
+        ...basicData,
+        aiSummary:             basicAi.summary,
+        aiSolutions:           basicAi.solutions,
+        emotionAnalysis,
+        conflictAnalysis,
+        myPosition,
+        partnerPosition,
+        relationshipHealthScore,
+        communicationScore,
+        trustScore,
+        cooperationScore,
+        priorityRecommendation,
+        recommendedActions
       });
+    } catch (err) {
+      console.error('AI 백엔드 연결 오류:', err);
+      console.log('백엔드 AI 실패 - 개선된 폴백 분석 사용');
+
+      // 개선된 폴백 분석 사용
+      const improvedAnalysis = generateImprovedFallback(basicData);
+      
+      setConflictData({
+        ...basicData,
+        aiSummary:                basicData.aiSummary,
+        aiSolutions:              basicData.aiSolutions,
+        emotionAnalysis:          improvedAnalysis.emotion_analysis,
+        conflictAnalysis:         improvedAnalysis.conflict_analysis,
+        myPosition:               improvedAnalysis.my_position,
+        partnerPosition:          improvedAnalysis.partner_position,
+        relationshipHealthScore:  improvedAnalysis.relationship_health_score,
+        communicationScore:       improvedAnalysis.communication_score,
+        trustScore:               improvedAnalysis.trust_score,
+        cooperationScore:         improvedAnalysis.cooperation_score,
+        priorityRecommendation:   improvedAnalysis.priority_recommendation,
+        recommendedActions:       improvedAnalysis.recommended_actions
+      });
+      
+      console.log('개선된 폴백 분석 완료!');
+      console.log('감정 분석:', improvedAnalysis.emotion_analysis);
+      console.log('갈등 분석:', improvedAnalysis.conflict_analysis);
     } finally {
       setIsLoading(false);
     }
@@ -238,9 +264,7 @@ const ConflictAnalysisResultPage = () => {
     }
   };
 
-  const handleGoBack = () => {
-    navigate('/conflicts');
-  };
+  const handleGoBack = () => navigate('/conflicts');
 
   // ConflictDetailPage에서 사용하는 타입 변환 함수들
   const getConflictTypeText = (type) => {
@@ -476,24 +500,7 @@ const ConflictAnalysisResultPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700 mx-auto mb-4"></div>
-          <p className="text-gray-600">결과를 불러오는 중...</p>
-          {/* 전문상담사 매칭 카드 */}
-          <div 
-            className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2 shadow-xl"
-            style={{ background: '#EE9278' }}
-          >
-            <h3 className="text-2xl font-bold mb-6">전문상담사 매칭</h3>
-            <p className="mb-8 leading-relaxed opacity-90">
-              나의 대화중재 기록을 확인하고<br/>
-              관리해요
-            </p>
-            <div className="absolute bottom-8 right-8">
-              <span className="text-2xl">→</span>
-            </div>
-          </div>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700 mx-auto mb-4"></div>
       </div>
     );
   }

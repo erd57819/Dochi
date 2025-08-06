@@ -46,11 +46,30 @@ const KakaoCallbackPage = () => {
         } = loginData;
 
         console.log(' accessToken:', loginData.accessToken);
+        
+        // 🔑 JWT에서 memberId 추출 (일반 로그인과 동일한 방식)
+        let memberId = null;
+        try {
+          const payload = JSON.parse(atob(accessToken.split('.')[1]));
+          memberId = payload.memberId;
+          console.log('JWT에서 추출한 memberId:', memberId);
+        } catch (error) {
+          console.error('JWT 토큰 파싱 실패:', error);
+        }
+        
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         console.log(' 저장된 accessToken:', localStorage.getItem('accessToken'));
 
-        logIn({ userId, name, nickname, email, profileImage, isSocial }, accessToken);
+        logIn({ 
+          id: memberId,        // JWT에서 추출한 memberId를 id로 저장
+          userId, 
+          name, 
+          nickname, 
+          email, 
+          profileImage, 
+          isSocial 
+        }, accessToken);
 
         alert('카카오 로그인 성공!');
         navigate('/', { replace: true });

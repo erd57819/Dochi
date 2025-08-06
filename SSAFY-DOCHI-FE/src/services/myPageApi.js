@@ -98,6 +98,36 @@ export const myPageApi = {
       throw error;
     }
   },
+  /**
+ * 프로필 이미지 파일 업로드 (FormData 사용)
+ * @param {FormData} formData - 파일 포함된 FormData 객체
+ * @returns {Promise<Object>} 업로드 결과
+ */
+async uploadProfileImage(formData) {
+  try {
+    console.log('📤 프로필 이미지 직접 업로드 시작');
+
+    const response = await fetch(`${API_BASE_URL}/user/image/upload`, {
+      method: 'POST',
+      headers: getAuthHeadersForUpload(), // 🔐 인증만 필요, Content-Type은 자동 설정됨 (multipart/form-data)
+      body: formData
+    });
+
+    await handleApiError(response);
+    const data = await response.json();
+
+    console.log('✅ 이미지 직접 업로드 성공:', data);
+
+    return {
+      success: true,
+      data: data.data
+    };
+  } catch (error) {
+    console.error('❌ 이미지 직접 업로드 실패:', error);
+    throw error;
+  }
+},
+
 
   /**
    * 사용자 정보 조회
