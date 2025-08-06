@@ -62,6 +62,15 @@ const CommunityPage = () => {
       return;
     }
 
+    // 🔍 디버깅 로그 추가
+    console.log('=== 좋아요 디버깅 ===');
+    console.log('user 객체 전체:', user);
+    console.log('user.id:', user?.id);
+    console.log('user.userId:', user?.userId);
+    console.log('postId:', postId);
+    console.log('likeType:', likeType);
+    console.log('====================');
+
     try {
       const result = await likeApi.togglePostLike(postId, user.id, likeType);
       
