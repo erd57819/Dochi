@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://mysql:3306/dochi?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/dochi?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD}
     hikari:
@@ -16,7 +16,7 @@ spring:
   data:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6381}
+      port: ${SPRING_REDIS_PORT:6379}
       timeout: ${REDIS_TIMEOUT:2000ms}
       lettuce:
         pool:

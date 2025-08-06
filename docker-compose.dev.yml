@@ -31,7 +31,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:mysql://dochi-mysql:3306/dochi?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_  PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_REDIS_HOST=dochi-redis
       - SPRING_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
@@ -111,8 +111,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /c/SSAFY/commonPJ/S13P11C209/mkcert/localhost.pem:/etc/ssl/certs/localhost.pem:ro
-      - /c/SSAFY/commonPJ/S13P11C209/mkcert/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
+      - ./mkcert/localhost.pem:/etc/ssl/certs/localhost.pem:ro
+      - ./mkcert/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
     depends_on:
       - dochi-frontend
       - dochi-backend
