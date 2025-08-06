@@ -8,6 +8,11 @@ const VideoCallRoom = () => {
   // 인증 스토어에서 토큰 가져오기
   const { token, isLoggedIn } = useAuthStore();
   
+  // 게스트 모드 관련 상태
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [guestNickname, setGuestNickname] = useState('');
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  
   // 상태 관리
   const [room, setRoom] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -44,7 +49,7 @@ const VideoCallRoom = () => {
   };
   
   const roomName = getRoomIdFromUrl();
-  const participantName = '사용자1';
+  const [participantName, setParticipantName] = useState('사용자1');
   
   // LiveKit 서버 URL - nginx 프록시 통해 연결
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
@@ -217,17 +222,26 @@ const VideoCallRoom = () => {
 
   // 컴포넌트 마운트시 face-api.js 모델 로드
   useEffect(() => {
+    // 로그인되지 않은 경우 게스트 모달 표시
     if (!isLoggedIn) {
-      setError('로그인이 필요합니다');
+      console.log('게스트 모드로 접속');
+      setShowGuestModal(true);
+      return;
     }
     
     // Face-API 모델 로드
     loadFaceApiModels();
     
+    // 로그인된 사용자는 바로 룸 참가
+    if (!room) {
+      console.log('룸 참가 시작...');
+      joinRoom();
+    }
+    
     return () => {
       leaveRoom();
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isGuestMode]);
 
   // Face-API 모델 로드
   const loadFaceApiModels = async () => {
@@ -431,8 +445,40 @@ const VideoCallRoom = () => {
   // 토큰 서버에서 가져오기
   const getTokenFromServer = async (roomName) => {
     try {
-      console.log('토큰 요청 시작...', { roomName, hasToken: !!token });
+      console.log('토큰 요청 시작...', { roomName, hasToken: !!token, isGuest: isGuestMode });
       
+      // 게스트 모드일 경우 게스트 토큰 생성
+      if (isGuestMode) {
+        // 게스트 정보로 임시 토큰 생성 (백엔드와 협의 필요)
+        const guestData = {
+          room: roomName,
+          identity: `guest_${Date.now()}`,
+          name: participantName,
+          metadata: JSON.stringify({ isGuest: true })
+        };
+        
+        try {
+          // 게스트 토큰 요청 (API 엔드포인트 필요)
+          const response = await fetch('/dochi/video-call/guest-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(guestData)
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            return data.token;
+          }
+        } catch (guestError) {
+          console.log('게스트 API 없음, 테스트 토큰 사용');
+        }
+        
+        // 게스트 API가 없으면 로컬 테스트 토큰 생성 (개발용)
+        console.log('테스트 게스트 토큰 생성');
+        return 'test-guest-token-' + Date.now();
+      }
+      
+      // 일반 사용자 토큰 요청
       const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
       
       console.log('토큰 응답 데이터:', response.data);
@@ -1246,31 +1292,80 @@ const VideoCallRoom = () => {
     }
   };
 
-  // 로그인 안 된 경우
-  if (!isLoggedIn) {
-    return (
-      <div className="w-full h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-2xl font-bold mb-4">🦔 참견도치 화상통화</h1>
-          <p className="text-lg mb-4">화상통화를 이용하려면 로그인이 필요합니다</p>
-          <button 
-            onClick={() => window.location.href = '/login'}
-            className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-medium"
+  // 게스트 모달 컴포넌트
+  const GuestModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <h2 className="text-2xl font-bold mb-4">화상채팅 참여</h2>
+        <p className="text-gray-600 mb-6">
+          게스트로 참여하거나 로그인하여 참여할 수 있습니다.
+        </p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              닉네임 (선택사항)
+            </label>
+            <input
+              type="text"
+              value={guestNickname}
+              onChange={(e) => setGuestNickname(e.target.value)}
+              placeholder="게스트"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <button
+            onClick={() => {
+              setIsGuestMode(true);
+              setParticipantName(guestNickname || `게스트${Math.floor(Math.random() * 1000)}`);
+              setShowGuestModal(false);
+              // Face-API 모델 로드 후 룸 참가
+              loadFaceApiModels().then(() => {
+                joinRoom();
+              });
+            }}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
           >
-            로그인하러 가기
+            게스트로 참여
+          </button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">또는</span>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => {
+              window.location.href = '/login';
+            }}
+            className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
+          >
+            로그인하기
           </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="w-full h-screen bg-gray-900 flex flex-col">
+      {/* 게스트 모달 */}
+      {showGuestModal && <GuestModal />}
+      
       {/* 헤더 */}
       <div className="bg-gray-800 p-4 text-white">
-        <h1 className="text-xl font-bold">🦔 참견도치 화상통화 (LiveKit)</h1>
+        <h1 className="text-xl font-bold">
+          🦔 참견도치 화상통화 (LiveKit)
+          {isGuestMode && <span className="text-sm text-gray-400 ml-2">(게스트 모드)</span>}
+        </h1>
         <p className="text-sm text-gray-300">
-          룸: {roomName} | 상태: {isConnected ? '연결됨' : '연결 안됨'} | 로그인: {isLoggedIn ? '완료' : '필요'}
+          룸: {roomName} | 상태: {isConnected ? '연결됨' : '연결 안됨'} | 
+          {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
         </p>
         {error && (
           <p className="text-red-400 text-sm mt-1">❌ {error}</p>

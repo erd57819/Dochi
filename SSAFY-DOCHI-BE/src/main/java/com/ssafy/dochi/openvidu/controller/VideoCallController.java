@@ -72,6 +72,30 @@ public class VideoCallController {
         return ApiResponseGenerator.success(Map.of("token", token), HttpStatus.OK);
     }
 
+    // 게스트 사용자 토큰 발급 엔드포인트
+    @PostMapping("/guest-token")
+    public ApiResponse<?> generateGuestToken(
+            @RequestBody Map<String, Object> request
+    ) {
+        try {
+            String room = (String) request.get("room");
+            String identity = (String) request.get("identity");
+            String name = (String) request.get("name");
+            
+            // 필수 파라미터 검증
+            if (room == null || identity == null || name == null) {
+                return ApiResponseGenerator.fail("room, identity, name 파라미터가 필요합니다", HttpStatus.BAD_REQUEST);
+            }
+            
+            // 게스트용 LiveKit 토큰 생성
+            String token = videoCallService.createGuestToken(room, identity, name);
+            return ApiResponseGenerator.success(Map.of("token", token), HttpStatus.OK);
+            
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("게스트 토큰 생성 실패: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // AI 중재 서비스 엔드포인트
     @PostMapping("/ai/mediation")
     public ApiResponse<?> requestAiMediation(
