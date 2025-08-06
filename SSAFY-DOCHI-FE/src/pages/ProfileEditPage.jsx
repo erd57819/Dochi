@@ -127,43 +127,48 @@ const ProfileEditPage = () => {
     }
   };
 
-  // S3에 이미지 업로드하는 함수
-  const uploadImageToS3 = async (file) => {
-    try {
-      // 1. Presigned URL 생성
-      const imageInfo = {
-        fileName: file.name,
-        contentType: file.type
-      };
-      
-      const urlResponse = await myPageApi.generateProfileImageUploadUrl(imageInfo);
-      const { presignedUrl, imageKey } = urlResponse.data;
-      
-      // 2. S3에 이미지 업로드
-      const uploadResponse = await fetch(presignedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type
-        }
-      });
-      
-      if (!uploadResponse.ok) {
-        console.error('S3 업로드 실패 상세:', uploadResponse.status, uploadResponse.statusText);
-        throw new Error(`S3 업로드 실패: ${uploadResponse.status}`);
-      }
-      
-      console.log('✅ S3 업로드 성공');
-      
-      // 3. 업로드 완료 처리
-      await myPageApi.completeProfileImageUpload(imageKey);
-      
-      return imageKey;
-    } catch (error) {
-      console.error('S3 이미지 업로드 실패:', error);
-      throw error;
+  // S3에 이미지 업로드
+  const uploadImageToServer = async (file) => {
+  try {
+    const fileName = file.name;
+    const contentType = file.type;
+
+    // 1. Presigned URL 요청
+    const presignRes = await myPageApi.generateProfileImageUploadUrl({
+      fileName,
+      contentType
+    });
+    const uploadUrl = presignRes?.data?.presignedUrl;
+    const imageKey = presignRes?.data?.imageKey;
+
+     if (!uploadUrl || !imageKey) {
+      throw new Error("Presigned URL 또는 imageKey가 없습니다.");
     }
-  };
+    
+    // 2. S3에 직접 PUT 요청
+    await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': contentType
+      },
+      body: file
+    });
+
+    console.log('✅ S3에 직접 업로드 완료');
+
+    // 3. 업로드 완료 처리
+    await myPageApi.completeProfileImageUpload(imageKey);
+
+    console.log('✅ 백엔드에 업로드 완료 통보 완료');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Presigned URL 방식 이미지 업로드 실패:', error);
+    throw error;
+  }
+};
+
+
 
   const handleDeleteUser = async () => {
     try {
@@ -214,7 +219,8 @@ const ProfileEditPage = () => {
       // 2. 이미지가 업로드된 경우 S3에 업로드 및 DB 업데이트
       if (uploadedImage && !hasError) {
         try {
-          await uploadImageToS3(uploadedImage);
+          await uploadImageToServer(uploadedImage);
+
           console.log('✅ 이미지 업로드 성공');
         } catch (err) {
           console.error('❌ 이미지 업로드 실패:', err);

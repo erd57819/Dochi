@@ -16,7 +16,7 @@ spring:
   data:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6381}
+      port: ${SPRING_REDIS_PORT:6379}
       timeout: ${REDIS_TIMEOUT:2000ms}
       lettuce:
         pool:
@@ -54,7 +54,7 @@ aws:
     access-key: ${AWS_ACCESS_KEY:}
     secret-key: ${AWS_SECRET_KEY:}
   s3:
-    region: ${AWS_REGION:ap-northeast-2}
+    region: ${AWS_REGION:us-east-1}
     bucket: ${AWS_S3_BUCKET:}
 
 # 소셜 로그인 설정
