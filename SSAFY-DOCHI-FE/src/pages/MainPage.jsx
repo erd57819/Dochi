@@ -165,7 +165,7 @@ export const MainPage = () => {
             className="absolute w-[645px] h-[223px] top-[50px] left-[52px] cursor-pointer"
             onClick={() => navigate('/community')}
           >
-            <div className="w-[645px] h-[204px] bg-[#f8d6b3] rounded-[20px] relative hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <div className="w-[645px] h-[204px] bg-[#f8d6b3] rounded-[20px] relative  transition-all duration-300 hover:-translate-y-1">
               <img
                 className="absolute w-[18px] h-[38px] top-[77px] right-[72px]"
                 alt="Vector"
@@ -184,7 +184,7 @@ export const MainPage = () => {
 
           {/* Conflict Resolution Card */}
           <div 
-            className="absolute w-[645px] h-[368px] top-[288px] left-[52px] bg-[#83673f] rounded-[20px] cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+            className="absolute w-[645px] h-[368px] top-[288px] left-[52px] bg-[#83673f] rounded-[20px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
             onClick={() => navigate('/conflict-resolution')}
           >
             <img
@@ -204,7 +204,7 @@ export const MainPage = () => {
 
           {/* Comfort Service Card */}
           <div 
-            className="absolute w-[645px] h-[368px] top-[50px] right-[51px] bg-[#7f5539] rounded-[20px] cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+            className="absolute w-[645px] h-[368px] top-[50px] right-[51px] bg-[#7f5539] rounded-[20px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
             onClick={() => navigate('/comfort')}
           >
             <img
@@ -227,7 +227,7 @@ export const MainPage = () => {
             className="absolute w-[645px] h-[214px] top-[447px] right-[51px] cursor-pointer"
             onClick={() => navigate('/mypage')}
           >
-            <div className="w-[645px] h-[204px] bg-[#cd9f6e] rounded-[20px] relative hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <div className="w-[645px] h-[204px] bg-[#cd9f6e] rounded-[20px] relative transition-all duration-300 hover:-translate-y-1">
               <div className="absolute w-[506px] top-[115px] left-[43px] font-['Pretendard-Regular'] font-normal text-[#4E2B1A] text-2xl leading-normal">
                 나의 대화·중재 기록을 확인하고 관리해요
               </div>
@@ -262,19 +262,21 @@ export const MainPage = () => {
           />
 
           <div 
-            className="absolute w-[321px] h-[30px] top-[363px] left-[121px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] cursor-pointer hover:text-[#a66a25] transition-colors"
-            onClick={() => navigate('/todak')}
+            className="absolute top-[363px] left-[121px] cursor-pointer group"
+            onClick={() => navigate('/comfort')}
           >
-            토닥토닥 서비스
+            <div className="w-[321px] h-[30px] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] group-hover:text-[#FFAF53] transition-colors">
+              토닥토닥 서비스
+            </div>
+            <div className="w-[307px] h-[58px] mt-[49px] font-['Pretendard-Medium'] font-medium text-black text-2xl leading-[25px] tracking-[0] group-hover:text-[#FFAF53] transition-colors">
+              참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
+            </div>
           </div>
 
-          <div className="absolute w-[900px] h-[92px] top-[135px] left-[270px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-8xl leading-5 tracking-[0]">
+          <div className="absolute w-[900px] h-[92px] top-[135px] left-[270px]  font-['Pretendard-SemiBold'] font-semibold text-8xl leading-5 tracking-[0]"
+          >
             <span className="text-[#bf7d2c]">참견도치</span>
             <span className="text-[#333333]">의 서비스</span>
-          </div>
-
-          <div className="absolute w-[307px] h-[58px] top-[442px] left-[121px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-Medium'] font-medium text-black text-2xl leading-[25px] tracking-[0]">
-            참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
           </div>
 
           <img
@@ -284,14 +286,15 @@ export const MainPage = () => {
           />
 
           <div 
-            className="absolute w-[485px] h-[31px] top-[670px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] cursor-pointer hover:text-[#a66a25] transition-colors"
+            className="absolute top-[670px] left-[782px] cursor-pointer group"
             onClick={() => navigate('/emotion')}
           >
-            참견도치와 갈등 해결하기
-          </div>
-
-          <div className="absolute w-[422px] h-[59px] top-[762px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-Medium'] font-medium text-black text-2xl tracking-[0] leading-[25px]">
-            화상 대화 속 감정과 대화을 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
+            <div className="w-[485px] h-[31px] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] group-hover:text-[#FFAF53] transition-colors">
+              참견도치와 갈등 해결하기
+            </div>
+            <div className="w-[422px] h-[59px] mt-[61px] font-['Pretendard-Medium'] font-medium text-black text-2xl tracking-[0] leading-[25px] group-hover:text-[#FFAF53] transition-colors">
+              화상 대화 속 감정과 대화을 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
+            </div>
           </div>
 
           <img
@@ -301,14 +304,15 @@ export const MainPage = () => {
           />
 
           <div 
-            className="absolute w-[485px] h-[30px] top-[928px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] cursor-pointer hover:text-[#a66a25] transition-colors"
+            className="absolute top-[928px] left-[782px] cursor-pointer group"
             onClick={() => navigate('/community')}
           >
-            커뮤니티
-          </div>
-
-          <div className="absolute w-[307px] h-[59px] top-[1018px] left-[782px] [text-shadow:0px_4px_4px_#00000040] font-['Pretendard-Regular'] font-normal text-[#3d2b1f] text-2xl leading-normal tracking-[0]">
-            비슷한 고민을 가진 사람들과 이야기해보세요
+            <div className="w-[485px] h-[30px] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[42px] leading-5 tracking-[0] group-hover:text-[#FFAF53] transition-colors">
+              커뮤니티
+            </div>
+            <div className="w-[307px] h-[59px] mt-[60px] font-['Pretendard-Medium'] font-medium text-[#3d2b1f] text-2xl leading-normal tracking-[0] group-hover:text-[#FFAF53] transition-colors">
+              비슷한 고민을 가진 사람들과 이야기해보세요
+            </div>
           </div>
 
           <img
@@ -321,13 +325,12 @@ export const MainPage = () => {
           <div className="absolute w-full h-[522px] top-[1236px] left-0 bg-[#f6faff]" />
 
           <div className="absolute w-[359px] top-[1535px] left-[138px] font-['Pretendard-Regular'] font-normal text-gray-600 text-sm tracking-[0] leading-[22px]">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
-            dictum aliquet accumsan porta lectus ridiculus in mattis. Netus
-            sodales in volutpat ullamcorper amet adipiscing fermentum.
+            AI 갈등 도우미 참견도치가 고민을 들어두고 해결을 위한 다양한 서비스를 제공해 드립니다.
+
           </div>
 
-          <div className="absolute w-[127px] top-[1485px] left-[136px] [text-shadow:0px_4px_4px_#00000040] [-webkit-text-stroke:1px_#000000] font-['Pretendard-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
-            About Rareblocks
+          <div className="absolute w-[127px] top-[1485px] left-[136px] [-webkit-text-stroke:0.3px_#000000] font-['Pretendard-Regular'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
+            About Team DDabong-Dochi
           </div>
 
           <img
@@ -338,53 +341,34 @@ export const MainPage = () => {
 
           {/* Footer Links */}
           <div className="absolute w-[139px] h-[186px] top-[1487px] left-[686px]">
-            <div className="absolute w-[135px] top-[41px] left-0 font-['Plus_Jakarta_Sans-Regular'] font-normal text-gray-900 text-sm tracking-[0] leading-10">
-              About<br />
-              Features<br />
-              Works<br />
-              Career
-            </div>
+            
             <div className="absolute w-[126px] top-0 left-0 font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
-              Company
+              Team Members
             </div>
           </div>
 
           <div className="absolute w-[167px] h-[186px] top-[1487px] left-[887px]">
             <div className="absolute w-[163px] top-[41px] left-0 font-['Plus_Jakarta_Sans-Regular'] font-normal text-sm tracking-[0] leading-10">
-              <span className="text-zinc-800">Customer Support<br /></span>
-              <span className="text-zinc-900">Delivery Details<br /></span>
-              <span className="text-zinc-800">Terms & Conditions<br />Privacy Policy</span>
+              <span className="text-zinc-800">Sunwoo Park<br /></span>
+              <span className="text-zinc-900">Dahye Lee<br /></span>
+              <span className="text-zinc-800">Yongbin Kim</span>
             </div>
             <div className="absolute w-[47px] top-0 left-0 font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
-              Help
+              Front-End
             </div>
           </div>
 
           <div className="absolute w-[163px] h-[186px] top-[1487px] left-[1129px]">
             <div className="absolute w-[159px] text-gray-900 top-[41px] left-0 font-['Plus_Jakarta_Sans-Regular'] font-normal text-sm tracking-[0] leading-10">
-              Free eBooks<br />
-              Development Tutorial<br />
-              How to - Blog<br />
-              Youtube Playlist
+              TaeYoung Kim<br />
+              Junho Shin<br />
+              Soyeon Kim<br />
             </div>
             <div className="absolute w-[92px] top-0 left-0 font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
-              Resources
+              Back-End
             </div>
           </div>
-
-          {/* CTA Section */}
-          <div className="absolute w-[1178px] h-[76px] top-[1310px] left-[137px]">
-            <div className="absolute w-[367px] top-0 left-0 font-['Pretendard-Bold'] font-bold text-gray-900 text-[32px] tracking-[0] leading-[42px]">
-              Learn how to grow 💪audience fast in Twitter
-            </div>
-            
-            <div className="absolute top-6 right-[195px] w-[193px] h-[45px] bg-gray-900 rounded-[60px] border-[1.5px] border-solid border-gray-900 flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors">
-              <div className="font-['Plus_Jakarta_Sans-Bold'] font-bold text-white text-sm tracking-[0] leading-[22px] whitespace-nowrap">
-                Download Free Chapter
-              </div>
-            </div>
-          </div>
-
+              
           <img
             className="absolute w-[1175px] h-px top-[1435px] left-[138px] object-cover"
             alt="Line"
