@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import Nav from '../components/Nav';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -21,75 +22,63 @@ import todak from "@/assets/todak.png";
 
 export const MainPage = () => {
   const navigate = useNavigate();
-  const containerRef = useRef(null);
   const [currentSection, setCurrentSection] = useState(0);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
     let isScrolling = false;
     let scrollTimeout;
 
     const handleWheel = (e) => {
+      const currentScrollTop = window.scrollY;
+      const sectionHeight = window.innerHeight;
+      
+      // 3번째 섹션 진입 후에는 자연스러운 스크롤 허용
+      if (currentScrollTop >= sectionHeight * 1.9) {
+        return; // 기본 스크롤 동작 허용
+      }
+      
       e.preventDefault();
       
       if (isScrolling) return;
       
       isScrolling = true;
       const delta = e.deltaY;
-      const currentScrollTop = container.scrollTop;
-      const maxScroll = container.scrollHeight - container.clientHeight;
       
-      // 마지막 섹션(3번째 섹션)에 있는지 확인
-      const isInLastSection = currentScrollTop >= window.innerHeight * 2;
+      let targetScroll;
       
       if (delta > 0) {
         // 아래로 스크롤
-        if (isInLastSection) {
-          // 마지막 섹션에서는 자연스럽게 스크롤
-          container.scrollBy({
-            top: window.innerHeight / 3, // 더 작은 단위로 스크롤
-            behavior: 'smooth'
-          });
-        } else {
-          // 처음 두 섹션에서는 전체 화면 단위로 스크롤
-          container.scrollBy({
-            top: window.innerHeight,
-            behavior: 'smooth'
-          });
+        if (currentScrollTop < sectionHeight * 0.8) {
+          targetScroll = sectionHeight; // 2번째 섹션
+        } else if (currentScrollTop < sectionHeight * 1.8) {
+          targetScroll = sectionHeight * 2; // 3번째 섹션
         }
       } else {
         // 위로 스크롤
-        if (isInLastSection && currentScrollTop < maxScroll - 50) {
-          // 마지막 섹션 내에서 위로 스크롤
-          container.scrollBy({
-            top: -window.innerHeight / 3,
-            behavior: 'smooth'
-          });
-        } else {
-          // 섹션 단위로 위로 스크롤
-          container.scrollBy({
-            top: -window.innerHeight,
-            behavior: 'smooth'
-          });
+        if (currentScrollTop > sectionHeight * 1.2) {
+          targetScroll = sectionHeight; // 2번째 섹션
+        } else if (currentScrollTop > sectionHeight * 0.2) {
+          targetScroll = 0; // 1번째 섹션
         }
       }
       
-      // 스크롤 애니메이션 완료 후 플래그 해제 (더 느리게)
+      if (targetScroll !== undefined) {
+        window.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+      }
+      
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
         isScrolling = false;
-        // 스크롤 완료 후 현재 섹션 업데이트
-        handleScroll();
-      }, 1200); // 1.2초로 조정
+      }, 600);
     };
 
     const handleScroll = () => {
-      const scrollTop = container.scrollTop;
+      const scrollTop = window.scrollY;
       const sectionHeight = window.innerHeight;
-      
-      console.log('Scroll Top:', scrollTop, 'Section Height:', sectionHeight); // 디버깅용
       
       if (scrollTop < sectionHeight * 0.5) {
         setCurrentSection(0);
@@ -100,33 +89,34 @@ export const MainPage = () => {
       }
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    container.addEventListener('scroll', handleScroll);
-    
-    // 초기 섹션 설정
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('scroll', handleScroll);
     handleScroll();
     
     return () => {
-      container.removeEventListener('wheel', handleWheel);
-      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
     };
   }, []);
 
   const scrollToSection = (sectionIndex) => {
-    const container = containerRef.current;
-    if (!container) return;
-    
-    container.scrollTo({
-      top: sectionIndex * window.innerHeight,
+    const targetY = sectionIndex * window.innerHeight;
+    window.scrollTo({
+      top: targetY,
       behavior: 'smooth'
     });
   };
 
   return (
-    <div ref={containerRef} className="bg-white flex flex-row justify-center w-full h-screen overflow-y-scroll" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
+    <div className="bg-white" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
+      {/* Fixed Navbar */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <Nav />
+      </div>
+      
       {/* Sticky Pagination */}
-      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-50 flex flex-col space-y-4">
+      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-40 flex flex-col space-y-4">
         {[0, 1, 2].map((index) => (
           <div
             key={index}
@@ -140,10 +130,10 @@ export const MainPage = () => {
         ))}
       </div>
       
-      <div className="bg-white w-full max-w-[1296px] relative origin-top">
+      <div className="bg-white w-full max-w-[1296px] mx-auto relative pt-20">
         
         {/* Main Hero Section - Swiper */}
-        <div className="relative w-full h-screen bg-white" style={{scrollSnapAlign: 'start', scrollSnapStop: 'always'}}>
+        <section id="section-0" className="relative w-full h-screen bg-white" style={{scrollSnapAlign: 'start'}}>
           <Swiper
             modules={[Navigation, Pagination, Autoplay]}
             spaceBetween={0}
@@ -278,10 +268,10 @@ export const MainPage = () => {
           
           {/* Custom Pagination */}
           <div className="swiper-pagination-custom absolute bottom-7 left-1/2 transform -translate-x-1/2 z-10"></div>
-        </div>
+        </section>
 
         {/* Service Cards Section */}
-        <div className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start', scrollSnapStop: 'always'}}>
+        <section id="section-1" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
           <div className="absolute w-full h-[83px] top-[122px] left-0 right-0 font-['Pretendard-SemiBold'] font-semibold text-[86px] leading-5 tracking-[0] whitespace-nowrap text-center"
           >
             <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
@@ -370,10 +360,10 @@ export const MainPage = () => {
               />
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Detailed Services Section */}
-        <div className="relative w-full h-[1582px] bg-white pt-[180px] left-0" style={{scrollSnapAlign: 'start', scrollSnapStop: 'always'}}>
+        <section id="section-2" className="relative w-full bg-white pt-[180px] left-0" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
           <div className="w-full h-[1179px] bg-[linear-gradient(158deg,rgba(255,255,255,1)_0%,rgba(246,250,255,1)_100%)] absolute top-0 left-0" />
 
           <img
@@ -504,7 +494,7 @@ export const MainPage = () => {
             alt="Line"
             src={line203}
           />
-        </div>
+        </section>
       </div>
     </div>
   );
