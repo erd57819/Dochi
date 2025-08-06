@@ -4,6 +4,7 @@ import com.ssafy.dochi.conflict.dao.AiAnalysisResultDao;
 import com.ssafy.dochi.conflict.domain.AiAnalysisResult;
 import com.ssafy.dochi.conflict.domain.UserConflict.ConflictType;
 import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
+import com.ssafy.dochi.config.GmsAiClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,18 +29,82 @@ public class AiSummaryService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final AiAnalysisResultDao aiAnalysisResultDao;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final GmsAiClient gmsAiClient;
     
     @Value("${ai.service.url:http://localhost:8002}")
     private String aiServiceUrl;
     
     public AiAnalysisResDto generateAnalysis(String description, ConflictType conflictType) {
         try {
-            // AI 서비스 호출
-            return callAiService(description, conflictType);
+            // 먼저 GMS API 직접 호출 시도
+            return callGmsDirectly(description, conflictType);
         } catch (Exception e) {
-            log.error("AI 분석 생성 중 오류 발생", e);
-            // AI 서비스 호출 실패 시 fallback으로 간단한 분석 제공
-            return generateSimpleAnalysis(description, conflictType);
+            log.warn("GMS 직접 호출 실패, AI 서비스로 fallback: {}", e.getMessage());
+            try {
+                // AI 서비스 호출
+                return callAiService(description, conflictType);
+            } catch (Exception e2) {
+                log.error("AI 분석 생성 중 오류 발생", e2);
+                // AI 서비스 호출 실패 시 fallback으로 간단한 분석 제공
+                return generateSimpleAnalysis(description, conflictType);
+            }
+        }
+    }
+    
+    private AiAnalysisResDto callGmsDirectly(String description, ConflictType conflictType) {
+        try {
+            String conflictTypeKorean = getKoreanConflictType(conflictType);
+            
+            // 갈등 분석을 위한 프롬프트 구성
+            String analysisPrompt = String.format(
+                "다음은 %s 관련 갈등 상황입니다. 이를 분석하여 요약과 해결방안을 제시해주세요.\n\n" +
+                "갈등 내용: %s\n\n" +
+                "다음 형식으로 응답해주세요:\n" +
+                "=== 갈등 상황 분석 ===\n" +
+                "[갈등의 핵심 내용과 원인을 2-3문장으로 요약]\n\n" +
+                "=== 해결 방안 ===\n" +
+                "[구체적이고 실용적인 해결방안을 3-5개 제시]",
+                conflictTypeKorean, description
+            );
+            
+            // GMS API 호출
+            String gmsResponse = gmsAiClient.ask(analysisPrompt, "gpt-3.5-turbo");
+            
+            // 응답이 실패 메시지인 경우 예외 던지기
+            if (gmsResponse.startsWith("GMS 호출 실패:")) {
+                throw new RuntimeException(gmsResponse);
+            }
+            
+            // 응답 파싱
+            String[] sections = gmsResponse.split("=== 해결 방안 ===");
+            String summary = "";
+            String solutions = "";
+            
+            if (sections.length >= 1) {
+                summary = sections[0].replace("=== 갈등 상황 분석 ===", "").trim();
+            }
+            
+            if (sections.length >= 2) {
+                solutions = sections[1].trim();
+            }
+            
+            // 파싱이 실패한 경우 전체 응답을 요약으로 사용
+            if (summary.isEmpty()) {
+                summary = gmsResponse.length() > 200 ? gmsResponse.substring(0, 200) + "..." : gmsResponse;
+            }
+            
+            if (solutions.isEmpty()) {
+                solutions = getBasicSolutionsByType(conflictType);
+            }
+            
+            return AiAnalysisResDto.builder()
+                .summary(summary)
+                .solutions(solutions)
+                .build();
+                
+        } catch (Exception e) {
+            log.error("GMS 직접 호출 실패: {}", e.getMessage());
+            throw new RuntimeException("GMS API 호출 실패: " + e.getMessage(), e);
         }
     }
     
@@ -79,36 +145,248 @@ public class AiSummaryService {
     
     public Map<String, Object> generateAdvancedAnalysis(String description, ConflictType conflictType) {
         try {
-            // AI 서비스에 고급 분석 요청
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("original_text", description);
-            requestBody.put("conflict_type", getKoreanConflictType(conflictType));
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-            
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                aiServiceUrl + "/api/summary/advanced", entity, Map.class);
-            
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody();
-            } else {
-                throw new RuntimeException("AI 고급 분석 서비스 응답 오류");
-            }
+            // 먼저 GMS를 사용한 고급 분석 시도
+            return generateAdvancedAnalysisWithGMS(description, conflictType);
         } catch (Exception e) {
-            log.error("AI 고급 분석 실패: {}", e.getMessage());
-            // 기본값 반환
-            Map<String, Object> fallback = new HashMap<>();
-            fallback.put("emotion_analysis", "감정 분석을 완료할 수 없습니다.");
-            fallback.put("conflict_analysis", "갈등 분석을 완료할 수 없습니다.");
-            fallback.put("relationship_health_score", 50);
-            fallback.put("trust_score", Map.of("score", 50, "analysis", "신뢰도 분석 불가"));
-            fallback.put("communication_score", 50);
-            fallback.put("cooperation_score", Map.of("score", 50, "improvement_suggestions", List.of("분석 불가")));
-            fallback.put("priority_recommendation", "MEDIUM");
-            fallback.put("recommended_actions", List.of("전문가 상담을 권장합니다."));
-            return fallback;
+            log.warn("GMS 고급 분석 실패, AI 서비스로 fallback: {}", e.getMessage());
+            try {
+                // AI 서비스에 고급 분석 요청
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("original_text", description);
+                requestBody.put("conflict_type", getKoreanConflictType(conflictType));
+                
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+                
+                ResponseEntity<Map> response = restTemplate.postForEntity(
+                    aiServiceUrl + "/api/summary/advanced", entity, Map.class);
+                
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    return response.getBody();
+                } else {
+                    throw new RuntimeException("AI 고급 분석 서비스 응답 오류");
+                }
+            } catch (Exception e2) {
+                log.error("AI 고급 분석 실패: {}", e2.getMessage());
+                // 실질적인 기본 분석 제공
+                return generatePracticalFallbackAnalysis(description, conflictType);
+            }
+        }
+    }
+    
+    private Map<String, Object> generateAdvancedAnalysisWithGMS(String description, ConflictType conflictType) {
+        String conflictTypeKorean = getKoreanConflictType(conflictType);
+        
+        // 고급 분석을 위한 상세 프롬프트
+        String analysisPrompt = String.format(
+            "당신은 갈등 해결 전문가입니다. 다음 %s 갈등 상황을 분석하고 실질적인 해결방안을 제시해주세요.\n\n" +
+            "갈등 상황: %s\n\n" +
+            "다음 형식으로 분석해주세요:\n\n" +
+            "=== 감정 분석 ===\n" +
+            "[현재 감정 상태와 그 원인, 감정이 갈등에 미치는 영향을 구체적으로 분석]\n\n" +
+            "=== 갈등 원인 분석 ===\n" +
+            "[갈등의 근본 원인과 표면적 원인을 구분하여 분석]\n\n" +
+            "=== 실질적 해결 방안 ===\n" +
+            "[단계별로 실행 가능한 구체적 해결 방법 3-5가지 제시]",
+            conflictTypeKorean, description
+        );
+        
+        String gmsResponse = gmsAiClient.ask(analysisPrompt, "gpt-3.5-turbo");
+        
+        if (gmsResponse.startsWith("GMS 호출 실패:")) {
+            throw new RuntimeException(gmsResponse);
+        }
+        
+        // 응답 파싱
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            String[] sections = gmsResponse.split("=== ");
+            String emotionAnalysis = "";
+            String conflictAnalysis = "";
+            String solutions = "";
+            
+            for (String section : sections) {
+                if (section.startsWith("감정 분석")) {
+                    emotionAnalysis = section.replace("감정 분석 ===\n", "").trim();
+                } else if (section.startsWith("갈등 원인 분석")) {
+                    conflictAnalysis = section.replace("갈등 원인 분석 ===\n", "").trim();
+                } else if (section.startsWith("실질적 해결 방안")) {
+                    solutions = section.replace("실질적 해결 방안 ===\n", "").trim();
+                }
+            }
+            
+            // 파싱이 실패한 경우 전체 응답에서 추출
+            if (emotionAnalysis.isEmpty() && conflictAnalysis.isEmpty()) {
+                String[] lines = gmsResponse.split("\n");
+                StringBuilder sb = new StringBuilder();
+                for (String line : lines) {
+                    if (!line.startsWith("===") && !line.trim().isEmpty()) {
+                        sb.append(line).append(" ");
+                    }
+                }
+                String fullText = sb.toString().trim();
+                emotionAnalysis = fullText.substring(0, Math.min(200, fullText.length()));
+                conflictAnalysis = fullText.substring(Math.min(200, fullText.length()));
+            }
+            
+            result.put("emotion_analysis", emotionAnalysis.isEmpty() ? "AI가 감정 상태를 분석하여 맞춤형 조언을 제공합니다." : emotionAnalysis);
+            result.put("conflict_analysis", conflictAnalysis.isEmpty() ? "갈등의 근본 원인을 파악하여 해결 방향을 제시합니다." : conflictAnalysis);
+            result.put("recommended_actions", parseActionsFromSolutions(solutions));
+            result.put("priority_recommendation", generatePriorityRecommendation(description, conflictType));
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("GMS 응답 파싱 실패: {}", e.getMessage());
+            throw new RuntimeException("GMS 분석 결과 처리 실패", e);
+        }
+    }
+    
+    private Map<String, Object> generatePracticalFallbackAnalysis(String description, ConflictType conflictType) {
+        Map<String, Object> analysis = new HashMap<>();
+        
+        // 키워드 기반 실질적 분석
+        String emotionAnalysis = analyzeEmotionFromText(description);
+        String conflictAnalysis = analyzeConflictFromText(description, conflictType);
+        List<String> practicalActions = generatePracticalActions(description, conflictType);
+        String priorityRecommendation = generatePriorityRecommendation(description, conflictType);
+        
+        analysis.put("emotion_analysis", emotionAnalysis);
+        analysis.put("conflict_analysis", conflictAnalysis);
+        analysis.put("recommended_actions", practicalActions);
+        analysis.put("priority_recommendation", priorityRecommendation);
+        
+        return analysis;
+    }
+    
+    private String analyzeEmotionFromText(String description) {
+        StringBuilder analysis = new StringBuilder();
+        
+        if (description.contains("화") || description.contains("분노") || description.contains("짜증")) {
+            analysis.append("현재 분노와 좌절감이 주된 감정으로 나타나고 있습니다. ");
+            analysis.append("이러한 강한 감정은 갈등을 더욱 복잡하게 만들 수 있으므로, 먼저 감정을 조절하는 것이 중요합니다.");
+        } else if (description.contains("슬프") || description.contains("우울") || description.contains("실망")) {
+            analysis.append("슬픔과 실망감이 깊게 자리잡고 있는 상황입니다. ");
+            analysis.append("이는 기대했던 것과 현실 사이의 괴리에서 오는 자연스러운 반응이며, 충분한 회복 시간이 필요합니다.");
+        } else if (description.contains("불안") || description.contains("걱정") || description.contains("두려")) {
+            analysis.append("불안감과 걱정이 갈등 상황을 더욱 어렵게 만들고 있습니다. ");
+            analysis.append("미래에 대한 불확실성이 스트레스를 가중시키고 있으므로, 구체적인 계획 수립이 도움될 것입니다.");
+        } else {
+            analysis.append("복합적인 감정이 얽혀있는 상황으로 보입니다. ");
+            analysis.append("감정을 정리하고 객관적으로 상황을 바라보는 시각이 필요한 시점입니다.");
+        }
+        
+        return analysis.toString();
+    }
+    
+    private String analyzeConflictFromText(String description, ConflictType conflictType) {
+        StringBuilder analysis = new StringBuilder();
+        
+        // 갈등 유형별 분석
+        switch (conflictType) {
+            case WORK:
+                analysis.append("직장 내 갈등은 대부분 업무 방식이나 의사소통 문제에서 비롯됩니다. ");
+                break;
+            case FAMILY:
+                analysis.append("가족 간 갈등은 서로 다른 가치관과 기대치의 차이에서 발생합니다. ");
+                break;
+            case COUPLE:
+                analysis.append("연인/부부 간 갈등은 상호 이해와 소통의 부족이 주요 원인입니다. ");
+                break;
+            case FRIEND:
+                analysis.append("친구 관계의 갈등은 대개 오해나 서로 다른 기대에서 시작됩니다. ");
+                break;
+            default:
+                analysis.append("이 갈등은 다양한 요인이 복합적으로 작용하고 있는 상황입니다. ");
+        }
+        
+        // 키워드 기반 세부 분석
+        if (description.contains("돈") || description.contains("비용") || description.contains("경제")) {
+            analysis.append("경제적 이해관계가 갈등의 핵심 요소로 작용하고 있습니다. ");
+        }
+        if (description.contains("시간") || description.contains("약속")) {
+            analysis.append("시간 관리나 약속에 대한 인식 차이가 문제의 원인 중 하나입니다. ");
+        }
+        if (description.contains("무시") || description.contains("존중")) {
+            analysis.append("상호 존중의 부족이 갈등을 심화시키고 있는 상황입니다. ");
+        }
+        
+        analysis.append("근본적인 해결을 위해서는 서로의 입장을 이해하고 공통의 해결책을 찾는 것이 중요합니다.");
+        
+        return analysis.toString();
+    }
+    
+    private List<String> generatePracticalActions(String description, ConflictType conflictType) {
+        List<String> actions = new ArrayList<>();
+        
+        // 갈등 유형별 맞춤 행동 제안
+        switch (conflictType) {
+            case WORK:
+                actions.add("상사나 HR 담당자와 상담하여 객관적인 중재 요청하기");
+                actions.add("업무 역할과 책임을 명확히 정의하고 문서화하기");
+                actions.add("정기적인 팀 미팅을 통해 소통 채널 구축하기");
+                break;
+            case FAMILY:
+                actions.add("가족 회의를 열어 모든 구성원의 의견을 듣는 시간 갖기");
+                actions.add("서로의 입장을 이해하기 위한 개별 대화 시간 마련하기");
+                actions.add("가족 상담 전문가의 도움을 받아 객관적 시각 확보하기");
+                break;
+            case COUPLE:
+                actions.add("'I 메시지'를 사용하여 자신의 감정을 솔직하게 표현하기");
+                actions.add("상대방의 말을 끝까지 들어보고 공감하려 노력하기");
+                actions.add("커플 상담을 통해 소통 방법 개선하기");
+                break;
+            case FRIEND:
+                actions.add("오해가 있었는지 솔직하게 확인해보기");
+                actions.add("서로의 경계선을 존중하는 새로운 관계 룰 정하기");
+                actions.add("시간을 두고 감정이 정리된 후 대화 시도하기");
+                break;
+            default:
+                actions.add("갈등 상황을 객관적으로 정리하고 핵심 이슈 파악하기");
+                actions.add("상대방과 차분한 환경에서 대화할 기회 만들기");
+                actions.add("필요시 신뢰할 만한 제3자의 조언이나 중재 요청하기");
+        }
+        
+        // 공통 행동 추가
+        actions.add("감정이 격해질 때는 잠시 시간을 두고 냉정하게 생각하기");
+        actions.add("갈등 해결 후 관계 개선을 위한 구체적 계획 세우기");
+        
+        return actions;
+    }
+    
+    private List<String> parseActionsFromSolutions(String solutions) {
+        if (solutions.isEmpty()) {
+            return List.of("전문가의 조언을 구하는 것을 권장합니다.");
+        }
+        
+        List<String> actions = new ArrayList<>();
+        String[] lines = solutions.split("\n");
+        
+        for (String line : lines) {
+            line = line.trim();
+            if (!line.isEmpty() && !line.startsWith("===")) {
+                // 불필요한 기호 제거
+                line = line.replaceAll("^[\\d\\-\\*•]+\\s*", "");
+                if (line.length() > 10) { // 너무 짧은 텍스트 제외
+                    actions.add(line);
+                }
+            }
+        }
+        
+        return actions.isEmpty() ? List.of("상황에 맞는 맞춤형 해결 방안을 제시해드립니다.") : actions;
+    }
+    
+    private String generatePriorityRecommendation(String description, ConflictType conflictType) {
+        if (description.contains("폭력") || description.contains("위협") || description.contains("심각")) {
+            return "즉각적인 전문가 개입이 필요한 심각한 상황입니다. 안전을 최우선으로 고려하세요.";
+        } else if (description.contains("오랫동안") || description.contains("반복") || description.contains("계속")) {
+            return "장기간 지속된 갈등으로 전문적인 상담이나 중재가 도움이 될 것입니다.";
+        } else if (conflictType == ConflictType.COUPLE || conflictType == ConflictType.FAMILY) {
+            return "관계의 소중함을 고려하여 신중하고 따뜻한 접근이 필요합니다.";
+        } else {
+            return "차분한 대화와 상호 이해를 통해 해결 가능한 상황으로 보입니다.";
         }
     }
     

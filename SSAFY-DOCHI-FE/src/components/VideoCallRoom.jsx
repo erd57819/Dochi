@@ -471,15 +471,15 @@ const VideoCallRoom = () => {
       
       // 게스트 모드일 경우 게스트 토큰 생성
       if (isGuestMode) {
-        // 게스트 정보로 임시 토큰 생성 (백엔드와 협의 필요)
+        // 게스트 정보로 임시 토큰 생성 
         const guestData = {
           room: roomName,
           identity: `guest_${Date.now()}`,
-          name: participantName,
-          metadata: JSON.stringify({ isGuest: true })
+          name: participantName || `게스트_${Date.now()}`  // name이 비어있을 경우 기본값
         };
         
         try {
+          console.log('게스트 토큰 API 호출:', guestData);
           // 게스트 토큰 요청 (API 엔드포인트 필요)
           const response = await fetch('/dochi/video-call/guest-token', {
             method: 'POST',
@@ -489,10 +489,23 @@ const VideoCallRoom = () => {
           
           if (response.ok) {
             const data = await response.json();
-            return data.token;
+            console.log('게스트 토큰 응답:', data);
+            
+            // 백엔드 응답 구조에 맞춰 토큰 추출
+            if (data.status === 200 && data.data && data.data.token) {
+              return data.data.token;
+            } else if (data.token) {
+              return data.token;
+            } else {
+              throw new Error('게스트 토큰이 응답에 없음: ' + JSON.stringify(data));
+            }
+          } else {
+            const errorData = await response.text();
+            throw new Error(`게스트 토큰 요청 실패: ${response.status} - ${errorData}`);
           }
         } catch (guestError) {
-          console.log('게스트 API 없음, 테스트 토큰 사용');
+          console.error('게스트 토큰 요청 오류:', guestError);
+          console.log('테스트 토큰으로 폴백');
         }
         
         // 게스트 API가 없으면 로컬 테스트 토큰 생성 (개발용)

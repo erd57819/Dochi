@@ -5,6 +5,8 @@ services:
     image: mysql:8.0
     container_name: dochi-mysql
     restart: unless-stopped
+    ports:
+      - "3308:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: dochi
@@ -80,27 +82,29 @@ services:
     networks:
       - dochi-network
 
-  # == LIVEKIT SERVER (OpenVidu v3) ==
+    # == LIVEKIT SERVER (OpenVidu v3) ==
   dochi-openvidu:
     image: livekit/livekit-server:latest
     container_name: dochi-openvidu
     restart: unless-stopped
     ports:
-      - "7880:7880"
-      - "7881:7881"
-      - "55000-55100:55000-55100/udp"
+      - "7880:7880"     # HTTP/WebSocket
+      - "7881:7881"     # TCP
+      - "50000-50100:50000-50100/udp"  # UDP/RTC
+    networks:
+      - dochi-network
     environment:
       LIVEKIT_KEYS: "APIAhgcveqdsqqe: BoEePALrgYGMqHAvt1n8WQpQ492SR8tPR09eceeR7UeE"
       LIVEKIT_CONFIG: |
+        port: 7880
         rtc:
-          udp_port: 50000
           tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
           use_external_ip: true
-    command:
-      - --bind=0.0.0.0
-      - --port=7880
-    networks:
-      - dochi-network
+          ice_candidate_ip: localhost
+        log_level: debug
+
 
   dochi-nginx:
     build:
