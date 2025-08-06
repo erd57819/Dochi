@@ -62,6 +62,17 @@ public class VideoCallService {
         return true;
     }
 
+    // 게스트 사용자용 토큰 생성
+    public String createGuestToken(String roomCode, String identity, String name) {
+        // 게스트용 LiveKit 토큰 생성 (userId는 null로 설정)
+        return openViduService.createToken(
+                roomCode,
+                identity,
+                List.of("join", "publish", "subscribe"),
+                null // 게스트는 userId가 없음
+        );
+    }
+
     private String generateRoomCode() {
         // UUID를 사용해 고유한 방 코드 생성
         return UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();

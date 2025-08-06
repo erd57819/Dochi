@@ -8,6 +8,11 @@ const VideoCallRoom = () => {
   // 인증 스토어에서 토큰 가져오기
   const { token, isLoggedIn } = useAuthStore();
   
+  // 게스트 모드 관련 상태
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [guestNickname, setGuestNickname] = useState('');
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  
   // 상태 관리
   const [room, setRoom] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -44,11 +49,11 @@ const VideoCallRoom = () => {
   };
   
   const roomName = getRoomIdFromUrl();
-  const participantName = '사용자1';
+  const [participantName, setParticipantName] = useState('사용자1');
   
-  // LiveKit 서버 URL - nginx 프록시 통해 연결
+  // LiveKit 서버 URL - 개발 환경에서는 직접 연결
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
-    ? 'ws://localhost:7880'  // 로컬 개발
+    ? 'ws://localhost:7880'  // 로컬 LiveKit 직접 연결 (WebSocket)
     : 'wss://i13c209.p.ssafy.io/livekit';  // 배포 환경 (nginx 프록시)
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
@@ -78,7 +83,6 @@ const VideoCallRoom = () => {
   // 표정 분석 관련 refs
   const faceApiModelsLoaded = useRef(false);
   const emotionDetectionInterval = useRef(null);
-  const remoteEmotionIntervals = useRef(new Map());
 
   // 로컬 비디오 트랙 연결을 위한 useEffect - 실제 연결 수행
   useEffect(() => {
@@ -218,32 +222,46 @@ const VideoCallRoom = () => {
 
   // 컴포넌트 마운트시 face-api.js 모델 로드
   useEffect(() => {
+    // 로그인되지 않은 경우 게스트 모달 표시
     if (!isLoggedIn) {
-      setError('로그인이 필요합니다');
+      console.log('게스트 모드로 접속');
+      setShowGuestModal(true);
+      return;
     }
     
     // Face-API 모델 로드
     loadFaceApiModels();
     
+    // 로그인된 사용자는 바로 룸 참가
+    if (!room) {
+      console.log('룸 참가 시작...');
+      joinRoom();
+    }
+    
     return () => {
       leaveRoom();
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isGuestMode]);
 
   // Face-API 모델 로드
   const loadFaceApiModels = async () => {
     try {
       console.log('Face-API 모델 로딩 시작...');
       
+      // CDN에서 모델 로드
+      const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+      
       await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceExpressionNet.loadFromUri('/models')
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
       ]);
       
       faceApiModelsLoaded.current = true;
       console.log('Face-API 모델 로딩 완료');
     } catch (error) {
       console.error('Face-API 모델 로딩 실패:', error);
+      // 모델 로딩 실패 시에도 앱이 동작하도록 처리
+      faceApiModelsLoaded.current = false;
     }
   };
 
@@ -253,8 +271,30 @@ const VideoCallRoom = () => {
       console.log('룸 참가 시작...');
       setError(null);
       
-      // 1. Room 객체 생성
-      const newRoom = new Room();
+      // 1. Room 객체 생성 (개발 환경에 맞춘 설정)
+      const newRoom = new Room({
+        rtcConfig: {
+          iceServers: [
+            {
+              urls: [
+                'stun:stun.l.google.com:19302',
+                'stun:stun1.l.google.com:19302'
+              ]
+            }
+          ],
+          iceTransportPolicy: 'all',
+          bundlePolicy: 'max-bundle',
+          rtcpMuxPolicy: 'require'
+        },
+        // 개발 환경에서 연결 안정성 향상
+        reconnectPolicy: {
+          nextRetryDelayInMs: 1000,
+          timeoutInMs: 30000
+        },
+        connectOptions: {
+          autoSubscribe: true
+        }
+      });
       
       // 2. 이벤트 리스너 설정
       setupRoomEvents(newRoom);
@@ -427,8 +467,53 @@ const VideoCallRoom = () => {
   // 토큰 서버에서 가져오기
   const getTokenFromServer = async (roomName) => {
     try {
-      console.log('토큰 요청 시작...', { roomName, hasToken: !!token });
+      console.log('토큰 요청 시작...', { roomName, hasToken: !!token, isGuest: isGuestMode });
       
+      // 게스트 모드일 경우 게스트 토큰 생성
+      if (isGuestMode) {
+        // 게스트 정보로 임시 토큰 생성 
+        const guestData = {
+          room: roomName,
+          identity: `guest_${Date.now()}`,
+          name: participantName || `게스트_${Date.now()}`  // name이 비어있을 경우 기본값
+        };
+        
+        try {
+          console.log('게스트 토큰 API 호출:', guestData);
+          // 게스트 토큰 요청 (API 엔드포인트 필요)
+          const response = await fetch('/dochi/video-call/guest-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(guestData)
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('게스트 토큰 응답:', data);
+            
+            // 백엔드 응답 구조에 맞춰 토큰 추출
+            if (data.status === 200 && data.data && data.data.token) {
+              return data.data.token;
+            } else if (data.token) {
+              return data.token;
+            } else {
+              throw new Error('게스트 토큰이 응답에 없음: ' + JSON.stringify(data));
+            }
+          } else {
+            const errorData = await response.text();
+            throw new Error(`게스트 토큰 요청 실패: ${response.status} - ${errorData}`);
+          }
+        } catch (guestError) {
+          console.error('게스트 토큰 요청 오류:', guestError);
+          console.log('테스트 토큰으로 폴백');
+        }
+        
+        // 게스트 API가 없으면 로컬 테스트 토큰 생성 (개발용)
+        console.log('테스트 게스트 토큰 생성');
+        return 'test-guest-token-' + Date.now();
+      }
+      
+      // 일반 사용자 토큰 요청
       const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
       
       console.log('토큰 응답 데이터:', response.data);
@@ -673,18 +758,10 @@ const VideoCallRoom = () => {
       return;
     }
 
-    // 로컬 비디오 표정 분석
+    // 로컬 비디오 표정 분석만 수행
     if (localVideoRef.current) {
       startLocalEmotionDetection();
     }
-
-    // 원격 참가자 표정 분석
-    participants.forEach(participant => {
-      const videoRef = remoteVideoRefs.current.get(participant.identity);
-      if (videoRef?.current) {
-        startRemoteEmotionDetection(participant.identity, videoRef.current);
-      }
-    });
   };
 
   // 로컬 표정 분석
@@ -711,34 +788,6 @@ const VideoCallRoom = () => {
     }, 1000); // 1초마다 분석
   };
 
-  // 원격 참가자 표정 분석
-  const startRemoteEmotionDetection = (participantId, videoElement) => {
-    // 기존 인터벌 정리
-    const existingInterval = remoteEmotionIntervals.current.get(participantId);
-    if (existingInterval) {
-      clearInterval(existingInterval);
-    }
-
-    const interval = setInterval(async () => {
-      if (videoElement && faceApiModelsLoaded.current) {
-        try {
-          const detections = await faceapi
-            .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
-            .withFaceExpressions();
-
-          if (detections.length > 0) {
-            const expressions = detections[0].expressions;
-            const displayName = getParticipantDisplayName(participantId);
-            updateEmotionScores(displayName, expressions);
-          }
-        } catch (error) {
-          console.error(`${participantId} 표정 분석 오류:`, error);
-        }
-      }
-    }, 1000);
-
-    remoteEmotionIntervals.current.set(participantId, interval);
-  };
 
   // 감정 점수 업데이트
   const updateEmotionScores = (participantName, expressions) => {
@@ -760,11 +809,6 @@ const VideoCallRoom = () => {
       clearInterval(emotionDetectionInterval.current);
       emotionDetectionInterval.current = null;
     }
-
-    remoteEmotionIntervals.current.forEach(interval => {
-      clearInterval(interval);
-    });
-    remoteEmotionIntervals.current.clear();
   };
 
   // 갈등 분석 및 중재 타이밍 결정
@@ -1228,7 +1272,6 @@ const VideoCallRoom = () => {
     if (speechTimeoutRef.current) {
       clearTimeout(speechTimeoutRef.current);
     }
-    stopFakeRemoteMessages(); // 가짜 메시지 정리
     setSttEnabled(false);
     setAiMediationEnabled(false);
     setConversations([]);
@@ -1283,31 +1326,80 @@ const VideoCallRoom = () => {
     }
   };
 
-  // 로그인 안 된 경우
-  if (!isLoggedIn) {
-    return (
-      <div className="w-full h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-2xl font-bold mb-4">🦔 참견도치 화상통화</h1>
-          <p className="text-lg mb-4">화상통화를 이용하려면 로그인이 필요합니다</p>
-          <button 
-            onClick={() => window.location.href = '/login'}
-            className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-medium"
+  // 게스트 모달 컴포넌트
+  const GuestModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <h2 className="text-2xl font-bold mb-4">화상채팅 참여</h2>
+        <p className="text-gray-600 mb-6">
+          게스트로 참여하거나 로그인하여 참여할 수 있습니다.
+        </p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              닉네임 (선택사항)
+            </label>
+            <input
+              type="text"
+              value={guestNickname}
+              onChange={(e) => setGuestNickname(e.target.value)}
+              placeholder="게스트"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <button
+            onClick={() => {
+              setIsGuestMode(true);
+              setParticipantName(guestNickname || `게스트${Math.floor(Math.random() * 1000)}`);
+              setShowGuestModal(false);
+              // Face-API 모델 로드 후 룸 참가
+              loadFaceApiModels().then(() => {
+                joinRoom();
+              });
+            }}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
           >
-            로그인하러 가기
+            게스트로 참여
+          </button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">또는</span>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => {
+              window.location.href = '/login';
+            }}
+            className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
+          >
+            로그인하기
           </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="w-full h-screen bg-gray-900 flex flex-col">
+      {/* 게스트 모달 */}
+      {showGuestModal && <GuestModal />}
+      
       {/* 헤더 */}
       <div className="bg-gray-800 p-4 text-white">
-        <h1 className="text-xl font-bold">🦔 참견도치 화상통화 (LiveKit)</h1>
+        <h1 className="text-xl font-bold">
+          🦔 참견도치 화상통화 (LiveKit)
+          {isGuestMode && <span className="text-sm text-gray-400 ml-2">(게스트 모드)</span>}
+        </h1>
         <p className="text-sm text-gray-300">
-          룸: {roomName} | 상태: {isConnected ? '연결됨' : '연결 안됨'} | 로그인: {isLoggedIn ? '완료' : '필요'}
+          룸: {roomName} | 상태: {isConnected ? '연결됨' : '연결 안됨'} | 
+          {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
         </p>
         {error && (
           <p className="text-red-400 text-sm mt-1">❌ {error}</p>

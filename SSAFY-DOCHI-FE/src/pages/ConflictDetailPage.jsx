@@ -494,7 +494,7 @@ ${summary.join('\n')}
             {activeTab === 'analysis' && (
               <div className="space-y-6">
                 {analysisResult ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
                     {/* 감정 분석 */}
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
                       <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
@@ -510,98 +510,6 @@ ${summary.join('\n')}
                       </h4>
                       <p className="text-purple-700">{analysisResult.conflictAnalysis}</p>
                     </div>
-
-                    {/* 관계 건강도 */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                        <span>💚</span> 관계 건강도
-                      </h4>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="w-full bg-green-200 rounded-full h-3">
-                            <div 
-                              className="bg-green-600 h-3 rounded-full transition-all duration-300"
-                              style={{ width: `${analysisResult.relationshipHealthScore}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <span className="text-xl font-bold text-green-700">{analysisResult.relationshipHealthScore}/100</span>
-                      </div>
-                    </div>
-
-                    {/* 소통 점수 */}
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                        <span>🗣️</span> 소통 점수
-                      </h4>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="w-full bg-orange-200 rounded-full h-3">
-                            <div 
-                              className="bg-orange-600 h-3 rounded-full transition-all duration-300"
-                              style={{ width: `${analysisResult.communicationScore}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <span className="text-xl font-bold text-orange-700">{analysisResult.communicationScore}/100</span>
-                      </div>
-                    </div>
-
-                    {/* 신뢰도 분석 */}
-                    {analysisResult.trustScore && (
-                      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-6">
-                        <h4 className="text-lg font-semibold text-indigo-800 mb-3 flex items-center gap-2">
-                          <span>🤝</span> 신뢰도 분석
-                        </h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1">
-                              <div className="w-full bg-indigo-200 rounded-full h-3">
-                                <div 
-                                  className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
-                                  style={{ width: `${JSON.parse(analysisResult.trustScore).score}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <span className="text-xl font-bold text-indigo-700">{JSON.parse(analysisResult.trustScore).score}/100</span>
-                          </div>
-                          <p className="text-sm text-indigo-600">{JSON.parse(analysisResult.trustScore).analysis}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 협력 점수 */}
-                    {analysisResult.cooperationScore && (
-                      <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-6">
-                        <h4 className="text-lg font-semibold text-teal-800 mb-3 flex items-center gap-2">
-                          <span>🤜🤛</span> 협력 점수
-                        </h4>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1">
-                              <div className="w-full bg-teal-200 rounded-full h-3">
-                                <div 
-                                  className="bg-teal-600 h-3 rounded-full transition-all duration-300"
-                                  style={{ width: `${JSON.parse(analysisResult.cooperationScore).score}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <span className="text-xl font-bold text-teal-700">{JSON.parse(analysisResult.cooperationScore).score}/100</span>
-                          </div>
-                          <div>
-                            <h5 className="text-sm font-medium text-teal-700 mb-2">개선 제안:</h5>
-                            <ul className="text-sm text-teal-600 space-y-1">
-                              {JSON.parse(analysisResult.cooperationScore).improvement_suggestions?.map((suggestion, index) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span>•</span>
-                                  <span>{suggestion}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12">

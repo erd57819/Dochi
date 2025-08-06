@@ -149,6 +149,87 @@ export const communityApi = {
     }
   },
 
+  // 게시글 삭제
+  async deletePost(postId) {
+    try {
+      console.log('🗑️ 게시글 삭제 요청:', postId);
+      
+      const headers = getAuthHeaders();
+      const url = `${API_BASE_URL}/community/${postId}`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: headers
+      });
+
+      console.log('📊 게시글 삭제 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('❌ 삭제 에러 응답 데이터:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      console.log('✅ 게시글 삭제 성공 응답:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ 게시글 삭제 에러:', error);
+      throw error;
+    }
+  },
+
+  // 게시글 수정
+  async updatePost(postId, postData) {
+    try {
+      console.log('✏️ 게시글 수정 요청:', postId, postData);
+      
+      const headers = getAuthHeaders();
+      const url = `${API_BASE_URL}/community/${postId}`;
+      
+      const requestBody = {
+        title: postData.title,
+        content: postData.content,
+        category: postData.category || 'GENERAL'
+      };
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('📊 게시글 수정 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('❌ 수정 에러 응답 데이터:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      console.log('✅ 게시글 수정 성공 응답:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ 게시글 수정 에러:', error);
+      throw error;
+    }
+  },
+
   // 게시글 작성
   async createPost(postData) {
     try {
@@ -305,7 +386,24 @@ export const likeApi = {
   // 게시글 좋아요 토글
   async togglePostLike(postId, userId, likeType) {
     try {
-      // ✅ 백엔드 매핑 확인 필요
+      // 🔍 디버깅 로그 추가
+      console.log('=== API 요청 디버깅 ===');
+      console.log('받은 파라미터 - postId:', postId);
+      console.log('받은 파라미터 - userId:', userId);
+      console.log('받은 파라미터 - likeType:', likeType);
+      
+      const requestBody = {
+        postId: postId,
+        userId: userId,
+        likeType: likeType
+      };
+      console.log('실제 전송 데이터:', requestBody);
+      console.log('=====================');
+      
+      // 🔑 인증 헤더 확인
+      const headers = getAuthHeaders();
+      console.log('인증 헤더:', headers);
+      
       console.log('👍 좋아요 요청 데이터:', { postId, userId, likeType });
       const response = await fetch(`${API_BASE_URL}/likes/posts`, {
         method: 'POST',

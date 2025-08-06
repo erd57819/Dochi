@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -153,10 +155,14 @@ public class ProfileImageService {
     /**
      * 이미지 URL 생성
      */
+
+    @Value("${aws.s3.region}")
+    private String region;
+
     private String generateImageUrl(String imageKey) {
         return String.format("https://%s.s3.%s.amazonaws.com/%s",
                 bucketName,
-                Region.of("us-east-1").id(),
+                region,
                 imageKey);
     }
 

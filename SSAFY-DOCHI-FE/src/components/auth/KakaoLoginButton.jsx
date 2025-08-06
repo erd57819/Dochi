@@ -9,7 +9,7 @@ const KakaoLoginButton = () => {
   return (
     <button 
       onClick={handleKakaoLogin}
-      className="flex items-center justify-center p-3 bg-[#FEE500] text-[#000000] rounded-lg hover:bg-[#F7DC00] transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
+      className="flex items-center justify-center p-3 !bg-[#FEE500] !text-[#000000] rounded-lg hover:!bg-[#F7DC00] transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
       title="카카오로 로그인"
     >
       <svg 
