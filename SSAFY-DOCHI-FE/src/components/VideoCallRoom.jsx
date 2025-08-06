@@ -78,7 +78,6 @@ const VideoCallRoom = () => {
   // 표정 분석 관련 refs
   const faceApiModelsLoaded = useRef(false);
   const emotionDetectionInterval = useRef(null);
-  const remoteEmotionIntervals = useRef(new Map());
 
   // 로컬 비디오 트랙 연결을 위한 useEffect - 실제 연결 수행
   useEffect(() => {
@@ -678,18 +677,10 @@ const VideoCallRoom = () => {
       return;
     }
 
-    // 로컬 비디오 표정 분석
+    // 로컬 비디오 표정 분석만 수행
     if (localVideoRef.current) {
       startLocalEmotionDetection();
     }
-
-    // 원격 참가자 표정 분석
-    participants.forEach(participant => {
-      const videoRef = remoteVideoRefs.current.get(participant.identity);
-      if (videoRef?.current) {
-        startRemoteEmotionDetection(participant.identity, videoRef.current);
-      }
-    });
   };
 
   // 로컬 표정 분석
@@ -716,34 +707,6 @@ const VideoCallRoom = () => {
     }, 1000); // 1초마다 분석
   };
 
-  // 원격 참가자 표정 분석
-  const startRemoteEmotionDetection = (participantId, videoElement) => {
-    // 기존 인터벌 정리
-    const existingInterval = remoteEmotionIntervals.current.get(participantId);
-    if (existingInterval) {
-      clearInterval(existingInterval);
-    }
-
-    const interval = setInterval(async () => {
-      if (videoElement && faceApiModelsLoaded.current) {
-        try {
-          const detections = await faceapi
-            .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
-            .withFaceExpressions();
-
-          if (detections.length > 0) {
-            const expressions = detections[0].expressions;
-            const displayName = getParticipantDisplayName(participantId);
-            updateEmotionScores(displayName, expressions);
-          }
-        } catch (error) {
-          console.error(`${participantId} 표정 분석 오류:`, error);
-        }
-      }
-    }, 1000);
-
-    remoteEmotionIntervals.current.set(participantId, interval);
-  };
 
   // 감정 점수 업데이트
   const updateEmotionScores = (participantName, expressions) => {
@@ -765,11 +728,6 @@ const VideoCallRoom = () => {
       clearInterval(emotionDetectionInterval.current);
       emotionDetectionInterval.current = null;
     }
-
-    remoteEmotionIntervals.current.forEach(interval => {
-      clearInterval(interval);
-    });
-    remoteEmotionIntervals.current.clear();
   };
 
   // 갈등 분석 및 중재 타이밍 결정
