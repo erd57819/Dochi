@@ -129,7 +129,7 @@ const LoginPage = () => {
             {/* <button className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
               G
             </button> */}
-            <KakaoLoginButton bg-yellow-500/>
+            <KakaoLoginButton/>
             <Link 
               to="/signup"
               className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
