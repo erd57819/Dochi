@@ -235,15 +235,20 @@ const VideoCallRoom = () => {
     try {
       console.log('Face-API 모델 로딩 시작...');
       
+      // CDN에서 모델 로드
+      const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+      
       await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceExpressionNet.loadFromUri('/models')
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
       ]);
       
       faceApiModelsLoaded.current = true;
       console.log('Face-API 모델 로딩 완료');
     } catch (error) {
       console.error('Face-API 모델 로딩 실패:', error);
+      // 모델 로딩 실패 시에도 앱이 동작하도록 처리
+      faceApiModelsLoaded.current = false;
     }
   };
 
