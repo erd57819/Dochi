@@ -53,7 +53,7 @@ const VideoCallRoom = () => {
   
   // LiveKit 서버 URL - nginx 프록시 통해 연결
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
-    ? 'ws://localhost:7880'  // 로컬 개발
+    ? 'ws://192.168.100.63:7880'  // 로컬 개발
     : 'wss://i13c209.p.ssafy.io/livekit';  // 배포 환경 (nginx 프록시)
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
@@ -156,6 +156,7 @@ const VideoCallRoom = () => {
   // 참가자 변경시 대기중인 트랙들 재연결 시도
   useEffect(() => {
     if (!room || !room.remoteParticipants) {
+     
       console.log('=== 참가자 재연결 시도 중단: room 또는 remoteParticipants 없음 ===');
       return;
     }

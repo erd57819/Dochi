@@ -71,6 +71,8 @@ services:
           udp_port: 50000
           tcp_port: 7881
           use_external_ip: true
+          nat1_to1_ips: "192.168.100.63"
+          enable_loopback_candidate: true
     command: 
       - --bind=0.0.0.0
       - --port=7880
