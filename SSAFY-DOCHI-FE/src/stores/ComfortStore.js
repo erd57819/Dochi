@@ -195,6 +195,26 @@ const useComfortStore = create(
         });
       },
 
+      // 세션 제목 업데이트
+      updateSessionTitle: async (sessionId, newTitle) => {
+        try {
+          const { sessions } = get();
+          const updatedSessions = sessions.map(session => 
+            session.id === sessionId 
+              ? { ...session, title: newTitle }
+              : session
+          );
+          
+          set({ sessions: updatedSessions });
+          
+          // TODO: 서버에 제목 변경 API 호출 (현재는 로컬만 업데이트)
+          // await comfortService.updateChatRoomTitle(sessionId, newTitle);
+        } catch (error) {
+          console.error('Failed to update session title:', error);
+          set({ error: '제목 변경에 실패했습니다.' });
+        }
+      },
+
       // 세션 종료 (페이지 떠날 때 호출)
       exitCurrentSession: async () => {
         try {

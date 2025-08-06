@@ -51,9 +51,13 @@ const VideoCallRoom = () => {
   const roomName = getRoomIdFromUrl();
   const [participantName, setParticipantName] = useState('사용자1');
   
-  // LiveKit 서버 URL - nginx 프록시 통해 연결
+  // LiveKit 서버 URL - 개발 환경에서는 직접 연결
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
+
     ? 'ws://192.168.100.63:7880'  // 로컬 개발
+
+    // ? 'ws://localhost:7880'  // 로컬 LiveKit 직접 연결 (WebSocket)
+
     : 'wss://i13c209.p.ssafy.io/livekit';  // 배포 환경 (nginx 프록시)
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
@@ -272,8 +276,30 @@ const VideoCallRoom = () => {
       console.log('룸 참가 시작...');
       setError(null);
       
-      // 1. Room 객체 생성
-      const newRoom = new Room();
+      // 1. Room 객체 생성 (개발 환경에 맞춘 설정)
+      const newRoom = new Room({
+        rtcConfig: {
+          iceServers: [
+            {
+              urls: [
+                'stun:stun.l.google.com:19302',
+                'stun:stun1.l.google.com:19302'
+              ]
+            }
+          ],
+          iceTransportPolicy: 'all',
+          bundlePolicy: 'max-bundle',
+          rtcpMuxPolicy: 'require'
+        },
+        // 개발 환경에서 연결 안정성 향상
+        reconnectPolicy: {
+          nextRetryDelayInMs: 1000,
+          timeoutInMs: 30000
+        },
+        connectOptions: {
+          autoSubscribe: true
+        }
+      });
       
       // 2. 이벤트 리스너 설정
       setupRoomEvents(newRoom);
@@ -1238,7 +1264,6 @@ const VideoCallRoom = () => {
     if (speechTimeoutRef.current) {
       clearTimeout(speechTimeoutRef.current);
     }
-    stopFakeRemoteMessages(); // 가짜 메시지 정리
     setSttEnabled(false);
     setAiMediationEnabled(false);
     setConversations([]);
