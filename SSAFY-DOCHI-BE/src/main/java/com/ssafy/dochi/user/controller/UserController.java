@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import com.ssafy.dochi.user.service.EmailVerificationService;
 import com.ssafy.dochi.user.dto.request.EmailReqDto;
 import com.ssafy.dochi.user.dto.request.EmailVerifyReqDto;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -107,6 +108,7 @@ public class UserController {
         return ApiResponseGenerator.success(HttpStatus.OK);
 
     }
+
 
     //이메일 인증 코드 발송
     @PostMapping("/verify/send")
