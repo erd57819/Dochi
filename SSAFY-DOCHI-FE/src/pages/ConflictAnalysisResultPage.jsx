@@ -472,30 +472,6 @@ const ConflictAnalysisResultPage = () => {
     });
   };
 
-  // 각 서비스 페이지로 이동하는 핸들러들
-  const handleConflictResolution = () => {
-    createVideoCallRoom(); // 갈등해결하기 -> 화상채팅 방 생성
-  };
-
-  const handleComfort = () => {
-    navigate('/comfort'); // 토닥토닥 -> comfort (챗봇)
-  };
-
-  const handleCommunity = () => {
-    handleShareConflict(); // 갈등 커뮤니티 -> 갈등 내용을 커뮤니티로 공유
-  };
-
-  const handleExpertMatching = () => {
-    navigate('/expert-matching'); // 전문상담사 매칭 -> 더미페이지
-  };
-
-  const handleRoadmap = () => {
-    navigate('/roadmap'); // 로드맵 페이지로 이동
-  };
-
-  const handleNewConflict = () => {
-    navigate('/conflicts/create');
-  };
 
   if (isLoading) {
     return (
