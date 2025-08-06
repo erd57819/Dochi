@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
@@ -21,13 +21,81 @@ import todak from "@/assets/todak.png";
 
 export const MainPage = () => {
   const navigate = useNavigate();
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let isScrolling = false;
+    let scrollTimeout;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      
+      if (isScrolling) return;
+      
+      isScrolling = true;
+      const delta = e.deltaY;
+      const currentScrollTop = container.scrollTop;
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      
+      // 마지막 섹션(3번째 섹션)에 있는지 확인
+      const isInLastSection = currentScrollTop >= window.innerHeight * 2;
+      
+      if (delta > 0) {
+        // 아래로 스크롤
+        if (isInLastSection) {
+          // 마지막 섹션에서는 자연스럽게 스크롤
+          container.scrollBy({
+            top: window.innerHeight / 3, // 더 작은 단위로 스크롤
+            behavior: 'smooth'
+          });
+        } else {
+          // 처음 두 섹션에서는 전체 화면 단위로 스크롤
+          container.scrollBy({
+            top: window.innerHeight,
+            behavior: 'smooth'
+          });
+        }
+      } else {
+        // 위로 스크롤
+        if (isInLastSection && currentScrollTop < maxScroll - 50) {
+          // 마지막 섹션 내에서 위로 스크롤
+          container.scrollBy({
+            top: -window.innerHeight / 3,
+            behavior: 'smooth'
+          });
+        } else {
+          // 섹션 단위로 위로 스크롤
+          container.scrollBy({
+            top: -window.innerHeight,
+            behavior: 'smooth'
+          });
+        }
+      }
+      
+      // 스크롤 애니메이션 완료 후 플래그 해제 (더 느리게)
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+      }, 1200); // 1.2초로 조정
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      clearTimeout(scrollTimeout);
+    };
+  }, []);
 
   return (
-    <div className="bg-white flex flex-row justify-center w-full">
+    <div ref={containerRef} className="bg-white flex flex-row justify-center w-full h-screen overflow-y-scroll" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
       <div className="bg-white w-full max-w-[1296px] relative origin-top">
         
         {/* Main Hero Section - Swiper */}
-        <div className="relative w-full h-[990px] bg-white">
+        <div className="relative w-full h-screen bg-white" style={{scrollSnapAlign: 'start', scrollSnapStop: 'always'}}>
           <Swiper
             modules={[Navigation, Pagination, Autoplay]}
             spaceBetween={0}
@@ -165,10 +233,15 @@ export const MainPage = () => {
         </div>
 
         {/* Service Cards Section */}
-        <div className="relative w-full h-[540px] mt-16">
+        <div className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start', scrollSnapStop: 'always'}}>
+          <div className="absolute w-full h-[83px] top-[122px] left-0 right-0 font-['Pretendard-SemiBold'] font-semibold text-[86px] leading-5 tracking-[0] whitespace-nowrap text-center"
+          >
+            <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
+            <span className="text-[#333333]"> 서비스 이용해보기</span>
+          </div>
           {/* Community Card */}
           <div 
-            className="absolute w-[581px] h-[201px] top-[45px] left-[47px] cursor-pointer"
+            className="absolute w-[581px] h-[201px] top-[280px] left-[47px] cursor-pointer"
             onClick={() => navigate('/community')}
           >
             <div className="w-[581px] h-[184px] bg-[#f8d6b3] rounded-[18px] relative  transition-all duration-300 hover:-translate-y-1">
@@ -190,7 +263,7 @@ export const MainPage = () => {
 
           {/* Conflict Resolution Card */}
           <div 
-            className="absolute w-[581px] h-[331px] top-[259px] left-[47px] bg-[#83673f] rounded-[18px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
+            className="absolute w-[581px] h-[331px] top-[494px] left-[47px] bg-[#83673f] rounded-[18px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
             onClick={() => navigate('/conflicts/create')}
           >
             <img
@@ -210,7 +283,7 @@ export const MainPage = () => {
 
           {/* Comfort Service Card */}
           <div 
-            className="absolute w-[581px] h-[331px] top-[45px] right-[46px] bg-[#7f5539] rounded-[18px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
+            className="absolute w-[581px] h-[331px] top-[280px] right-[46px] bg-[#7f5539] rounded-[18px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
             onClick={() => navigate('/comfort')}
           >
             <img
@@ -230,7 +303,7 @@ export const MainPage = () => {
 
           {/* My Page Card */}
           <div 
-            className="absolute w-[581px] h-[193px] top-[402px] right-[46px] cursor-pointer"
+            className="absolute w-[581px] h-[193px] top-[636px] right-[46px] cursor-pointer"
             onClick={() => navigate('/mypage')}
           >
             <div className="w-[581px] h-[184px] bg-[#cd9f6e] rounded-[18px] relative transition-all duration-300 hover:-translate-y-1">
@@ -252,7 +325,7 @@ export const MainPage = () => {
         </div>
 
         {/* Detailed Services Section */}
-        <div className="relative w-full h-[1582px] top-[180px] left-0">
+        <div className="relative w-full h-[1582px] bg-white pt-[180px] left-0" style={{scrollSnapAlign: 'start', scrollSnapStop: 'always'}}>
           <div className="w-full h-[1179px] bg-[linear-gradient(158deg,rgba(255,255,255,1)_0%,rgba(246,250,255,1)_100%)] absolute top-0 left-0" />
 
           <img
@@ -282,7 +355,7 @@ export const MainPage = () => {
 
           <div className="absolute w-[810px] h-[83px] top-[122px] left-[243px]  font-['Pretendard-SemiBold'] font-semibold text-[86px] leading-5 tracking-[0]"
           >
-            <span className="text-[#bf7d2c]">참견도치</span>
+            <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
             <span className="text-[#333333]">의 서비스</span>
           </div>
 
