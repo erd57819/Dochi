@@ -607,66 +607,73 @@ const ConflictAnalysisResultPage = () => {
               {conflictData?.title || '갈등 제목'}
             </h3>
 
-            {/* 고슴도치 이미지와 갈등 유형 */}
-            <div className="text-center mb-12">
-              <div 
-                className="w-60 h-60 mx-auto rounded-full flex items-center justify-center shadow-lg mb-6"
-                style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
-              >
-                <img 
-                  src={hedgehogImg} 
-                  alt="갈등도치" 
-                  className="w-44 h-44 object-contain"
-                />
-              </div>
-              <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
-                {getConflictTypeText(conflictData?.conflictType || 'ETC')}
-              </h4>
-            </div>
 
-            {/* 감정 분석과 갈등 분석 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* 감정 분석 */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <span>😊</span> 감정 분석
-                </h4>
-                <p className="text-blue-700">
-                  {conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...'}
-                </p>
-              </div>
+            {/* 감정 분석과 갈등 분석을 나란히, 그 아래에 입장 정리 */}
+            <div className="space-y-8">
+              {/* 감정 분석과 갈등 분석 - 이미지와 나란히 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* 이미지 영역 */}
+                <div className="text-center">
+                  <div 
+                    className="w-60 h-60 mx-auto rounded-full flex items-center justify-center shadow-lg mb-6"
+                    style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
+                  >
+                    <img 
+                      src={hedgehogImg} 
+                      alt="갈등도치" 
+                      className="w-44 h-44 object-contain"
+                    />
+                  </div>
+                  <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
+                    {getConflictTypeText(conflictData?.conflictType || 'ETC')}
+                  </h4>
+                </div>
 
-              {/* 갈등 분석 */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                  <span>⚡</span> 갈등 분석
-                </h4>
-                <p className="text-purple-700">
-                  {conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...'}
-                </p>
-              </div>
-            </div>
+                {/* 감정 분석과 갈등 분석 */}
+                <div className="space-y-6">
+                  {/* 감정 분석 */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                      <span>😊</span> 감정 분석
+                    </h4>
+                    <p className="text-blue-700">
+                      {conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...'}
+                    </p>
+                  </div>
 
-            {/* 입장 정리 - 전체 폭으로 */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <span>📝</span> 입장 정리
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg p-4">
-                  <div className="mb-3">
-                    <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
-                    <p className="mt-1 text-gray-700">
-                      {conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.'}
+                  {/* 갈등 분석 */}
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                      <span>⚡</span> 갈등 분석
+                    </h4>
+                    <p className="text-purple-700">
+                      {conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...'}
                     </p>
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-4">
-                  <div>
-                    <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
-                    <p className="mt-1 text-gray-700">
-                      {conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.'}
-                    </p>
+              </div>
+
+              {/* 입장 정리 - 감정/갈등 분석 아래로 */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span>📝</span> 입장 정리
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="mb-3">
+                      <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
+                      <p className="mt-1 text-gray-700">
+                        {conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div>
+                      <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
+                      <p className="mt-1 text-gray-700">
+                        {conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.'}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -729,6 +736,11 @@ const ConflictAnalysisResultPage = () => {
                 style={{ background: '#83673f' }}
                 onClick={createVideoCallRoom}
               >
+                <div className="absolute top-4 right-4">
+                  <span className="bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full">
+                    추천
+                  </span>
+                </div>
                 <h3 className="text-2xl font-bold mb-6">화상채팅 방 생성</h3>
                 <p className="mb-8 leading-relaxed opacity-90">
                   상대방과 직접 화상으로 대화하고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
@@ -777,6 +789,11 @@ const ConflictAnalysisResultPage = () => {
                 style={{ background: '#f8d6b3', color: '#3d2b1f' }}
                 onClick={handleRoadmap}
               >
+                <div className="absolute top-3 right-3">
+                  <span className="bg-orange-400 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    추천
+                  </span>
+                </div>
                 <h3 className="text-xl font-bold mb-4">5단계 로드맵</h3>
                 <p className="mb-6 leading-relaxed opacity-90 text-sm">
                   체계적인 갈등 해결을 위한 단계별 가이드를 확인하세요

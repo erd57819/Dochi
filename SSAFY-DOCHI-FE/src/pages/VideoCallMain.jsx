@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { videoCallApi } from '../services/videoCallApi';
-import VideoCallRoom from './VideoCallRoom';
+import VideoCallRoom from '../components/videocall/VideoCallRoom';
 
 const VideoCallMain = () => {
   const [currentPage, setCurrentPage] = useState('main'); // 'main', 'create', 'join', 'room'

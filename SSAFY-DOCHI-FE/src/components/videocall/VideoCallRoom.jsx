@@ -1,85 +1,90 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Room, RoomEvent, Track } from 'livekit-client';
-import useAuthStore from '../stores/AuthStore';
-import apiClient from '../config/axios';
+import useAuthStore from '../../stores/AuthStore';
+import apiClient from '../../config/axios';
 import * as faceapi from 'face-api.js';
 
 const VideoCallRoom = () => {
   // 인증 스토어에서 토큰 가져오기
   const { token, isLoggedIn } = useAuthStore();
-  
+
   // 게스트 모드 관련 상태
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
-  
+
   // 상태 관리
   const [room, setRoom] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [participants, setParticipants] = useState([]);
   const [localVideoTrack, setLocalVideoTrack] = useState(null);
+  const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [error, setError] = useState(null);
-  
+
   // 말하고 있는 참가자 추적 (Discord-like 기능)
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
   const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
   const [lastSpeaker, setLastSpeaker] = useState(null); // 마지막으로 말한 사람 추적
-  
+
   // STT 및 AI 중재 기능
   const [sttEnabled, setSttEnabled] = useState(false);
   const [conversations, setConversations] = useState([]); // [{speaker, text, timestamp, aiSuggestion}]
   const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
   const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
-  
+
   // 표정 분석 및 갈등 감지
   const [emotionScores, setEmotionScores] = useState({}); // {participantId: {angry: 0, sad: 0, happy: 0}}
   const [conflictLevel, setConflictLevel] = useState(0); // 0-100 갈등 수준
   const [lastMediationTime, setLastMediationTime] = useState(0);
   const [pendingMediation, setPendingMediation] = useState(false);
-  
+
   // 컨트롤 상태
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
-  
+
   // 설정 - URL에서 방 ID 추출
   const getRoomIdFromUrl = () => {
     const pathSegments = window.location.pathname.split('/');
     return pathSegments[pathSegments.length - 1] || 'test-room';
   };
-  
+
   const roomName = getRoomIdFromUrl();
   const [participantName, setParticipantName] = useState('사용자1');
-  
+
   // LiveKit 서버 URL - 개발 환경에서는 직접 연결
-  const LIVEKIT_URL = window.location.hostname === 'localhost' 
-    ? 'ws://localhost:7880'  // 로컬 LiveKit 직접 연결 (WebSocket)
-    : 'wss://i13c209.p.ssafy.io/livekit';  // 배포 환경 (nginx 프록시)
+  const LIVEKIT_URL = window.location.hostname === 'localhost'
+
+      ? 'ws://192.168.100.63:7880'  // 로컬 개발
+
+      // ? 'ws://localhost:7880'  // 로컬 LiveKit 직접 연결 (WebSocket)
+
+      : 'wss://i13c209.p.ssafy.io/livekit';  // 배포 환경 (nginx 프록시)
   // API Base URL을 상대 경로로 사용 (nginx 프록시를 통해 라우팅됨)
   const API_BASE_URL = '';
-  
+
   // 로컬 비디오 ref
   const localVideoRef = useRef(null);
-  
+
   // 원격 참가자별 video/audio ref 관리
   const remoteVideoRefs = useRef(new Map()); // participantId -> videoRef
   const remoteAudioRefs = useRef(new Map()); // participantId -> audioRef
-  
+
   // 대기중인 트랙들 저장 (DOM 준비 전에 도착한 트랙들)
   const pendingVideoTracks = useRef(new Map()); // participantId -> track
   const pendingAudioTracks = useRef(new Map()); // participantId -> track
-  
+
   // 오디오 분석용 refs
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const remoteAnalysersRef = useRef(new Map()); // 원격 참가자별 분석기 저장
-  
+
   // STT 관련 refs
   const recognitionRef = useRef(null);
   const speechTimeoutRef = useRef(null);
   const conversationLogRef = useRef([]);
-  
+
   // 표정 분석 관련 refs
   const faceApiModelsLoaded = useRef(false);
   const emotionDetectionInterval = useRef(null);
@@ -91,17 +96,17 @@ const VideoCallRoom = () => {
       hasVideoTrack: !!localVideoTrack,
       videoTrack: localVideoTrack
     });
-    
+
     const connectVideo = async () => {
       if (localVideoTrack && localVideoTrack.track && localVideoRef.current) {
         console.log('useEffect에서 비디오 연결 실행');
         const mediaTrack = localVideoTrack.track.mediaStreamTrack;
-        
+
         if (mediaTrack) {
           console.log('useEffect: MediaStreamTrack을 비디오 엘리먼트에 연결');
           const stream = new MediaStream([mediaTrack]);
           localVideoRef.current.srcObject = stream;
-          
+
           try {
             await localVideoRef.current.play();
             console.log('useEffect: 비디오 재생 성공!');
@@ -119,24 +124,24 @@ const VideoCallRoom = () => {
         });
       }
     };
-    
+
     connectVideo();
   }, [localVideoTrack]);
 
   // video ref가 준비되었을 때 다시 연결 시도
   useEffect(() => {
     console.log('=== useEffect for video ref mount ===');
-    
+
     const connectVideoWhenReady = async () => {
       if (localVideoRef.current && localVideoTrack && localVideoTrack.track) {
         console.log('video ref가 준비됨! 지연된 비디오 연결 수행');
         const mediaTrack = localVideoTrack.track.mediaStreamTrack;
-        
+
         if (mediaTrack) {
           console.log('지연 연결: MediaStreamTrack을 비디오 엘리먼트에 연결');
           const stream = new MediaStream([mediaTrack]);
           localVideoRef.current.srcObject = stream;
-          
+
           try {
             await localVideoRef.current.play();
             console.log('지연 연결: 비디오 재생 성공!');
@@ -149,17 +154,18 @@ const VideoCallRoom = () => {
 
     // 약간의 지연을 주어 DOM이 완전히 마운트되도록 함
     const timer = setTimeout(connectVideoWhenReady, 100);
-    
+
     return () => clearTimeout(timer);
   }, [isConnected]); // isConnected가 true가 되면 video 요소도 렌더링됨
 
   // 참가자 변경시 대기중인 트랙들 재연결 시도
   useEffect(() => {
     if (!room || !room.remoteParticipants) {
+
       console.log('=== 참가자 재연결 시도 중단: room 또는 remoteParticipants 없음 ===');
       return;
     }
-    
+
     // size 접근 전 안전성 검사 추가
     let participantsCount = 0;
     try {
@@ -168,17 +174,17 @@ const VideoCallRoom = () => {
       console.warn('remoteParticipants.size 접근 실패:', error);
       return;
     }
-    
+
     console.log('=== 참가자 변경 감지, 트랙 재연결 시도 ===', {
       roomConnected: room.state,
       remoteParticipantsCount: participantsCount
     });
-    
+
     try {
       // 1. 대기중인 트랙들 먼저 처리 (새로 추가된 참가자들)
       participants.forEach((participant) => {
         const participantId = participant.identity;
-        
+
         // 대기중인 비디오 트랙 연결
         const pendingVideoTrack = pendingVideoTracks.current.get(participantId);
         if (pendingVideoTrack) {
@@ -188,12 +194,12 @@ const VideoCallRoom = () => {
             const stream = new MediaStream([pendingVideoTrack.mediaStreamTrack]);
             videoRef.current.srcObject = stream;
             videoRef.current.play().catch(e => console.log('비디오 자동재생 제한:', e));
-            
+
             // 대기열에서 제거
             pendingVideoTracks.current.delete(participantId);
           }
         }
-        
+
         // 대기중인 오디오 트랙 연결
         const pendingAudioTrack = pendingAudioTracks.current.get(participantId);
         if (pendingAudioTrack) {
@@ -202,16 +208,16 @@ const VideoCallRoom = () => {
             console.log('대기중이던 오디오 트랙 연결:', participantId);
             const stream = new MediaStream([pendingAudioTrack.mediaStreamTrack]);
             audioRef.current.srcObject = stream;
-            
+
             // 오디오 레벨 감지 설정
             setupRemoteAudioLevelDetection(pendingAudioTrack, participantId);
-            
+
             // 대기열에서 제거
             pendingAudioTracks.current.delete(participantId);
           }
         }
       });
-      
+
       // 2. 안전성: trackSubscribed 이벤트에서만 트랙 연결하므로 수동 순회 제거
       // (participant.videoTracks가 undefined일 수 있어 .size 에러 발생 방지)
 
@@ -228,16 +234,16 @@ const VideoCallRoom = () => {
       setShowGuestModal(true);
       return;
     }
-    
+
     // Face-API 모델 로드
     loadFaceApiModels();
-    
+
     // 로그인된 사용자는 바로 룸 참가
     if (!room) {
       console.log('룸 참가 시작...');
       joinRoom();
     }
-    
+
     return () => {
       leaveRoom();
     };
@@ -247,15 +253,15 @@ const VideoCallRoom = () => {
   const loadFaceApiModels = async () => {
     try {
       console.log('Face-API 모델 로딩 시작...');
-      
+
       // CDN에서 모델 로드
       const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
-      
+
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
         faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
       ]);
-      
+
       faceApiModelsLoaded.current = true;
       console.log('Face-API 모델 로딩 완료');
     } catch (error) {
@@ -270,7 +276,7 @@ const VideoCallRoom = () => {
     try {
       console.log('룸 참가 시작...');
       setError(null);
-      
+
       // 1. Room 객체 생성 (개발 환경에 맞춘 설정)
       const newRoom = new Room({
         rtcConfig: {
@@ -278,13 +284,16 @@ const VideoCallRoom = () => {
             {
               urls: [
                 'stun:stun.l.google.com:19302',
-                'stun:stun1.l.google.com:19302'
+                'stun:stun1.l.google.com:19302',
+                'stun:stun2.l.google.com:19302',
+                'stun:stun3.l.google.com:19302'
               ]
             }
           ],
           iceTransportPolicy: 'all',
           bundlePolicy: 'max-bundle',
-          rtcpMuxPolicy: 'require'
+          rtcpMuxPolicy: 'require',
+          iceCandidatePoolSize: 10
         },
         // 개발 환경에서 연결 안정성 향상
         reconnectPolicy: {
@@ -295,30 +304,30 @@ const VideoCallRoom = () => {
           autoSubscribe: true
         }
       });
-      
+
       // 2. 이벤트 리스너 설정
       setupRoomEvents(newRoom);
-      
+
       // 3. 백엔드에서 토큰 가져오기
       const liverkitToken = await getTokenFromServer(roomName);
       console.log('받은 token:', liverkitToken);  // 👈 여기에 출력
-      
+
       // 4. LiveKit 서버 연결
       await newRoom.connect(LIVEKIT_URL, liverkitToken);
-      
+
       // 5. 로컬 미디어 활성화
       await enableLocalMedia(newRoom);
-      
+
       setRoom(newRoom);
       setIsConnected(true);
-      
+
       // 표정 분석 시작
       setTimeout(() => {
         startEmotionDetection();
       }, 2000); // 비디오 연결 후 2초 뒤 시작
-      
+
       console.log('룸 연결 성공!');
-      
+
     } catch (error) {
       console.error('룸 연결 실패:', error);
       setError(`연결 실패: ${error.message}`);
@@ -337,20 +346,20 @@ const VideoCallRoom = () => {
         audioTracks: audioTracksSize,
         videoTracks: videoTracksSize
       });
-      
+
       // 참가자 ref 미리 생성 (DOM 준비)
       getOrCreateVideoRef(participant.identity);
       getOrCreateAudioRef(participant.identity);
-      
+
       updateParticipants(room);
     });
-    
+
     // 참가자 연결 해제
     room.on(RoomEvent.ParticipantDisconnected, (participant) => {
       console.log('참가자 연결 해제:', participant.identity);
       updateParticipants(room);
     });
-    
+
     // 트랙 구독
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
       console.log('=== 트랙 구독 이벤트 ===', {
@@ -359,47 +368,42 @@ const VideoCallRoom = () => {
         track: track,
         mediaStreamTrack: track.mediaStreamTrack
       });
-      
+
       // 참가자 목록 업데이트 (새 참가자가 트랙을 publish한 경우)
       updateParticipants(room);
-      
-      // 새 참가자 비디오 트랙 시 표정 분석 시작
-      if (track.kind === Track.Kind.Video && faceApiModelsLoaded.current) {
-        setTimeout(() => {
-          const videoRef = remoteVideoRefs.current.get(participant.identity);
-          if (videoRef?.current) {
-            startRemoteEmotionDetection(participant.identity, videoRef.current);
-          }
-        }, 1000);
-      }
-      
+
+      // 상대방 감정 분석은 비활성화 (본인만 분석)
+      // if (track.kind === Track.Kind.Video && faceApiModelsLoaded.current) {
+      //   // 상대방 감정분석 기능 제거됨
+      // }
+
       if (track.kind === Track.Kind.Video) {
         // Ref 기반 비디오 연결 - DOM 동기화 문제 해결
         const videoRef = getOrCreateVideoRef(participant.identity);
-        
+
         if (videoRef.current && track.mediaStreamTrack) {
           console.log('원격 비디오 Ref 연결 시작:', participant.identity);
           const stream = new MediaStream([track.mediaStreamTrack]);
           videoRef.current.srcObject = stream;
-          
+
           videoRef.current.play()
-            .then(() => console.log('원격 비디오 재생 성공:', participant.identity))
-            .catch(e => console.log('원격 비디오 자동재생 제한:', e));
+              .then(() => console.log('원격 비디오 재생 성공:', participant.identity))
+              .catch(e => console.log('원격 비디오 자동재생 제한:', e));
         } else {
           console.log('원격 비디오 Ref 아직 준비 안됨, 대기열에 저장:', participant.identity);
           // DOM이 준비되지 않았으므로 대기열에 저장
           pendingVideoTracks.current.set(participant.identity, track);
         }
-        
+
       } else if (track.kind === Track.Kind.Audio) {
         // Ref 기반 오디오 연결
         const audioRef = getOrCreateAudioRef(participant.identity);
-        
+
         if (audioRef.current && track.mediaStreamTrack) {
           console.log('원격 오디오 Ref 연결:', participant.identity);
           const stream = new MediaStream([track.mediaStreamTrack]);
           audioRef.current.srcObject = stream;
-          
+
           // 원격 참가자 말하고 있는지 감지 설정
           setupRemoteAudioLevelDetection(track, participant.identity);
         } else {
@@ -409,11 +413,11 @@ const VideoCallRoom = () => {
         }
       }
     });
-    
+
     // 트랙 구독 해제
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       console.log('트랙 구독 해제:', track.kind, participant.identity);
-      
+
       // Ref 기반 정리
       if (track.kind === Track.Kind.Video) {
         const videoRef = remoteVideoRefs.current.get(participant.identity);
@@ -427,7 +431,7 @@ const VideoCallRoom = () => {
         }
       }
     });
-    
+
     // 연결 해제
     room.on(RoomEvent.Disconnected, (reason) => {
       console.log('룸 연결 해제:', reason);
@@ -436,12 +440,12 @@ const VideoCallRoom = () => {
       setSpeakingParticipants(new Set());
       setIsLocalSpeaking(false);
     });
-    
+
     // 오디오 레벨 추적 (말하고 있는지 감지)
     room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
       // 참가자별 오디오 레벨 체크
       const speaking = new Set();
-      
+
       // 로컬 참가자 체크
       const localAudioTracksSize = room.localParticipant?.audioTracks?.size || 0;
       if (localAudioTracksSize > 0) {
@@ -451,7 +455,7 @@ const VideoCallRoom = () => {
           // 실제 구현에서는 Web Audio API를 사용해야 함
         }
       }
-      
+
       // 원격 참가자들 체크
       room.remoteParticipants.forEach((participant) => {
         participant.audioTracks.forEach((publication) => {
@@ -468,16 +472,16 @@ const VideoCallRoom = () => {
   const getTokenFromServer = async (roomName) => {
     try {
       console.log('토큰 요청 시작...', { roomName, hasToken: !!token, isGuest: isGuestMode });
-      
+
       // 게스트 모드일 경우 게스트 토큰 생성
       if (isGuestMode) {
-        // 게스트 정보로 임시 토큰 생성 
+        // 게스트 정보로 임시 토큰 생성
         const guestData = {
           room: roomName,
           identity: `guest_${Date.now()}`,
           name: participantName || `게스트_${Date.now()}`  // name이 비어있을 경우 기본값
         };
-        
+
         try {
           console.log('게스트 토큰 API 호출:', guestData);
           // 게스트 토큰 요청 (API 엔드포인트 필요)
@@ -486,11 +490,11 @@ const VideoCallRoom = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(guestData)
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             console.log('게스트 토큰 응답:', data);
-            
+
             // 백엔드 응답 구조에 맞춰 토큰 추출
             if (data.status === 200 && data.data && data.data.token) {
               return data.data.token;
@@ -507,17 +511,17 @@ const VideoCallRoom = () => {
           console.error('게스트 토큰 요청 오류:', guestError);
           console.log('테스트 토큰으로 폴백');
         }
-        
+
         // 게스트 API가 없으면 로컬 테스트 토큰 생성 (개발용)
         console.log('테스트 게스트 토큰 생성');
         return 'test-guest-token-' + Date.now();
       }
-      
+
       // 일반 사용자 토큰 요청
       const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
-      
+
       console.log('토큰 응답 데이터:', response.data);
-      
+
       // 백엔드 응답 구조에 맞춰 수정
       if (response.data.status === 200 && response.data.data) {
         // VideoCallRoomCreateResDto에서 token 가져오기
@@ -525,7 +529,7 @@ const VideoCallRoom = () => {
       } else if (response.data.data && response.data.data.token) {
         // 대체 응답 구조
         return response.data.data.token;
-      } else {  
+      } else {
         throw new Error('토큰 발급 실패: ' + (response.data.message || 'Unknown error'));
       }
     } catch (error) {
@@ -538,12 +542,12 @@ const VideoCallRoom = () => {
   const setupAudioLevelDetection = async (audioTrack) => {
     const actualTrack = audioTrack?.track || audioTrack?.audioTrack || audioTrack;
     const mediaStreamTrack = actualTrack?.mediaStreamTrack || audioTrack?.mediaStreamTrack;
-    
+
     if (!mediaStreamTrack) {
       console.log('오디오 MediaStreamTrack을 찾을 수 없습니다:', audioTrack);
       return;
     }
-    
+
     try {
       // AudioContext 생성 또는 기존 것 사용
       let audioContext = audioContextRef.current;
@@ -551,48 +555,48 @@ const VideoCallRoom = () => {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         audioContextRef.current = audioContext;
       }
-      
+
       // AudioContext가 suspended 상태면 resume
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
-      
+
       const analyser = audioContext.createAnalyser();
       const mediaStreamSource = audioContext.createMediaStreamSource(
-        new MediaStream([mediaStreamTrack])
+          new MediaStream([mediaStreamTrack])
       );
-      
+
       mediaStreamSource.connect(analyser);
       analyser.fftSize = 256;
-      
+
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      
+
       analyserRef.current = analyser;
-      
+
       // 오디오 레벨 감지 루프
       const detectSpeaking = () => {
         if (analyserRef.current) {
           analyserRef.current.getByteFrequencyData(dataArray);
-          
+
           // 평균 오디오 레벨 계산
           const average = dataArray.reduce((a, b) => a + b) / bufferLength;
           const threshold = 30; // 말하고 있다고 판단하는 임계값 (조정됨)
-          
+
           const wasSpeaking = isLocalSpeaking;
           const nowSpeaking = average > threshold;
-          
+
           setIsLocalSpeaking(nowSpeaking);
-          
+
           // 말하기 시작했을 때 마지막 화자 업데이트
           if (!wasSpeaking && nowSpeaking) {
             setLastSpeaker(participantName);
           }
-          
+
           animationFrameRef.current = requestAnimationFrame(detectSpeaking);
         }
       };
-      
+
       detectSpeaking();
     } catch (error) {
       console.error('오디오 레벨 감지 설정 실패:', error);
@@ -605,33 +609,33 @@ const VideoCallRoom = () => {
     if (isLocalSpeaking && isMicOn) {
       return participantName;
     }
-    
+
     // 2. 원격 참가자 중 말하고 있는 사람 확인
     if (speakingParticipants.size > 0) {
       // 여러 명이 동시에 말하는 경우 가장 최근 화자 사용
       const speakers = Array.from(speakingParticipants);
-      
+
       // 마지막 화자가 현재도 말하고 있으면 유지
       if (lastSpeaker && speakers.some(id => getParticipantDisplayName(id) === lastSpeaker)) {
         return lastSpeaker;
       }
-      
+
       // 아니면 첫 번째 화자 사용
       if (speakers.length > 0) {
         const speakerIdentity = speakers[0];
         return getParticipantDisplayName(speakerIdentity);
       }
     }
-    
+
     // 3. 아무도 말하지 않으면 마지막 화자 사용 (있으면)
     if (lastSpeaker) {
       return lastSpeaker;
     }
-    
+
     // 4. 최종 기본값 (로컬 사용자)
     return participantName;
   };
-  
+
   // 참가자 이름 변환 함수
   const getParticipantDisplayName = (identity) => {
     if (identity === `user-${useAuthStore.getState().user?.id}`) {
@@ -650,19 +654,19 @@ const VideoCallRoom = () => {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    
+
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'ko-KR';
-    
+
     recognition.onstart = () => {
       console.log('음성 인식 시작');
     };
-    
+
     recognition.onresult = (event) => {
       let interimTranscript = '';
       let finalTranscript = '';
-      
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
@@ -671,13 +675,13 @@ const VideoCallRoom = () => {
           interimTranscript += transcript;
         }
       }
-      
+
       if (finalTranscript) {
         // 현재 말하고 있는 사람 확인
         const currentSpeaker = detectCurrentSpeaker();
         handleSpeechResult(currentSpeaker, finalTranscript);
       }
-      
+
       // 실시간 음성 표시
       const currentSpeaker = detectCurrentSpeaker();
       setCurrentSpeech({
@@ -685,11 +689,11 @@ const VideoCallRoom = () => {
         text: interimTranscript || finalTranscript
       });
     };
-    
+
     recognition.onerror = (event) => {
       console.error('음성 인식 오류:', event.error);
     };
-    
+
     recognition.onend = () => {
       if (sttEnabled) {
         // STT가 활성화되어 있으면 자동으로 재시작
@@ -702,18 +706,18 @@ const VideoCallRoom = () => {
         }, 100);
       }
     };
-    
+
     recognitionRef.current = recognition;
     return true;
   };
 
   // 음성 인식 결과 처리
   const handleSpeechResult = async (speaker, text) => {
-    const timestamp = new Date().toLocaleTimeString('ko-KR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const timestamp = new Date().toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    
+
     const newConversation = {
       id: Date.now(),
       speaker,
@@ -721,24 +725,24 @@ const VideoCallRoom = () => {
       timestamp,
       aiSuggestion: null
     };
-    
+
     setConversations(prev => [...prev, newConversation]);
     conversationLogRef.current.push(newConversation);
-    
+
     // 갈등 감지 및 중재 타이밍 결정
     const shouldMediate = await analyzeConflictAndTiming(text, speaker);
-    
+
     // AI 중재가 활성화되어 있고 중재가 필요한 경우
     if (aiMediationEnabled && shouldMediate) {
       try {
         const aiSuggestion = await requestAiMediation(text, speaker);
         if (aiSuggestion) {
-          setConversations(prev => 
-            prev.map(conv => 
-              conv.id === newConversation.id 
-                ? { ...conv, aiSuggestion }
-                : conv
-            )
+          setConversations(prev =>
+              prev.map(conv =>
+                  conv.id === newConversation.id
+                      ? { ...conv, aiSuggestion }
+                      : conv
+              )
           );
           setLastMediationTime(Date.now());
         }
@@ -746,11 +750,11 @@ const VideoCallRoom = () => {
         console.error('AI 중재 요청 실패:', error);
       }
     }
-    
+
     // 음성 인식 완료 후 현재 음성 초기화
     setCurrentSpeech({ speaker: null, text: '' });
   };
-  
+
   // 표정 분석 시작
   const startEmotionDetection = () => {
     if (!faceApiModelsLoaded.current) {
@@ -774,8 +778,8 @@ const VideoCallRoom = () => {
       if (localVideoRef.current && faceApiModelsLoaded.current) {
         try {
           const detections = await faceapi
-            .detectAllFaces(localVideoRef.current, new faceapi.TinyFaceDetectorOptions())
-            .withFaceExpressions();
+              .detectAllFaces(localVideoRef.current, new faceapi.TinyFaceDetectorOptions())
+              .withFaceExpressions();
 
           if (detections.length > 0) {
             const expressions = detections[0].expressions;
@@ -821,14 +825,14 @@ const VideoCallRoom = () => {
       { words: ['미안', '죄송', '잘못'], weight: -10 },
       { words: ['알겠', '이해', '그래'], weight: -15 }
     ];
-    
+
     let textConflictScore = 0;
     conflictKeywords.forEach(({ words, weight }) => {
       if (words.some(word => text.includes(word))) {
         textConflictScore += weight;
       }
     });
-    
+
     // 2. 대화 패턴 분석
     const recentConversations = conversationLogRef.current.slice(-5);
     const rapidExchanges = recentConversations.filter((conv, i) => {
@@ -837,81 +841,81 @@ const VideoCallRoom = () => {
       const currTime = new Date(conv.timestamp).getTime();
       return (currTime - prevTime) < 5000; // 5초 이내 빠른 주고받기
     }).length;
-    
+
     // 3. 표정 기반 갈등 지표
     let emotionConflictScore = 0;
     const speakerEmotions = emotionScores[speaker];
     if (speakerEmotions) {
       emotionConflictScore += speakerEmotions.angry * 0.5; // 화남 50% 가중치
-      emotionConflictScore += speakerEmotions.sad * 0.2; // 슬픔 20% 가중치  
+      emotionConflictScore += speakerEmotions.sad * 0.2; // 슬픔 20% 가중치
       emotionConflictScore -= speakerEmotions.happy * 0.3; // 기쁨 -30% 가중치
     }
 
     // 4. 갈등 수준 업데이트 (텍스트 + 대화패턴 + 표정)
-    const newConflictLevel = Math.min(100, Math.max(0, 
-      conflictLevel + textConflictScore + (rapidExchanges * 10) + emotionConflictScore
+    const newConflictLevel = Math.min(100, Math.max(0,
+        conflictLevel + textConflictScore + (rapidExchanges * 10) + emotionConflictScore
     ));
     setConflictLevel(newConflictLevel);
-    
+
     // 4. 중재 타이밍 결정 규칙
     const timeSinceLastMediation = Date.now() - lastMediationTime;
     const minMediationInterval = 30000; // 최소 30초 간격
-    
+
     // 중재가 필요한 경우:
     if (timeSinceLastMediation < minMediationInterval) {
       return false; // 너무 자주 중재하지 않음
     }
-    
+
     if (newConflictLevel > 70) {
       return true; // 갈등 수준이 높음
     }
-    
+
     if (textConflictScore > 40) {
       return true; // 현재 메시지가 매우 부정적
     }
-    
+
     if (rapidExchanges >= 3 && newConflictLevel > 40) {
       return true; // 빠른 대화 + 중간 수준 갈등
     }
-    
+
     // 긍정적 대화는 갈등 수준 감소
     if (textConflictScore < 0) {
       setConflictLevel(Math.max(0, conflictLevel - 5));
     }
-    
+
     return false;
   };
 
   // AI 중재 서비스 요청
-const requestAiMediation = async (text, speaker) => {
+  const requestAiMediation = async (text, speaker) => {
     // 1. 백엔드 API에 보낼 대화 기록 전체를 준비합니다.
     // 이전 대화 기록에 방금 말한 내용을 합칩니다.
     const conversationForApi = [...conversationLogRef.current, { speaker, text }];
 
     try {
-        // 2. 주소와 요청 본문(payload)을 백엔드 API에 맞게 수정합니다.
-        const response = await apiClient.post('/speech/emotion/contextual', {
-            conversation: conversationForApi
-        });
+      // 2. 주소와 요청 본문(payload)을 백엔드 API에 맞게 수정합니다.
+      const response = await apiClient.post('/speech/emotion/contextual', {
+        conversation: conversationForApi
+      });
 
-        // 3. 백엔드 응답(감정 분석 결과)을 바탕으로 프론트에서 보여줄 제안 텍스트를 만듭니다.
-        if (response.data && response.data.emotion !== 'error') {
-            const { emotion, score } = response.data;
-            let suggestion = `(상대방은 현재 '${emotion}' 상태로 보여요. 긍정 점수: ${score})`;
+      // 3. 백엔드 응답(감정 분석 결과)을 바탕으로 프론트에서 보여줄 제안 텍스트를 만듭니다.
+      if (response.data && response.data.emotion !== 'error') {
+        const { emotion, score } = response.data;
+        let suggestion = `(상대방은 현재 '${emotion}' 상태로 보여요. 긍정 점수: ${score})`;
 
-            if (emotion === 'sad' && score < -0.5) {
-                suggestion += " 따뜻한 말로 위로해보는 건 어떨까요?";
-            } else if (emotion === 'happy' && score > 0.5) {
-                suggestion += " 좋은 분위기를 계속 이어가 보세요!";
-            }
-            
-            return suggestion; // 완성된 제안 텍스트를 반환
+        if (emotion === 'sad' && score < -0.5) {
+          suggestion += " 따뜻한 말로 위로해보는 건 어떨까요?";
+        } else if (emotion === 'happy' && score > 0.5) {
+          suggestion += " 좋은 분위기를 계속 이어가 보세요!";
         }
+
+        return suggestion; // 완성된 제안 텍스트를 반환
+      }
     } catch (error) {
-        console.error('AI 감정 분석 서비스 오류:', error);
+      console.error('AI 감정 분석 서비스 오류:', error);
     }
     return null;
-};
+  };
 
   // STT 토글 함수
   const toggleSTT = () => {
@@ -920,7 +924,7 @@ const requestAiMediation = async (text, speaker) => {
       if (initialized) {
         setSttEnabled(true);
         recognitionRef.current?.start();
-        
+
       }
     } else {
       setSttEnabled(false);
@@ -941,7 +945,7 @@ const requestAiMediation = async (text, speaker) => {
       console.log('원격 오디오 MediaStreamTrack을 찾을 수 없습니다:', participantId, audioTrack);
       return;
     }
-    
+
     try {
       // 기존 AudioContext 사용 또는 새로 생성
       let audioContext = audioContextRef.current;
@@ -949,37 +953,37 @@ const requestAiMediation = async (text, speaker) => {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         audioContextRef.current = audioContext;
       }
-      
+
       // AudioContext가 suspended 상태면 resume
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
-      
+
       const analyser = audioContext.createAnalyser();
       const mediaStreamSource = audioContext.createMediaStreamSource(
-        new MediaStream([mediaStreamTrack])
+          new MediaStream([mediaStreamTrack])
       );
-      
+
       mediaStreamSource.connect(analyser);
       analyser.fftSize = 256;
-      
+
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      
+
       // 원격 참가자별 분석기 저장
       remoteAnalysersRef.current.set(participantId, { audioContext, analyser });
-      
+
       // 오디오 레벨 감지 루프
       const detectRemoteSpeaking = () => {
         if (analyser && remoteAnalysersRef.current.has(participantId)) {
           analyser.getByteFrequencyData(dataArray);
-          
+
           const average = dataArray.reduce((a, b) => a + b) / bufferLength;
           const threshold = 25; // 원격 참가자 임계값 (조정됨)
-          
+
           const wasSpeaking = speakingParticipants.has(participantId);
           const nowSpeaking = average > threshold;
-          
+
           setSpeakingParticipants(prev => {
             const newSpeaking = new Set(prev);
             if (nowSpeaking) {
@@ -989,16 +993,16 @@ const requestAiMediation = async (text, speaker) => {
             }
             return newSpeaking;
           });
-          
+
           // 말하기 시작했을 때 마지막 화자 업데이트
           if (!wasSpeaking && nowSpeaking) {
             setLastSpeaker(getParticipantDisplayName(participantId));
           }
-          
+
           requestAnimationFrame(detectRemoteSpeaking);
         }
       };
-      
+
       detectRemoteSpeaking();
     } catch (error) {
       console.error('원격 오디오 레벨 감지 설정 실패:', error);
@@ -1009,7 +1013,7 @@ const requestAiMediation = async (text, speaker) => {
   const enableLocalMedia = async (room) => {
     try {
       console.log('=== enableLocalMedia 시작 ===');
-      
+
       // 기존 로컬 스트림이 있다면 정리
       if (localVideoRef.current?.srcObject) {
         const existingStream = localVideoRef.current.srcObject;
@@ -1018,29 +1022,29 @@ const requestAiMediation = async (text, speaker) => {
         });
         localVideoRef.current.srcObject = null;
       }
-      
+
       // 카메라 활성화
       const videoTrack = await room.localParticipant.setCameraEnabled(true);
       console.log('카메라 트랙 생성됨:', videoTrack);
       console.log('카메라 트랙 타입:', typeof videoTrack);
       console.log('카메라 트랙 속성들:', Object.keys(videoTrack || {}));
-      
+
       // LiveKit Track의 실제 MediaStreamTrack에 직접 접근
       if (videoTrack && videoTrack.track) {
         console.log('videoTrack.track:', videoTrack.track);
         console.log('videoTrack.track 속성들:', Object.keys(videoTrack.track));
-        
+
         // LiveKit Track의 내부 MediaStreamTrack 찾기
         const mediaTrack = videoTrack.track.mediaStreamTrack;
         console.log('mediaStreamTrack:', mediaTrack);
         console.log('localVideoRef.current 상태:', localVideoRef.current);
-        
+
         if (mediaTrack) {
           if (localVideoRef.current) {
             console.log('MediaStreamTrack을 직접 비디오 엘리먼트에 연결');
             const stream = new MediaStream([mediaTrack]);
             localVideoRef.current.srcObject = stream;
-            
+
             // 비디오 재생 시작
             try {
               await localVideoRef.current.play();
@@ -1056,20 +1060,20 @@ const requestAiMediation = async (text, speaker) => {
           console.error('MediaStreamTrack을 찾을 수 없음');
         }
       }
-      
+
       setLocalVideoTrack(videoTrack);
-      
+
       // 마이크 활성화
       const audioTrack = await room.localParticipant.setMicrophoneEnabled(true);
       setLocalAudioTrack(audioTrack);
-      
+
       // 오디오 레벨 감지 설정
       if (audioTrack) {
         setupAudioLevelDetection(audioTrack);
       }
-      
+
       console.log('=== enableLocalMedia 완료 ===');
-      
+
     } catch (error) {
       console.error('미디어 활성화 실패:', error);
     }
@@ -1080,7 +1084,7 @@ const requestAiMediation = async (text, speaker) => {
     console.log('비디오 트랙 연결 시도:', videoTrack);
     console.log('비디오 엘리먼트:', videoElement);
     console.log('videoTrack 속성들:', Object.keys(videoTrack || {}));
-    
+
     if (!videoTrack || !videoElement) {
       console.log('비디오 트랙 또는 엘리먼트가 없음');
       return;
@@ -1099,7 +1103,7 @@ const requestAiMediation = async (text, speaker) => {
       if (videoTrack.track) {
         console.log('방법 2: videoTrack.track 탐색 중...');
         console.log('videoTrack.track 속성들:', Object.keys(videoTrack.track));
-        
+
         // track 객체에서 MediaStreamTrack 찾기
         const trackPossibles = [
           videoTrack.track.mediaStreamTrack,
@@ -1161,12 +1165,12 @@ const requestAiMediation = async (text, speaker) => {
       console.error('모든 방법 실패. 전체 객체 구조 출력:');
       console.log('videoTrack:', videoTrack);
       console.log('videoTrack.track:', videoTrack.track);
-      
+
       // 마지막 시도: getUserMedia로 새 스트림 생성
       console.log('마지막 시도: 직접 getUserMedia 사용');
-      navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480 }, 
-        audio: false 
+      navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: false
       }).then(stream => {
         videoElement.srcObject = stream;
         videoElement.play().catch(e => console.log('자동재생 제한:', e));
@@ -1199,7 +1203,7 @@ const requestAiMediation = async (text, speaker) => {
     remoteVideoRefs.current.delete(participantId);
     remoteAudioRefs.current.delete(participantId);
     remoteAnalysersRef.current.delete(participantId);
-    
+
     // 대기중인 트랙들도 정리
     pendingVideoTracks.current.delete(participantId);
     pendingAudioTracks.current.delete(participantId);
@@ -1208,7 +1212,7 @@ const requestAiMediation = async (text, speaker) => {
   // 참가자 목록 업데이트
   const updateParticipants = (room) => {
     const remoteParticipants = Array.from(room.remoteParticipants.values());
-    
+
     // 기존 참가자들 중 현재 없는 참가자의 ref 정리
     const currentParticipantIds = new Set(remoteParticipants.map(p => p.identity));
     for (const [participantId] of remoteVideoRefs.current) {
@@ -1216,15 +1220,41 @@ const requestAiMediation = async (text, speaker) => {
         cleanupParticipantRefs(participantId);
       }
     }
-    
+
     setParticipants(remoteParticipants);
   };
 
-  // 마이크 토글
+  // 소음 제거 토글
+  const toggleNoiseSuppression = () => {
+    setNoiseSuppressionEnabled(!noiseSuppressionEnabled);
+    console.log(`소음 제거: ${!noiseSuppressionEnabled ? 'ON' : 'OFF'}`);
+  };
+
+  // 마이크 토글 (소음 제거 적용)
   const toggleMicrophone = async () => {
     if (room) {
       try {
-        await room.localParticipant.setMicrophoneEnabled(!isMicOn);
+        if (!isMicOn) {
+          // 마이크 켜기 - 소음 제거 옵션 적용
+          const audioOptions = {
+            echoCancellation: true,
+            noiseSuppression: noiseSuppressionEnabled,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1
+          };
+
+          const audioTrack = await room.localParticipant.setMicrophoneEnabled(true, audioOptions);
+          setLocalAudioTrack(audioTrack);
+
+          console.log(`마이크 켜짐 (소음제거: ${noiseSuppressionEnabled})`);
+        } else {
+          // 마이크 끄기
+          await room.localParticipant.setMicrophoneEnabled(false);
+          setLocalAudioTrack(null);
+          console.log('마이크 꺼짐');
+        }
+
         setIsMicOn(!isMicOn);
       } catch (error) {
         console.error('마이크 토글 실패:', error);
@@ -1239,7 +1269,7 @@ const requestAiMediation = async (text, speaker) => {
         const videoTrack = await room.localParticipant.setCameraEnabled(!isCameraOn);
         setIsCameraOn(!isCameraOn);
         setLocalVideoTrack(videoTrack);
-        
+
         if (localVideoRef.current) {
           if (videoTrack) {
             // LiveKit의 최신 방식: track.attach() 사용
@@ -1248,8 +1278,8 @@ const requestAiMediation = async (text, speaker) => {
               console.log('카메라 토글: attach 방식으로 연결');
             } else {
               // 대체 방법
-              const mediaStreamTrack = videoTrack.mediaStreamTrack || 
-                                     videoTrack.track?.mediaStreamTrack;
+              const mediaStreamTrack = videoTrack.mediaStreamTrack ||
+                  videoTrack.track?.mediaStreamTrack;
               if (mediaStreamTrack) {
                 const stream = new MediaStream([mediaStreamTrack]);
                 localVideoRef.current.srcObject = stream;
@@ -1276,7 +1306,7 @@ const requestAiMediation = async (text, speaker) => {
     stopEmotionDetection();
     setEmotionScores({});
     setConflictLevel(0);
-    
+
     // STT 정리
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -1288,7 +1318,7 @@ const requestAiMediation = async (text, speaker) => {
     setAiMediationEnabled(false);
     setConversations([]);
     setCurrentSpeech({ speaker: null, text: '' });
-    
+
     // 오디오 분석 정리
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -1296,13 +1326,13 @@ const requestAiMediation = async (text, speaker) => {
     if (audioContextRef.current) {
       audioContextRef.current.close();
     }
-    
+
     // 원격 참가자 오디오 분석기 정리
     remoteAnalysersRef.current.forEach(({ audioContext }) => {
       audioContext.close();
     });
     remoteAnalysersRef.current.clear();
-    
+
     // 원격 참가자 video/audio ref 정리
     remoteVideoRefs.current.forEach((videoRef) => {
       if (videoRef.current) {
@@ -1316,11 +1346,11 @@ const requestAiMediation = async (text, speaker) => {
     });
     remoteVideoRefs.current.clear();
     remoteAudioRefs.current.clear();
-    
+
     // 대기중인 트랙들도 정리
     pendingVideoTracks.current.clear();
     pendingAudioTracks.current.clear();
-    
+
     if (room) {
       await room.disconnect();
       setRoom(null);
@@ -1330,7 +1360,7 @@ const requestAiMediation = async (text, speaker) => {
       setLocalAudioTrack(null);
       setSpeakingParticipants(new Set());
       setIsLocalSpeaking(false);
-      
+
       // 로컬 비디오 정리
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
@@ -1340,491 +1370,505 @@ const requestAiMediation = async (text, speaker) => {
 
   // 게스트 모달 컴포넌트
   const GuestModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-4">화상채팅 참여</h2>
-        <p className="text-gray-600 mb-6">
-          게스트로 참여하거나 로그인하여 참여할 수 있습니다.
-        </p>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              닉네임 (선택사항)
-            </label>
-            <input
-              type="text"
-              value={guestNickname}
-              onChange={(e) => setGuestNickname(e.target.value)}
-              placeholder="게스트"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <button
-            onClick={() => {
-              setIsGuestMode(true);
-              setParticipantName(guestNickname || `게스트${Math.floor(Math.random() * 1000)}`);
-              setShowGuestModal(false);
-              // Face-API 모델 로드 후 룸 참가
-              loadFaceApiModels().then(() => {
-                joinRoom();
-              });
-            }}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            게스트로 참여
-          </button>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <h2 className="text-2xl font-bold mb-4">화상채팅 참여</h2>
+          <p className="text-gray-600 mb-6">
+            게스트로 참여하거나 로그인하여 참여할 수 있습니다.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                닉네임 (선택사항)
+              </label>
+              <input
+                  type="text"
+                  value={guestNickname}
+                  onChange={(e) => setGuestNickname(e.target.value)}
+                  placeholder="게스트"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">또는</span>
+
+            <button
+                onClick={() => {
+                  setIsGuestMode(true);
+                  setParticipantName(guestNickname || `게스트${Math.floor(Math.random() * 1000)}`);
+                  setShowGuestModal(false);
+                  // Face-API 모델 로드 후 룸 참가
+                  loadFaceApiModels().then(() => {
+                    joinRoom();
+                  });
+                }}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              게스트로 참여
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">또는</span>
+              </div>
             </div>
+
+            <button
+                onClick={() => {
+                  window.location.href = '/login';
+                }}
+                className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
+            >
+              로그인하기
+            </button>
           </div>
-          
-          <button
-            onClick={() => {
-              window.location.href = '/login';
-            }}
-            className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
-          >
-            로그인하기
-          </button>
         </div>
       </div>
-    </div>
   );
 
   return (
-    <div className="w-full h-screen bg-gray-900 flex flex-col">
-      {/* 게스트 모달 */}
-      {showGuestModal && <GuestModal />}
-      
-      {/* 헤더 */}
-      <div className="bg-gray-800 p-4 text-white">
-        <h1 className="text-xl font-bold">
-          🦔 참견도치 화상통화 (LiveKit)
-          {isGuestMode && <span className="text-sm text-gray-400 ml-2">(게스트 모드)</span>}
-        </h1>
-        <p className="text-sm text-gray-300">
-          룸: {roomName} | 상태: {isConnected ? '연결됨' : '연결 안됨'} | 
-          {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
-        </p>
-        {error && (
-          <p className="text-red-400 text-sm mt-1">❌ {error}</p>
+      <div className="w-full h-screen bg-gray-900 flex flex-col">
+        {/* 게스트 모달 */}
+        {showGuestModal && <GuestModal />}
+
+        {/* 헤더 */}
+        <div className="bg-gray-800 p-4 text-white">
+          <h1 className="text-xl font-bold">
+            🦔 참견도치 화상통화 (LiveKit)
+            {isGuestMode && <span className="text-sm text-gray-400 ml-2">(게스트 모드)</span>}
+          </h1>
+          <p className="text-sm text-gray-300">
+            룸: {roomName} | 상태: {isConnected ? '연결됨' : '연결 안됨'} |
+            {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
+          </p>
+          {error && (
+              <p className="text-red-400 text-sm mt-1">❌ {error}</p>
+          )}
+        </div>
+
+        {/* 연결 상태 표시 */}
+        {!isConnected && !error && (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-white text-center">
+                <h2 className="text-2xl font-bold mb-4">🎥 화상통화 시작</h2>
+                <p className="text-lg mb-6">화상통화를 시작하려면 버튼을 클릭하세요</p>
+                <button
+                    onClick={joinRoom}
+                    className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-white font-medium text-lg transition-colors"
+                >
+                  📞 연결 시작
+                </button>
+                <p className="text-sm text-gray-400 mt-4">
+                  * 마이크와 카메라 권한이 필요합니다
+                </p>
+              </div>
+            </div>
         )}
-      </div>
 
-      {/* 연결 상태 표시 */}
-      {!isConnected && !error && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-white text-center">
-            <h2 className="text-2xl font-bold mb-4">🎥 화상통화 시작</h2>
-            <p className="text-lg mb-6">화상통화를 시작하려면 버튼을 클릭하세요</p>
-            <button 
-              onClick={joinRoom}
-              className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-white font-medium text-lg transition-colors"
-            >
-              📞 연결 시작
-            </button>
-            <p className="text-sm text-gray-400 mt-4">
-              * 마이크와 카메라 권한이 필요합니다
-            </p>
-          </div>
-        </div>
-      )}
+        {/* 에러 상태 */}
+        {error && (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="text-6xl mb-4">❌</div>
+                <p className="text-lg mb-4">{error}</p>
+                <button
+                    onClick={joinRoom}
+                    className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-medium"
+                >
+                  다시 시도
+                </button>
+              </div>
+            </div>
+        )}
 
-      {/* 에러 상태 */}
-      {error && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-white">
-            <div className="text-6xl mb-4">❌</div>
-            <p className="text-lg mb-4">{error}</p>
-            <button 
-              onClick={joinRoom}
-              className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-medium"
-            >
-              다시 시도
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 메인 영역 - 3분할 (비디오 + STT) */}
-      {isConnected && (
-        <div className="flex-1 p-4 flex gap-4">
-          {/* 로컬 비디오 (나) - 왼쪽 */}
-          <div className="flex-1">
-            <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
-              isLocalSpeaking && isMicOn ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
-            }`}>
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
-                isLocalSpeaking && isMicOn ? 'bg-green-600 bg-opacity-70' : ''
-              }`}>
+        {/* 메인 영역 - 3분할 (비디오 + STT) */}
+        {isConnected && (
+            <div className="flex-1 p-4 flex gap-4">
+              {/* 로컬 비디오 (나) - 왼쪽 */}
+              <div className="flex-1">
+                <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
+                    isLocalSpeaking && isMicOn ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
+                }`}>
+                  <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                  />
+                  <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
+                      isLocalSpeaking && isMicOn ? 'bg-green-600 bg-opacity-70' : ''
+                  }`}>
                 <span className="text-sm">
                   {isLocalSpeaking && isMicOn && '🎤 '}
                   {participantName} (나)
                 </span>
-              </div>
-              {!isCameraOn && (
-                <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
-                  <span className="text-white text-lg">📵 카메라 꺼짐</span>
+                  </div>
+                  {!isCameraOn && (
+                      <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
+                        <span className="text-white text-lg">📵 카메라 꺼짐</span>
+                      </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* 원격 참가자들 - 가운데 */}
-          <div className="flex-1">
-            {participants.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 h-full">
-                {participants.map((participant) => {
-                  const isSpeaking = speakingParticipants.has(participant.identity);
-                  return (
-                    <div key={participant.identity} className="relative h-full">
-                      <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
-                        isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
-                      }`}>
-                        <video
-                          ref={getOrCreateVideoRef(participant.identity)}
-                          autoPlay
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
-                        <audio
-                          ref={getOrCreateAudioRef(participant.identity)}
-                          autoPlay
-                        />
-                        <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
-                          isSpeaking ? 'bg-green-600 bg-opacity-70' : ''
-                        }`}>
+              {/* 원격 참가자들 - 가운데 */}
+              <div className="flex-1">
+                {participants.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-4 h-full">
+                      {participants.map((participant) => {
+                        const isSpeaking = speakingParticipants.has(participant.identity);
+                        return (
+                            <div key={participant.identity} className="relative h-full">
+                              <div className={`w-full h-full bg-black rounded-lg relative overflow-hidden transition-all duration-300 ${
+                                  isSpeaking ? 'ring-4 ring-green-400 ring-opacity-70 shadow-lg shadow-green-400/20' : ''
+                              }`}>
+                                <video
+                                    ref={getOrCreateVideoRef(participant.identity)}
+                                    autoPlay
+                                    playsInline
+                                    className="w-full h-full object-cover"
+                                />
+                                <audio
+                                    ref={getOrCreateAudioRef(participant.identity)}
+                                    autoPlay
+                                />
+                                <div className={`absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded ${
+                                    isSpeaking ? 'bg-green-600 bg-opacity-70' : ''
+                                }`}>
                           <span className="text-sm">
                             {isSpeaking && '🎤 '}
                             {getParticipantDisplayName(participant.identity)}
                           </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                <div className="text-center text-gray-400">
-                  <p>다른 참가자를 기다리는 중...</p>
-                  <p className="text-sm mt-2">다른 브라우저 탭에서 같은 URL로 접속해보세요!</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* STT 및 AI 중재 패널 - 오른쪽 */}
-          <div className="w-80 bg-gray-800 rounded-lg p-4 flex flex-col">
-            {/* STT 컨트롤 */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-white font-semibold">🎤 대화 기록</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={toggleSTT}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      sttEnabled 
-                        ? 'bg-green-600 text-white hover:bg-green-700' 
-                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                    }`}
-                  >
-                    {sttEnabled ? '🎤 ON' : '🎤 OFF'}
-                  </button>
-                  <button
-                    onClick={toggleAiMediation}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      aiMediationEnabled 
-                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                    }`}
-                  >
-                    {aiMediationEnabled ? '🤖 AI ON' : '🤖 AI OFF'}
-                  </button>
-                </div>
-              </div>
-              
-              
-              {/* 갈등 수준 표시 */}
-              {sttEnabled && conversations.length > 0 && (
-                <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                    <span>갈등 수준</span>
-                    <span>{conflictLevel}%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        conflictLevel < 30 ? 'bg-green-500' :
-                        conflictLevel < 60 ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}
-                      style={{ width: `${conflictLevel}%` }}
-                    />
-                  </div>
-                  {conflictLevel > 60 && (
-                    <div className="text-xs text-red-400 mt-1">
-                      ⚠️ 대화 분위기가 좋지 않습니다
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* 실시간 감정 분석 그래프 */}
-              {isConnected && Object.keys(emotionScores).length > 0 && (
-                <div className="mb-3">
-                  <div className="text-xs text-gray-400 mb-3 flex items-center gap-2">
-                    <span>😊 실시간 감정 분석</span>
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  </div>
-                  {Object.entries(emotionScores).map(([name, scores]) => (
-                    <div key={name} className="mb-4 p-3 bg-gray-700 rounded-lg">
-                      <div className="text-sm text-white mb-3 font-medium">{name}</div>
-                      <div className="space-y-2">
-                        {/* 행복 */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-green-400 w-8">😊</span>
-                          <div className="flex-1 bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-green-500 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${scores.happy}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-300 w-8">{scores.happy}%</span>
-                        </div>
-                        
-                        {/* 분노 */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-red-400 w-8">😠</span>
-                          <div className="flex-1 bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-red-500 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${scores.angry}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-300 w-8">{scores.angry}%</span>
-                        </div>
-                        
-                        {/* 슬픔 */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-blue-400 w-8">😢</span>
-                          <div className="flex-1 bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-blue-500 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${scores.sad}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-300 w-8">{scores.sad}%</span>
-                        </div>
-                        
-                        {/* 놀람 */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-yellow-400 w-8">😮</span>
-                          <div className="flex-1 bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-yellow-500 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${scores.surprised}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-300 w-8">{scores.surprised}%</span>
-                        </div>
-                        
-                        {/* 중립 */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400 w-8">😐</span>
-                          <div className="flex-1 bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-gray-400 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${scores.neutral}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-300 w-8">{scores.neutral}%</span>
-                        </div>
-                      </div>
-                      
-                      {/* 주도 감정 표시 */}
-                      <div className="mt-2 pt-2 border-t border-gray-600">
-                        <div className="text-xs text-gray-400 mb-1">주도 감정</div>
-                        {(() => {
-                          const emotions = [
-                            { name: '행복', value: scores.happy, emoji: '😊', color: 'text-green-400' },
-                            { name: '분노', value: scores.angry, emoji: '😠', color: 'text-red-400' },
-                            { name: '슬픔', value: scores.sad, emoji: '😢', color: 'text-blue-400' },
-                            { name: '놀람', value: scores.surprised, emoji: '😮', color: 'text-yellow-400' },
-                            { name: '중립', value: scores.neutral, emoji: '😐', color: 'text-gray-400' }
-                          ];
-                          const dominant = emotions.reduce((max, current) => 
-                            current.value > max.value ? current : max
-                          );
-                          return (
-                            <div className={`text-sm ${dominant.color} flex items-center gap-1`}>
-                              <span>{dominant.emoji}</span>
-                              <span>{dominant.name} ({dominant.value}%)</span>
-                            </div>
-                          );
-                        })()} 
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* 현재 말하고 있는 내용 */}
-              {currentSpeech.text && (
-                <div className="bg-gray-700 rounded p-2 mb-2">
-                  <div className="text-xs text-gray-400 mb-1">실시간 음성</div>
-                  <div className="text-sm text-white">
-                    <span className="text-green-400">{currentSpeech.speaker}:</span> {currentSpeech.text}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 대화 기록 - 카톡 스타일 */}
-            <div className="flex-1 overflow-y-auto px-2 py-3">
-              {conversations.length === 0 ? (
-                <div className="text-gray-400 text-sm text-center py-8">
-                  {sttEnabled ? '대화를 시작해보세요!' : 'STT를 활성화하면 대화가 기록됩니다.'}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {conversations.map((conv, index) => {
-                    const isMe = conv.speaker === participantName;
-                    const showAiSuggestion = conv.aiSuggestion && (
-                      index === conversations.length - 1 || // 마지막 메시지거나
-                      conversations[index + 1]?.aiSuggestion // 다음 메시지도 AI 제안이 있을 때
-                    );
-                    
-                    return (
-                      <div key={conv.id}>
-                        {/* 대화 메시지 */}
-                        <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
-                          <div className={`max-w-[70%] ${isMe ? 'order-2' : 'order-1'}`}>
-                            <div className={`inline-block px-3 py-2 rounded-2xl ${
-                              isMe 
-                                ? 'bg-yellow-400 text-black rounded-tr-sm' 
-                                : 'bg-gray-600 text-white rounded-tl-sm'
-                            }`}>
-                              <div className="text-sm">{conv.text}</div>
-                            </div>
-                            <div className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
-                              {conv.timestamp}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* AI 중재 제안 */}
-                        {showAiSuggestion && (
-                          <div className="flex justify-center my-3">
-                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-3 max-w-[85%] shadow-lg">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs text-white font-semibold">🤖 AI 중재 도우미</span>
+                                </div>
                               </div>
-                              <div className="text-sm text-white">{conv.aiSuggestion}</div>
                             </div>
-                          </div>
+                        );
+                      })}
+                    </div>
+                ) : (
+                    <div className="h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                      <div className="text-center text-gray-400">
+                        <p>다른 참가자를 기다리는 중...</p>
+                        <p className="text-sm mt-2">다른 브라우저 탭에서 같은 URL로 접속해보세요!</p>
+                      </div>
+                    </div>
+                )}
+              </div>
+
+              {/* STT 및 AI 중재 패널 - 오른쪽 */}
+              <div className="w-80 bg-gray-800 rounded-lg p-4 flex flex-col">
+                {/* STT 컨트롤 */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-white font-semibold">🎤 대화 기록</h3>
+                    <div className="flex gap-2">
+                      <button
+                          onClick={toggleSTT}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              sttEnabled
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                          }`}
+                      >
+                        {sttEnabled ? '🎤 ON' : '🎤 OFF'}
+                      </button>
+                      <button
+                          onClick={toggleAiMediation}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              aiMediationEnabled
+                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                          }`}
+                      >
+                        {aiMediationEnabled ? '🤖 AI ON' : '🤖 AI OFF'}
+                      </button>
+                    </div>
+                  </div>
+
+
+                  {/* 갈등 수준 표시 */}
+                  {sttEnabled && conversations.length > 0 && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                          <span>갈등 수준</span>
+                          <span>{conflictLevel}%</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div
+                              className={`h-2 rounded-full transition-all duration-500 ${
+                                  conflictLevel < 30 ? 'bg-green-500' :
+                                      conflictLevel < 60 ? 'bg-yellow-500' :
+                                          'bg-red-500'
+                              }`}
+                              style={{ width: `${conflictLevel}%` }}
+                          />
+                        </div>
+                        {conflictLevel > 60 && (
+                            <div className="text-xs text-red-400 mt-1">
+                              ⚠️ 대화 분위기가 좋지 않습니다
+                            </div>
                         )}
                       </div>
-                    );
-                  })}
-                  
-                  {/* 갈등 수준 표시 */}
-                  {conflictLevel > 50 && (
-                    <div className="flex justify-center my-3">
-                      <div className="bg-red-600 bg-opacity-20 border border-red-500 rounded-lg p-2 text-center">
-                        <div className="text-xs text-red-400">
-                          ⚠️ 갈등 수준: {conflictLevel}%
+                  )}
+
+                  {/* 실시간 감정 분석 그래프 */}
+                  {isConnected && Object.keys(emotionScores).length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-xs text-gray-400 mb-3 flex items-center gap-2">
+                          <span>😊 실시간 감정 분석</span>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        </div>
+                        {Object.entries(emotionScores).map(([name, scores]) => (
+                            <div key={name} className="mb-4 p-3 bg-gray-700 rounded-lg">
+                              <div className="text-sm text-white mb-3 font-medium">{name}</div>
+                              <div className="space-y-2">
+                                {/* 행복 */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-green-400 w-8">😊</span>
+                                  <div className="flex-1 bg-gray-600 rounded-full h-2">
+                                    <div
+                                        className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${scores.happy}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-300 w-8">{scores.happy}%</span>
+                                </div>
+
+                                {/* 분노 */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-red-400 w-8">😠</span>
+                                  <div className="flex-1 bg-gray-600 rounded-full h-2">
+                                    <div
+                                        className="bg-red-500 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${scores.angry}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-300 w-8">{scores.angry}%</span>
+                                </div>
+
+                                {/* 슬픔 */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-blue-400 w-8">😢</span>
+                                  <div className="flex-1 bg-gray-600 rounded-full h-2">
+                                    <div
+                                        className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${scores.sad}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-300 w-8">{scores.sad}%</span>
+                                </div>
+
+                                {/* 놀람 */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-yellow-400 w-8">😮</span>
+                                  <div className="flex-1 bg-gray-600 rounded-full h-2">
+                                    <div
+                                        className="bg-yellow-500 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${scores.surprised}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-300 w-8">{scores.surprised}%</span>
+                                </div>
+
+                                {/* 중립 */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-400 w-8">😐</span>
+                                  <div className="flex-1 bg-gray-600 rounded-full h-2">
+                                    <div
+                                        className="bg-gray-400 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${scores.neutral}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-300 w-8">{scores.neutral}%</span>
+                                </div>
+                              </div>
+
+                              {/* 주도 감정 표시 */}
+                              <div className="mt-2 pt-2 border-t border-gray-600">
+                                <div className="text-xs text-gray-400 mb-1">주도 감정</div>
+                                {(() => {
+                                  const emotions = [
+                                    { name: '행복', value: scores.happy, emoji: '😊', color: 'text-green-400' },
+                                    { name: '분노', value: scores.angry, emoji: '😠', color: 'text-red-400' },
+                                    { name: '슬픔', value: scores.sad, emoji: '😢', color: 'text-blue-400' },
+                                    { name: '놀람', value: scores.surprised, emoji: '😮', color: 'text-yellow-400' },
+                                    { name: '중립', value: scores.neutral, emoji: '😐', color: 'text-gray-400' }
+                                  ];
+                                  const dominant = emotions.reduce((max, current) =>
+                                      current.value > max.value ? current : max
+                                  );
+                                  return (
+                                      <div className={`text-sm ${dominant.color} flex items-center gap-1`}>
+                                        <span>{dominant.emoji}</span>
+                                        <span>{dominant.name} ({dominant.value}%)</span>
+                                      </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                        ))}
+                      </div>
+                  )}
+
+                  {/* 현재 말하고 있는 내용 */}
+                  {currentSpeech.text && (
+                      <div className="bg-gray-700 rounded p-2 mb-2">
+                        <div className="text-xs text-gray-400 mb-1">실시간 음성</div>
+                        <div className="text-sm text-white">
+                          <span className="text-green-400">{currentSpeech.speaker}:</span> {currentSpeech.text}
                         </div>
                       </div>
-                    </div>
                   )}
                 </div>
-              )}
+
+                {/* 대화 기록 - 카톡 스타일 */}
+                <div className="flex-1 overflow-y-auto px-2 py-3">
+                  {conversations.length === 0 ? (
+                      <div className="text-gray-400 text-sm text-center py-8">
+                        {sttEnabled ? '대화를 시작해보세요!' : 'STT를 활성화하면 대화가 기록됩니다.'}
+                      </div>
+                  ) : (
+                      <div className="space-y-2">
+                        {conversations.map((conv, index) => {
+                          const isMe = conv.speaker === participantName;
+                          const showAiSuggestion = conv.aiSuggestion && (
+                              index === conversations.length - 1 || // 마지막 메시지거나
+                              conversations[index + 1]?.aiSuggestion // 다음 메시지도 AI 제안이 있을 때
+                          );
+
+                          return (
+                              <div key={conv.id}>
+                                {/* 대화 메시지 */}
+                                <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
+                                  <div className={`max-w-[70%] ${isMe ? 'order-2' : 'order-1'}`}>
+                                    <div className={`inline-block px-3 py-2 rounded-2xl ${
+                                        isMe
+                                            ? 'bg-yellow-400 text-black rounded-tr-sm'
+                                            : 'bg-gray-600 text-white rounded-tl-sm'
+                                    }`}>
+                                      <div className="text-sm">{conv.text}</div>
+                                    </div>
+                                    <div className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                                      {conv.timestamp}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* AI 중재 제안 */}
+                                {showAiSuggestion && (
+                                    <div className="flex justify-center my-3">
+                                      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-3 max-w-[85%] shadow-lg">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-xs text-white font-semibold">🤖 AI 중재 도우미</span>
+                                        </div>
+                                        <div className="text-sm text-white">{conv.aiSuggestion}</div>
+                                      </div>
+                                    </div>
+                                )}
+                              </div>
+                          );
+                        })}
+
+                        {/* 갈등 수준 표시 */}
+                        {conflictLevel > 50 && (
+                            <div className="flex justify-center my-3">
+                              <div className="bg-red-600 bg-opacity-20 border border-red-500 rounded-lg p-2 text-center">
+                                <div className="text-xs text-red-400">
+                                  ⚠️ 갈등 수준: {conflictLevel}%
+                                </div>
+                              </div>
+                            </div>
+                        )}
+                      </div>
+                  )}
+                </div>
+
+                {/* 대화 기록 삭제 버튼 */}
+                {conversations.length > 0 && (
+                    <button
+                        onClick={() => setConversations([])}
+                        className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                    >
+                      대화 기록 삭제
+                    </button>
+                )}
+              </div>
             </div>
+        )}
 
-            {/* 대화 기록 삭제 버튼 */}
-            {conversations.length > 0 && (
-              <button
-                onClick={() => setConversations([])}
-                className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-              >
-                대화 기록 삭제
-              </button>
-            )}
+        {/* 컨트롤 바 */}
+        <div className="bg-gray-800 p-4">
+          <div className="flex justify-center gap-4">
+            {/* 마이크 버튼 */}
+            <button
+                onClick={toggleMicrophone}
+                disabled={!isConnected}
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 ${
+                    isMicOn
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-red-600 hover:bg-red-700'
+                }`}
+            >
+              {isMicOn ? '🎤' : '🔇'}
+            </button>
+
+            {/* 카메라 버튼 */}
+            <button
+                onClick={toggleCamera}
+                disabled={!isConnected}
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 ${
+                    isCameraOn
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-red-600 hover:bg-red-700'
+                }`}
+            >
+              {isCameraOn ? '📹' : '📵'}
+            </button>
+
+            {/* 소음 제거 버튼 */}
+            <button
+                onClick={toggleNoiseSuppression}
+                disabled={!isConnected}
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 ${
+                    noiseSuppressionEnabled
+                        ? 'bg-purple-600 hover:bg-purple-700'
+                        : 'bg-gray-600 hover:bg-gray-700'
+                }`}
+                title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
+            >
+              {noiseSuppressionEnabled ? '🔇' : '🔊'}
+            </button>
+
+            {/* 나가기 버튼 */}
+            <button
+                onClick={leaveRoom}
+                className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white transition-colors"
+            >
+              📞
+            </button>
           </div>
-        </div>
-      )}
 
-      {/* 컨트롤 바 */}
-      <div className="bg-gray-800 p-4">
-        <div className="flex justify-center gap-4">
-          {/* 마이크 버튼 */}
-          <button
-            onClick={toggleMicrophone}
-            disabled={!isConnected}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 ${
-              isMicOn 
-                ? 'bg-green-600 hover:bg-green-700' 
-                : 'bg-red-600 hover:bg-red-700'
-            }`}
-          >
-            {isMicOn ? '🎤' : '🔇'}
-          </button>
-
-          {/* 카메라 버튼 */}
-          <button
-            onClick={toggleCamera}
-            disabled={!isConnected}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 ${
-              isCameraOn 
-                ? 'bg-green-600 hover:bg-green-700' 
-                : 'bg-red-600 hover:bg-red-700'
-            }`}
-          >
-            {isCameraOn ? '📹' : '📵'}
-          </button>
-
-          {/* 나가기 버튼 */}
-          <button
-            onClick={leaveRoom}
-            className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white transition-colors"
-          >
-            📞
-          </button>
-        </div>
-        
-        {/* 상태 표시 */}
-        <div className="flex justify-center mt-2 text-sm text-gray-400">
-          <span>마이크: {isMicOn ? 'ON' : 'OFF'}</span>
-          <span className="mx-2">|</span>
-          <span>카메라: {isCameraOn ? 'ON' : 'OFF'}</span>
-          <span className="mx-2">|</span>
-          <span>참가자: {participants.length + 1}명</span>
-          <span className="mx-2">|</span>
-          <span className={sttEnabled ? 'text-green-400' : 'text-gray-400'}>
+          {/* 상태 표시 */}
+          <div className="flex justify-center mt-2 text-sm text-gray-400">
+            <span>마이크: {isMicOn ? 'ON' : 'OFF'}</span>
+            <span className="mx-2">|</span>
+            <span>카메라: {isCameraOn ? 'ON' : 'OFF'}</span>
+            <span className="mx-2">|</span>
+            <span>참가자: {participants.length + 1}명</span>
+            <span className="mx-2">|</span>
+            <span className={sttEnabled ? 'text-green-400' : 'text-gray-400'}>
             STT: {sttEnabled ? 'ON' : 'OFF'}
           </span>
-          <span className="mx-2">|</span>
-          <span className={aiMediationEnabled ? 'text-blue-400' : 'text-gray-400'}>
+            <span className="mx-2">|</span>
+            <span className={aiMediationEnabled ? 'text-blue-400' : 'text-gray-400'}>
             AI 중재: {aiMediationEnabled ? 'ON' : 'OFF'}
           </span>
+          </div>
         </div>
       </div>
-    </div>
   );
 };
 

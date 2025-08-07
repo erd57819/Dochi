@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useWebRTC } from '../hooks/useWebRTC';
-import { useSTTProcessing } from '../hooks/useSTTProcessing';
+import { useWebRTC } from '../../hooks/useWebRTC';
+import { useVoiceProcessing } from '../../hooks/useVoiceProcessing';
 
-const VideoCallWithSTT = ({ roomCode, userId }) => {
-  const [showSTTPanel, setShowSTTPanel] = useState(false);
-  const [conversationHistory, setConversationHistory] = useState([]);
+const VideoCallWithVoice = ({ roomCode, userId }) => {
+  const [showVoicePanel, setShowVoicePanel] = useState(false);
+  const [voiceHistory, setVoiceHistory] = useState([]);
   
   // 기존 WebRTC 훅
   const {
@@ -22,61 +22,40 @@ const VideoCallWithSTT = ({ roomCode, userId }) => {
     endCall
   } = useWebRTC(roomCode, userId);
 
-  // STT 처리 훅
+  // 음성 처리 훅
   const {
     isRecording,
     isProcessing,
+    isPlaying,
     transcript,
-    processingTime,
-    analysisResult,
+    responseText,
     error,
-    recordWithAnalysis,
-    toggleRecording,
-    clearResults,
-    clearError
-  } = useSTTProcessing();
+    audioRef,
+    startRecording,
+    stopRecording,
+    speakText,
+    clearError,
+    clearResults
+  } = useVoiceProcessing();
 
-  // 대화 기록 추가
+  // 음성 대화 기록 추가
   useEffect(() => {
-    if (transcript) {
+    if (transcript && responseText) {
       const newEntry = {
         id: Date.now(),
         timestamp: new Date().toLocaleTimeString(),
-        speaker: userId,
-        text: transcript,
-        processingTime: processingTime,
-        emotion: analysisResult?.emotion?.emotion || null,
-        conflictRisk: analysisResult?.conflictRisk || null,
-        suggestions: analysisResult?.suggestions || []
+        userSaid: transcript,
+        aiResponse: responseText
       };
-      setConversationHistory(prev => [newEntry, ...prev.slice(0, 9)]); // 최근 10개만 유지
+      setVoiceHistory(prev => [newEntry, ...prev.slice(0, 4)]); // 최근 5개만 유지
     }
-  }, [transcript, analysisResult, processingTime, userId]);
+  }, [transcript, responseText]);
 
-  const handleSTTToggle = () => {
+  const handleVoiceToggle = () => {
     if (isRecording) {
-      toggleRecording(); // 중지
+      stopRecording();
     } else {
-      recordWithAnalysis(); // 분석과 함께 시작
-    }
-  };
-
-  const getEmotionEmoji = (emotion) => {
-    switch (emotion) {
-      case 'happy': case 'positive': return '😊';
-      case 'angry': case 'frustrated': return '😠';
-      case 'sad': return '😢';
-      case 'anxious': return '😰';
-      default: return '😐';
-    }
-  };
-
-  const getRiskEmoji = (risk) => {
-    switch (risk) {
-      case 'high': return '🚨';
-      case 'medium': return '⚠️';
-      case 'low': return '✅';
-      default: return '➖';
+      startRecording();
     }
   };
 
@@ -84,7 +63,7 @@ const VideoCallWithSTT = ({ roomCode, userId }) => {
     <div className="flex flex-col h-screen bg-gray-900">
       {/* 상단 헤더 */}
       <div className="flex justify-between items-center p-4 bg-gray-800 text-white">
-        <h1 className="text-xl font-bold">화상 통화 + STT - {roomCode}</h1>
+        <h1 className="text-xl font-bold">화상 통화 - {roomCode}</h1>
         <div className="flex space-x-2">
           <span className={`px-3 py-1 rounded text-sm ${
             connectionState === 'connected' ? 'bg-green-600' : 
@@ -158,22 +137,22 @@ const VideoCallWithSTT = ({ roomCode, userId }) => {
                 {isVideoEnabled ? '📹' : '📹'}
               </button>
 
-              {/* STT 토글 */}
+              {/* 음성 AI 토글 */}
               <button
-                onClick={handleSTTToggle}
+                onClick={handleVoiceToggle}
                 disabled={isProcessing}
                 className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${
                   isRecording ? 'bg-red-600 animate-pulse' : 
-                  isProcessing ? 'bg-yellow-600' : 'bg-purple-600 hover:bg-purple-700'
+                  isProcessing ? 'bg-yellow-600' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {isProcessing ? '⏳' : isRecording ? '⏹️' : '🎙️'}
+                {isProcessing ? '⏳' : isRecording ? '⏹️' : '🤖'}
               </button>
 
-              {/* STT 패널 토글 */}
+              {/* 음성 패널 토글 */}
               <button
-                onClick={() => setShowSTTPanel(!showSTTPanel)}
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700"
+                onClick={() => setShowVoicePanel(!showVoicePanel)}
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700"
               >
                 💬
               </button>
@@ -189,13 +168,12 @@ const VideoCallWithSTT = ({ roomCode, userId }) => {
           </div>
         </div>
 
-        {/* STT 패널 */}
-        {showSTTPanel && (
+        {/* 음성 AI 패널 */}
+        {showVoicePanel && (
           <div className="w-80 bg-white border-l border-gray-300 flex flex-col">
             {/* 패널 헤더 */}
             <div className="p-4 bg-gray-50 border-b">
-              <h3 className="font-semibold text-gray-800">🎙️ 음성인식 (STT)</h3>
-              <p className="text-xs text-gray-600 mt-1">GMS API (Whisper-1)</p>
+              <h3 className="font-semibold text-gray-800">🤖 음성 AI 어시스턴트</h3>
             </div>
 
             {/* 에러 메시지 */}
@@ -218,12 +196,17 @@ const VideoCallWithSTT = ({ roomCode, userId }) => {
                 )}
                 {isProcessing && (
                   <p className="text-blue-600 font-medium">
-                    ⏳ Whisper-1 처리 중...
+                    ⏳ 처리 중...
                   </p>
                 )}
-                {!isRecording && !isProcessing && (
+                {isPlaying && (
+                  <p className="text-green-600 font-medium">
+                    🔊 재생 중...
+                  </p>
+                )}
+                {!isRecording && !isProcessing && !isPlaying && (
                   <p className="text-gray-600 text-sm">
-                    🎙️ 버튼을 눌러 음성인식 시작
+                    🤖 버튼을 눌러 AI와 대화하세요
                   </p>
                 )}
               </div>
@@ -231,109 +214,74 @@ const VideoCallWithSTT = ({ roomCode, userId }) => {
 
             {/* 대화 기록 */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {conversationHistory.length === 0 ? (
+              {voiceHistory.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
-                  <p>아직 음성인식 기록이 없습니다.</p>
-                  <p className="text-sm mt-2">🎙️ 버튼을 눌러 시작해보세요!</p>
+                  <p>아직 대화 기록이 없습니다.</p>
+                  <p className="text-sm mt-2">음성 AI 버튼을 눌러 시작해보세요!</p>
                 </div>
               ) : (
-                conversationHistory.map(entry => (
-                  <div key={entry.id} className="bg-gray-50 p-3 rounded-lg">
-                    {/* 헤더 */}
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-blue-600 font-medium">
-                          {entry.speaker}
-                        </span>
-                        {entry.emotion && (
-                          <span className="text-sm">
-                            {getEmotionEmoji(entry.emotion)}
-                          </span>
-                        )}
-                        {entry.conflictRisk && (
-                          <span className="text-sm">
-                            {getRiskEmoji(entry.conflictRisk)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-right">
+                voiceHistory.map(entry => (
+                  <div key={entry.id} className="space-y-2">
+                    {/* 사용자 발언 */}
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-xs text-blue-600 font-medium">당신</span>
                         <span className="text-xs text-gray-500">{entry.timestamp}</span>
-                        {entry.processingTime > 0 && (
-                          <p className="text-xs text-gray-400">
-                            {entry.processingTime.toFixed(1)}초
-                          </p>
-                        )}
                       </div>
+                      <p className="text-sm text-gray-800">{entry.userSaid}</p>
                     </div>
                     
-                    {/* 텍스트 */}
-                    <p className="text-sm text-gray-800 mb-2">{entry.text}</p>
-                    
-                    {/* 분석 결과 */}
-                    {entry.emotion && (
-                      <div className="text-xs text-gray-600 mb-1">
-                        <span className="font-medium">감정:</span> {entry.emotion} 
-                        ({Math.round((analysisResult?.emotion?.confidence || 0) * 100)}%)
+                    {/* AI 응답 */}
+                    <div className="bg-green-100 p-3 rounded-lg">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-xs text-green-600 font-medium">AI</span>
+                        <button
+                          onClick={() => speakText(entry.aiResponse)}
+                          disabled={isProcessing || isPlaying}
+                          className="text-xs text-green-600 hover:text-green-800 disabled:opacity-50"
+                        >
+                          🔊
+                        </button>
                       </div>
-                    )}
-                    
-                    {entry.conflictRisk && entry.conflictRisk !== 'low' && (
-                      <div className="text-xs text-gray-600 mb-1">
-                        <span className="font-medium">갈등위험:</span> 
-                        <span className={`ml-1 px-1 rounded ${
-                          entry.conflictRisk === 'high' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {entry.conflictRisk === 'high' ? '높음' : '중간'}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* 제안사항 */}
-                    {entry.suggestions && entry.suggestions.length > 0 && (
-                      <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                        <p className="font-medium text-blue-800 mb-1">💡 제안:</p>
-                        <p className="text-blue-700">{entry.suggestions[0]}</p>
-                      </div>
-                    )}
+                      <p className="text-sm text-gray-800">{entry.aiResponse}</p>
+                    </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* 하단 컨트롤 */}
+            {/* 하단 버튼 */}
             <div className="p-4 border-t bg-gray-50">
               <div className="flex space-x-2">
                 <button
-                  onClick={handleSTTToggle}
+                  onClick={handleVoiceToggle}
                   disabled={isProcessing}
                   className={`flex-1 py-2 px-4 rounded-lg text-white font-medium ${
                     isRecording ? 'bg-red-500 animate-pulse' : 
-                    'bg-purple-500 hover:bg-purple-600'
+                    'bg-blue-500 hover:bg-blue-600'
                   } disabled:opacity-50`}
                 >
-                  {isRecording ? '🛑 중지' : '🎙️ 음성인식'}
+                  {isRecording ? '녹음 중지' : '🎤 AI와 대화'}
                 </button>
                 <button
                   onClick={() => {
                     clearResults();
-                    setConversationHistory([]);
+                    setVoiceHistory([]);
                   }}
                   className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm"
                 >
                   지우기
                 </button>
               </div>
-              
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                GMS API • Whisper-1 모델
-              </p>
             </div>
           </div>
         )}
       </div>
+
+      {/* 숨겨진 오디오 엘리먼트 */}
+      <audio ref={audioRef} style={{ display: 'none' }} />
     </div>
   );
 };
 
-export default VideoCallWithSTT;
+export default VideoCallWithVoice;

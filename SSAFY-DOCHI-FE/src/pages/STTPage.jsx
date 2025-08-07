@@ -1,5 +1,5 @@
 import React from 'react';
-import STTChat from '../components/STTChat';
+import STTChat from '../components/videocall/STTChat';
 
 const STTPage = () => {
   return (

@@ -56,6 +56,7 @@ const CommunityPage = () => {
   };
 
   // 게시글 좋아요 토글
+
   const handlePostLike = async (postId, likeType, e) => {
     e.stopPropagation(); // 게시글 클릭 이벤트 방지
 
@@ -486,32 +487,8 @@ const CommunityPage = () => {
                     </div>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* 하단 액션 버튼 */}
-          <div className="text-center mt-12">
-            <Link
-                to="/roadmap"
-                className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg mr-4"
-                style={{ backgroundColor: '#8B4513' }}
-            >
-              갈등 해결 로드맵 보기
-            </Link>
-            {isLoggedIn && (
-                <Link
-                    to="/conflicts/create"
-                    className="px-8 py-4 rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
-                    style={{
-                      backgroundColor: '#F8D6B3',
-                      color: '#8B4513'
-                    }}
-                >
-                  내 갈등 상황 분석해보기
-                </Link>
             )}
-          </div>
-        </main>
+
 
         {/* 글쓰기 플로팅 버튼 (모바일) */}
         {isLoggedIn && (
