@@ -883,23 +883,35 @@ const VideoCallRoom = () => {
   };
 
   // AI 중재 서비스 요청
-  const requestAiMediation = async (text, speaker) => {
+const requestAiMediation = async (text, speaker) => {
+    // 1. 백엔드 API에 보낼 대화 기록 전체를 준비합니다.
+    // 이전 대화 기록에 방금 말한 내용을 합칩니다.
+    const conversationForApi = [...conversationLogRef.current, { speaker, text }];
+
     try {
-      const response = await apiClient.post('/ai/mediation', {
-        roomCode: roomName,
-        speaker,
-        text,
-        conversationHistory: conversationLogRef.current.slice(-10) // 최근 10개 대화만 전송
-      });
-      
-      if (response.data.status === 200) {
-        return response.data.data.suggestion;
-      }
+        // 2. 주소와 요청 본문(payload)을 백엔드 API에 맞게 수정합니다.
+        const response = await apiClient.post('/speech/emotion/contextual', {
+            conversation: conversationForApi
+        });
+
+        // 3. 백엔드 응답(감정 분석 결과)을 바탕으로 프론트에서 보여줄 제안 텍스트를 만듭니다.
+        if (response.data && response.data.emotion !== 'error') {
+            const { emotion, score } = response.data;
+            let suggestion = `(상대방은 현재 '${emotion}' 상태로 보여요. 긍정 점수: ${score})`;
+
+            if (emotion === 'sad' && score < -0.5) {
+                suggestion += " 따뜻한 말로 위로해보는 건 어떨까요?";
+            } else if (emotion === 'happy' && score > 0.5) {
+                suggestion += " 좋은 분위기를 계속 이어가 보세요!";
+            }
+            
+            return suggestion; // 완성된 제안 텍스트를 반환
+        }
     } catch (error) {
-      console.error('AI 중재 서비스 오류:', error);
+        console.error('AI 감정 분석 서비스 오류:', error);
     }
     return null;
-  };
+};
 
   // STT 토글 함수
   const toggleSTT = () => {

@@ -94,22 +94,37 @@ const ConflictAnalysisResultPage = () => {
   };
 
   const handleConflictResolution = () => {
-    navigate('/video-call');
+    if (tempId) {
+      sessionStorage.setItem('currentTempId', tempId);
+      navigate(`/video-call?tempId=${tempId}`);
+    } else {
+      navigate('/video-call');
+    }
   };
 
   // 토닥토닥 서비스로 이동
   const handleComfort = () => {
-    navigate('/comfort');
+    if (tempId) {
+      sessionStorage.setItem('currentTempId', tempId);
+      navigate(`/comfort?tempId=${tempId}`);
+    } else {
+      navigate('/comfort');
+    }
   };
 
-  // 커뮤니티 페이지로 이동
+  // 커뮤니티 페이지로 이동 - 바로 글쓰기 페이지로
   const handleCommunity = () => {
-    navigate('/community');
+    handleShareConflict();  // 기존 공유하기 함수 활용
   };
 
   // 전문 상담사 매칭 페이지로 이동
   const handleExpertMatching = () => {
-    navigate('/expert-matching');
+    if (tempId) {
+      sessionStorage.setItem('currentTempId', tempId);
+      navigate(`/expert-matching?tempId=${tempId}`);
+    } else {
+      navigate('/expert-matching');
+    }
   };
 
   // 다시 갈등 작성 페이지로 이동
@@ -119,7 +134,12 @@ const ConflictAnalysisResultPage = () => {
   
   // 로드맵 페이지로 이동
   const handleRoadmap = () => {
-    navigate('/roadmap');
+    if (tempId) {
+      sessionStorage.setItem('currentTempId', tempId);
+      navigate(`/roadmap?tempId=${tempId}`);
+    } else {
+      navigate('/roadmap');
+    }
   };
   
   useEffect(() => {
@@ -145,7 +165,68 @@ const ConflictAnalysisResultPage = () => {
     };
 
     try {
-      // 2) 기본 AI 요약/해결방안 호출
+      // 2) 먼저 Redis에서 캐시된 분석 결과 조회
+      const cachedRes = await fetch(
+        `${API_BASE_URL}/conflict/analyze/cached/${tempId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (cachedRes.ok) {
+        const cachedJson = await cachedRes.json();
+        
+        // 캐시된 결과가 있는 경우
+        if (cachedJson.data && Object.keys(cachedJson.data).length > 0) {
+          console.log('Redis에서 캐시된 분석 결과 발견:', cachedJson.data);
+          
+          // 기본 AI 요약/해결방안은 별도로 호출
+          const basicRes = await fetch(
+            `${API_BASE_URL}/conflict/analyze/${tempId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          let basicAi = { summary: basicData.aiSummary, solutions: basicData.aiSolutions };
+          if (basicRes.ok) {
+            const basicJson = await basicRes.json();
+            basicAi = basicJson.data;
+          }
+          
+          // 캐시된 데이터로 화면 구성
+          const adv = cachedJson.data;
+          setConflictData({
+            ...basicData,
+            aiSummary: basicAi.summary,
+            aiSolutions: basicAi.solutions,
+            emotionAnalysis: adv.emotion_analysis ?? adv.emotionAnalysis ?? '',
+            conflictAnalysis: adv.conflict_analysis ?? adv.conflictAnalysis ?? '',
+            myPosition: adv.my_position ?? adv.myPosition ?? '내 입장을 AI가 분석해서 정리해드립니다.',
+            partnerPosition: adv.partner_position ?? adv.partnerPosition ?? '상대방의 입장을 AI가 추정해서 분석해드립니다.',
+            relationshipHealthScore: adv.relationship_health_score ?? adv.relationshipHealthScore ?? 0,
+            communicationScore: adv.communication_score ?? adv.communicationScore ?? 0,
+            trustScore: adv.trust_score ?? adv.trustScore ?? { score: 0, analysis: '' },
+            cooperationScore: adv.cooperation_score ?? adv.cooperationScore ?? { score: 0, improvement_suggestions: [] },
+            priorityRecommendation: adv.priority_recommendation ?? adv.priorityRecommendation ?? '',
+            recommendedActions: adv.recommended_actions ?? adv.recommendedActions ?? []
+          });
+          
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 3) 캐시된 결과가 없는 경우, 새로 분석 수행
+      // 4) 기본 AI 요약/해결방안 호출
       const basicRes = await fetch(
         `${API_BASE_URL}/conflict/analyze/${tempId}`,
         {
@@ -160,7 +241,7 @@ const ConflictAnalysisResultPage = () => {
       const basicJson = await basicRes.json();
       const basicAi   = basicJson.data; // { summary, solutions }
 
-      // 3) 고급 AI 분석 호출
+      // 5) 고급 AI 분석 호출
       const advRes = await fetch(
         `${API_BASE_URL}/conflict/analyze/advanced/${tempId}`,
         {
@@ -178,7 +259,7 @@ const ConflictAnalysisResultPage = () => {
       
       const adv = advJson.data;
       
-      // 4) 고급 분석 데이터 추출
+      // 6) 고급 분석 데이터 추출
       const emotionAnalysis         = adv.emotion_analysis         ?? adv.emotionAnalysis         ?? '';
       const conflictAnalysis        = adv.conflict_analysis        ?? adv.conflictAnalysis        ?? '';
       const myPosition              = adv.my_position              ?? adv.myPosition              ?? '';
@@ -202,7 +283,7 @@ const ConflictAnalysisResultPage = () => {
         throw new Error('백엔드 AI 핵심 분석 결과가 비어있음');
       }
 
-      // 5) JSON.parse 처리 (필요한 경우만)
+      // 7) JSON.parse 처리 (필요한 경우만)
       const trustScore = typeof trustScoreRaw === 'string'
         ? JSON.parse(trustScoreRaw)
         : trustScoreRaw;
@@ -215,7 +296,7 @@ const ConflictAnalysisResultPage = () => {
         ? JSON.parse(recommendedActionsRaw)
         : [];
 
-      // 6) 상태 업데이트
+      // 8) 상태 업데이트
       setConflictData({
         ...basicData,
         aiSummary:                basicAi.summary,
@@ -526,108 +607,68 @@ const ConflictAnalysisResultPage = () => {
               {conflictData?.title || '갈등 제목'}
             </h3>
 
-            <div className="flex items-start gap-20">
-              {/* 고슴도치 이미지 */}
-              <div className="flex-shrink-0">
-                <div 
-                  className="w-60 h-60 rounded-full flex items-center justify-center shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
-                >
-                  <img 
-                    src={hedgehogImg} 
-                    alt="갈등도치" 
-                    className="w-44 h-44 object-contain"
-                  />
-                </div>
-                {/* 갈등 유형 소제목 */}
-                <div className="text-center mt-6">
-                  <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
-                    {getConflictTypeText(conflictData?.conflictType || 'ETC')}
-                  </h4>
-                </div>
+            {/* 고슴도치 이미지와 갈등 유형 */}
+            <div className="text-center mb-12">
+              <div 
+                className="w-60 h-60 mx-auto rounded-full flex items-center justify-center shadow-lg mb-6"
+                style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
+              >
+                <img 
+                  src={hedgehogImg} 
+                  alt="갈등도치" 
+                  className="w-44 h-44 object-contain"
+                />
+              </div>
+              <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
+                {getConflictTypeText(conflictData?.conflictType || 'ETC')}
+              </h4>
+            </div>
+
+            {/* 감정 분석과 갈등 분석 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* 감정 분석 */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <span>😊</span> 감정 분석
+                </h4>
+                <p className="text-blue-700">
+                  {conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...'}
+                </p>
               </div>
 
-              {/* 분석 내용 - 감정 분석, 갈등 분석, 입장 정리 */}
-              <div className="flex-1 space-y-6">
-                {/* 감정 분석 */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    <span>😊</span> 감정 분석
-                  </h4>
-                  <p className="text-blue-700">
-                    {conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...'}
-                  </p>
-                </div>
+              {/* 갈등 분석 */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                  <span>⚡</span> 갈등 분석
+                </h4>
+                <p className="text-purple-700">
+                  {conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...'}
+                </p>
+              </div>
+            </div>
 
-                {/* 갈등 분석 */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                    <span>⚡</span> 갈등 분석
-                  </h4>
-                  <p className="text-purple-700">
-                    {conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...'}
-                  </p>
-                </div>
-
-
-                {/* 입장 정리 */}
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>📝</span> 입장 정리
-                  </h4>
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-lg p-4">
-                      <div className="mb-3">
-                        <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
-                        <p className="ml-2 mt-1 text-gray-700">
-                          {conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4">
-                      <div>
-                        <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
-                        <p className="ml-2 mt-1 text-gray-700">
-                          {conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.'}
-                        </p>
-                      </div>
-                    </div>
+            {/* 입장 정리 - 전체 폭으로 */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <span>📝</span> 입장 정리
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="mb-3">
+                    <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
+                    <p className="mt-1 text-gray-700">
+                      {conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.'}
+                    </p>
                   </div>
                 </div>
-
-                {/* AI 우선순위 추천 */}
-                {conflictData?.priorityRecommendation && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-yellow-800 mb-3 flex items-center gap-2">
-                      <span>⭐</span> AI 우선순위 추천
-                    </h4>
-                    <p className="text-yellow-700 font-medium">{conflictData.priorityRecommendation}</p>
+                <div className="bg-white rounded-lg p-4">
+                  <div>
+                    <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
+                    <p className="mt-1 text-gray-700">
+                      {conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.'}
+                    </p>
                   </div>
-                )}
-
-                {/* AI 추천 행동 */}
-                {conflictData?.recommendedActions && (
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <span>💡</span> AI 추천 행동
-                    </h4>
-                    <ul className="space-y-2">
-                      {(Array.isArray(conflictData.recommendedActions) 
-                        ? conflictData.recommendedActions 
-                        : typeof conflictData.recommendedActions === 'string' 
-                        ? JSON.parse(conflictData.recommendedActions) 
-                        : []
-                      ).map((action, index) => (
-                        <li key={index} className="flex items-start gap-3 text-gray-700">
-                          <span className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 mt-0.5">
-                            {index + 1}
-                          </span>
-                          <span>{action}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -646,34 +687,54 @@ const ConflictAnalysisResultPage = () => {
         ></div>
         
         <main className="max-w-5xl mx-auto px-4 relative z-10">
-          {/* 하단 메시지 */}
+          {/* 하단 메시지 - 강조된 스타일 */}
           <div className="text-center mb-16 pt-12">
-            <h2 className="text-4xl font-bold" style={{ 
-              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              리포트를 기반으로 '맞춤 해결책'을 제안해드릴게요
-            </h2>
+            <div className="relative inline-block">
+              {/* 배경 어쿨트 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-2xl transform rotate-1 opacity-70"></div>
+              <div className="relative bg-white rounded-2xl p-8 border-2 border-orange-300 shadow-lg">
+                <h2 className="text-4xl font-bold mb-2" style={{ 
+                  background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  리포트를 기반으로
+                </h2>
+                <h2 className="text-5xl font-black" style={{ 
+                  background: 'linear-gradient(45deg, #D2691E, #FF8C00)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  '맞춤 해결책' 제안해드릴게요!
+                </h2>
+                <div className="mt-4">
+                  <span className="text-2xl">🎆</span>
+                  <span className="ml-2 text-xl text-orange-600 font-medium">당신에게 최적화된 솔루션</span>
+                  <span className="ml-2 text-2xl">🎆</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 서비스 카드들 */}
           <div className="mb-16">
             {/* 첫 번째 줄 - 2개 카드 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              {/* 갈등해결하기 카드 */}
+              {/* 화상채팅 카드 */}
               <div 
                 className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
                 style={{ background: '#83673f' }}
-                onClick={handleConflictResolution}
+                onClick={createVideoCallRoom}
               >
-                <h3 className="text-2xl font-bold mb-6">갈등해결하기</h3>
+                <h3 className="text-2xl font-bold mb-6">화상채팅 방 생성</h3>
                 <p className="mb-8 leading-relaxed opacity-90">
-                  화상 대화 속 감정과 대화를 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
+                  상대방과 직접 화상으로 대화하고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
                 </p>
                 <div className="absolute bottom-8 right-8">
-                  <span className="text-2xl">→</span>
+                  <span className="text-2xl">📹</span>
                 </div>
               </div>
 
@@ -699,7 +760,7 @@ const ConflictAnalysisResultPage = () => {
               <div 
                 className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
                 style={{ background: '#CD9F6E' }}
-                onClick={handleCommunity}
+                onClick={handleShareConflict}
               >
                 <h3 className="text-xl font-bold mb-4">갈등 커뮤니티</h3>
                 <p className="mb-6 leading-relaxed opacity-90 text-sm">
