@@ -14,6 +14,7 @@ const ConflictDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview'); // overview, analysis, roadmap
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -117,6 +118,33 @@ const ConflictDetailPage = () => {
       NONE: '선택 안함'
     };
     return texts[willingness] || '선택 안함';
+  };
+
+  // 갈등 삭제
+  const deleteConflict = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE_URL}/conflict/${conflictId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        alert('갈등이 성공적으로 삭제되었습니다.');
+        navigate('/conflicts'); // 갈등 목록 페이지로 이동
+      } else {
+        throw new Error('갈등 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('갈등 삭제 오류:', error);
+      alert('갈등 삭제에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+      setShowDeleteModal(false);
+    }
   };
 
   // 화상채팅 방 생성
@@ -385,6 +413,13 @@ ${summary.join('\n')}
                 <span>📢</span>
                 갈등 공유하기
               </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+              >
+                <span>🗑️</span>
+                갈등 삭제
+              </button>
               <div className="text-right">
                 <div className="text-sm text-gray-500">갈등 강도</div>
                 <div className="text-lg font-bold text-red-600">{conflict.intensity}/10</div>
@@ -624,6 +659,39 @@ ${summary.join('\n')}
           </div>
         </div>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">갈등 삭제</h3>
+              <p className="text-gray-600 mb-6">
+                정말로 이 갈등을 삭제하시겠습니까?<br/>
+                삭제된 갈등은 복구할 수 없습니다.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-medium transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={deleteConflict}
+                  disabled={isLoading}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {isLoading ? '삭제 중...' : '삭제하기'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
