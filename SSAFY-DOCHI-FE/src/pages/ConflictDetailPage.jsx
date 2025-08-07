@@ -14,6 +14,7 @@ const ConflictDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview'); // overview, analysis, roadmap
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -117,6 +118,33 @@ const ConflictDetailPage = () => {
       NONE: '선택 안함'
     };
     return texts[willingness] || '선택 안함';
+  };
+
+  // 갈등 삭제
+  const deleteConflict = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE_URL}/conflict/${conflictId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        alert('갈등이 성공적으로 삭제되었습니다.');
+        navigate('/conflicts'); // 갈등 목록 페이지로 이동
+      } else {
+        throw new Error('갈등 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('갈등 삭제 오류:', error);
+      alert('갈등 삭제에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+      setShowDeleteModal(false);
+    }
   };
 
   // 화상채팅 방 생성
@@ -385,6 +413,13 @@ ${summary.join('\n')}
                 <span>📢</span>
                 갈등 공유하기
               </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+              >
+                <span>🗑️</span>
+                갈등 삭제
+              </button>
               <div className="text-right">
                 <div className="text-sm text-gray-500">갈등 강도</div>
                 <div className="text-lg font-bold text-red-600">{conflict.intensity}/10</div>
@@ -494,7 +529,7 @@ ${summary.join('\n')}
             {activeTab === 'analysis' && (
               <div className="space-y-6">
                 {analysisResult ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
                     {/* 감정 분석 */}
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
                       <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
@@ -510,98 +545,6 @@ ${summary.join('\n')}
                       </h4>
                       <p className="text-purple-700">{analysisResult.conflictAnalysis}</p>
                     </div>
-
-                    {/* 관계 건강도 */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                        <span>💚</span> 관계 건강도
-                      </h4>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="w-full bg-green-200 rounded-full h-3">
-                            <div 
-                              className="bg-green-600 h-3 rounded-full transition-all duration-300"
-                              style={{ width: `${analysisResult.relationshipHealthScore}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <span className="text-xl font-bold text-green-700">{analysisResult.relationshipHealthScore}/100</span>
-                      </div>
-                    </div>
-
-                    {/* 소통 점수 */}
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                        <span>🗣️</span> 소통 점수
-                      </h4>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="w-full bg-orange-200 rounded-full h-3">
-                            <div 
-                              className="bg-orange-600 h-3 rounded-full transition-all duration-300"
-                              style={{ width: `${analysisResult.communicationScore}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <span className="text-xl font-bold text-orange-700">{analysisResult.communicationScore}/100</span>
-                      </div>
-                    </div>
-
-                    {/* 신뢰도 분석 */}
-                    {analysisResult.trustScore && (
-                      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-6">
-                        <h4 className="text-lg font-semibold text-indigo-800 mb-3 flex items-center gap-2">
-                          <span>🤝</span> 신뢰도 분석
-                        </h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1">
-                              <div className="w-full bg-indigo-200 rounded-full h-3">
-                                <div 
-                                  className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
-                                  style={{ width: `${JSON.parse(analysisResult.trustScore).score}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <span className="text-xl font-bold text-indigo-700">{JSON.parse(analysisResult.trustScore).score}/100</span>
-                          </div>
-                          <p className="text-sm text-indigo-600">{JSON.parse(analysisResult.trustScore).analysis}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 협력 점수 */}
-                    {analysisResult.cooperationScore && (
-                      <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-6">
-                        <h4 className="text-lg font-semibold text-teal-800 mb-3 flex items-center gap-2">
-                          <span>🤜🤛</span> 협력 점수
-                        </h4>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1">
-                              <div className="w-full bg-teal-200 rounded-full h-3">
-                                <div 
-                                  className="bg-teal-600 h-3 rounded-full transition-all duration-300"
-                                  style={{ width: `${JSON.parse(analysisResult.cooperationScore).score}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <span className="text-xl font-bold text-teal-700">{JSON.parse(analysisResult.cooperationScore).score}/100</span>
-                          </div>
-                          <div>
-                            <h5 className="text-sm font-medium text-teal-700 mb-2">개선 제안:</h5>
-                            <ul className="text-sm text-teal-600 space-y-1">
-                              {JSON.parse(analysisResult.cooperationScore).improvement_suggestions?.map((suggestion, index) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span>•</span>
-                                  <span>{suggestion}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -716,6 +659,39 @@ ${summary.join('\n')}
           </div>
         </div>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">갈등 삭제</h3>
+              <p className="text-gray-600 mb-6">
+                정말로 이 갈등을 삭제하시겠습니까?<br/>
+                삭제된 갈등은 복구할 수 없습니다.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-medium transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={deleteConflict}
+                  disabled={isLoading}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {isLoading ? '삭제 중...' : '삭제하기'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
