@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
-import SimpleThreeBackground from '../components/SimpleThreeBackground';
 // Swiper 제거 - sticky scroll로 대체
 
 import image9 from "@/assets/image 9.png";
@@ -21,17 +20,7 @@ export const MainPage = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
   const [animatedSections, setAnimatedSections] = useState(new Set()); // 초기는 비워둔 상태
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef(null);
-  
-  // 섹션별 3D 텍스트
-  const sectionTexts = [
-    "갈등",
-    "고민", 
-    "해결",
-    "서비스",
-    "참견도치"
-  ];
 
   // 애니메이션 CSS
   const typewriterStyle = `
@@ -186,27 +175,6 @@ export const MainPage = () => {
       50% { transform: scale(1.1); }
       100% { transform: scale(1); }
     }
-    
-    @keyframes shatter {
-      0% { 
-        transform: scale(1) rotate(0deg); 
-        opacity: 1; 
-      }
-      50% { 
-        transform: scale(0.8) rotate(5deg); 
-        opacity: 0.7; 
-        filter: blur(1px);
-      }
-      100% { 
-        transform: scale(1) rotate(0deg); 
-        opacity: 1; 
-        filter: blur(0px);
-      }
-    }
-    
-    .shatter-effect {
-      animation: shatter 1.5s ease-in-out;
-    }
   `;
 
   useEffect(() => {
@@ -287,13 +255,7 @@ export const MainPage = () => {
       
       // 현재 섹션과 다른 섹션이면 상태 업데이트 및 애니메이션 처리
       if (currentSection !== newSection) {
-        setIsTransitioning(true);
         setCurrentSection(newSection);
-        
-        // 전환 완료 후 트랜지션 상태 해제
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 1500);
         
         // 모든 섹션의 애니메이션 클래스 제거
         // 섹션 0
@@ -318,16 +280,7 @@ export const MainPage = () => {
         const fadeElements = document.querySelectorAll('#section-2 .fade-in-element, #section-2 .fade-in-title, #section-2 .fade-in-image, #section-2 .fade-in-button, #section-2 .fade-in-link');
         fadeElements.forEach(el => el.classList.remove('animate'));
         
-        // 전체 화면에 부서지는 효과 적용
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-          mainContent.classList.add('shatter-effect');
-          setTimeout(() => {
-            mainContent.classList.remove('shatter-effect');
-          }, 1500);
-        }
-        
-        // 짧은 딜레이 후 새로운 섹션의 애니메이션 시작
+        // 짧은 딘레이 후 새로운 섹션의 애니메이션 시작
         setTimeout(() => {
           if (newSection === 0) {
             const typewriterEl = document.querySelector('.typewriter');
@@ -407,12 +360,6 @@ export const MainPage = () => {
 
   return (
     <div className="bg-white overflow-x-hidden" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
-      {/* Three.js 3D 배경 */}
-      <SimpleThreeBackground 
-        currentSection={currentSection}
-        isTransitioning={isTransitioning}
-      />
-      
       {/* 타자기 애니메이션 스타일 */}
       <style>{typewriterStyle}</style>
       
@@ -436,7 +383,7 @@ export const MainPage = () => {
         ))}
       </div>
       
-      <div className="bg-white w-full mx-auto relative pt-24 main-content">
+      <div className="bg-white w-full mx-auto relative pt-24">
         
         {/* Section 0: 좁혀지지 않는 갈등 */}
         <section id="section-0" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
