@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore.js';
 import { communityApi, likeApi } from '../services/communityApi.js';
 import hedgehogImg from '../assets/conflict.png';
-import folder from '@/assets/folder.png';
+import thumbUp from '@/assets/thumb_up.png';
+import thumbDown from '@/assets/thumb_down.png';
 
 const CommunityPage = () => {
   const navigate = useNavigate();
@@ -18,9 +19,9 @@ const CommunityPage = () => {
 
   const categories = [
     { value: 'ALL', label: '전체', color: '#83673f' },
-    { value: 'CONFLICT_SHARING', label: '갈등공유', color: '#cd9f6e' },
-    { value: 'SUCCESS_STORIES', label: '성공사례', color: '#f8d6b3' },
-    { value: 'ADVICE_REQUEST', label: '조언요청', color: '#EE9278' },
+    { value: 'CONFLICT_SHARING', label: '찬반대결', color: '#cd9f6e' },
+    { value: 'ADVICE_REQUEST', label: '조언해줘', color: '#EE9278' },
+    { value: 'SUCCESS_STORIES', label: '해결했어요', color: '#f8d6b3' },
     { value: 'GENERAL', label: '자유게시판', color: '#7F5539' }
   ];
 
@@ -56,7 +57,6 @@ const CommunityPage = () => {
   };
 
   // 게시글 좋아요 토글
-
   const handlePostLike = async (postId, likeType, e) => {
     e.stopPropagation(); // 게시글 클릭 이벤트 방지
 
@@ -162,22 +162,42 @@ const CommunityPage = () => {
         {/* 메인 컨텐츠 */}
         <main className="max-w-6xl mx-auto px-4 py-12 relative z-10">
 
-          {/* 상단 메시지 */}
-          <div className="text-left ml-5 mb-10">
-            <h2 className="text-5xl font-bold mb-4"
-              style={{
-                background: 'linear-gradient(108deg, rgba(191,125,44,1) 0%, rgba(139,69,19,1) 100%)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textFillColor: 'transparent'
-              }}>
-              도치 커뮤니티
-            </h2>
+          {/* 상단 인사말 및 글쓰기 버튼 */}
+          <div className="flex flex-row items-center justify-between text-4xl font-bold mb-5 p-2" style={{ color: '#8B4513' }}>
+            <div className="flex items-center gap-4">
+              <div>
+                <h3 className="text-5xl font-bold" style={{ color: '#333333' }}>
+                  {selectedCategoryData?.label || '전체'} 게시글
+                </h3>
+                <p className="text-lg" style={{ color: '#666666' }}>
+                  총 {posts.length} 슴도치
+                </p>
+              </div>
+            </div>
+
+            {/* 글쓰기 버튼 */}
+            <div className="">
+              {isLoggedIn ? (
+                  <Link
+                      to="/community/create"
+                      className="w-32 h-12 block flex items-center justify-center py-4 text-white rounded hover:opacity-80 transition-all transform hover:bg-orange-50 font-medium text-lg"
+                      style={{ backgroundColor: '#8B4513' }}
+                  >
+                    글쓰기
+                  </Link>
+              ) : (
+                  <Link
+                      to="/login"
+                      className="w-full block text-center py-4 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
+                      style={{ backgroundColor: '#696969' }}
+                  >
+                    로그인하여 글쓰기
+                  </Link>
+              )}
+            </div>
           </div>
 
-
-          <div className="flex flex-wrap justify-evenly gap-5" >
+          <div className="flex flex-wrap justify-between gap-5" >
             {/* 왼쪽: 카테고리 목록 */}
             <div className="w-1/4">
               <div className="space-y-3 mb-8 bg-white p-2 rounded-lg">
@@ -185,13 +205,13 @@ const CommunityPage = () => {
                   <div
                     key={category.value}
                     className={`p-2 rounded cursor-pointer transition-all transform hover:-translate-y-1 ${
-                      selectedCategory === category.value ? 'ring-4 ring-opacity-50' : ''
+                      selectedCategory === category.value ? 'ring-4' : ''
                     }`}
                     style={{
                       backgroundColor: selectedCategory === category.value ? category.color : '#FFFFFF',
                       color: selectedCategory === category.value ? '#FFFFFF' : '#333333',
-                      ringColor: category.color,
-                      '--hover-bg': category.color
+                      '--ring-color': category.color,
+                      '--tw-ring-color': category.color
                     }}
                     onMouseEnter={(e) => {
                       if (selectedCategory !== category.value) {
@@ -207,18 +227,7 @@ const CommunityPage = () => {
                     }}
                     onClick={() => handleCategoryChange(category.value)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
-                        style={{
-                          backgroundColor: selectedCategory === category.value ? 'rgba(255,255,255,0.2)' : category.color,
-                          color: '#FFFFFF'
-                        }}
-                      >
-                        <img className="w-8 h-8"
-                          alt="folder"
-                          src={folder}/>
-                      </div>
+                    <div className="flex items-center pl-5 gap-4">
                       <div>
                         <h4 className="font-bold text-lg">{category.label}</h4>
                       </div>
@@ -249,52 +258,13 @@ const CommunityPage = () => {
                   </li>
                 </ul>
               </div>
-
-              {/* 글쓰기 버튼 */}
-              <div className="mt-6">
-                {isLoggedIn ? (
-                    <Link
-                        to="/community/create"
-                        className="w-full block text-center py-4 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
-                        style={{ backgroundColor: '#8B4513' }}
-                    >
-                      ✍️ 새 글 작성하기
-                    </Link>
-                ) : (
-                    <Link
-                        to="/login"
-                        className="w-full block text-center py-4 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
-                        style={{ backgroundColor: '#696969' }}
-                    >
-                      로그인하여 글쓰기
-                    </Link>
-                )}
-              </div>
             </div>
 
             {/* 오른쪽: 게시글 목록 */}
             <div className="w-5/7">
-              <div className="bg-white rounded-xl p-8 min-h-[600px]">
-                <div className="flex items-center gap-4 mb-6">
-                  <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-2xl text-white"
-                      style={{ backgroundColor: selectedCategoryData?.color || '#8B4513' }}
-                  >
-                    <img className="w-8 h-8"
-                          alt="folder"
-                          src={folder}/>
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-bold" style={{ color: '#333333' }}>
-                      {selectedCategoryData?.label || '전체'} 게시글
-                    </h3>
-                    <p className="text-lg" style={{ color: '#666666' }}>
-                      총 {posts.length}개의 게시글
-                    </p>
-                  </div>
-                </div>
+              <div className="bg-white rounded-xl min-h-[600px]">
 
-                <div className="space-y-6">
+                <div className="space-y-1">
                   {posts.length === 0 ? (
                       <div className="text-center py-16">
                         <div className="text-6xl mb-6">📝</div>
@@ -326,52 +296,55 @@ const CommunityPage = () => {
                         )}
                       </div>
                   ) : (
-                      posts.map(post => (
+                      posts.map(post => {
+                        // 게시글의 카테고리에 맞는 색상 찾기
+                        const postCategoryData = categories.find(cat => cat.value === post.category) || selectedCategoryData;
+                        
+                        return (
                           <div
                               key={post.id}
-                              className="border-l-4 pl-6 py-4 cursor-pointer transition-all hover:bg-gray-50 rounded-r-lg"
-                              style={{ borderColor: selectedCategoryData?.color || '#8B4513' }}
+                              className="px-6 py-6 cursor-pointer transition-all duration-100 hover:bg-orange-50 rounded-r-lg"
                               onClick={() => handlePostClick(post.id)}
                           >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                          <span
-                              className="text-xs px-3 py-1 rounded-full font-medium text-white"
-                              style={{ backgroundColor: selectedCategoryData?.color || '#8B4513' }}
-                          >
-                            {categories.find(cat => cat.value === post.category)?.label || post.category}
-                          </span>
+
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                              <div className="flex gap-3 items-center flex-1 min-w-0">
+                                <span
+                                  className="text-xs px-3 py-2 rounded-full font-medium text-white min-w-[80px] text-center"
+                                  style={{ backgroundColor: postCategoryData?.color || '#8B4513' }}
+                                >
+                                  {postCategoryData?.label || post.category}
+                                </span>
+                                <h4
+                                  className="text-2xl font-bold transition-colors truncate"
+                                  style={{ color: '#333333' }}
+                                >
+                                  {post.title}
+                                </h4>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
                                 <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
                                   <div
                                       className="w-6 h-6 rounded-full flex items-center justify-center"
                                       style={{ backgroundColor: '#F8D6B3' }}
                                   >
-                              <span className="text-xs font-medium" style={{ color: '#8B4513' }}>
-                                {(post.author || '익명').charAt(0)}
-                              </span>
+                                    <span className="text-xs font-medium" style={{ color: '#8B4513' }}>
+                                      {(post.author || '익명').charAt(0)}
+                                    </span>
                                   </div>
                                   <span className="font-medium">{post.author || '익명'}</span>
                                   <span className="text-gray-400">•</span>
                                   <span>{post.createdAt}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1 text-xs" style={{ color: '#666666' }}>
-                                <span>👁</span>
-                                <span>{post.viewCount || 0}</span>
-                              </div>
                             </div>
-
-                            <h4 className="text-xl font-bold mb-3 hover:opacity-70 transition-colors" style={{ color: '#333333' }}>
-                              {post.title}
-                            </h4>
-
-                            <p className="text-lg mb-4 leading-relaxed line-clamp-2" style={{ color: '#666666' }}>
-                              {post.content}
-                            </p>
 
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 text-sm" style={{ color: '#666666' }}>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 text-xs" style={{ color: '#666666' }}>
+                                  <span>👁</span>
+                                  <span>{post.viewCount || 0}</span>
                                   <span>💬</span>
                                   <span>{post.commentCount || 0}</span>
                                 </div>
@@ -381,7 +354,7 @@ const CommunityPage = () => {
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'LIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                                    className={`w-30 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'LIKE'
@@ -392,8 +365,8 @@ const CommunityPage = () => {
                                       backgroundColor: !isLoggedIn
                                           ? 'transparent'
                                           : post.userLikeType === 'LIKE'
-                                              ? '#BF7D2C'
-                                              : '#F8D6B3',
+                                              ? '#e6854eff'
+                                              : '#fff1e4ff',
                                       color: !isLoggedIn
                                           ? '#cccccc'
                                           : post.userLikeType === 'LIKE'
@@ -401,12 +374,12 @@ const CommunityPage = () => {
                                               : '#8B4513'
                                     }}
                                 >
-                                  👍 {post.likeCount || 0}
+                                  <img src={thumbUp} alt="따봉" className="w-8 h-8" /> {post.likeCount || 0}
                                 </button>
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'DISLIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                                    className={`w-20 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'DISLIKE'
@@ -417,8 +390,8 @@ const CommunityPage = () => {
                                       backgroundColor: !isLoggedIn
                                           ? 'transparent'
                                           : post.userLikeType === 'DISLIKE'
-                                              ? '#7F5539'
-                                              : '#F0F0F0',
+                                              ? '#d3c576ff'
+                                              : '#f8f8f8ff',
                                       color: !isLoggedIn
                                           ? '#cccccc'
                                           : post.userLikeType === 'DISLIKE'
@@ -426,18 +399,19 @@ const CommunityPage = () => {
                                               : '#666666'
                                     }}
                                 >
-                                  👎 {post.dislikeCount || 0}
+                                  <img src={thumbDown} alt="안따봉" className="w-6 h-6" /> {post.dislikeCount || 0}
                                 </button>
                               </div>
                             </div>
                           </div>
-                      ))
+                        );
+                      })
                   )}
                 </div>
 
                 {/* 페이지네이션 */}
                 {totalPages > 1 && (
-                    <div className="flex justify-between pt-8">
+                    <div className="flex justify-between pt-8 px-6">
                       <button
                           onClick={() => currentPage > 0 && handlePageChange(currentPage - 1)}
                           disabled={currentPage === 0}
@@ -487,8 +461,9 @@ const CommunityPage = () => {
                     </div>
                 )}
               </div>
-            )}
-
+            </div>
+          </div>
+        </main>
 
         {/* 글쓰기 플로팅 버튼 (모바일) */}
         {isLoggedIn && (
@@ -503,5 +478,5 @@ const CommunityPage = () => {
       </div>
   );
 };
-
+  
 export default CommunityPage;
