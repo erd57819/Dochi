@@ -5,14 +5,20 @@ import os
 class EmotionService:
     def __init__(self):
         """Google Cloud Natural Language API 클라이언트를 초기화합니다."""
-        # TODO: 아래 'YOUR_SERVICE_ACCOUNT_FILE.json' 부분을 실제 서비스 계정 키 파일 경로로 변경하세요.
-        # 또는 환경 변수 GOOGLE_APPLICATION_CREDENTIALS를 설정하여 자동으로 인증할 수 있습니다.
-        # key_path = 'YOUR_SERVICE_ACCOUNT_FILE.json'
-        # credentials = service_account.Credentials.from_service_account_file(key_path)
-        # self.client = language_v1.LanguageServiceClient(credentials=credentials)
-        
-        # 환경 변수를 사용하는 것을 권장합니다.
-        self.client = language_v1.LanguageServiceClient()
+        try:
+            # 프로젝트 루트의 google-service-account.json 파일 사용
+            key_path = '/app/google-service-account.json'
+            if os.path.exists(key_path):
+                credentials = service_account.Credentials.from_service_account_file(key_path)
+                self.client = language_v1.LanguageServiceClient(credentials=credentials)
+                print("Google Cloud API 인증 성공: 서비스 계정 키 파일 사용")
+            else:
+                # 환경 변수를 사용하는 방법 (fallback)
+                self.client = language_v1.LanguageServiceClient()
+                print("Google Cloud API 인증: 환경 변수 사용")
+        except Exception as e:
+            print(f"Google Cloud API 인증 실패: {e}")
+            self.client = None
     def analyze_conversation_emotion(self, conversation: list[dict]) -> dict:
         """
         대화 내용(conversation)을 바탕으로 마지막 발언의 감정을 분석합니다.
@@ -52,6 +58,17 @@ class EmotionService:
         )
 
         try:
+            # 클라이언트가 초기화되지 않은 경우
+            if self.client is None:
+                return {
+                    "speaker": latest_utterance['speaker'],
+                    "text": latest_utterance['text'],
+                    "emotion": "neutral",
+                    "score": 0.0,
+                    "magnitude": 0.0,
+                    "message": "Google Cloud API 클라이언트가 초기화되지 않았습니다."
+                }
+            
             # 4. API를 호출하여 감정 분석 수행
             response = self.client.analyze_sentiment(document=document)
             sentiment = response.document_sentiment
@@ -89,6 +106,15 @@ class EmotionService:
         )
 
         try:
+            # 클라이언트가 초기화되지 않은 경우
+            if self.client is None:
+                return {
+                    "emotion": "neutral",
+                    "score": 0.0,
+                    "magnitude": 0.0,
+                    "message": "Google Cloud API 클라이언트가 초기화되지 않았습니다."
+                }
+            
             # API를 호출하여 감정 분석 수행
             response = self.client.analyze_sentiment(document=document)
             sentiment = response.document_sentiment

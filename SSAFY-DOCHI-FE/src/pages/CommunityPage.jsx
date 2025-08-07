@@ -54,6 +54,7 @@ const CommunityPage = () => {
   };
 
   // 게시글 좋아요 토글
+
   const handlePostLike = async (postId, likeType, e) => {
     e.stopPropagation(); // 게시글 클릭 이벤트 방지
     
@@ -355,6 +356,7 @@ const CommunityPage = () => {
                 </div>
               </div>
             )}
+
 
             {/* 글쓰기 플로팅 버튼 (모바일) */}
             {isLoggedIn && (

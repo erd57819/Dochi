@@ -15,6 +15,7 @@ const ComfortPage = () => {
     navigate('/comfort/chat');
   };
 
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex flex-col items-center justify-center p-4">
       {/* 메인 컨테이너 */}
@@ -95,6 +96,7 @@ const ComfortPage = () => {
           </span>
           <div className="absolute inset-0 bg-orange-400 rounded-full blur-lg opacity-0 group-hover:opacity-30 transition-opacity"></div>
         </button>
+
 
         {/* 안내 메시지 */}
         <p className="mt-8 text-gray-500 text-sm">
