@@ -11,6 +11,7 @@ app = FastAPI(
 # CORS 미들웨어 설정
 origins = [
     "http://localhost",
+    "https://localhost",     # nginx HTTPS
     "http://localhost:5173", # 리액트 개발 서버의 주소
     "http://localhost:8090", # nginx 프록시 주소
     "http://localhost:8080", # 백엔드 주소
