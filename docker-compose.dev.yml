@@ -102,7 +102,7 @@ services:
           port_range_start: 50000
           port_range_end: 50100
           use_external_ip: true
-          ice_candidate_ip: localhost
+          
         log_level: debug
 
 
