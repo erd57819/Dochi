@@ -156,23 +156,19 @@ const ConflictAnalysisResultPage = () => {
       
       console.log('고급 분석 응답 전체:', JSON.stringify(advJson, null, 2));
       
-      // 최종 데이터 조합
-      const tempData = {
-        ...basicData,
-        // AI 분석 결과 적용
-        emotionAnalysis: finalEmotionAnalysis,
-        conflictAnalysis: finalConflictAnalysis,
-        myPosition: finalMyPosition,
-        partnerPosition: finalPartnerPosition,
-        priorityRecommendation: basicData.intensity >= 8 ? '즉각적 전문가 도움 필요' : basicData.priority === 'RELATIONSHIP' ? '관계 유지 중심 접근' : '문제 해결 중심 접근',
-        recommendedActions: JSON.stringify([
-          `${basicData.conflictType} 갈등의 특성을 이해하고 상황 분석하기`,
-          '자신의 감정을 정리하고 객관적 시각 갖기',
-          basicData.talkWillingness === 'YES' ? '적극적인 대화로 문제 해결 시도하기' : '대화 가능한 환경과 시점 마련하기',
-          '구체적이고 실현 가능한 해결책 모색하기',
-          '갈등 해결 후 관계 정상화 및 예방 계획 세우기'
-        ])
-      };
+      const adv = advJson.data;
+      
+      // 4) 고급 분석 데이터 추출
+      const emotionAnalysis         = adv.emotion_analysis         ?? adv.emotionAnalysis         ?? '';
+      const conflictAnalysis        = adv.conflict_analysis        ?? adv.conflictAnalysis        ?? '';
+      const myPosition              = adv.my_position              ?? adv.myPosition              ?? '';
+      const partnerPosition         = adv.partner_position         ?? adv.partnerPosition         ?? '';
+      const relationshipHealthScore = adv.relationship_health_score ?? adv.relationshipHealthScore ?? 0;
+      const communicationScore      = adv.communication_score      ?? adv.communicationScore      ?? 0;
+      const trustScoreRaw           = adv.trust_score              ?? adv.trustScore              ?? { score:0, analysis:'' };
+      const cooperationScoreRaw     = adv.cooperation_score        ?? adv.cooperationScore        ?? { score:0, improvement_suggestions:[] };
+      const priorityRecommendation  = adv.priority_recommendation  ?? adv.priorityRecommendation  ?? '';
+      const recommendedActionsRaw   = adv.recommended_actions      ?? adv.recommendedActions      ?? [];
       
       console.log('비어있는 값 확인:');
       console.log('- emotionAnalysis 비어있음?', isEmptyOrError(emotionAnalysis));
@@ -186,14 +182,8 @@ const ConflictAnalysisResultPage = () => {
         console.log('백엔드에서 빈 값 수신 - 폴백 분석 사용');
         throw new Error('백엔드 AI 분석 결과가 비어있음');
       }
-      const relationshipHealthScore = adv.relationship_health_score ?? adv.relationshipHealthScore ?? 0;
-      const communicationScore      = adv.communication_score      ?? adv.communicationScore      ?? 0;
-      const trustScoreRaw           = adv.trust_score              ?? adv.trustScore              ?? JSON.stringify({ score:0, analysis:'' });
-      const cooperationScoreRaw     = adv.cooperation_score        ?? adv.cooperationScore        ?? JSON.stringify({ score:0, improvement_suggestions:[] });
-      const priorityRecommendation  = adv.priority_recommendation  ?? adv.priorityRecommendation  ?? '';
-      const recommendedActionsRaw   = adv.recommended_actions      ?? adv.recommendedActions      ?? JSON.stringify([]);
 
-      // 5) JSON.parse 처리
+      // 5) JSON.parse 처리 (필요한 경우만)
       const trustScore = typeof trustScoreRaw === 'string'
         ? JSON.parse(trustScoreRaw)
         : trustScoreRaw;
@@ -202,23 +192,25 @@ const ConflictAnalysisResultPage = () => {
         : cooperationScoreRaw;
       const recommendedActions = Array.isArray(recommendedActionsRaw)
         ? recommendedActionsRaw
-        : JSON.parse(recommendedActionsRaw);
+        : typeof recommendedActionsRaw === 'string'
+        ? JSON.parse(recommendedActionsRaw)
+        : [];
 
       // 6) 상태 업데이트
       setConflictData({
         ...basicData,
-        aiSummary:             basicAi.summary,
-        aiSolutions:           basicAi.solutions,
-        emotionAnalysis,
-        conflictAnalysis,
-        myPosition,
-        partnerPosition,
-        relationshipHealthScore,
-        communicationScore,
-        trustScore,
-        cooperationScore,
-        priorityRecommendation,
-        recommendedActions
+        aiSummary:                basicAi.summary,
+        aiSolutions:              basicAi.solutions,
+        emotionAnalysis:          emotionAnalysis,
+        conflictAnalysis:         conflictAnalysis,
+        myPosition:               myPosition,
+        partnerPosition:          partnerPosition,
+        relationshipHealthScore:  relationshipHealthScore,
+        communicationScore:       communicationScore,
+        trustScore:               trustScore,
+        cooperationScore:         cooperationScore,
+        priorityRecommendation:   priorityRecommendation,
+        recommendedActions:       recommendedActions
       });
     } catch (err) {
       console.error('AI 백엔드 연결 오류:', err);
@@ -601,7 +593,12 @@ const ConflictAnalysisResultPage = () => {
                       <span>💡</span> AI 추천 행동
                     </h4>
                     <ul className="space-y-2">
-                      {JSON.parse(conflictData.recommendedActions).map((action, index) => (
+                      {(Array.isArray(conflictData.recommendedActions) 
+                        ? conflictData.recommendedActions 
+                        : typeof conflictData.recommendedActions === 'string' 
+                        ? JSON.parse(conflictData.recommendedActions) 
+                        : []
+                      ).map((action, index) => (
                         <li key={index} className="flex items-start gap-3 text-gray-700">
                           <span className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 mt-0.5">
                             {index + 1}
