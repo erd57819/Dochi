@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { communityApi, commentApi, likeApi } from '../services/communityApi';
 import useAuthStore from '../stores/AuthStore';
 import hedgehogImg from '../assets/image-21.png'; // 도치 이미지 추가
+import thumbUp from '@/assets/thumb_up.png';
+import thumbDown from '@/assets/thumb_down.png';
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -146,7 +148,7 @@ const PostDetailPage = () => {
           <div 
             className="absolute top-0 left-0 w-full" 
             style={{ 
-              height: '50%',
+              height: '100%',
               backgroundColor: '#F8D6B3',
               opacity: 0.14
             }}
@@ -165,13 +167,13 @@ const PostDetailPage = () => {
 
   if (error || !post) {
     return (
-      <div className="min-h-screen relative">
+      <div className="min-h-screen relative ">
         {/* 배경 */}
         <div className="absolute inset-0">
           <div 
             className="absolute top-0 left-0 w-full" 
             style={{ 
-              height: '50%',
+              height: '100%',
               backgroundColor: '#F8D6B3',
               opacity: 0.14
             }}
@@ -179,13 +181,13 @@ const PostDetailPage = () => {
         </div>
         
         <main className="max-w-4xl mx-auto px-4 py-12 relative z-10">
-          <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
+          <div className="bg-white rounded-3xl p-8 text-center">
             <div className="text-6xl mb-6">❌</div>
             <h2 className="text-3xl font-bold mb-4" style={{ color: '#333333' }}>게시글을 찾을 수 없습니다</h2>
             <p className="text-xl mb-8" style={{ color: '#666666' }}>{error || '존재하지 않는 게시글입니다.'}</p>
             <Link 
               to="/community"
-              className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
+              className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
               style={{ backgroundColor: '#8B4513' }}
             >
               커뮤니티로 돌아가기
@@ -199,22 +201,22 @@ const PostDetailPage = () => {
   const categoryData = categories[post.category] || { label: '게시글', color: '#8B4513' };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative bg-gradient-to-br from-orange-50 via-white to-yellow-50">
       {/* 전체 배경 컨테이너 */}
       <div className="absolute inset-0">
         {/* 상단 배경 */}
         <div 
-          className="absolute top-0 left-0 w-full" 
+          className="absolute top-0 left-0 w-full bg-gradient-to-br from-orange-50 via-white to-yellow-50" 
           style={{ 
             height: '100%',
-            backgroundColor: '#F8D6B3',
+            // backgroundColor: '#F8D6B3',
             opacity: 0.14
           }}
         ></div>
       </div>
 
       {/* 메인 컨텐츠 */}
-      <main className="max-w-4xl mx-auto px-4 py-12 relative z-10">
+      <main className="max-w-5xl mx-auto px-4 py-12 relative z-10">
         {/* 헤더 */}
         <div className="flex items-center mb-8">
           <div className="flex items-center gap-3">
@@ -244,48 +246,35 @@ const PostDetailPage = () => {
 
         <div className="space-y-6">
           {/* 게시글 헤더 카드 */}
-          <div className="bg-white rounded-3xl p-8 shadow-xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl text-white"
-                style={{ backgroundColor: categoryData.color }}
-              >
-                📝
-              </div>
+          <div className="bg-white rounded p-10 ">
+            <div className="flex items-center gap-4 mb-">
               <div className="flex-1">
-                <div className="flex justify-between items-center gap-3 mb-2">
-                  <span 
-                    className="text-sm px-4 py-1 rounded-full font-medium text-white"
-                    style={{ backgroundColor: categoryData.color }}
-                  >
-                    {categoryData.label}
-                  </span>
-                  <div className="flex items-center gap-2" style={{ color: '#666666' }}>
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: '#F8D6B3' }}
+                <h2 className="text-3xl font-bold pb-5" style={{ color: '#333333' }}>
+                  {post.title}
+                </h2>
+                <div className="flex justify-between items-center gap-3">
+                  <div className="flex items-center gap-4" style={{ color: '#666666' }}>
+                    <span 
+                      className="text-sm px-4 py-1 rounded-full font-medium text-white"
+                      style={{ backgroundColor: categoryData.color }}
                     >
-                      <span className="text-sm font-medium" style={{ color: '#8B4513' }}>
-                        {(post.author || '익명').charAt(0)}
-                      </span>
-                    </div>
+                      {categoryData.label}
+                    </span>
+                    <span>👁 {post.viewCount || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-2" style={{ color: '#666666' }}>
                     <span className="font-medium">{post.author || '익명'} 도치</span>
                     <span className="text-gray-400">•</span>
                     <span>{post.createdAt || '방금 전'}</span>
-                    <span className="text-gray-400">•</span>
-                    <span>👁 {post.viewCount || 0}</span>
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold" style={{ color: '#333333' }}>
-                  {post.title}
-                </h2>
               </div>
             </div>
 
           {/* 게시글 내용 */}
-          <div className="bg-orange-50 rounded-3xl p-4">
+          <div className="rounded p-4">
             <div 
-              className="border-l-2 pl-6 py-5"
+              className="pl-2 py-5 min-h-90"
               style={{ borderColor: categoryData.color }}
             >
               <div 
@@ -297,69 +286,75 @@ const PostDetailPage = () => {
             </div>
             
           </div>
+            <div className="border-t-2 border-yellow-800 flex items-center justify-end pt-6">
 
-            {/* 게시글 상호작용 */}
-            <div className="flex items-center gap-4 pt-6" style={{ borderColor: '#F0F0F0' }}>
-              <button
-                onClick={() => handlePostLike('LIKE')}
-                disabled={!isLoggedIn}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:-translate-y-1 shadow-lg ${
-                  !isLoggedIn 
-                    ? 'cursor-not-allowed'
-                    : ''
-                }`}
-                style={{
-                  backgroundColor: !isLoggedIn 
-                    ? '#E5E5E5'
-                    : post.userLikeType === 'LIKE'
-                    ? '#BF7D2C'
-                    : '#F8D6B3',
-                  color: !isLoggedIn 
-                    ? '#999999'
-                    : post.userLikeType === 'LIKE'
-                    ? '#FFFFFF'
-                    : '#8B4513'
-                }}
-              >
-                <span className="text-xl">👍</span>
-                <span className="font-bold">{post.likeCount || 0}</span>
-              </button>
-              
-              <button
-                onClick={() => handlePostLike('DISLIKE')}
-                disabled={!isLoggedIn}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:-translate-y-1 shadow-lg ${
-                  !isLoggedIn 
-                    ? 'cursor-not-allowed'
-                    : ''
-                }`}
-                style={{
-                  backgroundColor: !isLoggedIn 
-                    ? '#E5E5E5'
-                    : post.userLikeType === 'DISLIKE'
-                    ? '#7F5539'
-                    : '#F0F0F0',
-                  color: !isLoggedIn 
-                    ? '#999999'
-                    : post.userLikeType === 'DISLIKE'
-                    ? '#FFFFFF'
-                    : '#666666'
-                }}
-              >
-                <span className="text-xl">👎</span>
-                <span className="font-bold">{post.dislikeCount || 0}</span>
-              </button>
-              
-              <div className="flex items-center gap-2 ml-auto" style={{ color: '#666666' }}>
-                <span className="text-xl">💬</span>
-                <span className="font-bold text-lg">{comments.length}</span>
+              {/* 게시글 상호작용 */}
+              <div className="flex items-center gap-4" style={{ borderColor: '#F0F0F0' }}>
+                <div className="text-center">
+                  <p className="my-5 font text-2xl font-bold">난 네편이야</p>
+                  <button
+                    onClick={() => handlePostLike('LIKE')}
+                    disabled={!isLoggedIn}
+                    className={`w-50 h-30 flex items-center justify-center gap-2 px-6 py-3 rounded font-medium transition-all transform hover:scale-102 hover:opacity-80 ${
+                      !isLoggedIn 
+                        ? 'cursor-not-allowed'
+                        : ''
+                    }`}
+                    style={{
+                      backgroundColor: !isLoggedIn
+                          ? 'transparent'
+                          : post.userLikeType === 'LIKE'
+                              ? '#ff93a5ff'
+                              : '#ffe4e4ff',
+                      color: !isLoggedIn
+                          ? '#cccccc'
+                          : post.userLikeType === 'LIKE'
+                              ? '#FFFFFF'
+                              : '#8B4513'
+                    }}
+                  >
+                    <span className="text-xl"><img src={thumbUp} alt="따봉" className="w-8 h-8" /></span>
+                    <span className="font-bold">{post.likeCount || 0}</span>
+                  </button>
+                </div>
+                  
+                <div className="text-center">
+                  <p className="my-5 font text-2xl font-bold">너가 잘못했어</p>
+                  <button
+                    onClick={() => handlePostLike('DISLIKE')}
+                    disabled={!isLoggedIn}
+                    className={`w-50 h-30 flex items-center justify-center gap-2 px-6 py-3 rounded font-medium transition-all transform hover:scale-102 hover:opacity-80 ${
+                      !isLoggedIn 
+                        ? 'cursor-not-allowed'
+                        : ''
+                    }`}
+                    style={{
+                      backgroundColor: !isLoggedIn
+                          ? 'transparent'
+                          : post.userLikeType === 'DISLIKE'
+                              ? '#93d7ffff'
+                              : '#e4f5ffff',
+                      color: !isLoggedIn
+                          ? '#cccccc'
+                          : post.userLikeType === 'DISLIKE'
+                              ? '#FFFFFF'
+                              : '#666666'
+                    }}
+                  >
+                    <span className="text-xl"><img src={thumbDown} alt="안따봉" className="w-8 h-8" /></span>
+                    <span className="font-bold">{post.dislikeCount || 0}</span>
+                  </button>
+                </div>
               </div>
-              {/* 액션 버튼 */}
-              <div className="flex items-center justify-end ml-4 gap-2">
+
+              <img src={hedgehogImg} alt="갈등도치" className="w-30  ml-17 mr-10 mt-15 rounded-full" />
+            </div>
+            {/* 액션 버튼 */}
+              <div className="flex items-center justify-end ml-4 pt-5 gap-2">
                 {isLoggedIn && user && (post.userId === user.id || user.role === 'ADMIN') && (
                   <div className="flex gap-3">
                     <button 
-                      className="px-4 py-2 rounded-lg font-medium transition-all hover:-translate-y-1 shadow-lg"
+                      className="px-4 py-2 rounded font-medium transition-all hover:-translate-y-1"
                       style={{ 
                         backgroundColor: '#cd9f6e',
                         color: '#FFFFFF'
@@ -368,7 +363,7 @@ const PostDetailPage = () => {
                       수정
                     </button>
                     <button 
-                      className="px-4 py-2 rounded-lg font-medium transition-all hover:-translate-y-1 shadow-lg"
+                      className="px-4 py-2 rounded font-medium transition-all hover:-translate-y-1"
                       style={{ 
                         backgroundColor: '#7F5539',
                         color: '#FFFFFF'
@@ -379,19 +374,12 @@ const PostDetailPage = () => {
                   </div>
                 )}
               </div>
-            </div>
           </div>
           
 
           {/* 댓글 목록 */}
-          <div className="bg-white rounded-3xl p-8 shadow-xl">
+          <div className="bg-white rounded p-10">
             <div className="flex items-center gap-4 mb-5">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white"
-                style={{ backgroundColor: categoryData.color }}
-              >
-                💭
-              </div>
               <h3 className="text-2xl font-bold" style={{ color: '#333333' }}>
                 댓글 ({comments.length})
               </h3>
@@ -405,7 +393,7 @@ const PostDetailPage = () => {
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="건설적이고 따뜻한 댓글을 작성해주세요..."
                     rows={5}
-                    className="w-full h-30 px-6 py-4 border-2 rounded-2xl focus:outline-none text-lg placeholder-gray-400 resize-none transition-all"
+                    className="w-full h-30 px-6 py-4 border-2 rounded focus:outline-none text-lg placeholder-gray-400 resize-none transition-all"
                     style={{ 
                       borderColor: '#F0F0F0',
                       focusBorderColor: categoryData.color
@@ -431,7 +419,7 @@ const PostDetailPage = () => {
                       <button
                         type="submit"
                         disabled={isSubmittingComment || !commentText.trim()}
-                        className="px-8 py-3 rounded-xl font-medium transition-all transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:transform-none"
+                        className="px-8 py-3 rounded-xl font-medium transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:transform-none"
                         style={{ 
                           backgroundColor: categoryData.color,
                           color: '#FFFFFF'
@@ -449,7 +437,7 @@ const PostDetailPage = () => {
                 <p className="text-xl mb-6" style={{ color: '#666666' }}>댓글을 작성하려면 로그인이 필요합니다.</p>
                 <Link 
                   to="/login"
-                  className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
+                  className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
                   style={{ backgroundColor: '#8B4513' }}
                 >
                   로그인하기
@@ -472,7 +460,7 @@ const PostDetailPage = () => {
                 {comments.map((comment, index) => (
                   <div 
                     key={comment.id} 
-                    className="border-l-4 pl-8 py-4"
+                    className="pl-8 py-4"
                     style={{ borderColor: categoryData.color }}
                   >
                     <div className="flex items-center justify-between mb-4">
@@ -489,17 +477,19 @@ const PostDetailPage = () => {
                           <span className="font-bold text-lg" style={{ color: '#333333' }}>
                             {comment.author || '익명'}
                           </span>
-                          <span className="text-sm ml-3" style={{ color: '#666666' }}>
-                            {comment.createdAt || '방금 전'}
-                          </span>
                         </div>
                       </div>
-                      <span className="text-sm px-3 py-1 rounded-full" style={{ 
-                        backgroundColor: '#F8D6B3',
-                        color: '#8B4513'
-                      }}>
-                        #{index + 1}
-                      </span>
+                      <div>
+                        <span className="text-sm mr-3" style={{ color: '#666666' }}>
+                          {comment.createdAt || '방금 전'}
+                        </span>
+                        <span className="text-sm px-3 py-1 rounded-full" style={{ 
+                          backgroundColor: '#F8D6B3',
+                          color: '#8B4513'
+                        }}>
+                          #{index + 1}
+                        </span>
+                      </div>
                     </div>
                     
                     <div className="text-lg mb-4 leading-relaxed whitespace-pre-wrap" style={{ color: '#333333' }}>
@@ -511,7 +501,7 @@ const PostDetailPage = () => {
                         onClick={() => handleCommentLike(comment.id, 'LIKE')}
                         disabled={!isLoggedIn}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                          !isLoggedIn ? 'cursor-not-allowed' : 'transform hover:-translate-y-1 shadow-lg'
+                          !isLoggedIn ? 'cursor-not-allowed' : 'transform hover:-translate-y-1 '
                         }`}
                         style={{
                           backgroundColor: !isLoggedIn 
@@ -532,7 +522,7 @@ const PostDetailPage = () => {
                         onClick={() => handleCommentLike(comment.id, 'DISLIKE')}
                         disabled={!isLoggedIn}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                          !isLoggedIn ? 'cursor-not-allowed' : 'transform hover:-translate-y-1 shadow-lg'
+                          !isLoggedIn ? 'cursor-not-allowed' : 'transform hover:-translate-y-1 '
                         }`}
                         style={{
                           backgroundColor: !isLoggedIn 
@@ -561,7 +551,7 @@ const PostDetailPage = () => {
         <div className="text-left mt-12">
           <Link 
             to="/community"
-            className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg mr-4"
+            className="px-8 py-4 text-white rounded-xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg mr-4"
             style={{ backgroundColor: '#8B4513' }}
           >
             목록으로 돌아가기
