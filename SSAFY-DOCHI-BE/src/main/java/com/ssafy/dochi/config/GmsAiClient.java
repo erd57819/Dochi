@@ -33,7 +33,7 @@ public class GmsAiClient {
         );
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", model);
+        body.put("model", "gpt-4o-mini");  // gpt-3.5-turbo 대신 gpt-4o-mini 사용
         body.put("messages", messages);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);

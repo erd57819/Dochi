@@ -68,7 +68,7 @@ public class AiSummaryService {
             );
             
             // GMS API 호출
-            String gmsResponse = gmsAiClient.ask(analysisPrompt, "gpt-3.5-turbo");
+            String gmsResponse = gmsAiClient.ask(analysisPrompt, "gpt-4o-mini");
             
             // 응답이 실패 메시지인 경우 예외 던지기
             if (gmsResponse.startsWith("GMS 호출 실패:")) {
@@ -192,7 +192,7 @@ public class AiSummaryService {
             conflictTypeKorean, description
         );
         
-        String gmsResponse = gmsAiClient.ask(analysisPrompt, "gpt-3.5-turbo");
+        String gmsResponse = gmsAiClient.ask(analysisPrompt, "gpt-4o-mini");
         
         if (gmsResponse.startsWith("GMS 호출 실패:")) {
             throw new RuntimeException(gmsResponse);
