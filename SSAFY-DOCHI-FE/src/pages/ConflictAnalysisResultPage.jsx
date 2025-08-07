@@ -8,9 +8,23 @@ import hedgehogImg from '../assets/conflict.png';
 const ConflictAnalysisResultPage = () => {
   const [conflictData, setConflictData] = useState(null);
   const [isLoading, setIsLoading]       = useState(true);
+  const [activeTab, setActiveTab]       = useState('tab1');
   const { tempId }                      = useParams();
   const navigate                        = useNavigate();
   const { token }                       = useAuthStore();
+  
+  // isEmptyOrError 헬퍼 함수 정의
+  const isEmptyOrError = (value) => {
+    if (!value) return true;
+    if (typeof value === 'string') {
+      const lower = value.toLowerCase();
+      return value.trim() === '' || 
+             lower.includes('분석 불가') || 
+             lower.includes('완료할 수 없') ||
+             lower.includes('error');
+    }
+    return false;
+  };
 
   // 백엔드에서 AI 분석이 실패했을 때의 개선된 폴백 처리
   const generateImprovedFallback = (basicData) => {
@@ -102,6 +116,12 @@ const ConflictAnalysisResultPage = () => {
   const handleNewConflict = () => {
     navigate('/conflicts/create');
   };
+  
+  // 로드맵 페이지로 이동
+  const handleRoadmap = () => {
+    navigate('/roadmap');
+  };
+  
   useEffect(() => {
     if (tempId) fetchTempConflictData();
   }, [tempId]);
