@@ -147,16 +147,18 @@ const useComfortStore = create(
         try {
           const { sessions, currentChatRoomId } = get();
           
-          if (sessions.length === 1) {
-            return false; // 최소 하나의 세션은 유지
-          }
-          
+          // 최소 세션 유지 조건 제거!
           await comfortService.deleteChatRoom(chatRoomId);
           
           const filteredSessions = sessions.filter(s => s.id !== chatRoomId);
           const newState = { sessions: filteredSessions };
           
-          if (currentChatRoomId === chatRoomId) {
+          // 마지막 세션을 삭제했으면 현재 세션 정보도 초기화
+          if (filteredSessions.length === 0) {
+            newState.currentSessionId = null;
+            newState.currentChatRoomId = null;
+            newState.messages = [];
+          } else if (currentChatRoomId === chatRoomId) {
             const newCurrentSession = filteredSessions[filteredSessions.length - 1];
             newState.currentSessionId = newCurrentSession.sessionId;
             newState.currentChatRoomId = newCurrentSession.id;

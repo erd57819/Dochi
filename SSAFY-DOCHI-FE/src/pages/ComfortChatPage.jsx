@@ -48,15 +48,16 @@ const ComfortChatPage = () => {
   }, []);
 
   useEffect(() => {
-    // 초기 세션이 없으면 생성
+    // 세션이 없으면 ComfortPage로 리다이렉트
     const timer = setTimeout(() => {
-      if (sessions.length === 0) {
-        createNewSession();
+      if (sessions.length === 0 && !currentSessionId) {
+        console.log('세션이 없어 ComfortPage로 이동');
+        navigate('/comfort');
       }
-    }, 1000); // 1초 대기 후 세션 생성
+    }, 2000); // 2초 정도 여유시간을 줘서 로딩 완료 대기
     
     return () => clearTimeout(timer);
-  }, [sessions]);
+  }, [sessions, currentSessionId, navigate]);
 
   useEffect(() => {
     // 페이지 떠날 때 세션 종료
@@ -93,8 +94,12 @@ const ComfortChatPage = () => {
 
   const handleDeleteSession = async (chatRoomId) => {
     const success = await deleteSession(chatRoomId);
-    if (!success) {
-      alert('최소 하나의 채팅방은 유지되어야 합니다.');
+    if (success) {
+      // 삭제 후 남은 세션이 없으면 ComfortPage로
+      const { sessions } = useComfortStore.getState();
+      if (sessions.length === 0) {
+        navigate('/comfort');
+      }
     }
   };
 
@@ -106,8 +111,6 @@ const ComfortChatPage = () => {
       console.error('Failed to create session with title:', error);
     }
   };
-
-
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
