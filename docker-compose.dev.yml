@@ -103,7 +103,7 @@ services:
     ports:
       - "7880:7880"     # HTTP/WebSocket
       - "7881:7881"     # TCP
-      - "50000-50100:50000-50100/udp"  # UDP/RTC
+      - "55000-55100:55000-55100/udp"  # UDP/RTC
     networks:
       - dochi-network
     environment:
@@ -111,11 +111,10 @@ services:
       LIVEKIT_CONFIG: |
         port: 7880
         rtc:
+          port_range_start: 55000
+          port_range_end: 55100
           tcp_port: 7881
-          port_range_start: 50000
-          port_range_end: 50100
           use_external_ip: true
-          ice_candidate_ip: localhost
         log_level: debug
 
 
