@@ -30,7 +30,7 @@ import PasswordChangePage from './pages/PasswordChangePage';
 import RoadmapPage from './pages/RoadmapPage';
 import ExpertMatchingPage from './pages/ExpertMatchingPage';
 import './App.css';
-import VideoCallRoom from './components/VideoCallRoom';
+import VideoCallRoom from './components/videocall/VideoCallRoom';
 
 
 const App = () => {

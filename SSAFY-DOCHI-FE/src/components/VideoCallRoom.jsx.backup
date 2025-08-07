@@ -18,6 +18,7 @@ const VideoCallRoom = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [participants, setParticipants] = useState([]);
   const [localVideoTrack, setLocalVideoTrack] = useState(null);
+  const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [error, setError] = useState(null);
   
@@ -278,13 +279,16 @@ const VideoCallRoom = () => {
             {
               urls: [
                 'stun:stun.l.google.com:19302',
-                'stun:stun1.l.google.com:19302'
+                'stun:stun1.l.google.com:19302',
+                'stun:stun2.l.google.com:19302',
+                'stun:stun3.l.google.com:19302'
               ]
             }
           ],
           iceTransportPolicy: 'all',
           bundlePolicy: 'max-bundle',
-          rtcpMuxPolicy: 'require'
+          rtcpMuxPolicy: 'require',
+          iceCandidatePoolSize: 10
         },
         // 개발 환경에서 연결 안정성 향상
         reconnectPolicy: {
@@ -363,15 +367,10 @@ const VideoCallRoom = () => {
       // 참가자 목록 업데이트 (새 참가자가 트랙을 publish한 경우)
       updateParticipants(room);
       
-      // 새 참가자 비디오 트랙 시 표정 분석 시작
-      if (track.kind === Track.Kind.Video && faceApiModelsLoaded.current) {
-        setTimeout(() => {
-          const videoRef = remoteVideoRefs.current.get(participant.identity);
-          if (videoRef?.current) {
-            startRemoteEmotionDetection(participant.identity, videoRef.current);
-          }
-        }, 1000);
-      }
+      // 상대방 감정 분석은 비활성화 (본인만 분석)
+      // if (track.kind === Track.Kind.Video && faceApiModelsLoaded.current) {
+      //   // 상대방 감정분석 기능 제거됨
+      // }
       
       if (track.kind === Track.Kind.Video) {
         // Ref 기반 비디오 연결 - DOM 동기화 문제 해결
@@ -1220,11 +1219,37 @@ const requestAiMediation = async (text, speaker) => {
     setParticipants(remoteParticipants);
   };
 
-  // 마이크 토글
+  // 소음 제거 토글
+  const toggleNoiseSuppression = () => {
+    setNoiseSuppressionEnabled(!noiseSuppressionEnabled);
+    console.log(`소음 제거: ${!noiseSuppressionEnabled ? 'ON' : 'OFF'}`);
+  };
+
+  // 마이크 토글 (소음 제거 적용)
   const toggleMicrophone = async () => {
     if (room) {
       try {
-        await room.localParticipant.setMicrophoneEnabled(!isMicOn);
+        if (!isMicOn) {
+          // 마이크 켜기 - 소음 제거 옵션 적용
+          const audioOptions = {
+            echoCancellation: true,
+            noiseSuppression: noiseSuppressionEnabled,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1
+          };
+          
+          const audioTrack = await room.localParticipant.setMicrophoneEnabled(true, audioOptions);
+          setLocalAudioTrack(audioTrack);
+          
+          console.log(`마이크 켜짐 (소음제거: ${noiseSuppressionEnabled})`);
+        } else {
+          // 마이크 끄기
+          await room.localParticipant.setMicrophoneEnabled(false);
+          setLocalAudioTrack(null);
+          console.log('마이크 꺼짐');
+        }
+        
         setIsMicOn(!isMicOn);
       } catch (error) {
         console.error('마이크 토글 실패:', error);
@@ -1796,6 +1821,20 @@ const requestAiMediation = async (text, speaker) => {
             }`}
           >
             {isCameraOn ? '📹' : '📵'}
+          </button>
+
+          {/* 소음 제거 버튼 */}
+          <button
+            onClick={toggleNoiseSuppression}
+            disabled={!isConnected}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 ${
+              noiseSuppressionEnabled 
+                ? 'bg-purple-600 hover:bg-purple-700' 
+                : 'bg-gray-600 hover:bg-gray-700'
+            }`}
+            title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
+          >
+            {noiseSuppressionEnabled ? '🔇' : '🔊'}
           </button>
 
           {/* 나가기 버튼 */}

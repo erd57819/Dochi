@@ -1,5 +1,5 @@
 import React from 'react';
-import VoiceChat from '../components/VoiceChat';
+import VoiceChat from '../components/videocall/VoiceChat';
 
 const VoiceChatPage = () => {
   return (

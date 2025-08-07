@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useVoiceProcessing } from '../hooks/useVoiceProcessing';
+import { useVoiceProcessing } from '../../hooks/useVoiceProcessing';
 
 const VoiceChat = () => {
   const [inputText, setInputText] = useState('');
