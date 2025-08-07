@@ -48,13 +48,26 @@ public class ConflictController {
         return ApiResponseGenerator.success(response, HttpStatus.OK);
     }
     
-    // 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - 임시 분석만
+    // 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - Redis에 결과 저장
     @PostMapping("/analyze/advanced/{tempConflictId}")
     public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> analyzeConflictAdvanced(
             @PathVariable String tempConflictId) {
         
         Map<String, Object> response = conflictService.analyzeConflictAdvanced(tempConflictId);
         return ApiResponseGenerator.success(response, HttpStatus.OK);
+    }
+    
+    // Redis에서 저장된 고급 분석 결과만 조회 (다른 서비스 이용 후 복귀 시 사용)
+    @GetMapping("/analyze/cached/{tempConflictId}")
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> getCachedAnalysisResult(
+            @PathVariable String tempConflictId) {
+        
+        Map<String, Object> response = conflictService.getCachedAnalysisResult(tempConflictId);
+        if (response != null) {
+            return ApiResponseGenerator.success(response, HttpStatus.OK);
+        } else {
+            return ApiResponseGenerator.success(null, HttpStatus.NO_CONTENT);
+        }
     }
     
     // 2-2단계: 고급 AI 분석 후 갈등 저장 및 분석 결과 MySQL 저장

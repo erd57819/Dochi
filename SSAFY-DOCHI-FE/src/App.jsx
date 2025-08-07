@@ -31,7 +31,7 @@ import PasswordChangePage from './pages/PasswordChangePage';
 import RoadmapPage from './pages/RoadmapPage';
 import ExpertMatchingPage from './pages/ExpertMatchingPage';
 import './App.css';
-import VideoCallRoom from './components/VideoCallRoom';
+import VideoCallRoom from './components/videocall/VideoCallRoom';
 
 // Nav를 조건부로 렌더링하는 컴포넌트
 function AppContent() {

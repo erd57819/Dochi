@@ -77,8 +77,12 @@ services:
     container_name: dochi-ai-service
     ports:
       - "8002:8002"
+    volumes:
+      - ./google-service-account.json:/app/google-service-account.json:ro
     environment:
       - GMS_KEY=${GMS_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/google-service-account.json
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
     networks:
       - dochi-network
 
@@ -102,7 +106,7 @@ services:
           port_range_start: 50000
           port_range_end: 50100
           use_external_ip: true
-          ice_candidate_ip: localhost
+          
         log_level: debug
 
 

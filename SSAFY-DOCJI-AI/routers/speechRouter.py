@@ -2,10 +2,21 @@ from fastapi import APIRouter, File, UploadFile, HTTPException, Form
 from datetime import datetime
 from schemas.speechSchemas import SpeechProcessingResponse, RealtimeChunkResponse
 from services.speechService import SpeechService
+import typing
+from pydantic import BaseModel
+from services.emotionService import EmotionService 
 
 router = APIRouter(prefix="/speech", tags=["speech_processing"])
 speechService = SpeechService()
 
+class Utterance(BaseModel):
+    speaker: str
+    text: str
+
+class ConversationRequest(BaseModel):
+    conversation: typing.List[Utterance]
+    
+    
 @router.post("/process-audio", response_model=SpeechProcessingResponse)
 async def processAudio(
     audioFile: UploadFile = File(...),
@@ -67,6 +78,32 @@ async def processRealtimeChunk(
             "roomId": roomId,
             "processedAt": datetime.now().isoformat()
         }
+        
+@router.post("/emotion/contextual", summary="Analyze emotion from conversation context")
+def analyze_contextual_emotion(request: ConversationRequest):
+    """
+    화자와 대화 내용을 포함한 전체 대화 기록을 받아,
+    문맥을 고려하여 마지막 발언의 감정을 분석합니다.
+    """
+    if not request.conversation:
+        raise HTTPException(status_code=400, detail="Conversation data is required.")
+
+    try:
+        # EmotionService를 인스턴스화하고 분석 함수 호출
+        emotion_service = EmotionService()
+        
+        # Pydantic 모델을 Python dict 리스트로 변환하여 전달
+        conversation_data = [item.dict() for item in request.conversation]
+        
+        result = emotion_service.analyze_conversation_emotion(conversation_data)
+        
+        if result.get("emotion") == "error":
+             raise HTTPException(status_code=500, detail=f"AI Service Error: {result.get('message')}")
+        
+        return result
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/health")
 async def healthCheck():

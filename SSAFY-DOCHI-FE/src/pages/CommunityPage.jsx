@@ -54,6 +54,7 @@ const CommunityPage = () => {
   };
 
   // 게시글 좋아요 토글
+
   const handlePostLike = async (postId, likeType, e) => {
     e.stopPropagation(); // 게시글 클릭 이벤트 방지
     
@@ -255,7 +256,7 @@ const CommunityPage = () => {
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
                             <span className="text-xs font-medium text-orange-600">
-                              {(post.author || '익명').charAt(0)}
+                              {(post.nickname || '익명').charAt(0)}
                             </span>
                           </div>
                           <span className="font-medium">{post.author || '익명'}</span>
@@ -355,6 +356,7 @@ const CommunityPage = () => {
                 </div>
               </div>
             )}
+
 
             {/* 글쓰기 플로팅 버튼 (모바일) */}
             {isLoggedIn && (
