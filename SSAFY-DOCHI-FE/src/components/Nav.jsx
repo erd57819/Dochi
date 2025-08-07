@@ -43,9 +43,9 @@ export const Nav = () => {
           {/* 데스크톱 메인 네비게이션 */}
           <div className="hidden lg:flex items-center space-x-8">
             <Link 
-              to="/conflicts"
+              to="/service"
               className={`font-bold text-lg transition-all duration-200 hover:scale-105 ${
-                isActive('/conflicts') 
+                isActive('/service') 
                   ? 'text-[#ff6b35] scale-105' 
                   : 'text-[#777777] hover:text-[#ff6b35]'
               }`}
@@ -178,10 +178,10 @@ export const Nav = () => {
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200">
             {/* 메인 네비게이션 */}
             <Link 
-              to="/conflicts"
+              to="/service"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`block px-3 py-2 rounded-md text-base font-bold transition-colors ${
-                isActive('/conflicts') 
+                isActive('/service') 
                   ? 'text-[#ff6b35] bg-orange-50' 
                   : 'text-[#777777] hover:text-[#ff6b35] hover:bg-gray-50'
               }`}

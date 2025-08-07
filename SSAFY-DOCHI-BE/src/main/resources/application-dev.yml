@@ -70,9 +70,8 @@ ai:
 # LiveKit 설정 (WebRTC 화상통화용)
 livekit:
   api:
-    key: ${LIVEKIT_API_KEY:devkey}
-    secret: ${LIVEKIT_API_SECRET:devsecret}
-
+    key: ${LIVEKIT_API_KEY}
+    secret: ${LIVEKIT_API_SECRET}
 
 management:
   endpoints:
