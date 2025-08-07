@@ -75,16 +75,11 @@ const CreatePostPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 py-8">
+      <div className="max-w-5xl mx-auto px-4">
         {/* 헤더 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="text-center">
-            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-              isConflictSharingPost ? 'bg-blue-100' : 'bg-orange-100'
-            }`}>
-              <span className="text-2xl">{isConflictSharingPost ? '📢' : '✍️'}</span>
-            </div>
+        <div className="bg-white rounded-2xl px-6 py-10 mb-5">
+          <div className="text-left">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
               {isConflictSharingPost ? '갈등 상황 공유하기' : '새 게시글 작성'}
             </h1>
@@ -103,7 +98,7 @@ const CreatePostPage = () => {
 
         {/* 갈등 공유 안내 */}
         {isConflictSharingPost && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-lg p-6 mb-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-6">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-xl">💡</span>
@@ -122,7 +117,7 @@ const CreatePostPage = () => {
         )}
 
         {/* 작성 폼 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white rounded-2xl p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 카테고리 선택 */}
             <div>
