@@ -2,11 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { communityApi, commentApi, likeApi } from '../services/communityApi';
 import useAuthStore from '../stores/AuthStore';
+import hedgehogImg from '../assets/image-21.png'; // 도치 이미지 추가
 
 const PostDetailPage = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuthStore();
+
+  // 뒤로가기 핸들러
+  const handleGoBack = () => {
+    navigate(-1);
+  };
   
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
