@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore.js';
 import { communityApi, likeApi } from '../services/communityApi.js';
 import hedgehogImg from '../assets/conflict.png';
+import folder from '@/assets/folder.png';
 
 const CommunityPage = () => {
   const navigate = useNavigate();
@@ -134,7 +135,7 @@ const CommunityPage = () => {
   const selectedCategoryData = categories.find(cat => cat.value === selectedCategory);
 
   return (
-      <div className="min-h-screen relative">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative ">
         {/* 전체 배경 컨테이너 */}
         <div className="absolute inset-0">
           {/* 상단 배경 */}
@@ -142,7 +143,7 @@ const CommunityPage = () => {
               className="absolute top-0 left-0 w-full"
               style={{
                 height: '100%',
-                background: 'linear-gradient(to bottom, rgb(248, 214, 179), rgba(255, 207, 159, 1))',
+                // background: 'linear-gradient(to bottom right, #fff7ed, #ffffff, #fffbeb);',
                 opacity: 0.14
               }}
           ></div>
@@ -161,58 +162,72 @@ const CommunityPage = () => {
         <main className="max-w-6xl mx-auto px-4 py-12 relative z-10">
 
           {/* 상단 메시지 */}
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4" style={{
-              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              갈등 해결 경험과 조언을 나누는 공간
+          <div className="text-left ml-5 mb-10">
+            <h2 className="text-5xl font-bold mb-4"
+              style={{
+                background: 'linear-gradient(108deg, rgba(191,125,44,1) 0%, rgba(139,69,19,1) 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textFillColor: 'transparent'
+              }}>
+              도치 커뮤니티
             </h2>
-            <p className="text-xl" style={{ color: '#666666' }}>
-              함께 소통하며 더 나은 관계를 만들어가요
-            </p>
           </div>
 
 
-          <div className="flex flex-wrap justify-between gap-6" >
+          <div className="flex flex-wrap justify-evenly gap-5" >
             {/* 왼쪽: 카테고리 목록 */}
             <div className="w-1/4">
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3 mb-8 bg-white p-2 rounded-lg">
                 {categories.map((category) => (
-                    <div
-                        key={category.value}
-                        className={`p-2 rounded-2xl cursor-pointer transition-all transform hover:-translate-y-1 shadow-lg ${
-                            selectedCategory === category.value ? 'ring-4 ring-opacity-50' : ''
-                        }`}
+                  <div
+                    key={category.value}
+                    className={`p-2 rounded cursor-pointer transition-all transform hover:-translate-y-1 ${
+                      selectedCategory === category.value ? 'ring-4 ring-opacity-50' : ''
+                    }`}
+                    style={{
+                      backgroundColor: selectedCategory === category.value ? category.color : '#FFFFFF',
+                      color: selectedCategory === category.value ? '#FFFFFF' : '#333333',
+                      ringColor: category.color,
+                      '--hover-bg': category.color
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedCategory !== category.value) {
+                        e.currentTarget.style.backgroundColor = category.color;
+                        e.currentTarget.style.color = '#FFFFFF';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedCategory !== category.value) {
+                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                        e.currentTarget.style.color = '#333333';
+                      }
+                    }}
+                    onClick={() => handleCategoryChange(category.value)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
                         style={{
-                          backgroundColor: selectedCategory === category.value ? category.color : '#FFFFFF',
-                          color: selectedCategory === category.value ? '#FFFFFF' : '#333333',
-                          ringColor: category.color
+                          backgroundColor: selectedCategory === category.value ? 'rgba(255,255,255,0.2)' : category.color,
+                          color: '#FFFFFF'
                         }}
-                        onClick={() => handleCategoryChange(category.value)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
-                            style={{
-                              backgroundColor: selectedCategory === category.value ? 'rgba(255,255,255,0.2)' : category.color,
-                              color: '#FFFFFF'
-                            }}
-                        >
-                          📂
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg">{category.label}</h4>
-                        </div>
+                      >
+                        <img className="w-8 h-8"
+                          alt="folder"
+                          src={folder}/>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-lg">{category.label}</h4>
                       </div>
                     </div>
+                  </div>
                 ))}
               </div>
 
               {/* 커뮤니티 가이드 */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="bg-white rounded p-6">
                 <h4 className="font-bold text-xl mb-4" style={{ color: '#8B4513' }}>💡 커뮤니티 가이드</h4>
                 <ul className="space-y-3" style={{ color: '#666666' }}>
                   <li className="flex items-center gap-2">
@@ -239,7 +254,7 @@ const CommunityPage = () => {
                 {isLoggedIn ? (
                     <Link
                         to="/community/create"
-                        className="w-full block text-center py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
+                        className="w-full block text-center py-4 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
                         style={{ backgroundColor: '#8B4513' }}
                     >
                       ✍️ 새 글 작성하기
@@ -247,7 +262,7 @@ const CommunityPage = () => {
                 ) : (
                     <Link
                         to="/login"
-                        className="w-full block text-center py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
+                        className="w-full block text-center py-4 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
                         style={{ backgroundColor: '#696969' }}
                     >
                       로그인하여 글쓰기
@@ -258,13 +273,15 @@ const CommunityPage = () => {
 
             {/* 오른쪽: 게시글 목록 */}
             <div className="w-5/7">
-              <div className="bg-white rounded-3xl p-8 shadow-xl min-h-[600px]">
+              <div className="bg-white rounded-xl p-8 min-h-[600px]">
                 <div className="flex items-center gap-4 mb-6">
                   <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl text-white"
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-2xl text-white"
                       style={{ backgroundColor: selectedCategoryData?.color || '#8B4513' }}
                   >
-                    📝
+                    <img className="w-8 h-8"
+                          alt="folder"
+                          src={folder}/>
                   </div>
                   <div>
                     <h3 className="text-3xl font-bold" style={{ color: '#333333' }}>
@@ -289,7 +306,7 @@ const CommunityPage = () => {
                         {isLoggedIn ? (
                             <Link
                                 to="/community/create"
-                                className="inline-block px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
+                                className="inline-block px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
                                 style={{ backgroundColor: '#8B4513' }}
                             >
                               첫 게시글 작성하기
@@ -297,7 +314,7 @@ const CommunityPage = () => {
                         ) : (
                             <Link
                                 to="/login"
-                                className="inline-block px-8 py-4 rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
+                                className="inline-block px-8 py-4 rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
                                 style={{
                                   backgroundColor: '#F8D6B3',
                                   color: '#8B4513'
@@ -367,7 +384,7 @@ const CommunityPage = () => {
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'LIKE'
-                                                ? 'text-white shadow-lg'
+                                                ? 'text-white '
                                                 : 'hover:opacity-70'
                                     }`}
                                     style={{
@@ -392,7 +409,7 @@ const CommunityPage = () => {
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'DISLIKE'
-                                                ? 'text-white shadow-lg'
+                                                ? 'text-white '
                                                 : 'hover:opacity-70'
                                     }`}
                                     style={{
@@ -440,7 +457,7 @@ const CommunityPage = () => {
                                   key={pageNum}
                                   onClick={() => handlePageChange(pageNum)}
                                   className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                                      currentPage === pageNum ? 'text-white shadow-lg' : 'hover:opacity-70'
+                                      currentPage === pageNum ? 'text-white ' : 'hover:opacity-70'
                                   }`}
                                   style={{
                                     backgroundColor: currentPage === pageNum
@@ -476,7 +493,7 @@ const CommunityPage = () => {
           <div className="text-center mt-12">
             <Link
                 to="/roadmap"
-                className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg mr-4"
+                className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg mr-4"
                 style={{ backgroundColor: '#8B4513' }}
             >
               갈등 해결 로드맵 보기
@@ -484,7 +501,7 @@ const CommunityPage = () => {
             {isLoggedIn && (
                 <Link
                     to="/conflicts/create"
-                    className="px-8 py-4 rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
+                    className="px-8 py-4 rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
                     style={{
                       backgroundColor: '#F8D6B3',
                       color: '#8B4513'
@@ -500,7 +517,7 @@ const CommunityPage = () => {
         {isLoggedIn && (
             <Link
                 to="/community/create"
-                className="lg:hidden fixed bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:opacity-90 transition-all z-10"
+                className="lg:hidden fixed bottom-6 right-6 w-14 h-14 text-white rounded-full flex items-center justify-center text-2xl hover:opacity-90 transition-all z-10"
                 style={{ backgroundColor: '#8B4513' }}
             >
               ✍️
