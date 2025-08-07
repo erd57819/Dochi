@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useSTTProcessing } from '../hooks/useSTTProcessing';
+import { useSTTProcessing } from '../../hooks/useSTTProcessing';
 
 const STTChat = () => {
   const [fileInput, setFileInput] = useState(null);

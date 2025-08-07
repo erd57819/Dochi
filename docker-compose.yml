@@ -1,4 +1,3 @@
-
 services:
   # == MYSQL ==
   mysql:
@@ -17,6 +16,12 @@ services:
     networks:
       - dochi-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s
@@ -28,7 +33,7 @@ services:
     image: redis:7-alpine
     container_name: dochi-redis
     ports:
-      - "6381:6379"
+      - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -71,7 +76,7 @@ services:
           udp_port: 50000
           tcp_port: 7881
           use_external_ip: true
-    command: 
+    command:
       - --bind=0.0.0.0
       - --port=7880
     networks:
@@ -120,6 +125,12 @@ services:
       - openvidu-server
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 1G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -135,12 +146,18 @@ services:
     container_name: dochi-ai-service
     ports:
       - "8002:8002"
+    volumes:
+      - ./google-service-account.json:/app/google-service-account.json:ro
     environment:
       - GMS_KEY=${GMS_KEY}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/google-service-account.json
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
-    volumes:
-      - ./google-service-account.json:/app/google-service-account.json:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
     networks:
       - dochi-network
     restart: unless-stopped
@@ -189,6 +206,11 @@ services:
     deploy:
       restart_policy:
         condition: any
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s

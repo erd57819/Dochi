@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import VideoCallWithVoice from '../components/VideoCallWithVoice';
+import VideoCallWithVoice from '../components/videocall/VideoCallWithVoice';
 
 const VideoRoomPage = () => {
   const { roomId, roomCode } = useParams();
