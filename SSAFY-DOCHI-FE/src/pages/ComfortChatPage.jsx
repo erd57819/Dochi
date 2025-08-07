@@ -25,7 +25,6 @@ const ComfortChatPage = () => {
     showManhwa,
     timelineCache,
     manhwaCache,
-    createNewSession,
     createNewSessionWithTitle,
     loadSession,
     deleteSession,
@@ -41,26 +40,23 @@ const ComfortChatPage = () => {
   } = useComfortStore();
 
   useEffect(() => {
-    // 채팅방 목록 로드 (에러 발생 시 무시)
     loadChatRooms().catch(() => {
       console.log('채팅방 목록 로드 실패, 새 세션 생성으로 진행');
     });
   }, []);
 
   useEffect(() => {
-    // 세션이 없으면 ComfortPage로 리다이렉트
     const timer = setTimeout(() => {
       if (sessions.length === 0 && !currentSessionId) {
         console.log('세션이 없어 ComfortPage로 이동');
         navigate('/comfort');
       }
-    }, 2000); // 2초 정도 여유시간을 줘서 로딩 완료 대기
+    }, 2000);
     
     return () => clearTimeout(timer);
   }, [sessions, currentSessionId, navigate]);
 
   useEffect(() => {
-    // 페이지 떠날 때 세션 종료
     const handleBeforeUnload = () => {
       exitCurrentSession();
     };
@@ -95,7 +91,6 @@ const ComfortChatPage = () => {
   const handleDeleteSession = async (chatRoomId) => {
     const success = await deleteSession(chatRoomId);
     if (success) {
-      // 삭제 후 남은 세션이 없으면 ComfortPage로
       const { sessions } = useComfortStore.getState();
       if (sessions.length === 0) {
         navigate('/comfort');
@@ -119,24 +114,26 @@ const ComfortChatPage = () => {
     }
   };
 
-  // 버튼 클릭 시 캐시를 먼저 확인하는 핸들러
-  const handleTimelineButtonClick = () => {
-    const { currentChatRoomId, timelineCache } = useComfortStore.getState();
-    console.log('🎯 타임라인 버튼 클릭', { currentChatRoomId, hasCache: !!timelineCache[currentChatRoomId] });
-    
-    // 캐시가 있고, 내용이 비어있지 않은지 확인
-    if (timelineCache[currentChatRoomId] && timelineCache[currentChatRoomId].length > 0) {
-      console.log('✅ 타임라인 캐시 존재. 모달만 엽니다.');
-      setShowTimeline(true);
-    } else {
-      console.log('🆕 타임라인 캐시 없음. 최초 생성을 요청합니다.');
-      generateTimeline(); // 캐시 없으면 생성 함수 호출
+  const handleSaveAndExit = async () => {
+    try {
+      await exitCurrentSession();
+      navigate('/comfort');
+    } catch (error) {
+      console.error('Failed to save and exit:', error);
     }
   };
 
-  // 생성/새로고침 전용 함수 (forceRefresh 제거)
+  const handleTimelineButtonClick = () => {
+    const { currentChatRoomId, timelineCache } = useComfortStore.getState();
+    
+    if (timelineCache[currentChatRoomId] && timelineCache[currentChatRoomId].length > 0) {
+      setShowTimeline(true);
+    } else {
+      generateTimeline();
+    }
+  };
+
   const generateTimeline = async () => {
-    console.log('🔄 타임라인 생성/새로고침 요청');
     try {
       const { currentChatRoomId, currentSessionId, messages } = useComfortStore.getState();
 
@@ -159,7 +156,6 @@ const ComfortChatPage = () => {
         const timelineText = response.data.message;
         const timelineData = parseTimelineResponse(timelineText);
         useComfortStore.getState().setTimelineCache(currentChatRoomId, timelineData);
-        console.log('💾 타임라인 캐시 저장 완료');
       } catch (error) {
         console.error('❌ 타임라인 생성 API 오류:', error);
         const errorMessage = error.response?.data?.message || '타임라인 생성에 실패했습니다.';
@@ -179,19 +175,15 @@ const ComfortChatPage = () => {
 
   const handleManhwaButtonClick = () => {
     const { currentChatRoomId, manhwaCache } = useComfortStore.getState();
-    console.log('🎯 네컷만화 버튼 클릭', { currentChatRoomId, hasCache: !!manhwaCache[currentChatRoomId] });
     
     if (manhwaCache[currentChatRoomId] && manhwaCache[currentChatRoomId].length > 0) {
-      console.log('✅ 네컷만화 캐시 존재. 모달만 엽니다.');
       setShowManhwa(true);
     } else {
-      console.log('🆕 네컷만화 캐시 없음. 최초 생성을 요청합니다.');
-      generateManhwa(); // 캐시 없으면 생성 함수 호출
+      generateManhwa();
     }
   };
 
   const generateManhwa = async () => {
-    console.log('🔄 네컷만화 생성/새로고침 요청');
     try {
       const { currentChatRoomId, currentSessionId, messages } = useComfortStore.getState();
 
@@ -216,7 +208,6 @@ const ComfortChatPage = () => {
         if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('data:image'))) {
           const manhwaData = [{ type: 'image', url: imageUrl, title: '오늘의 네컷만화' }];
           useComfortStore.getState().setManhwaCache(currentChatRoomId, manhwaData);
-          console.log('💾 네컷만화 캐시 저장 완료');
         } else {
           throw new Error("유효하지 않은 이미지 URL입니다.");
         }
@@ -237,10 +228,7 @@ const ComfortChatPage = () => {
     }
   };
 
-  // AI 응답을 타임라인 데이터로 파싱하는 함수
   const parseTimelineResponse = (text) => {
-    // AI 응답을 타임라인 형태로 분석
-    // 예: "1. 발단: 문제 제기\n2. 전개: 감정 표현\n3. 절정: 위로와 공감"
     const lines = text.split('\n').filter(line => line.trim());
     const timeline = [];
     
@@ -262,9 +250,7 @@ const ComfortChatPage = () => {
     ];
   };
 
-  // 메시지 렌더링 (모드별 처리)
   const renderMessage = (message) => {
-    // COMIC 모드에서 이미지 URL인 경우 이미지로 표시
     if (message.mode === 'COMIC' && message.content.startsWith('http')) {
       return (
         <img 
@@ -283,71 +269,123 @@ const ComfortChatPage = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* 사이드바 토글 버튼 */}
-      <button
-        onClick={toggleSidebar}
-        className="fixed left-4 top-24 z-50 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-
       {/* 사이드바 */}
-      <div className={`fixed left-0 top-0 h-full bg-white shadow-lg transition-transform duration-300 z-40 ${ isSidebarOpen ? 'translate-x-0' : '-translate-x-full' }`} style={{ width: '280px' }}>
-        <div className="p-4 border-b">
+      <div className={`fixed left-0 top-0 h-full bg-orange-100 shadow-lg transition-all duration-300 z-40 ${
+        isSidebarOpen ? 'w-[280px]' : 'w-[60px]'
+      }`}>
+        {/* 사이드바 토글 버튼 */}
+        <div className="p-4 border-b border-orange-200">
           <button
-            onClick={() => setShowTitleModal(true)}
-            className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+            onClick={toggleSidebar}
+            className={`w-full flex items-center justify-center p-2 bg-orange-200 rounded-lg hover:bg-orange-300 transition-colors ${
+              !isSidebarOpen ? 'px-2' : 'px-4'
+            }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            새 대화 시작하기
+            {isSidebarOpen ? (
+              <>
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+                
+              </>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
           </button>
         </div>
         
-        <div className="overflow-y-auto" style={{ height: 'calc(100% - 88px)', paddingTop: '20px' }}>
-          {sessions.map((session) => (
-            <div
-              key={session.id}
-              className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${ currentChatRoomId === session.id ? 'bg-orange-50' : '' }`}
-              onClick={() => loadSession(session.id)}
+        {/* 새 대화 버튼 */}
+        {isSidebarOpen && (
+          <div className="p-4 border-b border-orange-200">
+            <button
+              onClick={() => setShowTitleModal(true)}
+              className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
             >
-              <div className="flex justify-between items-center">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-800 truncate mb-1">{session.title}</h3>
-                  <p className="text-sm text-gray-500">
-                    {new Date(session.createdAt).toLocaleString('ko-KR')}
-                  </p>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              새 대화 시작하기
+            </button>
+          </div>
+        )}
+        
+        {/* 세션 목록 */}
+        <div className="overflow-y-auto" style={{ height: isSidebarOpen ? 'calc(100% - 176px)' : 'calc(100% - 88px)' }}>
+          {isSidebarOpen ? (
+            sessions.map((session) => (
+              <div
+                key={session.id}
+                className={`p-4 border-b border-orange-200 cursor-pointer hover:bg-orange-200 transition-colors ${
+                  currentChatRoomId === session.id ? 'bg-orange-200' : ''
+                }`}
+                onClick={() => loadSession(session.id)}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-800 truncate mb-1">{session.title}</h3>
+                    <p className="text-sm text-gray-600">
+                      {new Date(session.createdAt).toLocaleDateString('ko-KR')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSession(session.id);
+                    }}
+                    className="p-2 text-gray-400 hover:text-red-500 transition-colors ml-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteSession(session.id);
-                  }}
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors ml-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            sessions.slice(0, 5).map((session, index) => (
+              <div
+                key={session.id}
+                className={`p-3 border-b border-orange-200 cursor-pointer hover:bg-orange-200 transition-colors flex items-center justify-center ${
+                  currentChatRoomId === session.id ? 'bg-orange-200' : ''
+                }`}
+                onClick={() => loadSession(session.id)}
+                title={session.title}
+              >
+                <div className="w-8 h-8 bg-orange-300 rounded-full flex items-center justify-center text-lg font-bold text-white">
+                  {index + 1}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
       {/* 메인 채팅 영역 */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${ isSidebarOpen ? 'ml-[280px]' : 'ml-0' }`}>
-        {/* 헤더 */}
-        <div className="bg-white border-b px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-800">토닥토닥 서비스</h2>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        isSidebarOpen ? 'ml-[280px]' : 'ml-[60px]'
+      }`}>
+        {/* 채팅 도구바 - navbar 제거하고 사진 부분도 제거 */}
+        <div className="bg-orange-50 border-b border-orange-200 px-6 py-4 flex justify-between items-center">
+          {/* 드롭다운 (왼쪽으로 이동) */}
+          <select
+            value={selectedMode}
+            onChange={(e) => setSelectedMode(e.target.value)}
+            className="px-3 py-2 border border-orange-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+          >
+            <option value="NORMAL">입장정리</option>
+            <option value="COMFORT_ONLY">내편들기</option>
+          </select>
+          
           <div className="flex items-center gap-4">
+            {/* 네컷만화 버튼 */}
             <button
               onClick={handleManhwaButtonClick}
               disabled={isLoading}
-              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm flex items-center gap-2 ${ isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600' }`}
+              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm flex items-center gap-2 ${
+                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+              }`}
             >
               {isLoading ? (
                 <>
@@ -363,10 +401,14 @@ const ComfortChatPage = () => {
                 </>
               )}
             </button>
+
+            {/* 타임라인 버튼 */}
             <button
               onClick={handleTimelineButtonClick}
               disabled={isLoading}
-              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm flex items-center gap-2 ${ isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600' }`}
+              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm flex items-center gap-2 ${
+                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
+              }`}
             >
               {isLoading ? (
                 <>
@@ -382,20 +424,22 @@ const ComfortChatPage = () => {
                 </>
               )}
             </button>
-            <select
-              value={selectedMode}
-              onChange={(e) => setSelectedMode(e.target.value)}
-              className="px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+
+            {/* 저장 후 종료 버튼 */}
+            <button
+              onClick={handleSaveAndExit}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm flex items-center gap-2"
             >
-              <option value="NORMAL">입장정리</option>
-              <option value="COMFORT_ONLY">내편들기</option>
-            </select>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              저장 후 종료
+            </button>
           </div>
         </div>
 
         {/* 메시지 영역 */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* 에러 메시지 */}
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
           {error && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
@@ -426,9 +470,10 @@ const ComfortChatPage = () => {
                     </span>
                   </div>
                 )}
-                <div className={`px-4 py-2 rounded-lg ${ message.sender === 'user' 
-                  ? 'bg-orange-500 text-white' 
-                  : 'bg-gray-100 text-gray-800'
+                <div className={`px-4 py-2 rounded-lg ${
+                  message.sender === 'user' 
+                    ? 'bg-orange-500 text-white' 
+                    : 'bg-white text-gray-800 shadow-sm border'
                 }`}>
                   {renderMessage(message)}
                   {message.mode === 'COMIC' && message.content.startsWith('http') && (
@@ -443,9 +488,10 @@ const ComfortChatPage = () => {
               </div>
             </div>
           ))}
+          
           {isLoading && (
             <div className="flex justify-start mb-4">
-              <div className="bg-gray-100 rounded-lg px-4 py-2">
+              <div className="bg-white rounded-lg px-4 py-2 shadow-sm border">
                 <div className="flex items-center space-x-2">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -472,7 +518,7 @@ const ComfortChatPage = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="마음을 편하게 이야기해주세요..."
+              placeholder="갈등 상황을 자세히 이야기해주세요..."
               className="flex-1 px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
               rows="1"
               disabled={isLoading}
@@ -493,7 +539,7 @@ const ComfortChatPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">대화 타임라인</h3>
+              <h3 className="text-xl font-semibold">갈등 타임라인</h3>
               <div className="flex gap-2">
                 <button 
                   onClick={generateTimeline}
@@ -547,7 +593,6 @@ const ComfortChatPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {(manhwaCache[currentChatRoomId] || []).map((panel, index) => {
-                // 이미지 타입인 경우
                 if (panel.type === 'image') {
                   return (
                     <div key={index} className="col-span-2">
@@ -567,7 +612,6 @@ const ComfortChatPage = () => {
                     </div>
                   );
                 }
-                // 기존 이모지 타입
                 return (
                   <div key={index} className={`${panel.bg} p-4 rounded-lg aspect-square flex items-center justify-center`}>
                     <div className="text-center">
@@ -587,7 +631,6 @@ const ComfortChatPage = () => {
         </div>
       )}
       
-      {/* 제목 입력 모달 */}
       <ChatTitleModal
         isOpen={showTitleModal}
         onClose={() => setShowTitleModal(false)}
