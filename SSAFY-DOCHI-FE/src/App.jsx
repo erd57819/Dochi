@@ -69,7 +69,7 @@ const App = () => {
             <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/expert-matching" element={<ExpertMatchingPage />} />
-
+            <Route path="/game" element={<GamePage />} />
           </Routes>
         </main>
       </div>
