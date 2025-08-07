@@ -99,11 +99,8 @@ const VideoCallRoom = () => {
         const data = await response.json();
         accessToken = data.accessToken;
       } else {
-        const response = await apiClient.post('/video/token', {
-          room: roomName,
-          identity: identity
-        });
-        accessToken = response.data.accessToken;
+        const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
+        accessToken = response.data.data.token;
       }
 
       const newRoom = new Room({
