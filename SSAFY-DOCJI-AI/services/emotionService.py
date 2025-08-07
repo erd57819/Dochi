@@ -1,52 +1,138 @@
-from typing import Dict, List
+from google.cloud import language_v1
+from google.oauth2 import service_account
+import os
 
 class EmotionService:
     def __init__(self):
-        self.emotionKeywords = {
-            "angry": ["화나", "짜증", "열받", "빡쳐", "싫어", "미워", "화가", "분노"],
-            "sad": ["슬프", "우울", "힘들", "속상", "아프", "눈물", "슬퍼", "절망"],
-            "happy": ["기뻐", "좋아", "행복", "즐거", "신나", "웃음", "기분좋", "만족"],
-            "anxious": ["걱정", "불안", "두려", "무서", "긴장", "떨려", "조심"],
-            "frustrated": ["답답", "막막", "곤란", "어렵", "복잡", "헷갈", "골치"],
-            "positive": ["감사", "고마워", "훌륭", "멋져", "완벽", "최고", "잘했", "대단"]
-        }
-    
-    def analyzeEmotion(self, text: str) -> Dict:
-        """텍스트에서 감정을 분석합니다."""
-        textLower = text.lower().replace(" ", "")
-        emotionScores = {}
-        detectedKeywords = []
+        """Google Cloud Natural Language API 클라이언트를 초기화합니다."""
+        try:
+            # 프로젝트 루트의 google-service-account.json 파일 사용
+            key_path = '/app/google-service-account.json'
+            if os.path.exists(key_path):
+                credentials = service_account.Credentials.from_service_account_file(key_path)
+                self.client = language_v1.LanguageServiceClient(credentials=credentials)
+                print("Google Cloud API 인증 성공: 서비스 계정 키 파일 사용")
+            else:
+                # 환경 변수를 사용하는 방법 (fallback)
+                self.client = language_v1.LanguageServiceClient()
+                print("Google Cloud API 인증: 환경 변수 사용")
+        except Exception as e:
+            print(f"Google Cloud API 인증 실패: {e}")
+            self.client = None
+    def analyze_conversation_emotion(self, conversation: list[dict]) -> dict:
+        """
+        대화 내용(conversation)을 바탕으로 마지막 발언의 감정을 분석합니다.
         
-        for emotion, keywords in self.emotionKeywords.items():
-            score = 0
-            emotionKeywordsFound = []
-            
-            for keyword in keywords:
-                if keyword in textLower:
-                    score += 1
-                    emotionKeywordsFound.append(keyword)
-            
-            if score > 0:
-                emotionScores[emotion] = score
-                detectedKeywords.extend(emotionKeywordsFound)
+        Args:
+            conversation (list[dict]): [{"speaker": "화자1", "text": "안녕하세요."}, ...] 형식의 대화 기록
         
-        if not emotionScores:
+        Returns:
+            dict: 마지막 발언에 대한 감정 분석 결과
+        """
+        if not conversation:
+            return {"error": "Conversation is empty."}
+
+        # 1. 분석할 대상(마지막 발언)과 이전 대화(문맥) 분리
+        latest_utterance = conversation[-1]
+        context_conversation = conversation[:-1]
+
+        # 2. 이전 대화를 하나의 문자열로 요약하여 문맥 생성
+        #    - 간단하게 화자와 텍스트를 나열합니다.
+        context_text = " ".join([f"{conv['speaker']}: {conv['text']}" for conv in context_conversation])
+        
+        # 3. Google NLP API에 전달할 최종 텍스트 생성
+        #    - F-string을 사용하여 이전 대화와 현재 발언을 명확히 구분해 전달합니다.
+        #    - 이렇게 하면 API가 문맥을 더 잘 이해할 수 있습니다.
+        full_text_for_analysis = f"""
+        [이전 대화 내용]
+        {context_text}
+        
+        [분석할 현재 발언]
+        {latest_utterance['speaker']}: "{latest_utterance['text']}"
+        """
+
+        document = language_v1.Document(
+            content=full_text_for_analysis,
+            type_=language_v1.Document.Type.PLAIN_TEXT,
+            language='ko'
+        )
+
+        try:
+            # 클라이언트가 초기화되지 않은 경우
+            if self.client is None:
+                return {
+                    "speaker": latest_utterance['speaker'],
+                    "text": latest_utterance['text'],
+                    "emotion": "neutral",
+                    "score": 0.0,
+                    "magnitude": 0.0,
+                    "message": "Google Cloud API 클라이언트가 초기화되지 않았습니다."
+                }
+            
+            # 4. API를 호출하여 감정 분석 수행
+            response = self.client.analyze_sentiment(document=document)
+            sentiment = response.document_sentiment
+
+            if sentiment.score > 0.25:
+                emotion = "happy"
+            elif sentiment.score < -0.25:
+                emotion = "sad"
+            else:
+                emotion = "neutral"
+            
+            # 5. 분석 결과에 화자 정보 포함하여 반환
             return {
-                "emotion": "neutral",
-                "confidence": 0.5,
-                "intensity": 0.3,
-                "detectedKeywords": []
+                "speaker": latest_utterance['speaker'],
+                "text": latest_utterance['text'],
+                "emotion": emotion,
+                "score": round(sentiment.score, 3),
+                "magnitude": round(sentiment.magnitude, 3)
             }
-        
-        # 가장 높은 점수의 감정 선택
-        dominantEmotion = max(emotionScores, key=emotionScores.get)
-        maxScore = emotionScores[dominantEmotion]
-        confidence = min(0.95, 0.6 + (maxScore * 0.15))
-        intensity = min(1.0, maxScore * 0.25 + 0.3)
-        
-        return {
-            "emotion": dominantEmotion,
-            "confidence": confidence,
-            "intensity": intensity,
-            "detectedKeywords": detectedKeywords[:3]
-        }
+
+        except Exception as e:
+            print(f"Google NLP API 호출 중 오류 발생: {e}")
+            return {"speaker": latest_utterance.get('speaker', 'unknown'), "emotion": "error", "message": str(e)}
+    
+
+    def analyzeEmotion(self, text: str) -> dict:
+        """Google Natural Language API를 사용하여 텍스트에서 감정을 분석합니다."""
+        if not text:
+            return { "emotion": "neutral", "score": 0.0, "magnitude": 0.0 }
+
+        document = language_v1.Document(
+            content=text, 
+            type_=language_v1.Document.Type.PLAIN_TEXT,
+            language='ko'  # 한국어 분석을 위해 언어 코드 설정
+        )
+
+        try:
+            # 클라이언트가 초기화되지 않은 경우
+            if self.client is None:
+                return {
+                    "emotion": "neutral",
+                    "score": 0.0,
+                    "magnitude": 0.0,
+                    "message": "Google Cloud API 클라이언트가 초기화되지 않았습니다."
+                }
+            
+            # API를 호출하여 감정 분석 수행
+            response = self.client.analyze_sentiment(document=document)
+            sentiment = response.document_sentiment
+
+            # 감정 점수(score)를 기반으로 감정 상태 결정
+            if sentiment.score > 0.25:
+                emotion = "happy"
+            elif sentiment.score < -0.25:
+                emotion = "sad" # 또는 "angry", API는 긍정/부정만 알려주므로 세부 감정은 로직 추가 필요
+            else:
+                emotion = "neutral"
+
+            return {
+                "emotion": emotion,
+                "score": round(sentiment.score, 3),          # 긍정/부정 점수 (-1.0 ~ 1.0)
+                "magnitude": round(sentiment.magnitude, 3)   # 감정의 강도 (0 ~ 무한대)
+            }
+
+        except Exception as e:
+            print(f"Google NLP API 호출 중 오류 발생: {e}")
+            return { "emotion": "error", "message": str(e) }

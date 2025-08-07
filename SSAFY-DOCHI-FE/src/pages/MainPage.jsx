@@ -19,7 +19,7 @@ import todak from "@/assets/todak.png";
 export const MainPage = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
-  const [animatedSections, setAnimatedSections] = useState(new Set());
+  const [animatedSections, setAnimatedSections] = useState(new Set()); // 초기는 비워둔 상태
   const containerRef = useRef(null);
 
   // 애니메이션 CSS
@@ -253,47 +253,94 @@ export const MainPage = () => {
         newSection = 4;
       }
       
-      setCurrentSection(newSection);
-      
-      // 새로운 섹션에 진입했을 때 애니메이션 트리거
-      if (!animatedSections.has(newSection)) {
-        setAnimatedSections(prev => new Set([...prev, newSection]));
+      // 현재 섹션과 다른 섹션이면 상태 업데이트 및 애니메이션 처리
+      if (currentSection !== newSection) {
+        setCurrentSection(newSection);
         
-        // 애니메이션 완료 후 커서 제거
-        if (newSection === 0) {
-          setTimeout(() => {
-            const typewriterEl = document.querySelector('.typewriter.animate');
-            const shakeEl = document.querySelector('.shake-text.animate');
-            if (typewriterEl) typewriterEl.classList.add('finished');
-            if (shakeEl) shakeEl.classList.add('finished');
-          }, 3500); // 타이핑 + shake 완료 후
+        // 모든 섹션의 애니메이션 클래스 제거
+        // 섹션 0
+        const typewriterEl = document.querySelector('.typewriter');
+        const shakeEl = document.querySelector('.shake-text');
+        if (typewriterEl) {
+          typewriterEl.classList.remove('animate', 'finished');
+        }
+        if (shakeEl) {
+          shakeEl.classList.remove('animate', 'finished');
         }
         
-        if (newSection === 1) {
-          setTimeout(() => {
-            const line1El = document.querySelector('.typewriter-line1.animate');
-            const line2El = document.querySelector('.typewriter-line2.animate');
-            if (line1El) line1El.classList.add('finished');
-          }, 4000); // 첫 번째 줄 완료 후
+        // 섹션 1
+        const line1El = document.querySelector('.typewriter-line1');
+        const line2El = document.querySelector('.typewriter-line2');
+        const pulseEl = document.querySelector('.pulse-text');
+        if (line1El) line1El.classList.remove('animate', 'finished');
+        if (line2El) line2El.classList.remove('animate', 'finished');
+        if (pulseEl) pulseEl.classList.remove('animate');
+        
+        // 섹션 2
+        const fadeElements = document.querySelectorAll('#section-2 .fade-in-element, #section-2 .fade-in-title, #section-2 .fade-in-image, #section-2 .fade-in-button, #section-2 .fade-in-link');
+        fadeElements.forEach(el => el.classList.remove('animate'));
+        
+        // 짧은 딘레이 후 새로운 섹션의 애니메이션 시작
+        setTimeout(() => {
+          if (newSection === 0) {
+            const typewriterEl = document.querySelector('.typewriter');
+            const shakeEl = document.querySelector('.shake-text');
+            if (typewriterEl) typewriterEl.classList.add('animate');
+            if (shakeEl) shakeEl.classList.add('animate');
+            
+            // 애니메이션 완료 후 커서 제거
+            setTimeout(() => {
+              if (typewriterEl) typewriterEl.classList.add('finished');
+              if (shakeEl) shakeEl.classList.add('finished');
+            }, 3500);
+          }
           
-          setTimeout(() => {
-            const line2El = document.querySelector('.typewriter-line2.animate');
-            if (line2El) line2El.classList.add('finished');
-          }, 6600); // 두 번째 줄 완료 후
-        }
-        
-        if (newSection === 2) {
-          // Section 2의 모든 fade-in 요소들에 animate 클래스 추가
-          setTimeout(() => {
+          if (newSection === 1) {
+            const line1El = document.querySelector('.typewriter-line1');
+            const line2El = document.querySelector('.typewriter-line2');
+            const pulseEl = document.querySelector('.pulse-text');
+            if (line1El) line1El.classList.add('animate');
+            if (line2El) line2El.classList.add('animate');
+            if (pulseEl) pulseEl.classList.add('animate');
+            
+            setTimeout(() => {
+              if (line1El) line1El.classList.add('finished');
+            }, 4000);
+            
+            setTimeout(() => {
+              if (line2El) line2El.classList.add('finished');
+            }, 6600);
+          }
+          
+          if (newSection === 2) {
             const fadeElements = document.querySelectorAll('#section-2 .fade-in-element, #section-2 .fade-in-title, #section-2 .fade-in-image, #section-2 .fade-in-button, #section-2 .fade-in-link');
             fadeElements.forEach(el => el.classList.add('animate'));
-          }, 100);
-        }
+          }
+        }, 100); // DOM 렌더링 완료 대기
+        
+        // animatedSections 상태를 현재 섹션만 포함하도록 업데이트
+        setAnimatedSections(new Set([newSection]));
       }
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('scroll', handleScroll);
+    
+    // 초기 로드 시 첫 번째 섹션 애니메이션 시작
+    setTimeout(() => {
+      const typewriterEl = document.querySelector('.typewriter');
+      const shakeEl = document.querySelector('.shake-text');
+      if (typewriterEl) typewriterEl.classList.add('animate');
+      if (shakeEl) shakeEl.classList.add('animate');
+      
+      setTimeout(() => {
+        if (typewriterEl) typewriterEl.classList.add('finished');
+        if (shakeEl) shakeEl.classList.add('finished');
+      }, 3500);
+      
+      setAnimatedSections(new Set([0]));
+    }, 100);
+    
     handleScroll();
     
     return () => {
@@ -301,7 +348,7 @@ export const MainPage = () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
     };
-  }, []);
+  }, [currentSection]);
 
   const scrollToSection = (sectionIndex) => {
     const targetY = sectionIndex * window.innerHeight;
@@ -336,21 +383,21 @@ export const MainPage = () => {
         ))}
       </div>
       
-      <div className="bg-white w-full max-w-[1296px] mx-auto relative pt-20">
+      <div className="bg-white w-full mx-auto relative pt-24">
         
         {/* Section 0: 좁혀지지 않는 갈등 */}
-        <section id="section-0" className="relative w-full h-screen bg-white" style={{scrollSnapAlign: 'start'}}>
-          <div className="relative w-full h-[990px] px-14">
-            <div className="absolute top-[135px] right-[86px]">
+        <section id="section-0" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+          <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
+            <div className="absolute top-12 sm:top-16 lg:top-20 right-8 sm:right-16 lg:right-32">
               <div className="text-right">
-                <div className={`font-['Pretendard-SemiBold'] font-semibold text-black text-[104px] lg:text-[120px] leading-tight typewriter ${animatedSections.has(0) ? 'animate' : ''}`}>
+                <div className="font-['Pretendard-SemiBold'] font-semibold text-black text-9xl leading-tight typewriter">
                   좁혀지지 않는 갈등
                 </div>
               </div>
             </div>
-            <div className="absolute bottom-[200px] right-[86px]">
+            <div className="absolute bottom-1/3 right-8 sm:right-16 lg:right-32">
               <div className="text-right">
-                <div className={`font-['Pretendard-SemiBold'] font-semibold text-[58px] lg:text-[86px] leading-tight shake-text ${animatedSections.has(0) ? 'animate' : ''}`}>
+                <div className="font-['Pretendard-SemiBold'] font-semibold text-8xl leading-tight shake-text">
                   <span className="text-black">참견도치가 </span>
                   <br />
                   <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견</span>
@@ -359,7 +406,7 @@ export const MainPage = () => {
               </div>
             </div>
             <img
-              className="absolute w-[360px] h-[450px] top-[350px] left-[86px] object-cover"
+              className="absolute w-56 h-68 sm:w-68 sm:h-80 lg:w-80 lg:h-92 xl:w-88 xl:h-104 top-1/2 left-8 sm:left-16 lg:left-32 transform -translate-y-1/2 object-cover"
               alt="Image"
               src={image9}
             />
@@ -367,27 +414,27 @@ export const MainPage = () => {
         </section>
 
         {/* Section 1: 고민이 있다면? */}
-        <section id="section-1" className="relative w-full h-screen bg-white" style={{scrollSnapAlign: 'start'}}>
-          <div className="relative w-full h-[990px] px-14">
-            <header className={`absolute top-[135px] left-[86px] text-black text-[104px] w-[942px] font-['Pretendard-SemiBold'] font-semibold leading-normal pulse-text ${animatedSections.has(1) ? 'animate' : ''}`}>
+        <section id="section-1" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+          <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
+            <header className="absolute top-4 sm:top-8 lg:top-12 left-8 sm:left-16 lg:left-32 text-black text-9xl max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight pulse-text">
               고민이 있다면?
             </header>
-            <main className="absolute w-full h-[540px] top-[315px] left-[86px] right-[86px]">
+            <main className="absolute w-full top-1/2 left-8 sm:left-16 lg:left-32 right-8 sm:right-16 lg:right-32 transform -translate-y-2/5">
               {/* 첫 번째 줄 */}
-              <div className={`absolute top-[180px] left-0 text-[86px] w-[942px] font-['Pretendard-SemiBold'] font-semibold leading-normal typewriter-line1 ${animatedSections.has(1) ? 'animate' : ''}`}>
+              <div className="relative text-8xl max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line1">
                 <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">비밀보장</span>
                 <span className="text-black">되는</span>
               </div>
               
               {/* 두 번째 줄 */}
-              <div className={`absolute top-[280px] left-0 text-[86px] w-[942px] font-['Pretendard-SemiBold'] font-semibold leading-normal typewriter-line2 ${animatedSections.has(1) ? 'animate' : ''}`}>
+              <div className="relative mt-4 sm:mt-6 lg:mt-8 text-8xl max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line2">
                 <span className="text-[#030303]">참견도치</span>
                 <span className="text-black">가 들어줄게요</span>
               </div>
               
               <img
-                className="absolute w-[470px] h-[470px] top-0 right-[86px] object-cover"
-                alt="참견도치 캐릭터 이미지"
+                className="absolute w-72 h-72 sm:w-88 sm:h-88 lg:w-104 lg:h-104 xl:w-[32rem] xl:h-[32rem] -top-28 sm:-top-36 lg:-top-44 right-0 sm:right-8 lg:right-20 object-cover"
+                alt="참곬도치 캐릭터 이미지"
                 src={image10}
               />
             </main>
@@ -395,43 +442,43 @@ export const MainPage = () => {
         </section>
 
         {/* Section 2: 나만의 고민해결 플랫폼 */}
-        <section id="section-2" className="relative w-full h-screen bg-white" style={{scrollSnapAlign: 'start'}}>
-          <div className="relative w-full h-[990px] px-14">
+        <section id="section-2" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+          <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
             {/* Main Title */}
-            <div className="absolute top-[135px] left-[86px] fade-in-title">
-              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-[86px] leading-normal">
+            <div className="absolute top-20 sm:top-24 lg:top-28 left-8 sm:left-16 lg:left-32 fade-in-title max-w-4xl">
+              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-9xl leading-tight whitespace-nowrap">
                 나만의{" "}
                 <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
                   고민해결
                 </span>{" "}
                 플랫폼,
               </div>
-              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-[104px] leading-normal">
+              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-8xl leading-tight mt-2">
                 참견도치 🦔
               </div>
             </div>
 
             {/* Main Hedgehog Image */}
             <img
-              className="absolute w-[440px] h-[440px] top-[370px] right-[40px] object-cover fade-in-image"
+              className="absolute w-72 h-72 sm:w-88 sm:h-88 lg:w-104 lg:h-104 xl:w-[30rem] xl:h-[30rem] top-1/2 right-4 sm:right-8 lg:right-12 transform -translate-y-1/2 object-cover fade-in-image"
               alt="Main Hedgehog"
               src={image65}
             />
 
             {/* CTA Buttons */}
-            <div className="absolute top-[675px] left-[86px] fade-in-button">
+            <div className="absolute bottom-1/3 left-8 sm:left-16 lg:left-32 fade-in-button">
               <div 
-                className="w-[266px] h-[72px] bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
+                className="w-52 sm:w-60 lg:w-68 xl:w-76 h-16 sm:h-18 lg:h-20 bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
                 onClick={() => navigate('/service')}
               >
-                <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-[23px] leading-normal">
+                <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-sm sm:text-base lg:text-lg xl:text-xl">
                   참견도치 사용해보기
                 </div>
               </div>
             </div>
             
             <div 
-              className="absolute top-[693px] left-[430px] font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-[23px] leading-normal underline cursor-pointer hover:text-[#bf7d2c] transition-colors fade-in-link"
+              className="absolute bottom-1/3 left-72 sm:left-88 lg:left-108 xl:left-124 mt-4 font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-sm sm:text-base lg:text-lg xl:text-xl underline cursor-pointer hover:text-[#bf7d2c] transition-colors fade-in-link"
               onClick={() => scrollToSection(3)}
             >
               더 둘러보기 →
@@ -440,93 +487,101 @@ export const MainPage = () => {
         </section>
 
         {/* Service Cards Section */}
-        <section id="section-3" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
-          <div className="absolute w-full h-[83px] top-[122px] left-0 right-0 font-['Pretendard-SemiBold'] font-semibold text-[86px] leading-5 tracking-[0] whitespace-nowrap text-center"
-          >
-            <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
-            <span className="text-[#333333]"> 서비스 이용해보기</span>
-          </div>
-          {/* Community Card */}
-          <div 
-            className="absolute w-[581px] h-[201px] top-[280px] left-[47px] cursor-pointer"
-            onClick={() => navigate('/community')}
-          >
-            <div className="w-[581px] h-[184px] bg-[#f8d6b3] rounded-[18px] relative  transition-all duration-300 hover:-translate-y-1">
-              <img
-                className="absolute w-[16px] h-[34px] top-[69px] right-[65px]"
-                alt="Vector"
-                src={vector}
-              />
-              
-              <div className="absolute w-[408px] top-[112px] left-[39px] font-['Pretendard-Regular'] font-normal text-[#3d2b1f] text-[22px] leading-normal">
-                비슷한 고민을 가진 사람들과 이야기해보세요
-              </div>
-              
-              <div className="absolute top-[39px] left-[39px] font-['Pretendard-Bold'] font-bold text-[#3d2b1f] text-[34px] leading-normal whitespace-nowrap">
-                참견도치 커뮤니티
-              </div>
+        <section id="section-3" className="relative w-full h-screen bg-white flex items-start justify-center pt-12" style={{scrollSnapAlign: 'start'}}>
+          <div className="w-full px-4 sm:px-8 lg:px-20">
+            <div className="text-center mb-16 sm:mb-20 lg:mb-24">
+              <h2 className="font-['Pretendard-SemiBold'] font-semibold text-4xl sm:text-6xl lg:text-7xl xl:text-8xl leading-tight">
+                <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
+                <span className="text-[#333333]"> 서비스 이용해보기</span>
+              </h2>
             </div>
-          </div>
+            {/* Cards Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-6xl mx-auto">
+              {/* Left Column */}
+              <div className="space-y-6 lg:space-y-8">
+                {/* Community Card */}
+                <div 
+                  className="bg-[#f8d6b3] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative"
+                  onClick={() => navigate('/community')}
+                >
+                  <img
+                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
+                    alt="Vector"
+                    src={vector}
+                  />
+                  
+                  <div className="font-['Pretendard-Bold'] font-bold text-[#3d2b1f] text-xl sm:text-2xl lg:text-3xl mb-4">
+                    참견도치 커뮤니티
+                  </div>
+                  
+                  <div className="font-['Pretendard-Regular'] font-normal text-[#3d2b1f] text-base sm:text-lg lg:text-xl pr-8">
+                    비슷한 고민을 가진 사람들과 이야기해보세요
+                  </div>
+                </div>
 
-          {/* Conflict Resolution Card */}
-          <div 
-            className="absolute w-[581px] h-[331px] top-[494px] left-[47px] bg-[#83673f] rounded-[18px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
-            onClick={() => navigate('/conflicts/create')}
-          >
-            <img
-              className="absolute w-[16px] h-[34px] top-[94px] right-[65px]"
-              alt="Vector"
-              src={vector2}
-            />
-            
-            <div className="absolute w-[401px] top-[111px] left-[39px] font-['Pretendard-Regular'] font-normal text-white text-[22px] leading-[32px]">
-              화상 대화 속 감정과 대화을 읽고, AI 갈등 도우미참견도치가 갈등 중재를 도와줘요
-            </div>
-            
-            <div className="absolute top-[44px] left-[39px] font-['Pretendard-Bold'] font-bold text-white text-[34px] leading-normal whitespace-nowrap">
-              참견도치와 갈등 해결하기
-            </div>
-          </div>
-
-          {/* Comfort Service Card */}
-          <div 
-            className="absolute w-[581px] h-[331px] top-[280px] right-[46px] bg-[#7f5539] rounded-[18px] cursor-pointer transition-all duration-300 hover:-translate-y-1"
-            onClick={() => navigate('/comfort')}
-          >
-            <img
-              className="absolute w-[17px] h-[34px] top-[88px] right-[63px]"
-              alt="Vector"
-              src={vector2}
-            />
-            
-            <div className="absolute w-[403px] top-[112px] left-[41px] font-['Pretendard-Regular'] font-normal text-white text-[22px] leading-normal">
-              참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
-            </div>
-            
-            <div className="absolute top-[41px] left-[41px] font-['Pretendard-Bold'] font-bold text-white text-[34px] leading-normal whitespace-nowrap">
-              토닥토닥 서비스
-            </div>
-          </div>
-
-          {/* My Page Card */}
-          <div 
-            className="absolute w-[581px] h-[193px] top-[636px] right-[46px] cursor-pointer"
-            onClick={() => navigate('/mypage')}
-          >
-            <div className="w-[581px] h-[184px] bg-[#cd9f6e] rounded-[18px] relative transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute w-[455px] top-[104px] left-[39px] font-['Pretendard-Regular'] font-normal text-[#4E2B1A] text-[22px] leading-normal">
-                나의 대화·중재 기록을 확인하고 관리해요
+                {/* Conflict Resolution Card */}
+                <div 
+                  className="bg-[#83673f] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative min-h-[200px] sm:min-h-[240px]"
+                  onClick={() => navigate('/conflicts/create')}
+                >
+                  <img
+                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
+                    alt="Vector"
+                    src={vector2}
+                  />
+                  
+                  <div className="font-['Pretendard-Bold'] font-bold text-white text-xl sm:text-2xl lg:text-3xl mb-4">
+                    참견도치와 갈등 해결하기
+                  </div>
+                  
+                  <div className="font-['Pretendard-Regular'] font-normal text-white text-base sm:text-lg lg:text-xl leading-relaxed pr-8">
+                    화상 대화 속 감정과 대화를 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
+                  </div>
+                </div>
               </div>
-              
-              <div className="absolute top-[43px] left-[41px] font-['Pretendard-Bold'] font-bold text-[#4E2B1A] text-[34px] leading-normal whitespace-nowrap">
-                마이페이지
+
+              {/* Right Column */}
+              <div className="space-y-6 lg:space-y-8">
+                {/* Comfort Service Card */}
+                <div 
+                  className="bg-[#7f5539] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative min-h-[200px] sm:min-h-[240px]"
+                  onClick={() => navigate('/comfort')}
+                >
+                  <img
+                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
+                    alt="Vector"
+                    src={vector2}
+                  />
+                  
+                  <div className="font-['Pretendard-Bold'] font-bold text-white text-xl sm:text-2xl lg:text-3xl mb-4">
+                    토닥토닥 서비스
+                  </div>
+                  
+                  <div className="font-['Pretendard-Regular'] font-normal text-white text-base sm:text-lg lg:text-xl leading-relaxed pr-8">
+                    참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
+                  </div>
+                </div>
+
+                {/* My Page Card */}
+                <div 
+                  className="bg-[#cd9f6e] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative"
+                  onClick={() => navigate('/mypage')}
+                >
+                  <img
+                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
+                    alt="Vector"
+                    src={vector3}
+                  />
+                  
+                  <div className="font-['Pretendard-Bold'] font-bold text-[#4E2B1A] text-xl sm:text-2xl lg:text-3xl mb-4">
+                    마이페이지
+                  </div>
+                  
+                  <div className="font-['Pretendard-Regular'] font-normal text-[#4E2B1A] text-base sm:text-lg lg:text-xl pr-8">
+                    나의 대화·중재 기록을 확인하고 관리해요
+                  </div>
+                </div>
               </div>
-              
-              <img
-                className="absolute w-[16px] h-[33px] top-[71px] right-[62px]"
-                alt="Vector"
-                src={vector3}
-              />
             </div>
           </div>
         </section>
@@ -535,7 +590,7 @@ export const MainPage = () => {
         
         {/* Detailed Services Section with Footer - Full Width */}
         <div className="relative w-full" style={{background: 'linear-gradient(to top, #f0f4ff 0%, #ffffff 100%)'}}>
-        <section id="section-4" className="relative w-full pt-[180px] left-0" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
+        <section id="section-4" className="relative w-full pt-[0px] left-0" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
           <div className="w-full max-w-[1296px] mx-auto relative">
           
           <img
@@ -545,14 +600,14 @@ export const MainPage = () => {
           />
 
           <img
-            className="absolute w-[95px] h-[122px] top-[340px] left-[432px] object-cover cursor-pointer group z-10"
+            className="absolute w-[95px] h-[122px] top-[240px] left-[432px] object-cover cursor-pointer group z-10"
             onClick={() => navigate('/comfort')}
             alt="Image"
             src={todak}
           />
 
           <div 
-            className="absolute top-[327px] left-[109px] cursor-pointer group z-10"
+            className="absolute top-[227px] left-[109px] cursor-pointer group z-10"
             onClick={() => navigate('/comfort')}
           >
             <div className="w-[289px] h-[27px] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[38px] leading-5 tracking-[0] group-hover:text-[#FFAF53] transition-colors">
@@ -563,7 +618,7 @@ export const MainPage = () => {
             </div>
           </div>
 
-          <div className="absolute w-[810px] h-[83px] top-[122px] left-[243px]  font-['Pretendard-SemiBold'] font-semibold text-[86px] leading-5 tracking-[0] z-10"
+          <div className="absolute w-[810px] h-[83px] top-[20px] left-[243px]  font-['Pretendard-SemiBold'] font-semibold text-[86px] leading-5 tracking-[0] z-10"
           >
             <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
             <span className="text-[#333333]">의 서비스</span>

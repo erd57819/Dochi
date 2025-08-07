@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import hedgehogImg from '../assets/conflict.png';
 
 const RoadmapPage = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [conflictAnalysis, setConflictAnalysis] = useState(null);
+  
+  // 분석 결과 로드
+  useEffect(() => {
+    const analysisData = sessionStorage.getItem('conflictAnalysisData');
+    if (analysisData) {
+      try {
+        setConflictAnalysis(JSON.parse(analysisData));
+      } catch (error) {
+        console.error('분석 데이터 파싱 에러:', error);
+      }
+    }
+  }, []);
 
   const steps = [
     {
@@ -47,6 +60,7 @@ const RoadmapPage = () => {
   const handleGoBack = () => {
     navigate(-1);
   };
+
 
   const handleStepClick = (stepId) => {
     setCurrentStep(stepId);
@@ -176,6 +190,32 @@ const RoadmapPage = () => {
 
               {/* 단계별 가이드 내용 */}
               <div className="space-y-6">
+                {/* AI 분석 결과 기반 맞춤 가이드 */}
+                {conflictAnalysis && (
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-50 border-l-4 border-blue-400 pl-6 py-4 rounded-r-lg mb-6">
+                    <h4 className="text-lg font-bold mb-3 text-blue-800">
+                      🤖 당신의 갈등 분석 결과 기반 가이드
+                    </h4>
+                    <div className="text-sm text-blue-700 leading-relaxed">
+                      {currentStep === 1 && conflictAnalysis.conflictAnalysis && (
+                        <p><strong>갈등 인식:</strong> {conflictAnalysis.conflictAnalysis.substring(0, 200)}...</p>
+                      )}
+                      {currentStep === 2 && conflictAnalysis.emotionAnalysis && (
+                        <p><strong>감정 정리:</strong> {conflictAnalysis.emotionAnalysis.substring(0, 200)}...</p>
+                      )}
+                      {currentStep === 3 && conflictAnalysis.myPosition && (
+                        <p><strong>대화 준비:</strong> {conflictAnalysis.myPosition.substring(0, 200)}...</p>
+                      )}
+                      {currentStep === 4 && conflictAnalysis.partnerPosition && (
+                        <p><strong>대화 실행:</strong> {conflictAnalysis.partnerPosition.substring(0, 200)}...</p>
+                      )}
+                      {currentStep === 5 && conflictAnalysis.priorityRecommendation && (
+                        <p><strong>관계 회복:</strong> {conflictAnalysis.priorityRecommendation}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="border-l-4 pl-6" style={{ borderColor: currentStepData.color }}>
                   <h4 className="text-xl font-bold mb-3" style={{ color: '#333333' }}>
                     이 단계에서 해야 할 일
@@ -249,6 +289,7 @@ const RoadmapPage = () => {
             </div>
           </div>
         </div>
+
 
         {/* 하단 액션 버튼 */}
         <div className="text-center mt-12">

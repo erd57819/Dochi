@@ -9,6 +9,7 @@ import com.ssafy.dochi.conflict.dto.request.ConflictSummaryReqDto;
 import com.ssafy.dochi.conflict.dto.response.AiAnalysisResDto;
 import com.ssafy.dochi.conflict.dto.response.ConflictResDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -42,11 +44,25 @@ public class ConflictService {
     }
     
     /**
-     * 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - 임시 분석만 (저장 안함)
+     * 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - Redis에 결과 저장
      */
     public Map<String, Object> analyzeConflictAdvanced(String tempConflictId) {
+        // Redis에서 기존 분석 결과 조회 (캐싱)
+        Map<String, Object> cachedResult = conflictRedisService.getAnalysisResult(tempConflictId);
+        if (cachedResult != null) {
+            log.info("Redis에서 캐시된 분석 결과 반환: {}", tempConflictId);
+            return cachedResult;
+        }
+        
+        // 캐시된 결과가 없으면 새로 분석
         ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
-        return aiSummaryService.generateAdvancedAnalysis(conflictData.getDescription(), conflictData.getConflictType());
+        Map<String, Object> analysisResult = aiSummaryService.generateAdvancedAnalysis(
+            conflictData.getDescription(), conflictData.getConflictType());
+        
+        // 분석 결과를 Redis에 저장
+        conflictRedisService.saveAnalysisResult(tempConflictId, analysisResult);
+        
+        return analysisResult;
     }
     
     /**
@@ -89,6 +105,8 @@ public class ConflictService {
         
         // Redis에서 임시 데이터 삭제
         conflictRedisService.deleteTempConflict(tempConflictId);
+        // 분석 결과도 삭제
+        conflictRedisService.deleteAnalysisResult(tempConflictId);
         
         return ConflictResDto.from(conflict);
     }
@@ -122,6 +140,8 @@ public class ConflictService {
         
         // Redis에서 임시 데이터 삭제
         conflictRedisService.deleteTempConflict(tempConflictId);
+        // 분석 결과도 삭제
+        conflictRedisService.deleteAnalysisResult(tempConflictId);
         
         return ConflictResDto.from(conflict);
     }
@@ -193,6 +213,20 @@ public class ConflictService {
     @Transactional(readOnly = true)
     public int getUserConflictCount(Long userId) {
         return conflictDao.countByUserId(userId);
+    }
+    
+    /**
+     * Redis에서 저장된 고급 분석 결과 조회 (다른 서비스 이용 후 복귀 시 사용)
+     */
+    public Map<String, Object> getCachedAnalysisResult(String tempConflictId) {
+        Map<String, Object> analysisResult = conflictRedisService.getAnalysisResult(tempConflictId);
+        if (analysisResult != null) {
+            log.info("Redis에서 캐시된 분석 결과 조회 성공: {}", tempConflictId);
+            return analysisResult;
+        } else {
+            log.info("Redis에 저장된 분석 결과가 없음: {}", tempConflictId);
+            return null;
+        }
     }
     
     // 갈등의 AI 분석 결과 조회
