@@ -82,6 +82,12 @@ livekit:
     key: ${LIVEKIT_API_KEY}
     secret: ${LIVEKIT_API_SECRET}
 
+# GMS AI 설정
+gms:
+  api:
+    url: https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions
+    key: ${GMS_KEY}
+
 
 # 로깅 설정 (운영 환경)
 logging:
