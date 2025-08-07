@@ -196,11 +196,10 @@ const ConflictAnalysisResultPage = () => {
       console.log('- myPosition 비어있음?', isEmptyOrError(myPosition));
       console.log('- partnerPosition 비어있음?', isEmptyOrError(partnerPosition));
       
-      // 비어있는 값이 있으면 폴백 사용
-      if (isEmptyOrError(emotionAnalysis) || isEmptyOrError(conflictAnalysis) || 
-          isEmptyOrError(myPosition) || isEmptyOrError(partnerPosition)) {
-        console.log('백엔드에서 빈 값 수신 - 폴백 분석 사용');
-        throw new Error('백엔드 AI 분석 결과가 비어있음');
+      // 핵심 분석(emotion, conflict)만 체크하고, position은 선택적으로 처리
+      if (isEmptyOrError(emotionAnalysis) || isEmptyOrError(conflictAnalysis)) {
+        console.log('백엔드에서 핵심 분석 데이터 수신 실패 - 폴백 분석 사용');
+        throw new Error('백엔드 AI 핵심 분석 결과가 비어있음');
       }
 
       // 5) JSON.parse 처리 (필요한 경우만)
@@ -223,8 +222,8 @@ const ConflictAnalysisResultPage = () => {
         aiSolutions:              basicAi.solutions,
         emotionAnalysis:          emotionAnalysis,
         conflictAnalysis:         conflictAnalysis,
-        myPosition:               myPosition,
-        partnerPosition:          partnerPosition,
+        myPosition:               myPosition || '내 입장을 AI가 분석해서 정리해드립니다.',
+        partnerPosition:          partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.',
         relationshipHealthScore:  relationshipHealthScore,
         communicationScore:       communicationScore,
         trustScore:               trustScore,
