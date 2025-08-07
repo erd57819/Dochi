@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api.js';
+import useAuthStore from '../stores/AuthStore.js';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ const SignupPage = () => {
     message: ''
   });
   const navigate = useNavigate();
+  const { logIn } = useAuthStore();
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -138,8 +140,60 @@ const SignupPage = () => {
       });
 
       if (response.ok) {
-        alert('회원가입이 완료되었습니다.');
-        navigate('/login');
+        // 회원가입 성공 후 자동 로그인 처리
+        try {
+          const loginResponse = await fetch(`${API_BASE_URL}/user/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: formData.userId,
+              password: formData.password
+            }),
+          });
+
+          if (loginResponse.ok) {
+            const loginResult = await loginResponse.json();
+            const loginData = loginResult.data || loginResult.response?.response || loginResult.response || loginResult;
+            const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId } = loginData;
+            
+            // JWT 토큰에서 memberId 추출
+            let memberId = null;
+            try {
+              const payload = JSON.parse(atob(accessToken.split('.')[1]));
+              memberId = payload.memberId;
+            } catch (error) {
+              console.error('JWT 토큰 파싱 실패:', error);
+            }
+
+            // JWT 토큰을 localStorage에 저장
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
+            
+            // 유저 정보와 토큰을 스토어에 저장
+            logIn({ 
+              id: memberId,
+              userId: userId, 
+              name: name,
+              nickname: nickname,
+              email: email,
+              profileImage: profileImage,
+              isSocial: isSocial
+            }, accessToken);
+            
+            alert('회원가입이 완료되었습니다. 자동 로그인되었습니다.');
+            navigate('/');
+          } else {
+            // 자동 로그인 실패시 로그인 페이지로
+            alert('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');
+            navigate('/login');
+          }
+        } catch (loginError) {
+          console.error('자동 로그인 실패:', loginError);
+          alert('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');
+          navigate('/login');
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || '회원가입에 실패했습니다.');
