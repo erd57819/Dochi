@@ -736,8 +736,11 @@ const VideoCallRoom = () => {
     // 테스트를 위해 조건 제거: AI 중재가 켜져있으면 모든 발언에 대해 감정분석 실행
     // 원래 조건: aiMediationEnabled && shouldMediate (갈등상황에서만 실행)
     if (aiMediationEnabled) {
+      console.log('🤖 AI 중재가 활성화됨 - 감정분석 요청 시작');
       try {
         const aiSuggestion = await requestAiMediation(text, speaker);
+        console.log('🤖 AI 중재 응답 받음:', aiSuggestion ? '성공' : '실패');
+        
         if (aiSuggestion) {
           setConversations(prev =>
               prev.map(conv =>
@@ -747,10 +750,15 @@ const VideoCallRoom = () => {
               )
           );
           setLastMediationTime(Date.now());
+          console.log('🤖 AI 중재 메시지가 대화에 추가됨');
+        } else {
+          console.warn('🤖 AI 중재 응답이 비어있음');
         }
       } catch (error) {
-        console.error('AI 중재 요청 실패:', error);
+        console.error('🤖 AI 중재 요청 실패:', error);
       }
+    } else {
+      console.log('🤖 AI 중재가 비활성화됨 - 감정분석 건너뜀');
     }
 
     // 음성 인식 완료 후 현재 음성 초기화
@@ -905,7 +913,7 @@ const VideoCallRoom = () => {
       // 2. AI 서버 전용 axios 클라이언트 생성 (기존 방식 유지)
       const aiClient = axios.create({
         baseURL: '/ai',
-        timeout: 10000,
+        timeout: 15000, // 타임아웃을 15초로 증가
         headers: {
           'Content-Type': 'application/json',
         },
@@ -915,6 +923,7 @@ const VideoCallRoom = () => {
         conversation: conversationForApi
       };
       console.log('📤 API 요청 페이로드:', requestPayload);
+      console.log('📤 요청 URL:', '/ai/speech/emotion/contextual');
 
       const response = await aiClient.post('/speech/emotion/contextual', requestPayload);
       
@@ -1013,21 +1022,27 @@ const VideoCallRoom = () => {
         }
       });
       
-      // 구체적인 에러 메시지 제공
+      // 구체적인 에러 메시지 제공 및 기본 AI 응답 제공
+      let errorMessage = '';
       if (error.response) {
         // 서버가 응답했지만 에러 상태
         const status = error.response.status;
         console.error(`🔴 서버 응답 에러 (${status}):`, error.response.data);
-        return `🤖 AI 서버 오류 (${status}): 잠시 후 다시 시도해주세요.`;
+        errorMessage = `AI 감정분석 서비스 오류 (${status})`;
       } else if (error.request) {
         // 요청은 보냈지만 응답을 받지 못함
         console.error('🔴 네트워크 요청 실패:', error.request);
-        return "🤖 네트워크 연결 문제가 발생했습니다. 인터넷 연결을 확인해주세요.";
+        errorMessage = "AI 감정분석 서버에 연결할 수 없습니다";
       } else {
         // 요청 설정 중 에러 발생
         console.error('🔴 요청 설정 에러:', error.message);
-        return "🤖 요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+        errorMessage = "AI 감정분석 요청 처리 중 오류 발생";
       }
+      
+      // 에러 발생 시에도 기본 AI 중재 메시지 제공
+      const fallbackMessage = `🤖 AI 중재 도우미\n현재 대화의 감정을 분석하고 있습니다. "${text}" 라고 하신 말씀을 바탕으로 보면, 대화를 통해 서로의 마음을 이해하는 것이 중요해 보입니다. 차분하게 대화를 이어가보세요.\n\n⚠️ ${errorMessage}`;
+      
+      return fallbackMessage;
     }
     return null;
   };
