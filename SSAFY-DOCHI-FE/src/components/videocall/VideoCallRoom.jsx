@@ -733,8 +733,9 @@ const VideoCallRoom = () => {
     // 갈등 감지 및 중재 타이밍 결정
     const shouldMediate = await analyzeConflictAndTiming(text, speaker);
 
-    // AI 중재가 활성화되어 있고 중재가 필요한 경우
-    if (aiMediationEnabled && shouldMediate) {
+    // 테스트를 위해 조건 제거: AI 중재가 켜져있으면 모든 발언에 대해 감정분석 실행
+    // 원래 조건: aiMediationEnabled && shouldMediate (갈등상황에서만 실행)
+    if (aiMediationEnabled) {
       try {
         const aiSuggestion = await requestAiMediation(text, speaker);
         if (aiSuggestion) {
