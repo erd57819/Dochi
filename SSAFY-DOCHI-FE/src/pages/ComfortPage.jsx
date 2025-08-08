@@ -1,108 +1,145 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../stores/AuthStore.js';
+import useAuthStore from '../stores/AuthStore';
+import useComfortStore from '../stores/ComfortStore';
+import ChatTitleModal from '../components/ChatTitleModal';
+import ChatRoomCard from '../components/ChatRoomCard';
+import todakImg from '../assets/todak.png';
+
+const PAGE_SIZE = 6;   // 카드 6개(3열·2행)씩 페이지네이션
 
 const ComfortPage = () => {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuthStore();
 
-  const handleStartChat = () => {
+  // 비로그인 시 접근 차단
+  useEffect(() => {
     if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.');
-      navigate('/login');
-      return;
+      navigate('/login', { replace: true });
     }
+  }, [isLoggedIn, navigate]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-lg text-gray-600">로그인 페이지로 이동 중...</div>
+      </div>
+    );
+  }
+
+  const [showTitleModal, setShowTitleModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const {
+    sessions,
+    loadChatRooms,
+    loadSession,
+    createNewSessionWithTitle,
+  } = useComfortStore();
+
+  /* ---------- 데이터 초기 로드 ---------- */
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadChatRooms().catch(() => console.warn('채팅방 목록 로드 실패'));
+    }
+  }, [isLoggedIn, loadChatRooms]);
+
+  /* ---------- 액션 핸들러 ---------- */
+  const openRoom = async (roomId) => {
+    await loadSession(roomId);
     navigate('/comfort/chat');
   };
 
+  const handleNewChat = () => {
+    setShowTitleModal(true);
+  };
 
+  const handleCreateWithTitle = async (title) => {
+    try {
+      await createNewSessionWithTitle(title);
+      navigate('/comfort/chat');
+    } finally {
+      setShowTitleModal(false);
+    }
+  };
+
+  /* ---------- 페이지네이션 ---------- */
+  const totalPages = Math.ceil(sessions.length / PAGE_SIZE) || 1;
+  const page = Math.min(currentPage, totalPages);
+  const startIdx = (page - 1) * PAGE_SIZE;
+  const pagedSessions = sessions.slice(startIdx, startIdx + PAGE_SIZE);
+
+  /* ---------- JSX ---------- */
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex flex-col items-center justify-center p-4">
-      {/* 메인 컨테이너 */}
-      <div className="max-w-4xl mx-auto text-center">
-        {/* 타이틀 섹션 */}
-        <div className="mb-12">
-          <h1 className="text-6xl font-bold text-orange-500 mb-4 animate-pulse">
-            토닥토닥
-          </h1>
-          <p className="text-2xl text-gray-600 mb-8">
-            당신의 마음을 어루만져 드릴게요
-          </p>
-        </div>
-
-        {/* 도치 캐릭터 이미지 섹션 */}
-        <div className="mb-12 relative">
-          <div className="w-64 h-64 mx-auto bg-orange-100 rounded-full flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <div className="text-8xl">🦔</div>
-            {/* 말풍선 효과 */}
-            <div className="absolute -top-8 -right-8 bg-white p-4 rounded-2xl shadow-md transform rotate-6">
-              <p className="text-sm font-medium text-gray-700">
-                오늘 하루는 어떠셨나요?
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 설명 섹션 */}
-        <div className="bg-white p-8 rounded-2xl shadow-lg mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-            이런 대화를 나눌 수 있어요
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="p-4 bg-orange-50 rounded-lg">
-              <div className="text-3xl mb-2">💭</div>
-              <h3 className="font-semibold text-lg mb-2">일상 대화</h3>
-              <p className="text-gray-600 text-sm">
-                하루의 크고 작은 이야기들을 편하게 나눠보세요
-              </p>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="text-3xl mb-2">🤗</div>
-              <h3 className="font-semibold text-lg mb-2">감정 공유</h3>
-              <p className="text-gray-600 text-sm">
-                기쁨도, 슬픔도 함께 나누며 위로받아요
-              </p>
-            </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="text-3xl mb-2">💪</div>
-              <h3 className="font-semibold text-lg mb-2">응원과 격려</h3>
-              <p className="text-gray-600 text-sm">
-                힘든 순간에도 당신 곁에서 응원할게요
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 시작 버튼 */}
-        <button
-          onClick={handleStartChat}
-          className="group relative px-12 py-6 bg-orange-500 text-white text-xl font-bold rounded-full shadow-lg hover:bg-orange-600 transform hover:scale-105 transition-all duration-300"
-        >
-          <span className="flex items-center gap-3">
-            대화 시작하기
-            <svg 
-              className="w-6 h-6 group-hover:translate-x-2 transition-transform" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M9 5l7 7-7 7" 
-              />
-            </svg>
-          </span>
-          <div className="absolute inset-0 bg-orange-400 rounded-full blur-lg opacity-0 group-hover:opacity-30 transition-opacity"></div>
-        </button>
-
-
-        {/* 안내 메시지 */}
-        <p className="mt-8 text-gray-500 text-sm">
-          * 대화 내용은 안전하게 보호되며, 언제든지 삭제할 수 있습니다
+    <div className="min-h-screen bg-white flex flex-col items-center py-12 px-4">
+      {/* 헤더 */}
+      <div className="flex flex-col items-center mb-12">
+        <img src={todakImg} alt="토닥토닥" className="w-24 h-24 mb-4"/>
+        <h1 className="text-3xl font-bold text-orange-500 mb-1">참견도치</h1>
+        <p className="text-sm text-gray-500">
+          최근 5개월 뒤의 대화방은 자동 삭제됩니다
         </p>
+        <p>이전 대화 목록</p>
       </div>
+
+      {/* 카드 그리드 */}
+      {sessions.length > 0 ? (
+        <>
+          <div className="w-full max-w-[1200px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 mb-10">
+            {pagedSessions.map((room) => (
+              <ChatRoomCard
+                key={room.id}
+                title={room.title}
+                date={room.createdAt}
+                onOpen={() => openRoom(room.id)}
+              />
+            ))}
+          </div>
+
+          {/* 페이지네이션 */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-4 mb-10">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 border rounded-lg disabled:opacity-40"
+              >
+                이전
+              </button>
+              <span className="text-sm">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-4 py-2 border rounded-lg disabled:opacity-40"
+              >
+                다음
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        /* 대화방이 하나도 없을 때 */
+        <div className="flex flex-col items-center gap-8 mb-20">
+          <p className="text-lg text-gray-600">당신의 이야기를 들려주세요.</p>
+        </div>
+      )}
+
+      {/* 새 대화 버튼 */}
+      <button
+        onClick={handleNewChat}
+        className="px-10 py-4 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-all shadow-lg"
+      >
+        새로운 대화 시작하기
+      </button>
+
+      {/* 제목 입력 모달 */}
+      <ChatTitleModal
+        isOpen={showTitleModal}
+        onClose={() => setShowTitleModal(false)}
+        onConfirm={handleCreateWithTitle}
+      />
     </div>
   );
 };

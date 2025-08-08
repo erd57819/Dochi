@@ -6,7 +6,7 @@ import useAuthStore from "../stores/AuthStore.js";
 
 const ProfileEditPage = () => {
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
+  const { logOut } = useAuthStore();
   const [formData, setFormData] = useState({
     nickname: "",
     address: ""
@@ -175,7 +175,7 @@ const ProfileEditPage = () => {
       await myPageApi.deleteUser();
       
       // 로컬스토리지에서 토큰 제거
-      logout();
+      logOut();
       
       // 로그인 페이지로 리다이렉트
       navigate('/', { replace: true });
