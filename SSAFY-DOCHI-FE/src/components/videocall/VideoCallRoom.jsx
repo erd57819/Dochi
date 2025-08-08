@@ -736,8 +736,11 @@ const VideoCallRoom = () => {
     // 테스트를 위해 조건 제거: AI 중재가 켜져있으면 모든 발언에 대해 감정분석 실행
     // 원래 조건: aiMediationEnabled && shouldMediate (갈등상황에서만 실행)
     if (aiMediationEnabled) {
+      console.log('🤖 AI 중재가 활성화됨 - 감정분석 요청 시작');
       try {
         const aiSuggestion = await requestAiMediation(text, speaker);
+        console.log('🤖 AI 중재 응답 받음:', aiSuggestion ? '성공' : '실패');
+        
         if (aiSuggestion) {
           setConversations(prev =>
               prev.map(conv =>
@@ -747,10 +750,15 @@ const VideoCallRoom = () => {
               )
           );
           setLastMediationTime(Date.now());
+          console.log('🤖 AI 중재 메시지가 대화에 추가됨');
+        } else {
+          console.warn('🤖 AI 중재 응답이 비어있음');
         }
       } catch (error) {
-        console.error('AI 중재 요청 실패:', error);
+        console.error('🤖 AI 중재 요청 실패:', error);
       }
+    } else {
+      console.log('🤖 AI 중재가 비활성화됨 - 감정분석 건너뜀');
     }
 
     // 음성 인식 완료 후 현재 음성 초기화
@@ -895,38 +903,146 @@ const VideoCallRoom = () => {
     const conversationForApi = [...conversationLogRef.current, { speaker, text }];
 
     try {
+      console.log('🤖 AI 감정분석 API 호출 시작');
+      console.log('📤 전송할 대화 데이터:', {
+        conversationLength: conversationForApi.length,
+        latestMessage: { speaker, text },
+        fullConversation: conversationForApi
+      });
+
       // 2. AI 서버 전용 axios 클라이언트 생성 (기존 방식 유지)
       const aiClient = axios.create({
         baseURL: '/ai',
-        timeout: 10000,
+        timeout: 15000, // 타임아웃을 15초로 증가
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      const response = await aiClient.post('/speech/emotion/contextual', {
+      const requestPayload = {
         conversation: conversationForApi
-      });
+      };
+      console.log('📤 API 요청 페이로드:', requestPayload);
+      console.log('📤 요청 URL:', '/ai/speech/emotion/contextual');
 
-      // 3. AI 서버 응답(감정 분석 결과)을 바탕으로 프론트에서 보여줄 제안 텍스트를 만듭니다.
-      if (response.data && response.data.emotion) {
-        const { emotion, score, magnitude } = response.data;
-        let suggestion = `(상대방은 현재 '${emotion}' 상태로 보여요. 감정 점수: ${score.toFixed(2)}, 강도: ${magnitude.toFixed(2)})`;
+      const response = await aiClient.post('/speech/emotion/contextual', requestPayload);
+      
+      console.log('📥 AI API 응답 상태:', response.status);
+      console.log('📥 AI API 응답 데이터:', response.data);
+      console.log('📥 응답 데이터 타입:', typeof response.data);
+      console.log('📥 응답 키들:', Object.keys(response.data || {}));
 
-        if (emotion === 'sad' && score < -0.25) {
-          suggestion += " 😢 따뜻한 말로 위로해보는 건 어떨까요?";
-        } else if (emotion === 'happy' && score > 0.25) {
-          suggestion += " 😊 좋은 분위기를 계속 이어가 보세요!";
-        } else if (emotion === 'neutral') {
-          suggestion += " 😐 차분한 대화를 이어가고 계시네요.";
+      // 3. Google NLP API 감정 분석 결과를 사용자에게 표시
+      if (response.data) {
+        console.log('🔍 응답 데이터 분석 중...');
+        const { score, magnitude, emotion, message } = response.data;
+        
+        console.log('📊 추출된 감정 데이터:', {
+          score: score,
+          magnitude: magnitude,
+          emotion: emotion,
+          message: message,
+          scoreType: typeof score,
+          magnitudeType: typeof magnitude
+        });
+        
+        // Google Cloud API 설정 문제가 있는 경우 처리
+        if (message && message.includes("Google Cloud API")) {
+          console.warn('⚠️ Google Cloud API 설정 문제:', message);
+          return `🤖 AI 중재 도우미\n감정 분석 서비스 설정 중입니다. 잠시 후 다시 시도해주세요.`;
         }
-
-        return suggestion; // 완성된 제안 텍스트를 반환
+        
+        if (typeof score !== 'undefined' && typeof magnitude !== 'undefined') {
+          console.log('✅ 감정 데이터 유효성 검사 통과');
+          
+          // Google NLP API 감정 점수 기준:
+          // score: -1.0 (매우 부정적) ~ 1.0 (매우 긍정적)
+          // magnitude: 0.0 (중립적) ~ +무한대 (감정 강도)
+          
+          let emotionState = '';
+          let emotionIcon = '';
+          let advice = '';
+          
+          // 감정 상태 판정
+          if (score >= 0.25) {
+            emotionState = 'positive';
+            emotionIcon = '😊';
+            if (magnitude > 0.75) {
+              advice = '매우 긍정적인 분위기입니다! 이 좋은 에너지를 계속 유지해보세요.';
+            } else {
+              advice = '좋은 분위기네요. 긍정적인 대화를 이어가고 계십니다.';
+            }
+          } else if (score <= -0.25) {
+            emotionState = 'negative';
+            emotionIcon = '😔';
+            if (magnitude > 0.75) {
+              advice = '상당히 부정적인 상황입니다. 차분하게 대화하며 서로의 입장을 이해해보세요.';
+            } else {
+              advice = '조금 부정적인 분위기입니다. 공감하며 대화해보세요.';
+            }
+          } else {
+            emotionState = 'neutral';
+            emotionIcon = '😐';
+            if (magnitude < 0.25) {
+              advice = '매우 차분하고 중립적인 대화를 하고 계시네요.';
+            } else {
+              advice = '차분한 대화를 이어가고 계시네요.';
+            }
+          }
+          
+          console.log('🎯 최종 감정 분석 결과:', {
+            emotionState,
+            emotionIcon,
+            advice,
+            rawScore: score,
+            rawMagnitude: magnitude
+          });
+          
+          const finalMessage = `🤖 AI 중재 도우미\n(상대방은 현재 '${emotionState}' 상태로 보여요. 감정 점수: ${score.toFixed(2)}, 강도: ${magnitude.toFixed(2)}) ${emotionIcon} ${advice}`;
+          console.log('💬 사용자에게 전달할 메시지:', finalMessage);
+          
+          return finalMessage;
+        } else {
+          console.warn('⚠️ 감정 데이터가 유효하지 않음:', { score, magnitude });
+        }
+      } else {
+        console.warn('⚠️ 응답 데이터가 없음:', response);
       }
     } catch (error) {
-      console.error('AI 감정 분석 서비스 오류:', error);
-      // 네트워크 오류나 AI 서버 오류 시 사용자에게 알림
-      return "🤖 AI 서비스 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.";
+      console.error('❌ AI 감정 분석 서비스 오류:', error);
+      console.error('❌ 에러 상세 정보:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          method: error.config?.method,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL
+        }
+      });
+      
+      // 구체적인 에러 메시지 제공 및 기본 AI 응답 제공
+      let errorMessage = '';
+      if (error.response) {
+        // 서버가 응답했지만 에러 상태
+        const status = error.response.status;
+        console.error(`🔴 서버 응답 에러 (${status}):`, error.response.data);
+        errorMessage = `AI 감정분석 서비스 오류 (${status})`;
+      } else if (error.request) {
+        // 요청은 보냈지만 응답을 받지 못함
+        console.error('🔴 네트워크 요청 실패:', error.request);
+        errorMessage = "AI 감정분석 서버에 연결할 수 없습니다";
+      } else {
+        // 요청 설정 중 에러 발생
+        console.error('🔴 요청 설정 에러:', error.message);
+        errorMessage = "AI 감정분석 요청 처리 중 오류 발생";
+      }
+      
+      // 에러 발생 시에도 기본 AI 중재 메시지 제공
+      const fallbackMessage = `🤖 AI 중재 도우미\n현재 대화의 감정을 분석하고 있습니다. "${text}" 라고 하신 말씀을 바탕으로 보면, 대화를 통해 서로의 마음을 이해하는 것이 중요해 보입니다. 차분하게 대화를 이어가보세요.\n\n⚠️ ${errorMessage}`;
+      
+      return fallbackMessage;
     }
     return null;
   };
