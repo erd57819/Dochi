@@ -895,6 +895,13 @@ const VideoCallRoom = () => {
     const conversationForApi = [...conversationLogRef.current, { speaker, text }];
 
     try {
+      console.log('🤖 AI 감정분석 API 호출 시작');
+      console.log('📤 전송할 대화 데이터:', {
+        conversationLength: conversationForApi.length,
+        latestMessage: { speaker, text },
+        fullConversation: conversationForApi
+      });
+
       // 2. AI 서버 전용 axios 클라이언트 생성 (기존 방식 유지)
       const aiClient = axios.create({
         baseURL: '/ai',
@@ -904,29 +911,115 @@ const VideoCallRoom = () => {
         },
       });
 
-      const response = await aiClient.post('/speech/emotion/contextual', {
+      const requestPayload = {
         conversation: conversationForApi
-      });
+      };
+      console.log('📤 API 요청 페이로드:', requestPayload);
 
-      // 3. AI 서버 응답(감정 분석 결과)을 바탕으로 프론트에서 보여줄 제안 텍스트를 만듭니다.
-      if (response.data && response.data.emotion) {
-        const { emotion, score, magnitude } = response.data;
-        let suggestion = `(상대방은 현재 '${emotion}' 상태로 보여요. 감정 점수: ${score.toFixed(2)}, 강도: ${magnitude.toFixed(2)})`;
+      const response = await aiClient.post('/speech/emotion/contextual', requestPayload);
+      
+      console.log('📥 AI API 응답 상태:', response.status);
+      console.log('📥 AI API 응답 데이터:', response.data);
+      console.log('📥 응답 데이터 타입:', typeof response.data);
+      console.log('📥 응답 키들:', Object.keys(response.data || {}));
 
-        if (emotion === 'sad' && score < -0.25) {
-          suggestion += " 😢 따뜻한 말로 위로해보는 건 어떨까요?";
-        } else if (emotion === 'happy' && score > 0.25) {
-          suggestion += " 😊 좋은 분위기를 계속 이어가 보세요!";
-        } else if (emotion === 'neutral') {
-          suggestion += " 😐 차분한 대화를 이어가고 계시네요.";
+      // 3. Google NLP API 감정 분석 결과를 사용자에게 표시
+      if (response.data) {
+        console.log('🔍 응답 데이터 분석 중...');
+        const { score, magnitude } = response.data;
+        
+        console.log('📊 추출된 감정 데이터:', {
+          score: score,
+          magnitude: magnitude,
+          scoreType: typeof score,
+          magnitudeType: typeof magnitude
+        });
+        
+        if (typeof score !== 'undefined' && typeof magnitude !== 'undefined') {
+          console.log('✅ 감정 데이터 유효성 검사 통과');
+          
+          // Google NLP API 감정 점수 기준:
+          // score: -1.0 (매우 부정적) ~ 1.0 (매우 긍정적)
+          // magnitude: 0.0 (중립적) ~ +무한대 (감정 강도)
+          
+          let emotionState = '';
+          let emotionIcon = '';
+          let advice = '';
+          
+          // 감정 상태 판정
+          if (score >= 0.25) {
+            emotionState = 'positive';
+            emotionIcon = '😊';
+            if (magnitude > 0.75) {
+              advice = '매우 긍정적인 분위기입니다! 이 좋은 에너지를 계속 유지해보세요.';
+            } else {
+              advice = '좋은 분위기네요. 긍정적인 대화를 이어가고 계십니다.';
+            }
+          } else if (score <= -0.25) {
+            emotionState = 'negative';
+            emotionIcon = '😔';
+            if (magnitude > 0.75) {
+              advice = '상당히 부정적인 상황입니다. 차분하게 대화하며 서로의 입장을 이해해보세요.';
+            } else {
+              advice = '조금 부정적인 분위기입니다. 공감하며 대화해보세요.';
+            }
+          } else {
+            emotionState = 'neutral';
+            emotionIcon = '😐';
+            if (magnitude < 0.25) {
+              advice = '매우 차분하고 중립적인 대화를 하고 계시네요.';
+            } else {
+              advice = '차분한 대화를 이어가고 계시네요.';
+            }
+          }
+          
+          console.log('🎯 최종 감정 분석 결과:', {
+            emotionState,
+            emotionIcon,
+            advice,
+            rawScore: score,
+            rawMagnitude: magnitude
+          });
+          
+          const finalMessage = `🤖 AI 중재 도우미\n(상대방은 현재 '${emotionState}' 상태로 보여요. 감정 점수: ${score.toFixed(2)}, 강도: ${magnitude.toFixed(2)}) ${emotionIcon} ${advice}`;
+          console.log('💬 사용자에게 전달할 메시지:', finalMessage);
+          
+          return finalMessage;
+        } else {
+          console.warn('⚠️ 감정 데이터가 유효하지 않음:', { score, magnitude });
         }
-
-        return suggestion; // 완성된 제안 텍스트를 반환
+      } else {
+        console.warn('⚠️ 응답 데이터가 없음:', response);
       }
     } catch (error) {
-      console.error('AI 감정 분석 서비스 오류:', error);
-      // 네트워크 오류나 AI 서버 오류 시 사용자에게 알림
-      return "🤖 AI 서비스 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.";
+      console.error('❌ AI 감정 분석 서비스 오류:', error);
+      console.error('❌ 에러 상세 정보:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          method: error.config?.method,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL
+        }
+      });
+      
+      // 구체적인 에러 메시지 제공
+      if (error.response) {
+        // 서버가 응답했지만 에러 상태
+        const status = error.response.status;
+        console.error(`🔴 서버 응답 에러 (${status}):`, error.response.data);
+        return `🤖 AI 서버 오류 (${status}): 잠시 후 다시 시도해주세요.`;
+      } else if (error.request) {
+        // 요청은 보냈지만 응답을 받지 못함
+        console.error('🔴 네트워크 요청 실패:', error.request);
+        return "🤖 네트워크 연결 문제가 발생했습니다. 인터넷 연결을 확인해주세요.";
+      } else {
+        // 요청 설정 중 에러 발생
+        console.error('🔴 요청 설정 에러:', error.message);
+        return "🤖 요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      }
     }
     return null;
   };
