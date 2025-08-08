@@ -12,6 +12,21 @@ const ComfortPage = () => {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuthStore();
 
+  // 비로그인 시 접근 차단
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-lg text-gray-600">로그인 페이지로 이동 중...</div>
+      </div>
+    );
+  }
+
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -36,11 +51,6 @@ const ComfortPage = () => {
   };
 
   const handleNewChat = () => {
-    if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.');
-      navigate('/login');
-      return;
-    }
     setShowTitleModal(true);
   };
 
@@ -64,7 +74,7 @@ const ComfortPage = () => {
     <div className="min-h-screen bg-white flex flex-col items-center py-12 px-4">
       {/* 헤더 */}
       <div className="flex flex-col items-center mb-12">
-        <img src={todakImg} alt="토닥토닥" className="w-24 h-24 mb-4" />
+        <img src={todakImg} alt="토닥토닥" className="w-24 h-24 mb-4"/>
         <h1 className="text-3xl font-bold text-orange-500 mb-1">참견도치</h1>
         <p className="text-sm text-gray-500">
           최근 5개월 뒤의 대화방은 자동 삭제됩니다
