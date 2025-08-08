@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     https_port: str
     http_port: str
     social_pw: str
-
+    google_application_credentials: str = ""
+    google_cloud_project: str = ""
     class Config:
         env_file = ".env"
 

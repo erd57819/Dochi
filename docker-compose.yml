@@ -140,8 +140,6 @@ services:
       - GMS_KEY=${GMS_KEY}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/google-service-account.json
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
-    volumes:
-      - ./google-service-account.json:/app/google-service-account.json:ro
     networks:
       - dochi-network
     restart: unless-stopped
@@ -196,6 +194,37 @@ services:
       timeout: 10s
       retries: 3
 
+  # == KAFKA & ZOOKEEPER ==
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: dochi-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - dochi-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: dochi-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: dochi-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://dochi-kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    networks:
+      - dochi-network
+    restart: unless-stopped
+
 # == VOLUMES ==
 volumes:
   mysql-data:
@@ -212,3 +241,4 @@ networks:
   dochi-network:
     name: dochi-network
     driver: bridge
+

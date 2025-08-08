@@ -27,11 +27,8 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(apiRouter.router)          # API 정보
-app.include_router(sttRouter.router)          # STT 처리
 app.include_router(speechRouter.router)       # 음성 분석
-app.include_router(voiceRouter.router)        # 음성 대화
 app.include_router(summary.router)            # AI 요약
-app.include_router(websocketRouter.router)    # WebSocket 실시간 통신
 
 @app.get("/")
 def readRoot():
