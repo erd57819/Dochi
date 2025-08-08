@@ -926,14 +926,22 @@ const VideoCallRoom = () => {
       // 3. Google NLP API 감정 분석 결과를 사용자에게 표시
       if (response.data) {
         console.log('🔍 응답 데이터 분석 중...');
-        const { score, magnitude } = response.data;
+        const { score, magnitude, emotion, message } = response.data;
         
         console.log('📊 추출된 감정 데이터:', {
           score: score,
           magnitude: magnitude,
+          emotion: emotion,
+          message: message,
           scoreType: typeof score,
           magnitudeType: typeof magnitude
         });
+        
+        // Google Cloud API 설정 문제가 있는 경우 처리
+        if (message && message.includes("Google Cloud API")) {
+          console.warn('⚠️ Google Cloud API 설정 문제:', message);
+          return `🤖 AI 중재 도우미\n감정 분석 서비스 설정 중입니다. 잠시 후 다시 시도해주세요.`;
+        }
         
         if (typeof score !== 'undefined' && typeof magnitude !== 'undefined') {
           console.log('✅ 감정 데이터 유효성 검사 통과');
