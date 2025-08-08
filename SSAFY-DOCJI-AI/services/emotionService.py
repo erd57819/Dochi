@@ -6,18 +6,32 @@ class EmotionService:
     def __init__(self):
         """Google Cloud Natural Language API 클라이언트를 초기화합니다."""
         try:
-            # 프로젝트 루트의 google-service-account.json 파일 사용
-            key_path = '/app/google-service-account.json'
-            if os.path.exists(key_path):
+            # 여러 가능한 경로에서 서비스 계정 키 파일 찾기
+            possible_paths = [
+                '/app/google-service-account.json',  # Docker 컨테이너 내부
+                './google-service-account.json',     # 현재 디렉토리
+                'google-service-account.json',       # 현재 디렉토리 (상대 경로)
+                os.path.join(os.path.dirname(__file__), '..', 'google-service-account.json')  # 프로젝트 루트
+            ]
+            
+            key_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    key_path = path
+                    break
+            
+            if key_path:
                 credentials = service_account.Credentials.from_service_account_file(key_path)
                 self.client = language_v1.LanguageServiceClient(credentials=credentials)
-                print("Google Cloud API 인증 성공: 서비스 계정 키 파일 사용")
+                print(f"Google Cloud API 인증 성공: 서비스 계정 키 파일 사용 ({key_path})")
             else:
                 # 환경 변수를 사용하는 방법 (fallback)
+                print("서비스 계정 키 파일을 찾을 수 없음, 환경 변수 사용 시도")
                 self.client = language_v1.LanguageServiceClient()
                 print("Google Cloud API 인증: 환경 변수 사용")
         except Exception as e:
             print(f"Google Cloud API 인증 실패: {e}")
+            print(f"시도한 경로들: {possible_paths}")
             self.client = None
     def analyze_conversation_emotion(self, conversation: list[dict]) -> dict:
         """
