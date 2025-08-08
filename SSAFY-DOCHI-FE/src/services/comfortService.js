@@ -1,10 +1,23 @@
 import axios from 'axios';
-// 다른 API들과 같은 패턴으로 수정 - /dochi 경로 사용
-import { API_BASE_URL } from '../config/api.js';
+
+// 환경에 따라 다른 방식 사용
+const getApiConfig = () => {
+  if (window.location.hostname === 'localhost') {
+    // 로컬: vite 프록시 사용 (/dochi)
+    return {
+      baseURL: '/dochi',
+    };
+  } else {
+    // 배포: nginx 프록시 사용 (/dochi)  
+    return {
+      baseURL: '/dochi',
+    };
+  }
+};
 
 // axios 인터셉터로 토큰 자동 추가
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  ...getApiConfig(),
 });
 
 apiClient.interceptors.request.use(
