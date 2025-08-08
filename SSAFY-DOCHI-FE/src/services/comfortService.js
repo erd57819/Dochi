@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// 환경에 따라 자동으로 API URL 설정
+const API_BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8080'  // 로컬 환경
+  : 'https://i13c209.p.ssafy.io';  // 배포 환경
 
 // axios 인터셉터로 토큰 자동 추가
 const apiClient = axios.create({
