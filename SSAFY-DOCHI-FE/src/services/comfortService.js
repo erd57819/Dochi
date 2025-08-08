@@ -1,10 +1,23 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// 환경에 따라 다른 방식 사용
+const getApiConfig = () => {
+  if (window.location.hostname === 'localhost') {
+    // 로컬: vite 프록시 사용 (/dochi)
+    return {
+      baseURL: '/dochi',
+    };
+  } else {
+    // 배포: nginx 프록시 사용 (/dochi)  
+    return {
+      baseURL: '/dochi',
+    };
+  }
+};
 
 // axios 인터셉터로 토큰 자동 추가
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  ...getApiConfig(),
 });
 
 apiClient.interceptors.request.use(

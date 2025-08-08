@@ -63,7 +63,8 @@ export const communityApi = {
             const likeStats = await likeApi.getPostLikeStats(post.id);
             return {
               ...post,
-              author: post.author || `사용자${post.userId}`,
+              author: post.authorNickname || post.author || `사용자${post.userId}`,
+              authorNickname: post.authorNickname,
               createdAt: formatDate(post.createdAt),
               tags: post.tags ? post.tags.split(',') : [], // 태그 문자열을 배열로 변환
               likeCount: likeStats.likeCount || 0,
@@ -74,7 +75,8 @@ export const communityApi = {
             console.warn(`게시글 ${post.id} 좋아요 통계 로드 실패:`, error);
             return {
               ...post,
-              author: post.author || `사용자${post.userId}`,
+              author: post.authorNickname || post.author || `사용자${post.userId}`,
+              authorNickname: post.authorNickname,
               createdAt: formatDate(post.createdAt),
               tags: post.tags ? post.tags.split(',') : [],
               likeCount: 0,
@@ -324,7 +326,8 @@ export const commentApi = {
             const likeStats = await likeApi.getCommentLikeStats(comment.id);
             return {
               ...comment,
-              author: comment.userName || `사용자${comment.userId}`,
+              author: comment.userNickname || comment.userName || `사용자${comment.userId}`,
+              authorNickname: comment.userNickname,
               createdAt: formatDate(comment.createdAt),
               likeCount: likeStats.likeCount || 0,
               dislikeCount: likeStats.dislikeCount || 0,
@@ -334,7 +337,8 @@ export const commentApi = {
             console.warn(`댓글 ${comment.id} 좋아요 통계 로드 실패:`, error);
             return {
               ...comment,
-              author: comment.userName || `사용자${comment.userId}`,
+              author: comment.userNickname || comment.userName || `사용자${comment.userId}`,
+              authorNickname: comment.userNickname,
               createdAt: formatDate(comment.createdAt),
               likeCount: 0,
               dislikeCount: 0,
@@ -431,7 +435,7 @@ export const likeApi = {
   },
 
   // 댓글 좋아요 토글
-  async toggleCommentLike(commentId, likeType) {
+  async toggleCommentLike(commentId, userId, likeType) {
     try {
       // ✅ 올바른 엔드포인트
       const response = await fetch(`${API_BASE_URL}/likes/comments`, {
@@ -439,7 +443,7 @@ export const likeApi = {
         headers: getAuthHeaders(),
         body: JSON.stringify({
           commentId: commentId,
-          userId: getCurrentUserId(),
+          userId: userId,
           likeType: likeType
         })
       });
