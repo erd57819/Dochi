@@ -18,11 +18,11 @@ const CommunityPage = () => {
   const { isLoggedIn, user } = useAuthStore();
 
   const categories = [
-    { value: 'ALL', label: '전체', color: '#83673f' },
-    { value: 'CONFLICT_SHARING', label: '찬반대결', color: '#cd9f6e' },
-    { value: 'ADVICE_REQUEST', label: '조언해줘', color: '#EE9278' },
-    { value: 'SUCCESS_STORIES', label: '해결했어요', color: '#f8d6b3' },
-    { value: 'GENERAL', label: '자유게시판', color: '#7F5539' }
+    { value: 'ALL', label: '전체', color: '#83673f', gradient: 'linear-gradient(135deg, #83673f 0%, #a58659 100%)' },
+    { value: 'CONFLICT_SHARING', label: '찬반대결', color: '#cd9f6e', gradient: 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)' },
+    { value: 'ADVICE_REQUEST', label: '조언해줘', color: '#EE9278', gradient: 'linear-gradient(135deg, #EE9278 0%, #f5a893 100%)' },
+    { value: 'SUCCESS_STORIES', label: '해결했어요', color: '#f8d6b3', gradient: 'linear-gradient(135deg, #f8d6b3 0%, #ffe4cc 100%)' },
+    { value: 'GENERAL', label: '자유게시판', color: '#7F5539', gradient: 'linear-gradient(135deg, #7F5539 0%, #a06d4d 100%)' }
   ];
 
   // 게시글 목록 조회
@@ -36,7 +36,12 @@ const CommunityPage = () => {
       setTotalPages(data.totalPages || 0);
       setCurrentPage(page);
 
-      console.log('게시글 목록 조회 성공:', data);
+      console.log('게시글 목록 조회 성공:', {
+        totalPages: data.totalPages,
+        currentPage: page,
+        totalElements: data.totalElements,
+        contentLength: data.content?.length
+      });
     } catch (error) {
       console.error('게시글 목록 조회 실패:', error);
       alert('게시글 목록을 불러오는데 실패했습니다.');
@@ -108,6 +113,16 @@ const CommunityPage = () => {
     fetchPosts(page, selectedCategory);
   };
 
+  // 작성자 닉네임 또는 이름 표시 함수
+  const getDisplayName = (post) => {
+    // 삭제된 사용자인 경우
+    if (!post.author && !post.authorNickname) {
+      return '탈퇴한 회원';
+    }
+    // 닉네임이 있으면 닉네임을, 없으면 이름을 표시
+    return post.authorNickname || post.author || '익명';
+  };
+
   if (loading) {
     return (
         <div className="min-h-screen relative">
@@ -125,8 +140,33 @@ const CommunityPage = () => {
 
           <div className="relative z-10 flex items-center justify-center min-h-screen">
             <div className="text-center">
-              <img src={hedgehogImg} alt="갈등도치" className="w-16 h-16 mx-auto mb-4 animate-bounce" />
-              <p className="text-xl" style={{ color: '#8B4513' }}>커뮤니티를 불러오는 중...</p>
+              <div className="relative w-16 h-16 mx-auto mb-4">
+                <img 
+                  src={hedgehogImg} 
+                  alt="갈등도치" 
+                  className="w-16 h-16 animate-spin"
+                  style={{
+                    filter: 'drop-shadow(0 0 20px rgba(139, 69, 19, 0.5))'
+                  }}
+                />
+                <div 
+                  className="absolute inset-0 rounded-full animate-ping"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(139, 69, 19, 0.2) 0%, transparent 70%)'
+                  }}
+                />
+              </div>
+              <p 
+                className="text-xl font-bold animate-pulse"
+                style={{ 
+                  background: 'linear-gradient(90deg, #8B4513 0%, #cd9f6e 50%, #8B4513 100%)',
+                  backgroundSize: '200% auto',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                커뮤니티를 불러오는 중...
+              </p>
             </div>
           </div>
         </div>
@@ -163,7 +203,7 @@ const CommunityPage = () => {
         <main className="max-w-6xl mx-auto px-4 py-12 relative z-10">
 
           {/* 상단 인사말 및 글쓰기 버튼 */}
-          <div className="flex flex-row items-center justify-between text-4xl font-bold mb-5 p-2" style={{ color: '#8B4513' }}>
+          <div className="flex flex-row items-center justify-between text-4xl font-bold mb-5 py-2 px-8" style={{ color: '#8B4513' }}>
             <div className="flex items-center gap-4">
               <div>
                 <h3 className="text-5xl font-bold" style={{ color: '#333333' }}>
@@ -180,10 +220,13 @@ const CommunityPage = () => {
               {isLoggedIn ? (
                   <Link
                       to="/community/create"
-                      className="w-32 h-12 block flex items-center justify-center py-4 text-white rounded hover:opacity-80 transition-all transform hover:bg-orange-50 font-medium text-lg"
-                      style={{ backgroundColor: '#8B4513' }}
+                      className="w-32 h-12 block flex items-center justify-center py-4 rounded hover:opacity-80 transition-all transform hover:bg-orange-50 font-medium text-lg"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
+                        boxShadow: '0 4px 15px rgba(139, 69, 19, 0.3)'
+                      }}
                   >
-                    글쓰기
+                    <span className='text-white'>글쓰기</span>
                   </Link>
               ) : (
                   <Link
@@ -208,21 +251,24 @@ const CommunityPage = () => {
                       selectedCategory === category.value ? 'ring-4' : ''
                     }`}
                     style={{
-                      backgroundColor: selectedCategory === category.value ? category.color : '#FFFFFF',
+                      background: selectedCategory === category.value ? category.gradient : '#FFFFFF',
                       color: selectedCategory === category.value ? '#FFFFFF' : '#333333',
                       '--ring-color': category.color,
-                      '--tw-ring-color': category.color
+                      '--tw-ring-color': category.color,
+                      boxShadow: selectedCategory === category.value ? '0 4px 15px rgba(0, 0, 0, 0.2)' : 'none',
+                      transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
                       if (selectedCategory !== category.value) {
-                        e.currentTarget.style.backgroundColor = category.color;
+                        e.currentTarget.style.background = category.gradient;
                         e.currentTarget.style.color = '#FFFFFF';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (selectedCategory !== category.value) {
-                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                        e.currentTarget.style.background = '#FFFFFF';
                         e.currentTarget.style.color = '#333333';
+                        e.currentTarget.style.boxShadow = 'none';
                       }
                     }}
                     onClick={() => handleCategoryChange(category.value)}
@@ -299,6 +345,7 @@ const CommunityPage = () => {
                       posts.map(post => {
                         // 게시글의 카테고리에 맞는 색상 찾기
                         const postCategoryData = categories.find(cat => cat.value === post.category) || selectedCategoryData;
+                        const displayName = getDisplayName(post);
                         
                         return (
                           <div
@@ -310,8 +357,11 @@ const CommunityPage = () => {
                             <div className="flex items-center justify-between gap-3 mb-4">
                               <div className="flex gap-3 items-center flex-1 min-w-0">
                                 <span
-                                  className="text-xs px-3 py-2 rounded-full font-medium text-white min-w-[80px] text-center"
-                                  style={{ backgroundColor: postCategoryData?.color || '#8B4513' }}
+                                  className="text-xs px-3 py-2 rounded-full font-medium text-white min-w-[80px] text-center shadow-md"
+                                  style={{ 
+                                    background: postCategoryData?.gradient || 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+                                  }}
                                 >
                                   {postCategoryData?.label || post.category}
                                 </span>
@@ -327,13 +377,27 @@ const CommunityPage = () => {
                                 <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
                                   <div
                                       className="w-6 h-6 rounded-full flex items-center justify-center"
-                                      style={{ backgroundColor: '#F8D6B3' }}
+                                      style={{ 
+                                        backgroundColor: displayName === '탈퇴한 회원' ? '#CCCCCC' : '#F8D6B3'
+                                      }}
                                   >
-                                    <span className="text-xs font-medium" style={{ color: '#8B4513' }}>
-                                      {(post.author || '익명').charAt(0)}
+                                    <span 
+                                      className="text-xs font-medium" 
+                                      style={{ 
+                                        color: displayName === '탈퇴한 회원' ? '#666666' : '#8B4513'
+                                      }}
+                                    >
+                                      {displayName.charAt(0)}
                                     </span>
                                   </div>
-                                  <span className="font-medium">{post.author || '익명'}</span>
+                                  <span 
+                                    className="font-medium"
+                                    style={{
+                                      color: displayName === '탈퇴한 회원' ? '#999999' : '#666666'
+                                    }}
+                                  >
+                                    {displayName}
+                                  </span>
                                   <span className="text-gray-400">•</span>
                                   <span>{post.createdAt}</span>
                                 </div>
@@ -354,7 +418,7 @@ const CommunityPage = () => {
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'LIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`w-30 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                                    className={`w-25 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-sm transition-all ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'LIKE'
@@ -379,7 +443,7 @@ const CommunityPage = () => {
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'DISLIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`w-20 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                                    className={`w-25 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-sm transition-all ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'DISLIKE'
@@ -410,15 +474,16 @@ const CommunityPage = () => {
                 </div>
 
                 {/* 페이지네이션 */}
-                {totalPages > 1 && (
-                    <div className="flex justify-between pt-8 px-6">
+                {totalPages > 0 && (
+                    <div className="flex justify-between pt-8 px-6 pb-6">
                       <button
                           onClick={() => currentPage > 0 && handlePageChange(currentPage - 1)}
                           disabled={currentPage === 0}
-                          className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                           style={{
-                            backgroundColor: currentPage === 0 ? '#E5E5E5' : '#696969',
-                            color: '#FFFFFF'
+                            background: currentPage === 0 ? '#E5E5E5' : 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
+                            color: '#FFFFFF',
+                            boxShadow: currentPage === 0 ? 'none' : '0 4px 10px rgba(105, 105, 105, 0.3)'
                           }}
                       >
                         이전 페이지
@@ -426,19 +491,22 @@ const CommunityPage = () => {
 
                       <div className="flex items-center gap-2">
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const pageNum = Math.max(0, Math.min(currentPage - 2, totalPages - 5)) + i;
+                          const startPage = Math.max(0, Math.min(currentPage - 2, totalPages - 5));
+                          const pageNum = startPage + i;
+                          if (pageNum >= totalPages) return null;
                           return (
                               <button
                                   key={pageNum}
                                   onClick={() => handlePageChange(pageNum)}
-                                  className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                                      currentPage === pageNum ? 'text-white ' : 'hover:opacity-70'
+                                  className={`w-10 h-10 rounded-lg font-medium transition-all transform hover:scale-125 ${
+                                      currentPage === pageNum ? 'text-white scale-110' : 'hover:opacity-80'
                                   }`}
                                   style={{
-                                    backgroundColor: currentPage === pageNum
-                                        ? (selectedCategoryData?.color || '#8B4513')
+                                    background: currentPage === pageNum
+                                        ? (selectedCategoryData?.gradient || 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)')
                                         : '#F0F0F0',
-                                    color: currentPage === pageNum ? '#FFFFFF' : '#666666'
+                                    color: currentPage === pageNum ? '#FFFFFF' : '#666666',
+                                    boxShadow: currentPage === pageNum ? '0 4px 10px rgba(0, 0, 0, 0.2)' : 'none'
                                   }}
                               >
                                 {pageNum + 1}
@@ -450,10 +518,11 @@ const CommunityPage = () => {
                       <button
                           onClick={() => currentPage < totalPages - 1 && handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages - 1}
-                          className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                           style={{
-                            backgroundColor: currentPage === totalPages - 1 ? '#E5E5E5' : (selectedCategoryData?.color || '#8B4513'),
-                            color: '#FFFFFF'
+                            background: currentPage === totalPages - 1 ? '#E5E5E5' : (selectedCategoryData?.gradient || 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)'),
+                            color: '#FFFFFF',
+                            boxShadow: currentPage === totalPages - 1 ? 'none' : '0 4px 10px rgba(0, 0, 0, 0.2)'
                           }}
                       >
                         다음 페이지

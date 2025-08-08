@@ -30,6 +30,16 @@ const PostDetailPage = () => {
     'ADVICE_REQUEST': { label: '조언요청', color: '#EE9278' }
   };
 
+  // 작성자 닉네임 또는 이름 표시 함수
+  const getDisplayName = (item) => {
+    // 삭제된 사용자인 경우
+    if (!item.author && !item.authorNickname) {
+      return '탈퇴한 회원';
+    }
+    // 닉네임이 있으면 닉네임을, 없으면 이름을 표시
+    return item.authorNickname || item.author || '익명';
+  };
+
   // 데이터 로드
   useEffect(() => {
     if (postId) {
@@ -58,15 +68,22 @@ const PostDetailPage = () => {
     }
   };
 
-  // 게시글 좋아요 처리
+  // 게시글 좋아요 처리 (수정됨)
   const handlePostLike = async (likeType) => {
     if (!isLoggedIn) {
       alert('로그인이 필요합니다.');
       return;
     }
 
+    console.log('=== 게시글 좋아요 디버깅 ===');
+    console.log('user 객체 전체:', user);
+    console.log('user.id:', user?.id);
+    console.log('postId:', postId);
+    console.log('likeType:', likeType);
+    console.log('====================');
+
     try {
-      const result = await likeApi.togglePostLike(postId, likeType);
+      const result = await likeApi.togglePostLike(postId, user.id, likeType);
       setPost(prev => ({
         ...prev,
         likeCount: result.likeCount,
@@ -112,15 +129,22 @@ const PostDetailPage = () => {
     }
   };
 
-  // 댓글 좋아요 처리
+  // 댓글 좋아요 처리 (수정됨)
   const handleCommentLike = async (commentId, likeType) => {
     if (!isLoggedIn) {
       alert('로그인이 필요합니다.');
       return;
     }
 
+    console.log('=== 댓글 좋아요 디버깅 ===');
+    console.log('user 객체 전체:', user);
+    console.log('user.id:', user?.id);
+    console.log('commentId:', commentId);
+    console.log('likeType:', likeType);
+    console.log('====================');
+
     try {
-      const result = await likeApi.toggleCommentLike(commentId, likeType);
+      const result = await likeApi.toggleCommentLike(commentId, user.id, likeType);
       
       setComments(prev => 
         prev.map(comment => 
@@ -199,6 +223,7 @@ const PostDetailPage = () => {
   }
 
   const categoryData = categories[post.category] || { label: '게시글', color: '#8B4513' };
+  const postDisplayName = getDisplayName(post);
 
   return (
     <div className="min-h-screen relative bg-gradient-to-br from-orange-50 via-white to-yellow-50">
@@ -222,17 +247,9 @@ const PostDetailPage = () => {
           <div className="flex items-center gap-3">
             <img src={hedgehogImg} alt="갈등도치" className="w-12 h-12 rounded-full" />
             <h3 className="text-3xl font-bold" style={{ color: '#8B4513' }}>게시글 상세보기</h3>
-            <button 
-              onClick={handleGoBack}
-              className="text-2xl mr-4 hover:opacity-70 transition-opacity"
-              style={{ border: '1px solid #e7c6afff' }}
-            >
-              ←
-          </button>
-          </div>
-          {/* 브레드크럼 */}
-          <div className="ml-auto">
-            <nav className="flex items-center gap-2 text-lg" style={{ color: '#666666' }}>
+            
+            {/* 브레드크럼 */}
+            <nav className="flex items-center gap-2 text-lg ml-5" style={{ color: '#666666' }}>
               <Link to="/" className="hover:opacity-70 transition-opacity" style={{ color: '#8B4513' }}>홈</Link>
               <span>›</span>
               <Link to="/community" className="hover:opacity-70 transition-opacity" style={{ color: '#8B4513' }}>커뮤니티</Link>
@@ -240,9 +257,24 @@ const PostDetailPage = () => {
               <span>{categoryData.label}</span>
             </nav>
           </div>
+
+          <div className="ml-auto">
+            {/* 돌아가기 버튼 */}
+            <div className="text-left">
+              <Link 
+                to="/community"
+                className="inline-flex items-center gap-3 px-8 py-4 text-white rounded-xl transition-all transform hover:-translate-y-1 hover:shadow-2xl font-bold text-lg mr-4 group"
+                style={{ 
+                  background: 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
+                  boxShadow: '0 4px 15px rgba(139, 69, 19, 0.3)'
+                }}
+              >
+                <span className="text-xl transition-transform group-hover:-translate-x-1">←</span>
+                <span>목록으로 돌아가기</span>
+              </Link>
+            </div>
+          </div>
         </div>
-
-
 
         <div className="space-y-6">
           {/* 게시글 헤더 카드 */}
@@ -263,7 +295,29 @@ const PostDetailPage = () => {
                     <span>👁 {post.viewCount || 0}</span>
                   </div>
                   <div className="flex items-center gap-2" style={{ color: '#666666' }}>
-                    <span className="font-medium">{post.author || '익명'} 도치</span>
+                    <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center"
+                        style={{ 
+                          backgroundColor: postDisplayName === '탈퇴한 회원' ? '#CCCCCC' : '#F8D6B3'
+                        }}
+                    >
+                      <span 
+                        className="text-xs font-medium" 
+                        style={{ 
+                          color: postDisplayName === '탈퇴한 회원' ? '#666666' : '#8B4513'
+                        }}
+                      >
+                        {postDisplayName.charAt(0)}
+                      </span>
+                    </div>
+                    <span 
+                      className="font-medium"
+                      style={{
+                        color: postDisplayName === '탈퇴한 회원' ? '#999999' : '#666666'
+                      }}
+                    >
+                      {postDisplayName}
+                    </span>
                     <span className="text-gray-400">•</span>
                     <span>{post.createdAt || '방금 전'}</span>
                   </div>
@@ -286,69 +340,127 @@ const PostDetailPage = () => {
             </div>
             
           </div>
-            <div className="border-t-2 border-yellow-800 flex items-center justify-end pt-6">
+          {/* 좋아요/싫어요 통합 바 */}
+          <div className="w-full mt-6">
+            {(() => {
+              const likeCount = Number(post?.likeCount ?? 0);
+              const dislikeCount = Number(post?.dislikeCount ?? 0);
+              const total = likeCount + dislikeCount;
 
-              {/* 게시글 상호작용 */}
-              <div className="flex items-center gap-4" style={{ borderColor: '#F0F0F0' }}>
-                <div className="text-center">
-                  <p className="my-5 font text-2xl font-bold">난 네편이야</p>
-                  <button
-                    onClick={() => handlePostLike('LIKE')}
-                    disabled={!isLoggedIn}
-                    className={`w-50 h-30 flex items-center justify-center gap-2 px-6 py-3 rounded font-medium transition-all transform hover:scale-102 hover:opacity-80 ${
-                      !isLoggedIn 
-                        ? 'cursor-not-allowed'
-                        : ''
-                    }`}
-                    style={{
-                      backgroundColor: !isLoggedIn
-                          ? 'transparent'
-                          : post.userLikeType === 'LIKE'
-                              ? '#ff93a5ff'
-                              : '#ffe4e4ff',
-                      color: !isLoggedIn
-                          ? '#cccccc'
-                          : post.userLikeType === 'LIKE'
-                              ? '#FFFFFF'
-                              : '#8B4513'
-                    }}
-                  >
-                    <span className="text-xl"><img src={thumbUp} alt="따봉" className="w-8 h-8" /></span>
-                    <span className="font-bold">{post.likeCount || 0}</span>
-                  </button>
-                </div>
-                  
-                <div className="text-center">
-                  <p className="my-5 font text-2xl font-bold">너가 잘못했어</p>
-                  <button
-                    onClick={() => handlePostLike('DISLIKE')}
-                    disabled={!isLoggedIn}
-                    className={`w-50 h-30 flex items-center justify-center gap-2 px-6 py-3 rounded font-medium transition-all transform hover:scale-102 hover:opacity-80 ${
-                      !isLoggedIn 
-                        ? 'cursor-not-allowed'
-                        : ''
-                    }`}
-                    style={{
-                      backgroundColor: !isLoggedIn
-                          ? 'transparent'
-                          : post.userLikeType === 'DISLIKE'
-                              ? '#93d7ffff'
-                              : '#e4f5ffff',
-                      color: !isLoggedIn
-                          ? '#cccccc'
-                          : post.userLikeType === 'DISLIKE'
-                              ? '#FFFFFF'
-                              : '#666666'
-                    }}
-                  >
-                    <span className="text-xl"><img src={thumbDown} alt="안따봉" className="w-8 h-8" /></span>
-                    <span className="font-bold">{post.dislikeCount || 0}</span>
-                  </button>
-                </div>
-              </div>
+              const likePercent = total === 0 ? 50 : (likeCount / total) * 100;
+              const dislikePercent = total === 0 ? 50 : (dislikeCount / total) * 100;
 
-              <img src={hedgehogImg} alt="갈등도치" className="w-30  ml-17 mr-10 mt-15 rounded-full" />
-            </div>
+              return (
+                <div>
+                  {/* 비율 바 제목 */}
+                  <div className='flex justify-center mb-4'>
+                    <p
+                      className="text-2xl font-bold mb-2 relative"
+                      style={{
+                        background: 'linear-gradient(90deg, #ff6d85ff 0%, #ff93a5ff 25%, #52c0ffff 50%, #93d7ffff 75%, #ff6d85ff 100%)',
+                        backgroundSize: '200% 100%',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        animation: 'waveGradient 6s normal ease-in-out infinite'
+                      }}
+                    >
+                      긍정 부정 비율이 그래프로 표시됩니다.
+                    </p>
+                    <style jsx>{`
+                      @keyframes waveGradient {
+                        0%   { background-position:   0% 50%; }
+                        100% { background-position: 400% 50%; }
+                    `}</style>
+                  </div>
+
+                  {/* 비율 바 (좌우 클릭) */}
+                  <div className="w-full bg-gray-200 rounded h-30 overflow-hidden flex cursor-pointer">
+                    {/* 좋아요 영역 */}
+                    <div
+                      className="h-full flex items-center justify-center text-white font-bold gap-2 transition-all duration-300 ease-in-out hover:scale-105"
+                      style={{
+                        flexBasis: `${likePercent}%`,
+                        minWidth: likeCount > 0 ? 2 : 200,
+                        backgroundColor:
+                          post.userLikeType === 'LIKE' ? '#ff93a5ff' : '#ffe4e4ff',
+                        color: post.userLikeType === 'LIKE' ? '#FFFFFF' : '#666666',
+                        transition: 'background-color 0.9s ease, transform 0.3s ease'
+                      }}
+                      onClick={() => isLoggedIn && handlePostLike('LIKE')}
+                      onMouseEnter={(e) => {
+                        if (post.userLikeType !== 'LIKE' && isLoggedIn) {
+                          e.currentTarget.style.backgroundColor = '#ff93a5ff';
+                          e.currentTarget.style.color = '#FFFFFF';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (post.userLikeType !== 'LIKE' && isLoggedIn) {
+                          e.currentTarget.style.backgroundColor = '#ffe4e4ff';
+                          e.currentTarget.style.color = '#666666';
+                        }
+                      }}
+                    >
+                      <img
+                        src={thumbUp}
+                        alt="좋아요"
+                        className="w-12 h-12 transition-transform duration-300 hover:scale-110"
+                      />
+                      <span className='text text-xl'>난 네편이야</span>
+                    </div>
+
+                    {/* 싫어요 영역 */}
+                    <div
+                      className="h-full flex items-center justify-center font-bold gap-2 transition-all duration-300 ease-in-out hover:scale-105"
+                      style={{
+                        flexBasis: `${dislikePercent}%`,
+                        minWidth: dislikeCount > 0 ? 2 : 200,
+                        backgroundColor:
+                          post.userLikeType === 'DISLIKE' ? '#93d7ffff' : '#e4f5ffff',
+                        color: post.userLikeType === 'DISLIKE' ? '#FFFFFF' : '#666666',
+                        transition: 'background-color 0.9s ease, transform 0.3s ease'
+                      }}
+                      onClick={() => isLoggedIn && handlePostLike('DISLIKE')}
+                      onMouseEnter={(e) => {
+                        if (post.userLikeType !== 'DISLIKE' && isLoggedIn) {
+                          e.currentTarget.style.backgroundColor = '#93d7ffff';
+                          e.currentTarget.style.color = '#FFFFFF';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (post.userLikeType !== 'DISLIKE' && isLoggedIn) {
+                          e.currentTarget.style.backgroundColor = '#e4f5ffff';
+                          e.currentTarget.style.color = '#666666';
+                        }
+                      }}
+                    >
+                      <img
+                        src={thumbDown}
+                        alt="싫어요"
+                        className="w-12 h-12 transition-transform duration-300 hover:scale-110"
+                      />
+                      <span className='text text-xl'>너가 잘못했어</span>
+                    </div>
+                  </div>
+
+                  {/* 비율 텍스트 */}
+                  <div className="flex justify-between mt-2 text-sm font-bold text-gray-600">
+                    {/* 왼쪽: 좋아요 */}
+                    <div className="flex items-center gap-2">
+                      <span>좋아요 {likePercent.toFixed(1)}%</span>
+                      <span className="text-rose-400">({likeCount})</span>
+                    </div>
+
+                    {/* 오른쪽: 싫어요 */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sky-400">({dislikeCount})</span>
+                      <span>싫어요 {dislikePercent.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
             {/* 액션 버튼 */}
               <div className="flex items-center justify-end ml-4 pt-5 gap-2">
                 {isLoggedIn && user && (post.userId === user.id || user.role === 'ADMIN') && (
@@ -396,7 +508,9 @@ const PostDetailPage = () => {
                     className="w-full h-30 px-6 py-4 border-2 rounded focus:outline-none text-lg placeholder-gray-400 resize-none transition-all"
                     style={{ 
                       borderColor: '#F0F0F0',
-                      focusBorderColor: categoryData.color
+                      focusBorderColor: categoryData.color,
+                      color: '#5c5c5cff',
+                      backgroundColor: '#F8F8F8'
                     }}
                     disabled={isSubmittingComment}
                   />
@@ -457,105 +571,118 @@ const PostDetailPage = () => {
               </div>
             ) : (
               <div className="space-y-8">
-                {comments.map((comment, index) => (
-                  <div 
-                    key={comment.id} 
-                    className="pl-8 py-4"
-                    style={{ borderColor: categoryData.color }}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: '#F8D6B3' }}
-                        >
-                          <span className="font-medium" style={{ color: '#8B4513' }}>
-                            {(comment.author || '익명').charAt(0)}
-                          </span>
+                {comments.map((comment, index) => {
+                  const commentDisplayName = getDisplayName(comment);
+                  
+                  return (
+                    <div 
+                      key={comment.id} 
+                      className="pl-8 py-4"
+                      style={{ borderColor: categoryData.color }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                          <div 
+                            className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{ 
+                              backgroundColor: commentDisplayName === '탈퇴한 회원' ? '#CCCCCC' : '#F8D6B3'
+                            }}
+                          >
+                            <span 
+                              className="font-medium" 
+                              style={{ 
+                                color: commentDisplayName === '탈퇴한 회원' ? '#666666' : '#8B4513'
+                              }}
+                            >
+                              {commentDisplayName.charAt(0)}
+                            </span>
+                          </div>
+                          <div>
+                            <span 
+                              className="font-bold text-lg" 
+                              style={{ 
+                                color: commentDisplayName === '탈퇴한 회원' ? '#999999' : '#333333'
+                              }}
+                            >
+                              {commentDisplayName}
+                            </span>
+                          </div>
                         </div>
                         <div>
-                          <span className="font-bold text-lg" style={{ color: '#333333' }}>
-                            {comment.author || '익명'}
+                          <span className="text-sm mr-3" style={{ color: '#666666' }}>
+                            {comment.createdAt || '방금 전'}
+                          </span>
+                          <span className="text-sm px-3 py-1 rounded-full" style={{ 
+                            backgroundColor: '#F8D6B3',
+                            color: '#8B4513'
+                          }}>
+                            #{index + 1}
                           </span>
                         </div>
                       </div>
-                      <div>
-                        <span className="text-sm mr-3" style={{ color: '#666666' }}>
-                          {comment.createdAt || '방금 전'}
-                        </span>
-                        <span className="text-sm px-3 py-1 rounded-full" style={{ 
-                          backgroundColor: '#F8D6B3',
-                          color: '#8B4513'
-                        }}>
-                          #{index + 1}
-                        </span>
+                      
+                      <div className="text-lg mb-4 leading-relaxed whitespace-pre-wrap" style={{ color: '#333333' }}>
+                        {comment.content}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleCommentLike(comment.id, 'LIKE')}
+                          disabled={!isLoggedIn}
+                          className={`w-20 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                              !isLoggedIn
+                                  ? 'text-gray-300 cursor-not-allowed'
+                                  : comment.userLikeType === 'LIKE'
+                                      ? ''
+                                      : 'hover:opacity-70'
+                          }`}
+                          style={{
+                            backgroundColor: !isLoggedIn
+                                ? 'transparent'
+                                : comment.userLikeType === 'LIKE'
+                                    ? '#e6854eff'
+                                    : '#fff1e4ff',
+                            color: !isLoggedIn
+                                ? '#cccccc'
+                                : comment.userLikeType === 'LIKE'
+                                    ? '#FFFFFF'
+                                    : '#8B4513'
+                          }}
+                        >
+                          <img src={thumbUp} alt="따봉" className="w-6 h-6" /> {comment.likeCount || 0}
+                        </button>
+                        <button
+                          onClick={() => handleCommentLike(comment.id, 'DISLIKE')}
+                          disabled={!isLoggedIn}
+                          className={`w-20 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                              !isLoggedIn
+                                  ? 'text-gray-300 cursor-not-allowed'
+                                  : comment.userLikeType === 'DISLIKE'
+                                      ? 'text-white '
+                                      : 'hover:opacity-70'
+                          }`}
+                          style={{
+                            backgroundColor: !isLoggedIn
+                                ? 'transparent'
+                                : comment.userLikeType === 'DISLIKE'
+                                    ? '#d3c576ff'
+                                    : '#f8f8f8ff',
+                            color: !isLoggedIn
+                                ? '#cccccc'
+                                : comment.userLikeType === 'DISLIKE'
+                                    ? '#FFFFFF'
+                                    : '#666666'
+                          }}
+                        >
+                          <img src={thumbDown} alt="안따봉" className="w-6 h-6" /> {comment.dislikeCount || 0}
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="text-lg mb-4 leading-relaxed whitespace-pre-wrap" style={{ color: '#333333' }}>
-                      {comment.content}
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleCommentLike(comment.id, 'LIKE')}
-                        disabled={!isLoggedIn}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                          !isLoggedIn ? 'cursor-not-allowed' : 'transform hover:-translate-y-1 '
-                        }`}
-                        style={{
-                          backgroundColor: !isLoggedIn 
-                            ? '#E5E5E5'
-                            : comment.userLikeType === 'LIKE'
-                            ? '#BF7D2C'
-                            : '#F8D6B3',
-                          color: !isLoggedIn 
-                            ? '#999999'
-                            : comment.userLikeType === 'LIKE'
-                            ? '#FFFFFF'
-                            : '#8B4513'
-                        }}
-                      >
-                        👍 {comment.likeCount || 0}
-                      </button>
-                      <button
-                        onClick={() => handleCommentLike(comment.id, 'DISLIKE')}
-                        disabled={!isLoggedIn}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                          !isLoggedIn ? 'cursor-not-allowed' : 'transform hover:-translate-y-1 '
-                        }`}
-                        style={{
-                          backgroundColor: !isLoggedIn 
-                            ? '#E5E5E5'
-                            : comment.userLikeType === 'DISLIKE'
-                            ? '#7F5539'
-                            : '#F0F0F0',
-                          color: !isLoggedIn 
-                            ? '#999999'
-                            : comment.userLikeType === 'DISLIKE'
-                            ? '#FFFFFF'
-                            : '#666666'
-                        }}
-                      >
-                        👎 {comment.dislikeCount || 0}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
-        </div>
-
-        {/* 하단 액션 버튼 */}
-        <div className="text-left mt-12">
-          <Link 
-            to="/community"
-            className="px-8 py-4 text-white rounded-xl hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg mr-4"
-            style={{ backgroundColor: '#8B4513' }}
-          >
-            목록으로 돌아가기
-          </Link>
         </div>
       </main>
     </div>
