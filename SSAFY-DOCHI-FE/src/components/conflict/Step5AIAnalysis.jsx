@@ -1,5 +1,6 @@
 import React from 'react';
 
+
 const Step5AIAnalysis = ({ 
   formData, 
   aiSummary, 
@@ -76,9 +77,11 @@ const Step5AIAnalysis = ({
             </div>
             <h3 className="text-xl font-semibold text-gray-800">상황 요약</h3>
           </div>
-          <p className="text-gray-700 whitespace-pre-line leading-relaxed text-lg">
-            {aiSummary}
-          </p>
+          <div 
+            className="text-gray-700 text-lg"
+            style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+            dangerouslySetInnerHTML={{ __html: aiSummary }}
+          />
         </div>
 
         {/* AI 해결방안 */}
@@ -89,9 +92,11 @@ const Step5AIAnalysis = ({
             </div>
             <h3 className="text-xl font-semibold text-gray-800">추천 해결방안</h3>
           </div>
-          <div className="text-gray-700 whitespace-pre-line leading-relaxed text-lg">
-            {aiSolutions}
-          </div>
+          <div 
+            className="text-gray-700 text-lg"
+            style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+            dangerouslySetInnerHTML={{ __html: aiSolutions }}
+          />
         </div>
 
         {/* 고급 분석 결과 */}
@@ -109,7 +114,11 @@ const Step5AIAnalysis = ({
               {advancedAnalysis.emotion_analysis && (
                 <div className="bg-white rounded-xl p-6">
                   <h4 className="font-medium text-purple-700 mb-3 text-lg">😊 감정 분석</h4>
-                  <p className="text-gray-600 leading-relaxed">{advancedAnalysis.emotion_analysis}</p>
+                  <div 
+                    className="text-gray-600"
+                    style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                    dangerouslySetInnerHTML={{ __html: advancedAnalysis.emotion_analysis }}
+                  />
                 </div>
               )}
 
