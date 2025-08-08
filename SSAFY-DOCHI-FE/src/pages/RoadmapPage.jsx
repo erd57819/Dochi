@@ -165,7 +165,15 @@ const RoadmapPage = () => {
     setCurrentStep(stepId);
   };
 
-  const currentStepData = steps.find(step => step.id === currentStep) || steps[0];
+  const currentStepData = steps.find(step => step.id === currentStep) || steps[0] || {
+    id: 1,
+    title: "로딩중...",
+    description: "분석 결과를 불러오는 중입니다.",
+    content: "잠시만 기다려주세요.",
+    actions: [],
+    period: "",
+    color: "#83673f"
+  };
 
   return (
     <div className="min-h-screen relative">
