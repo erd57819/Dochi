@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import sttRouter, speechRouter, voiceRouter, summary, websocketRouter, apiRouter
+from routers import  faceRouter, speechRouter, summary, apiRouter
 
 app = FastAPI(
     title="SSAFY DOCHI AI Server",
@@ -29,7 +29,7 @@ app.add_middleware(
 app.include_router(apiRouter.router)          # API 정보
 app.include_router(speechRouter.router)       # 음성 분석
 app.include_router(summary.router)            # AI 요약
-
+app.include_router(faceRouter.router)
 @app.get("/")
 def readRoot():
     return {
