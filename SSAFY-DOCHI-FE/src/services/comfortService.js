@@ -1,9 +1,6 @@
 import axios from 'axios';
-
-// 환경에 따라 자동으로 API URL 설정
-const API_BASE_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:8080'  // 로컬 환경
-  : 'https://i13c209.p.ssafy.io';  // 배포 환경
+// 다른 API들과 같은 패턴으로 수정 - /dochi 경로 사용
+import { API_BASE_URL } from '../config/api.js';
 
 // axios 인터셉터로 토큰 자동 추가
 const apiClient = axios.create({
