@@ -16,11 +16,6 @@ import ConflictResultPage from './pages/ConflictResultPage';
 import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
 import ComfortPage from './pages/ComfortPage';
 import ComfortChatPage from './pages/ComfortChatPage';
-import VoiceChatPage from './pages/VoiceChatPage';
-import VideoRoomPage from './pages/VideoRoomPage';
-import VoiceDemoPage from './pages/VoiceDemoPage';
-import STTPage from './pages/STTPage';
-import STTVideoRoomPage from './pages/STTVideoRoomPage';
 import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
 import GamePage from './pages/GamePage';
@@ -30,7 +25,7 @@ import PasswordChangePage from './pages/PasswordChangePage';
 import RoadmapPage from './pages/RoadmapPage';
 import ExpertMatchingPage from './pages/ExpertMatchingPage';
 import './App.css';
-import VideoCallRoom from './components/VideoCallRoom';
+import VideoCallRoom from './components/videocall/VideoCallRoom';
 
 
 const App = () => {
@@ -62,11 +57,6 @@ const App = () => {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<ProfileEditPage />} />
             <Route path="/mypage/password" element={<PasswordChangePage />} />
-            <Route path="/voice-chat" element={<VoiceChatPage />} />
-            <Route path="/video-room/:roomId" element={<VideoRoomPage />} />
-            <Route path="/voice-demo" element={<VoiceDemoPage />} />
-            <Route path="/stt" element={<STTPage />} />
-            <Route path="/stt-room/:roomId" element={<STTVideoRoomPage />} />
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/expert-matching" element={<ExpertMatchingPage />} />
             <Route path="/game" element={<GamePage />} />

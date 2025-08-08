@@ -5,7 +5,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: light;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 
@@ -43,11 +43,14 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
+/* 다크모드 비활성화 - 항상 라이트 모드만 사용 */
+* {
+  color: inherit !important;
+}
+
+body, html {
+  color: #333333 !important;
+  background-color: #ffffff !important;
 }
 
 /* Swiper 관련 스타일 */

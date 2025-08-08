@@ -5,6 +5,7 @@ import useAuthStore from '../stores/AuthStore';
 import { videoCallApi } from '../services/videoCallApi.js';
 import hedgehogImg from '../assets/conflict.png';
 
+
 const ConflictAnalysisResultPage = () => {
   const [conflictData, setConflictData] = useState(null);
   const [isLoading, setIsLoading]       = useState(true);
@@ -204,6 +205,14 @@ const ConflictAnalysisResultPage = () => {
           
           // 캐시된 데이터로 화면 구성
           const adv = cachedJson.data;
+          
+          // 캐시된 데이터 디버그 로그
+          console.log('캐시된 분석 데이터 확인:');
+          console.log('- emotion_analysis:', adv.emotion_analysis);
+          console.log('- conflict_analysis:', adv.conflict_analysis);
+          console.log('- my_position:', adv.my_position);
+          console.log('- partner_position:', adv.partner_position);
+          
           setConflictData({
             ...basicData,
             aiSummary: basicAi.summary,
@@ -270,6 +279,13 @@ const ConflictAnalysisResultPage = () => {
       const cooperationScoreRaw     = adv.cooperation_score        ?? adv.cooperationScore        ?? { score:0, improvement_suggestions:[] };
       const priorityRecommendation  = adv.priority_recommendation  ?? adv.priorityRecommendation  ?? '';
       const recommendedActionsRaw   = adv.recommended_actions      ?? adv.recommendedActions      ?? [];
+      
+      // 디버그 로그 추가
+      console.log('AI 분석 데이터 확인:');
+      console.log('- emotionAnalysis:', emotionAnalysis);
+      console.log('- conflictAnalysis:', conflictAnalysis);
+      console.log('- myPosition:', myPosition);
+      console.log('- partnerPosition:', partnerPosition);
       
       console.log('비어있는 값 확인:');
       console.log('- emotionAnalysis 비어있음?', isEmptyOrError(emotionAnalysis));
@@ -636,9 +652,11 @@ const ConflictAnalysisResultPage = () => {
                     <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
                       <span>😊</span> 감정 분석
                     </h4>
-                    <p className="text-blue-700">
-                      {conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...'}
-                    </p>
+                    <div 
+                      className="text-blue-700"
+                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                      dangerouslySetInnerHTML={{ __html: conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...' }}
+                    />
                   </div>
 
                   {/* 갈등 분석 */}
@@ -646,9 +664,11 @@ const ConflictAnalysisResultPage = () => {
                     <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
                       <span>⚡</span> 갈등 분석
                     </h4>
-                    <p className="text-purple-700">
-                      {conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...'}
-                    </p>
+                    <div 
+                      className="text-purple-700"
+                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                      dangerouslySetInnerHTML={{ __html: conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...' }}
+                    />
                   </div>
                 </div>
               </div>
@@ -662,17 +682,21 @@ const ConflictAnalysisResultPage = () => {
                   <div className="bg-white rounded-lg p-4">
                     <div className="mb-3">
                       <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
-                      <p className="mt-1 text-gray-700">
-                        {conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.'}
-                      </p>
+                      <div 
+                        className="mt-1 text-gray-700"
+                        style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                        dangerouslySetInnerHTML={{ __html: conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.' }}
+                      />
                     </div>
                   </div>
                   <div className="bg-white rounded-lg p-4">
                     <div>
                       <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
-                      <p className="mt-1 text-gray-700">
-                        {conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.'}
-                      </p>
+                      <div 
+                        className="mt-1 text-gray-700"
+                        style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                        dangerouslySetInnerHTML={{ __html: conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.' }}
+                      />
                     </div>
                   </div>
                 </div>

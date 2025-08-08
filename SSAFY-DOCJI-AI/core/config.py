@@ -3,7 +3,6 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     GMS_KEY: str # OPENAI_API_KEY에서 변경
-
     mysql_root_password: str
     jwt_secret: str
     spring_profiles_active: str
@@ -25,9 +24,9 @@ class Settings(BaseSettings):
     https_port: str
     http_port: str
     social_pw: str
+
     google_application_credentials: str = ""
     google_cloud_project: str = ""
     class Config:
         env_file = ".env"
-
 settings = Settings()
