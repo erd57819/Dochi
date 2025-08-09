@@ -19,6 +19,12 @@ async def get_conflict_report(room_id: str):
     WebRTC 화상통화 종료 후 호출되는 최종 결과 API입니다.
     """
     try:
+        # 캐시 먼저 확인
+        cache_key = f"conflict:report:{room_id}"
+        cached_report = r.get(cache_key)
+        if cached_report:
+            print(f"[캐시 히트] {room_id}")
+            return json.loads(cached_report)
         report = {
             "room_id": room_id,
             "generated_at": datetime.now().isoformat(),
