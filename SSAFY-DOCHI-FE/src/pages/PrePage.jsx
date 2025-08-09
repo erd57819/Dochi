@@ -1,9 +1,93 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
+import todakImage from '../assets/todak.png';
 
-// vaalentin/2015 진짜 클론: 입자와 기하학적 구조들
+// 3D 참견도치들 컴포넌트
+function TodakSpriteField({ globalProgress, mousePosition }) {
+  const groupRef = useRef();
+  const texture = useLoader(THREE.TextureLoader, todakImage);
+  
+  // 참견도치 스프라이트들 위치 (섹션별 조절)
+  const todakSprites = useMemo(() => {
+    const sprites = [];
+    const count = 12; // 적당한 개수로 조절
+    for (let i = 0; i < count; i++) {
+      sprites.push({
+        position: [
+          (Math.random() - 0.5) * 30,
+          (Math.random() - 0.5) * 20,
+          (Math.random() - 0.5) * 30
+        ],
+        scale: 0.8 + Math.random() * 0.6,
+        phase: i * 0.3,
+        rotationSpeed: (Math.random() - 0.5) * 0.3,
+        appearThreshold: i / count // 진행도에 따라 점진적 등장
+      });
+    }
+    return sprites;
+  }, []);
+  
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    
+    if (groupRef.current) {
+      groupRef.current.children.forEach((sprite, index) => {
+        const data = todakSprites[index];
+        if (data) {
+          // 부유하는 애니메이션
+          sprite.position.y = data.position[1] + Math.sin(time + data.phase) * 2;
+          
+          // 회전
+          sprite.rotation.z = time * data.rotationSpeed;
+          
+          // 마우스 인터랙션 - 마우스 근처에서 크기 증가
+          const mouseX = mousePosition.x * 20;
+          const mouseY = -mousePosition.y * 15;
+          const distance = Math.sqrt(
+            (sprite.position.x - mouseX) ** 2 + 
+            (sprite.position.z - mouseY) ** 2
+          );
+          
+          if (distance < 5) {
+            const effect = (1 - distance / 5) * 0.5 + 1;
+            sprite.scale.setScalar(data.scale * effect);
+          } else {
+            sprite.scale.setScalar(data.scale);
+          }
+          
+          // 진행도에 따른 등장과 투명도
+          const shouldAppear = globalProgress >= data.appearThreshold;
+          const opacity = shouldAppear ? 
+            Math.min(0.9, 0.3 + (globalProgress - data.appearThreshold) * 2) : 0;
+          sprite.material.opacity = opacity;
+        }
+      });
+    }
+  });
+  
+  return (
+    <group ref={groupRef}>
+      {todakSprites.map((sprite, index) => (
+        <sprite
+          key={`todak-${index}`}
+          position={sprite.position}
+          scale={[sprite.scale * 2, sprite.scale * 2, 1]}
+        >
+          <spriteMaterial
+            map={texture}
+            transparent
+            opacity={0.8}
+            alphaTest={0.1}
+          />
+        </sprite>
+      ))}
+    </group>
+  );
+}
+
+// vaalentin/2015 + 참견도치 하이브리드 씬
 function VaalentinScene({ globalProgress, mousePosition, isTransitioning }) {
   const sceneRef = useRef();
   const particlesRef = useRef();
@@ -80,6 +164,12 @@ function VaalentinScene({ globalProgress, mousePosition, isTransitioning }) {
   
   return (
     <group ref={sceneRef}>
+      {/* 3D 참견도치 스프라이트 필드 */}
+      <TodakSpriteField 
+        globalProgress={globalProgress}
+        mousePosition={mousePosition}
+      />
+      
       {/* 1000개 배경 파티클 */}
       <group ref={particlesRef}>
         {backgroundParticles.map((particle, index) => (
@@ -88,7 +178,7 @@ function VaalentinScene({ globalProgress, mousePosition, isTransitioning }) {
             <meshBasicMaterial 
               color="#666666"
               transparent 
-              opacity={particle.opacity * 0.3}
+              opacity={particle.opacity * 0.2}
             />
           </mesh>
         ))}
@@ -221,32 +311,32 @@ export default function PrePage() {
   const targetProgressRef = useRef(0);
   const smoothProgressRef = useRef(0);
   
-  // 섹션 데이터
+  // 참견도치 섹션 데이터
   const sections = [
     {
-      title: "WELCOME",
-      subtitle: "안녕하세요",
-      description: "AI 갈등 도우미 참견도치입니다"
+      title: "TODAK",
+      subtitle: "참견도치와 함께",
+      description: "AI 갈등 해결의 새로운 경험을 시작하세요"
     },
     {
       title: "CONFLICT", 
-      subtitle: "갈등이",
-      description: "좁혀지지 않을 때가 있나요?"
+      subtitle: "복잡한 갈등",
+      description: "혼자서는 풀기 어려운 문제들이 있죠"
     },
     {
-      title: "SOLUTION",
-      subtitle: "참견도치가",
-      description: "해결해드립니다"
+      title: "ANALYZE",
+      subtitle: "AI 분석으로",
+      description: "갈등의 본질을 정확히 파악합니다"
     },
     {
-      title: "SERVICES",
-      subtitle: "다양한",
-      description: "서비스를 제공합니다"
+      title: "RESOLVE",
+      subtitle: "맞춤형 해결책",
+      description: "당신만의 갈등 해결 방법을 제시합니다"
     },
     {
-      title: "START",
-      subtitle: "지금",
-      description: "시작해보세요"
+      title: "HARMONY",
+      subtitle: "더 나은 관계로",
+      description: "참견도치와 함께 평화로운 일상을 만들어보세요"
     }
   ];
   
@@ -417,7 +507,7 @@ export default function PrePage() {
             onClick={handleEnterSite}
             style={{ fontFamily: 'Raleway, sans-serif', fontWeight: 200 }}
           >
-            ENTER SITE
+            참견도치 시작하기
           </button>
         )}
       </div>
