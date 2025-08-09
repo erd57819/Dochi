@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Nav from '../components/Nav';
 import { conflictReportApi } from '../services/conflictReportApi';
 
 // Chart.js 설정
@@ -65,7 +64,6 @@ const ConflictReportPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-[#f0f4ff]">
-        <Nav />
         <div className="flex items-center justify-center h-[80vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#bf7d2c] mx-auto mb-4"></div>
@@ -79,7 +77,6 @@ const ConflictReportPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-[#f0f4ff]">
-        <Nav />
         <div className="flex items-center justify-center h-[80vh]">
           <div className="text-center">
             <p className="text-xl text-red-600 mb-4">{error}</p>
@@ -108,7 +105,6 @@ const ConflictReportPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-[#f0f4ff]">
-      <Nav />
       
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* 헤더 */}
