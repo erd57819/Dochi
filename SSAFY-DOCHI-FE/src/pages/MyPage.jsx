@@ -3,13 +3,30 @@ import { useNavigate } from "react-router-dom";
 import MyPageNavigation from "../components/MyPageNavigation";
 import ConflictCard from "../components/ConflictCard";
 import myPageApi from "../services/myPageApi";
+import useAuthStore from "../stores/AuthStore.js";
 
 const MyPage = () => {
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuthStore();
   const [conflictCount, setConflictCount] = useState(0);
   const [conflicts, setConflicts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // 비로그인 시 접근 차단
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="bg-white min-h-screen flex justify-center items-center">
+        <div className="text-lg text-gray-600">로그인 페이지로 이동 중...</div>
+      </div>
+    );
+  }
 
   // 갈등 데이터 로드
   useEffect(() => {

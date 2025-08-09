@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Nav from './components/Nav';
+import PrePage from './pages/PrePage';
 import MainPage from './pages/MainPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -36,6 +37,9 @@ const App = () => {
         <Nav />
         <main>
           <Routes>
+            {/* three.js 완성되면주석 해제 예정 */}
+            {/* <Route path="/" element={<PrePage />} />
+            <Route path="/main" element={<MainPage />} /> */}
             <Route path="/" element={<MainPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />

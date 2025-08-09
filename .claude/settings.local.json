@@ -5,7 +5,12 @@
       "Bash(docker-compose:*)",
       "Bash(docker logs:*)",
       "Bash(docker exec:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:tympanus.net)",
+      "WebFetch(domain:vaalentin.github.io)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": []
   }
