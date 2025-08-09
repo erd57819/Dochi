@@ -2,8 +2,8 @@
 
 import json
 import redis
-from consumers.consumer_base import BaseKafkaConsumer
-from services.gpt_service import summarize_text  # 추후 구현 필요
+from consumers.consumerBase import BaseKafkaConsumer
+from services.gptService import summarize_text  # 추후 구현 필요
 
 r = redis.Redis(host='dochi-redis', port=6379, decode_responses=True)
 

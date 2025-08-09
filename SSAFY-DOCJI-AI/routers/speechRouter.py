@@ -1,13 +1,12 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form
+from fastapi import APIRouter, HTTPException
 from datetime import datetime
-from schemas.speechSchemas import SpeechProcessingResponse, RealtimeChunkResponse
-from services.speechService import SpeechService
 import typing
 from pydantic import BaseModel
 from services.emotionService import EmotionService 
+from services.kafkaService import produce
+import json
 
 router = APIRouter(prefix="/speech", tags=["speech_processing"])
-speechService = SpeechService()
 
 class Utterance(BaseModel):
     speaker: str
@@ -17,67 +16,6 @@ class ConversationRequest(BaseModel):
     conversation: typing.List[Utterance]
     
     
-@router.post("/process-audio", response_model=SpeechProcessingResponse)
-async def processAudio(
-    audioFile: UploadFile = File(...),
-    speakerId: str = Form(...),
-    roomId: str = Form(...),
-    conversationContext: str = Form(default="[]")
-):
-    """음성 파일을 받아서 STT 변환 및 분석을 처리합니다."""
-    
-    if not audioFile.content_type.startswith('audio/'):
-        raise HTTPException(
-            status_code=400, 
-            detail="오디오 파일만 업로드 가능합니다. 지원 형식: wav, mp3, webm, ogg, m4a"
-        )
-    
-    try:
-        audioContent = await audioFile.read()
-        
-        result = await speechService.processAudio(
-            audioContent, speakerId, roomId, conversationContext
-        )
-        
-        return SpeechProcessingResponse(**result)
-    
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        print(f"음성 처리 중 예상치 못한 오류: {e}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"음성 처리 중 오류가 발생했습니다: {str(e)}"
-        )
-
-@router.post("/process-realtime-chunk")
-async def processRealtimeChunk(
-    audioChunk: UploadFile = File(...),
-    speakerId: str = Form(...),
-    roomId: str = Form(...),
-    chunkSequence: int = Form(default=0),
-    isFinal: bool = Form(default=False)
-):
-    """실시간 오디오 청크를 처리합니다 (WebRTC 스트림용)."""
-    
-    try:
-        audioContent = await audioChunk.read()
-        
-        result = await speechService.processRealtimeChunk(
-            audioContent, speakerId, roomId, chunkSequence, isFinal
-        )
-        
-        return result
-    
-    except Exception as e:
-        print(f"실시간 청크 처리 오류: {e}")
-        return {
-            "error": str(e),
-            "chunkSequence": chunkSequence,
-            "speakerId": speakerId,
-            "roomId": roomId,
-            "processedAt": datetime.now().isoformat()
-        }
         
 @router.post("/emotion/contextual", summary="Analyze emotion from conversation context")
 def analyze_contextual_emotion(request: ConversationRequest):
@@ -113,13 +51,52 @@ async def healthCheck():
         "service": "speech-processing",
         "version": "1.0.0",
         "features": {
-            "speechToText": "Google Speech Recognition + Whisper 백업",
+            "conflictSTTProcessing": "갈등 분석용 STT 데이터 처리",
             "emotionAnalysis": "키워드 기반 감정 분석",
             "conflictDetection": "다층 갈등 위험도 분석",
-            "realtimeProcessing": "실시간 오디오 청크 처리",
-            "feedbackGeneration": "상황별 대화 개선 제안"
+            "kafkaIntegration": "Kafka 기반 데이터 파이프라인"
         },
-        "supportedFormats": ["wav", "mp3", "webm", "ogg", "m4a"],
-        "languages": ["ko-KR", "en-US"],
+        "dataFormats": ["JSON STT", "JSON Emotion"],
+        "languages": ["ko-KR"],
         "timestamp": datetime.now().isoformat()
     }
+
+class ConflictSTTData(BaseModel):
+    roomId: str
+    speakerId: str
+    text: str
+    timestamp: str
+
+@router.post("/process-conflict-chunk")
+async def processConflictChunk(data: ConflictSTTData):
+    """
+    갈등 레포트용 STT 데이터를 받아서 Kafka로 전송합니다.
+    프론트엔드에서 JSON 형태의 STT 데이터를 받습니다.
+    """
+    try:
+        # Kafka로 STT 데이터 전송
+        kafka_payload = {
+            "roomId": data.roomId,
+            "speakerId": data.speakerId,
+            "text": data.text,
+            "timestamp": data.timestamp,
+            "processedAt": datetime.now().isoformat()
+        }
+
+        produce("conflict-stt", json.dumps(kafka_payload, ensure_ascii=False))
+        print(f"[Kafka STT 발행 완료] {kafka_payload}")
+
+        return {
+            "status": "success",
+            "message": "STT 데이터가 성공적으로 처리되었습니다.",
+            "roomId": data.roomId,
+            "speakerId": data.speakerId,
+            "processedAt": kafka_payload["processedAt"]
+        }
+
+    except Exception as e:
+        print(f"[ConflictSTT 처리 오류] {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"STT 데이터 처리 중 오류가 발생했습니다: {str(e)}"
+        )

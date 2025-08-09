@@ -806,29 +806,23 @@ const VideoCallRoom = () => {
         neutral: Math.round(expressions.neutral * 100)
       }
     }));
-    sendFaceEmotionToServer(roomId, speaker, expressions);
   };
 
-  // 표정 분석 중지
-  const stopEmotionDetection = () => {
+  // 표정 분석 중지 + 마지막 데이터 전송  
+  const stopEmotionDetection = async () => {
     if (emotionDetectionInterval.current) {
       clearInterval(emotionDetectionInterval.current);
       emotionDetectionInterval.current = null;
     }
+    
+    // 통화 종료 시 마지막 누적 데이터 전송
+    for (const participantName of Object.keys(emotionAccumulatorRef.current)) {
+      if (emotionAccumulatorRef.current[participantName].length > 0) {
+        console.log('[표정] 통화 종료 - 마지막 데이터 전송');
+        await sendAccumulatedEmotionsToFastAPI(participantName);
+      }
+    }
   };
-  //감정분석 결과 서버로 보내기
-  const sendFaceEmotionToServer = async (roomId, speaker, expressions) => {
-  try {
-    await apiClient.post('/emotion/face', {
-      roomId,
-      speaker,
-      timestamp: new Date().toISOString(),
-      emotions: expressions,
-    });
-  } catch (error) {
-    console.error('표정 감정 데이터 전송 오류:', error);
-  }
-};
 
 
   // 갈등 분석 및 중재 타이밍 결정

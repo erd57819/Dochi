@@ -1,8 +1,9 @@
 from pydantic import BaseModel
+from typing import Dict
 from datetime import datetime
 
-class STTInput(BaseModel):
+class FaceEmotionInput(BaseModel):
     roomId: str
     speaker: str
     timestamp: datetime
-    text: str
+    emotions: Dict[str, float]

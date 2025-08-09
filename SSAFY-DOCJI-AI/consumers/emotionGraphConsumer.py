@@ -1,6 +1,6 @@
 import json
 from redis import Redis
-from consumers.consumer_base import BaseKafkaConsumer
+from consumers.consumerBase import BaseKafkaConsumer
 from services.emotionGraphService import update_emotion_graph
 
 r = Redis(host="dochi-redis", port=6379, decode_responses=True)
