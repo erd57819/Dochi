@@ -1,5 +1,7 @@
 // 갈등 레포트 API 서비스
-const API_BASE_URL = '/ai';
+const API_BASE_URL = window.location.hostname === 'localhost'
+  ? '/ai'  // 로컬 개발 (vite proxy 사용)
+  : 'https://i13c209.p.ssafy.io/ai';  // 배포 환경 (직접 연결)
 
 export const conflictReportApi = {
   // 전체 레포트 가져오기
