@@ -24,7 +24,7 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/dochi/, '')  // /dochi 제거만
+        rewrite: (path) => path.replace(/^\/dochi/, '/api')  // /dochi 제거만
       },
       '/ai': {
         target: 'http://localhost:8002',
