@@ -26,7 +26,7 @@ export const useSTT = (roomName, participantName) => {
       console.log('[STT] FastAPI로 전송:', payload);
       
       // FastAPI로 STT 데이터 전송
-      await apiClient.post('/speech/process-conflict-chunk', payload, {
+      await apiClient.post('/ai/speech/process-conflict-chunk', payload, {
         headers: {
           'Content-Type': 'application/json'
         }
