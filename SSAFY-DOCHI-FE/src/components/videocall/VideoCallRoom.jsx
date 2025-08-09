@@ -137,6 +137,19 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   }, [localVideoTrack, localVideoRef.current]);
 
+  // 마이크 상태에 따른 STT 자동 연동
+  useEffect(() => {
+    if (isMicOn && !sttEnabled) {
+      // 마이크가 켜지면 STT도 자동으로 시작
+      console.log('마이크 켜짐 - STT 자동 시작');
+      startSTT();
+    } else if (!isMicOn && sttEnabled) {
+      // 마이크가 꺼지면 STT도 자동으로 중지
+      console.log('마이크 꺼짐 - STT 자동 중지');
+      stopSTT();
+    }
+  }, [isMicOn, sttEnabled, startSTT, stopSTT]);
+
   // 갈등 레벨 분석 (감정 점수 변화 감지)
   useEffect(() => {
     analyzeConflictLevel(emotionScores);
@@ -206,8 +219,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setIsRecording(!isRecording);
   };
 
-  // 통합 룸 나가기 함수
-  const handleLeaveRoom = async () => {
+  // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
+  const handleLeaveRoom = async (isEndCall = false) => {
     // STT 정리
     stopSTT();
 
@@ -217,13 +230,16 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     // OpenVidu 룸 나가기 (최종 감정 데이터 전송 포함)
     await openViduLeaveRoom(sendFinalEmotionData);
 
-    // 통화 종료 후 갈등 레포트 페이지로 이동
-    if (onEndCall) {
-      onEndCall();
-    } else {
-      // onEndCall이 없으면 직접 갈등 레포트로 이동 (실제 방 ID 사용)
-      navigate(`/conflict-report/${actualRoomId}`);
+    // 종료 버튼 클릭 시에만 갈등 레포트로 이동
+    if (isEndCall) {
+      if (onEndCall) {
+        onEndCall();
+      } else {
+        // onEndCall이 없으면 직접 갈등 레포트로 이동 (실제 방 ID 사용)
+        navigate(`/conflict-report/${actualRoomId}`);
+      }
     }
+    // 뒤로가기나 페이지 이탈 시에는 단순히 리소스만 정리
   };
 
   // 게스트 모달 컴포넌트
@@ -416,7 +432,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           </div>
 
           {/* 대화 내용 */}
-          <div className="flex-1 flex flex-col max-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden">
             <div className="p-4 border-b border-gray-700 flex-shrink-0">
               <h3 className="text-white font-semibold">실시간 대화</h3>
               <div className="flex gap-2 mt-2">
@@ -526,7 +542,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
           {/* 나가기 버튼 */}
           <button
-            onClick={handleLeaveRoom}
+            onClick={() => handleLeaveRoom(true)}
             className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white transition-colors"
           >
             📞
