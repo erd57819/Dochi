@@ -148,6 +148,8 @@ export const useSTT = (roomName, participantName) => {
   // 실시간 감정 분석 요청 (새로 추가)
   const sendEmotionAnalysis = async (speaker, text) => {
     try {
+      console.log('[감정분석] 요청 시작:', { speaker, text });
+      
       // 최근 5개 대화를 포함한 conversation 구성
       const recentConversations = conversationLogRef.current.slice(-5).map(conv => ({
         speaker: conv.speaker,
@@ -156,6 +158,7 @@ export const useSTT = (roomName, participantName) => {
 
       // 현재 발언도 포함
       recentConversations.push({ speaker, text });
+      console.log('[감정분석] 전송할 대화 데이터:', recentConversations);
 
       const response = await fetch('/ai/speech/emotion/contextual', {
         method: 'POST',
@@ -166,20 +169,43 @@ export const useSTT = (roomName, participantName) => {
       });
 
       const emotionResult = await response.json();
-      console.log('[실시간 감정분석 결과]', emotionResult);
+      console.log('[Google API 감정분석 결과]', emotionResult);
 
-      // 감정에 따른 코칭 메시지 생성 및 표시
-      const coachingMessage = generateEmotionCoaching(emotionResult);
-      if (coachingMessage) {
+      // Google API 원본 결과를 사용자에게 직접 표시
+      if (emotionResult && !emotionResult.error) {
+        const { emotion, score, magnitude, speaker: analyzedSpeaker, text: analyzedText } = emotionResult;
+        
+        const googleResultMessage = `🧠 Google 감정분석 결과
+📝 분석 대상: "${analyzedText}"
+😊 감정: ${emotion}
+📊 점수: ${score} (-1.0~1.0)
+📈 강도: ${magnitude}
+👤 화자: ${analyzedSpeaker}`;
+
         setConversations(prev => [...prev, {
-          id: Date.now() + 1, // 중복 방지
-          speaker: 'AI 감정코치',
-          text: coachingMessage,
+          id: Date.now() + 1,
+          speaker: 'Google AI',
+          text: googleResultMessage,
           timestamp: new Date().toLocaleTimeString('ko-KR', {
             hour: '2-digit',
             minute: '2-digit'
           }),
-          isEmotionCoaching: true
+          isGoogleAnalysis: true
+        }]);
+        
+        console.log('[Google API 성공] 감정:', emotion, '점수:', score, '강도:', magnitude);
+      } else {
+        console.error('[Google API 오류]', emotionResult);
+        
+        setConversations(prev => [...prev, {
+          id: Date.now() + 2,
+          speaker: 'Google AI',
+          text: `❌ Google 감정분석 실패: ${emotionResult?.error || emotionResult?.message || '알 수 없는 오류'}`,
+          timestamp: new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          isGoogleAnalysis: true
         }]);
       }
 
