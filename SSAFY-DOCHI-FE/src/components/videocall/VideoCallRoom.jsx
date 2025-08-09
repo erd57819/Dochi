@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/AuthStore';
 import { useOpenVidu } from '../../hooks/useOpenVidu';
 import { useSTT } from '../../hooks/useSTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
 
 const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
-  // 인증 스토어에서 토큰 가져오기
-  const { token, isLoggedIn } = useAuthStore();
+  // 인증 스토어에서 토큰과 사용자 정보 가져오기
+  const { token, isLoggedIn, user } = useAuthStore();
+  const navigate = useNavigate();
 
   // 게스트 모드 관련 상태
   const [isGuestMode, setIsGuestMode] = useState(false);
@@ -15,7 +17,10 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
 
   // 설정 - props에서 방 코드 사용
   const roomName = roomCode || 'test-room';
-  const [participantName, setParticipantName] = useState('사용자1');
+  // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
+  const [participantName, setParticipantName] = useState(
+    isLoggedIn && user ? `user-${user.id}` : '게스트'
+  );
 
   // 녹화 상태
   const [isRecording, setIsRecording] = useState(false);
@@ -30,16 +35,19 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
     updateParticipants, attachTrack
   } = openViduHook;
 
-  // STT 훅 사용
-  const sttHook = useSTT(roomName, participantName);
+  // 실제 방 ID 얻기 (연결된 room 객체에서)
+  const actualRoomId = room?.name || roomName;
+
+  // STT 훅 사용 (실제 방 ID 사용)
+  const sttHook = useSTT(actualRoomId, participantName);
   const {
     sttEnabled, aiMediationEnabled, conversations, currentSpeech,
     recognitionRef, speechTimeoutRef, conversationLogRef,
     toggleSTT, toggleAIMediation, stopSTT, startSTT, handleSpeechResult, sendSTTToFastAPI
   } = sttHook;
 
-  // 감정인식 훅 사용
-  const emotionHook = useEmotionDetection(roomName, participantName);
+  // 감정인식 훅 사용 (실제 방 ID 사용)
+  const emotionHook = useEmotionDetection(actualRoomId, participantName);
   const {
     emotionScores, conflictLevel,
     emotionAccumulatorRef, lastEmotionSentTimeRef,
@@ -161,6 +169,9 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
     // 통화 종료 후 갈등 레포트 페이지로 이동
     if (onEndCall) {
       onEndCall();
+    } else {
+      // onEndCall이 없으면 직접 갈등 레포트로 이동 (실제 방 ID 사용)
+      navigate(`/conflict-report/${actualRoomId}`);
     }
   };
 
