@@ -74,10 +74,27 @@ pipeline {
             steps {
                 echo "DOcker 서비스 정리..."
                 sh '''
-                    docker-compose down --remove-orphans || true
-                    docker network rm dochi-network 2>/dev/null || true
-                    docker system prune -f --volumes || true
-                    echo "✅ 정리 완료"
+                    sh '''
+                        # 1. 컨테이너 정리
+                        docker-compose down --remove-orphans || true
+
+                        # 2. 네트워크 정리
+                        docker network rm dochi-network 2>/dev/null || true
+
+                        # 3. 사용하지 않는 이미지 정리
+                        docker image prune -f || true
+
+                        # 4. 오래된 컨테이너 정리 (중지된 것만)
+                        docker container prune -f || true
+
+                        # 5. 빌드 캐시 정리 (선택적)
+                        docker builder prune -f --keep-storage 1GB || true
+
+                        echo "✅ 정리 완료 (데이터 보존됨)"
+
+                        # 6. 볼륨 상태 확인
+                        echo "현재 볼륨 상태:"
+                        docker volume ls | grep -E "mysql-data|redis-data" || echo "볼륨 없음"
                 '''
             }
         }
