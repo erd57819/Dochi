@@ -61,6 +61,9 @@ export const useSTT = (roomName, participantName) => {
     // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
     await sendSTTToFastAPI(speaker, text);
 
+    // 실시간 감정 분석을 위한 데이터 전송 (추가)
+    await sendEmotionAnalysis(speaker, text);
+
     // 갈등 감지 및 중재 타이밍 결정
     const shouldMediate = await analyzeConflictAndTiming(text, speaker);
     
@@ -140,6 +143,75 @@ export const useSTT = (roomName, participantName) => {
       console.error('갈등 분석 실패:', error);
       return false;
     }
+  };
+
+  // 실시간 감정 분석 요청 (새로 추가)
+  const sendEmotionAnalysis = async (speaker, text) => {
+    try {
+      // 최근 5개 대화를 포함한 conversation 구성
+      const recentConversations = conversationLogRef.current.slice(-5).map(conv => ({
+        speaker: conv.speaker,
+        text: conv.text
+      }));
+
+      // 현재 발언도 포함
+      recentConversations.push({ speaker, text });
+
+      const response = await fetch('/ai/speech/emotion/contextual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation: recentConversations
+        })
+      });
+
+      const emotionResult = await response.json();
+      console.log('[실시간 감정분석 결과]', emotionResult);
+
+      // 감정에 따른 코칭 메시지 생성 및 표시
+      const coachingMessage = generateEmotionCoaching(emotionResult);
+      if (coachingMessage) {
+        setConversations(prev => [...prev, {
+          id: Date.now() + 1, // 중복 방지
+          speaker: 'AI 감정코치',
+          text: coachingMessage,
+          timestamp: new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          isEmotionCoaching: true
+        }]);
+      }
+
+    } catch (error) {
+      console.error('[감정분석 요청 실패]', error);
+    }
+  };
+
+  // 감정 분석 결과를 바탕으로 코칭 메시지 생성 (새로 추가)
+  const generateEmotionCoaching = (emotionResult) => {
+    if (!emotionResult || emotionResult.emotion === 'error') {
+      return null;
+    }
+
+    const { emotion, score, magnitude, speaker } = emotionResult;
+
+    // Google API 테스트를 위해 필터링 기능 비활성화
+    // 감정 강도가 낮으면 코칭하지 않음
+    // if (!magnitude || magnitude < 0.3) {
+    //   return null;
+    // }
+
+    // if (emotion === 'sad' && score < -0.5) {
+    //   return `${speaker}님, 현재 부정적인 감정이 강하게 느껴집니다. 잠시 심호흡을 하고 차분하게 이야기해보는 것은 어떨까요?`;
+    // } else if (emotion === 'sad' && score < -0.25) {
+    //   return `${speaker}님, 약간의 부정적인 감정이 감지됩니다. 상대방의 입장에서 생각해보시는 것도 좋을 것 같아요.`;
+    // } else if (emotion === 'happy' && score > 0.5) {
+    //   return `${speaker}님, 긍정적인 분위기가 정말 좋네요! 이 에너지를 계속 유지해보세요.`;
+    // }
+
+    // 모든 감정에 대해 결과 표시 (테스트용)
+    return `${speaker}님, 감정 분석 완료 - ${emotion} (점수: ${score}, 강도: ${magnitude})`;
   };
 
   // AI 조언 요청
