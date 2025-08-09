@@ -138,7 +138,13 @@ export const useEmotionDetection = (roomName, participantName) => {
 
       console.log('[표정] FastAPI로 전송:', payload);
       
-      await apiClient.post('/emotion/face', payload);
+      await fetch('/ai/emotion/face', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
       console.log('[표정] FastAPI 전송 성공');
       
       // 누적 데이터 초기화
