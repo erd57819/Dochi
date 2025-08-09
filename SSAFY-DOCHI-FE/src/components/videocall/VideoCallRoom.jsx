@@ -1,26 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import useAuthStore from '../../stores/AuthStore';
 import { useOpenVidu } from '../../hooks/useOpenVidu';
 import { useSTT } from '../../hooks/useSTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
 
-const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
+const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 인증 스토어에서 토큰과 사용자 정보 가져오기
   const { token, isLoggedIn, user } = useAuthStore();
   const navigate = useNavigate();
+  const params = useParams();
+  const roomCodeFromUrl = params.roomCode;
 
   // 게스트 모드 관련 상태
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // 설정 - props에서 방 코드 사용
-  const roomName = roomCode || 'test-room';
+  // 설정 - URL에서 방 ID 추출
+  const getRoomIdFromUrl = () => {
+    const pathSegments = window.location.pathname.split('/');
+    const extractedRoomId = pathSegments[pathSegments.length - 1] || 'test-room';
+    console.log('URL에서 추출한 Room ID:', extractedRoomId);
+    console.log('현재 URL:', window.location.pathname);
+    console.log('Path segments:', pathSegments);
+    return extractedRoomId;
+  };
+  
+  const roomName = roomCodeFromUrl || getRoomIdFromUrl();
+  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl: getRoomIdFromUrl() });
   // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
-  const [participantName, setParticipantName] = useState(
-    isLoggedIn && user ? `user-${user.id}` : '게스트'
-  );
+  const getUserIdentifier = () => {
+    if (!isLoggedIn || !user) return '게스트';
+    
+    // userId (ssafysy) 사용 - 갈등 레포트에서 누가 말했는지 명확하게 표시
+    return user.userId || user.username || user.loginId || `user-${user.id}`;
+  };
+  
+  const [participantName, setParticipantName] = useState(getUserIdentifier());
 
   // 녹화 상태
   const [isRecording, setIsRecording] = useState(false);
@@ -55,6 +72,15 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
     sendAccumulatedEmotionsToFastAPI, analyzeConflictLevel, generateEmotionAdvice,
     sendFinalEmotionData
   } = emotionHook;
+
+  // 사용자 정보 변경 감지하여 participantName 업데이트
+  useEffect(() => {
+    const newParticipantName = getUserIdentifier();
+    if (newParticipantName !== participantName) {
+      setParticipantName(newParticipantName);
+      console.log('Participant name 업데이트:', newParticipantName);
+    }
+  }, [isLoggedIn, user]);
 
   // 초기화 및 정리
   useEffect(() => {

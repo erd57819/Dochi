@@ -26,7 +26,11 @@ export const useSTT = (roomName, participantName) => {
       console.log('[STT] FastAPI로 전송:', payload);
       
       
-      await fetch('/ai/speech/process-conflict-chunk', {
+      const apiUrl = window.location.hostname === 'localhost'
+        ? '/ai/speech/process-conflict-chunk'  // 로컬 개발 (vite proxy 사용)
+        : 'https://i13c209.p.ssafy.io/ai/speech/process-conflict-chunk';  // 배포 환경 (직접 연결)
+      
+      await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -60,6 +64,9 @@ export const useSTT = (roomName, participantName) => {
 
     // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
     await sendSTTToFastAPI(speaker, text);
+
+    // 실시간 감정 분석을 위한 데이터 전송 (추가)
+    await sendEmotionAnalysis(speaker, text);
 
     // 갈등 감지 및 중재 타이밍 결정
     const shouldMediate = await analyzeConflictAndTiming(text, speaker);
@@ -140,6 +147,105 @@ export const useSTT = (roomName, participantName) => {
       console.error('갈등 분석 실패:', error);
       return false;
     }
+  };
+
+  // 실시간 감정 분석 요청 (새로 추가)
+  const sendEmotionAnalysis = async (speaker, text) => {
+    try {
+      console.log('[감정분석] 요청 시작:', { speaker, text });
+      
+      // 최근 5개 대화를 포함한 conversation 구성
+      const recentConversations = conversationLogRef.current.slice(-5).map(conv => ({
+        speaker: conv.speaker,
+        text: conv.text
+      }));
+
+      // 현재 발언도 포함
+      recentConversations.push({ speaker, text });
+      console.log('[감정분석] 전송할 대화 데이터:', recentConversations);
+
+      const emotionApiUrl = window.location.hostname === 'localhost'
+        ? '/ai/speech/emotion/contextual'  // 로컬 개발 (vite proxy 사용)
+        : 'https://i13c209.p.ssafy.io/ai/speech/emotion/contextual';  // 배포 환경 (직접 연결)
+      
+      const response = await fetch(emotionApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation: recentConversations
+        })
+      });
+
+      const emotionResult = await response.json();
+      console.log('[Google API 감정분석 결과]', emotionResult);
+
+      // Google API 원본 결과를 사용자에게 직접 표시
+      if (emotionResult && !emotionResult.error) {
+        const { emotion, score, magnitude, speaker: analyzedSpeaker, text: analyzedText } = emotionResult;
+        
+        const googleResultMessage = `🧠 Google 감정분석 결과
+📝 분석 대상: "${analyzedText}"
+😊 감정: ${emotion}
+📊 점수: ${score} (-1.0~1.0)
+📈 강도: ${magnitude}
+👤 화자: ${analyzedSpeaker}`;
+
+        setConversations(prev => [...prev, {
+          id: Date.now() + 1,
+          speaker: 'Google AI',
+          text: googleResultMessage,
+          timestamp: new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          isGoogleAnalysis: true
+        }]);
+        
+        console.log('[Google API 성공] 감정:', emotion, '점수:', score, '강도:', magnitude);
+      } else {
+        console.error('[Google API 오류]', emotionResult);
+        
+        setConversations(prev => [...prev, {
+          id: Date.now() + 2,
+          speaker: 'Google AI',
+          text: `❌ Google 감정분석 실패: ${emotionResult?.error || emotionResult?.message || '알 수 없는 오류'}`,
+          timestamp: new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          isGoogleAnalysis: true
+        }]);
+      }
+
+    } catch (error) {
+      console.error('[감정분석 요청 실패]', error);
+    }
+  };
+
+  // 감정 분석 결과를 바탕으로 코칭 메시지 생성 (새로 추가)
+  const generateEmotionCoaching = (emotionResult) => {
+    if (!emotionResult || emotionResult.emotion === 'error') {
+      return null;
+    }
+
+    const { emotion, score, magnitude, speaker } = emotionResult;
+
+    // Google API 테스트를 위해 필터링 기능 비활성화
+    // 감정 강도가 낮으면 코칭하지 않음
+    // if (!magnitude || magnitude < 0.3) {
+    //   return null;
+    // }
+
+    // if (emotion === 'sad' && score < -0.5) {
+    //   return `${speaker}님, 현재 부정적인 감정이 강하게 느껴집니다. 잠시 심호흡을 하고 차분하게 이야기해보는 것은 어떨까요?`;
+    // } else if (emotion === 'sad' && score < -0.25) {
+    //   return `${speaker}님, 약간의 부정적인 감정이 감지됩니다. 상대방의 입장에서 생각해보시는 것도 좋을 것 같아요.`;
+    // } else if (emotion === 'happy' && score > 0.5) {
+    //   return `${speaker}님, 긍정적인 분위기가 정말 좋네요! 이 에너지를 계속 유지해보세요.`;
+    // }
+
+    // 모든 감정에 대해 결과 표시 (테스트용)
+    return `${speaker}님, 감정 분석 완료 - ${emotion} (점수: ${score}, 강도: ${magnitude})`;
   };
 
   // AI 조언 요청

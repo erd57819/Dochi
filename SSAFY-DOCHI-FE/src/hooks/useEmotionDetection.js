@@ -138,7 +138,11 @@ export const useEmotionDetection = (roomName, participantName) => {
 
       console.log('[표정] FastAPI로 전송:', payload);
       
-      await fetch('/ai/emotion/face', {
+      const faceApiUrl = window.location.hostname === 'localhost'
+        ? '/ai/emotion/face'  // 로컬 개발 (vite proxy 사용)
+        : 'https://i13c209.p.ssafy.io/ai/emotion/face';  // 배포 환경 (직접 연결)
+      
+      await fetch(faceApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

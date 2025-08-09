@@ -22,11 +22,16 @@ class STTConsumer(BaseKafkaConsumer):
         dt = datetime.fromisoformat(timestamp)
         chunk_index = dt.minute // 10
 
-        key = f"stt:transcript:{room_id}:{chunk_index}"
+        # 10분 단위 청크 저장
+        chunk_key = f"stt:transcript:{room_id}:{chunk_index}"
         line = f"{speaker}: {text}"
-
-        r.rpush(key, line)  # Redis List에 append
-        print(f"[STT 저장] {key} → {line}")
+        r.rpush(chunk_key, line)
+        print(f"[STT 청크 저장] {chunk_key} → {line}")
+        
+        # 전체 스크립트 저장 (갈등 레포트에서 사용)
+        raw_key = f"stt:raw:{room_id}"
+        r.rpush(raw_key, line)
+        print(f"[STT 전체 저장] {raw_key} → {line}")
 
 if __name__ == "__main__":
     STTConsumer().start()
