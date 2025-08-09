@@ -9,7 +9,7 @@ r = redis.Redis(host='dochi-redis', port=6379, decode_responses=True)
 
 class SummaryConsumer(BaseKafkaConsumer):
     def __init__(self):
-        super().__init__(topic="STT-transcripts", group_id="stt-summary")
+        super().__init__(topic="conflict-stt", group_id="stt-summary")
 
     def handle_message(self, message: str):
         try:
