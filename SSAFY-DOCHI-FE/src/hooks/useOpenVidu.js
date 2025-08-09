@@ -492,13 +492,16 @@ export const useOpenVidu = (roomName, participantName, isGuestMode) => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    if (audioContextRef.current) {
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close();
+      audioContextRef.current = null;
     }
 
     // 원격 참가자 오디오 분석기 정리
     remoteAnalysersRef.current.forEach(({ audioContext }) => {
-      audioContext.close();
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close();
+      }
     });
     remoteAnalysersRef.current.clear();
 
