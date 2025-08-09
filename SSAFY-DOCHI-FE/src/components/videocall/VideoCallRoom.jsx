@@ -101,6 +101,31 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   }, [isLoggedIn, isGuestMode]);
 
+  // 페이지 언마운트시 정리 (브라우저 이벤트)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log('[페이지 종료] 리소스 정리 시작...');
+      handleLeaveRoom();
+    };
+
+    const handlePopState = () => {
+      console.log('[뒤로 가기] 리소스 정리 시작...');
+      handleLeaveRoom();
+    };
+
+    // 브라우저 종료/새로고침/뒤로가기 이벤트 처리
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    // 컴포넌트 언마운트시 정리
+    return () => {
+      console.log('[컴포넌트 언마운트] 리소스 정리 시작...');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+      handleLeaveRoom();
+    };
+  }, []);
+
   // 표정 분석 시작 (로컬 비디오가 준비되면)
   useEffect(() => {
     if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
@@ -391,8 +416,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           </div>
 
           {/* 대화 내용 */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-4 border-b border-gray-700">
+          <div className="flex-1 flex flex-col max-h-0">
+            <div className="p-4 border-b border-gray-700 flex-shrink-0">
               <h3 className="text-white font-semibold">실시간 대화</h3>
               <div className="flex gap-2 mt-2">
                 <button
@@ -414,7 +439,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {/* 현재 음성 */}
               {currentSpeech.text && (
                 <div className="bg-blue-900 bg-opacity-50 p-3 rounded">
