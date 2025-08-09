@@ -74,7 +74,6 @@ pipeline {
             steps {
                 echo "DOcker 서비스 정리..."
                 sh '''
-                    sh '''
                         # 1. 컨테이너 정리
                         docker-compose down --remove-orphans || true
 
