@@ -15,8 +15,13 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // 설정 - props에서 방 코드 사용
-  const roomName = roomCode || 'test-room';
+  // 설정 - URL에서 방 ID 추출
+  const getRoomIdFromUrl = () => {
+    const pathSegments = window.location.pathname.split('/');
+    return pathSegments[pathSegments.length - 1] || 'test-room';
+  };
+  
+  const roomName = roomCode || getRoomIdFromUrl();
   // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
   const [participantName, setParticipantName] = useState(
     isLoggedIn && user ? `user-${user.id}` : '게스트'
