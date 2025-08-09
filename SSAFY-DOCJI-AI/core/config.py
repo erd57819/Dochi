@@ -16,4 +16,3 @@ settings = Settings()
 print(f"[Config] GMS_KEY 로드됨: {'있음' if settings.GMS_KEY else '없음'}")
 print(f"[Config] Kafka 서버: {settings.kafka_bootstrap_servers}")
 print(f"[Config] Kafka 사용: {settings.use_kafka}")
-
