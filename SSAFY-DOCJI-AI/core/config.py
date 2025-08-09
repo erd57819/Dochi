@@ -4,7 +4,7 @@ from pydantic import Field
 
 
 class Settings(BaseSettings):
-    gms_key: str = Field(alias="GMS_KEY")
+    GMS_KEY: str = Field(alias="GMS_KEY")
     google_application_credentials: str = Field(default="", alias="GOOGLE_APPLICATION_CREDENTIALS")
     google_cloud_project: str = Field(default="", alias="GOOGLE_CLOUD_PROJECT")
 
