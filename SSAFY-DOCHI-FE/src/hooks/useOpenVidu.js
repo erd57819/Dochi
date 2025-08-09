@@ -39,8 +39,8 @@ export const useOpenVidu = (roomName, participantName, isGuestMode) => {
 
   // LiveKit 서버 URL
   const LIVEKIT_URL = window.location.hostname === 'localhost'
-    ? 'ws://localhost:7880'
-    : 'wss://openvidu.dochi-doc.site';
+    ? 'ws://192.168.100.63:7880'
+    : 'wss://i13c209.p.ssafy.io/livekit';
 
   // 토큰 서버에서 가져오기
   const getTokenFromServer = async (roomName) => {
@@ -79,11 +79,16 @@ export const useOpenVidu = (roomName, participantName, isGuestMode) => {
       const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
       console.log('토큰 응답 데이터:', response.data);
 
-      if (!response.data || !response.data.token) {
-        throw new Error('토큰이 응답에 없습니다');
+      // 백엔드 응답 구조에 맞춰 수정
+      if (response.data.status === 200 && response.data.data) {
+        // VideoCallRoomCreateResDto에서 token 가져오기
+        return response.data.data.token;
+      } else if (response.data.data && response.data.data.token) {
+        // 대체 응답 구조
+        return response.data.data.token;
+      } else {  
+        throw new Error('토큰 발급 실패: ' + (response.data.message || 'Unknown error'));
       }
-
-      return response.data.token;
     } catch (error) {
       console.error('토큰 요청 실패:', error);
       if (error.response) {
