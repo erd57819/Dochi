@@ -25,7 +25,7 @@ export const useSTT = (roomName, participantName) => {
 
       console.log('[STT] FastAPI로 전송:', payload);
       
-      // 수정
+      
       await fetch('/ai/speech/process-conflict-chunk', {
         method: 'POST',
         headers: {
