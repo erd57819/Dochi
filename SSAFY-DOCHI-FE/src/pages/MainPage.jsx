@@ -1,15 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
-import SimpleThreeBackground from '../components/SimpleThreeBackground';
-// Swiper 제거 - sticky scroll로 대체
 
 import image9 from "@/assets/image 9.png";
 import image10 from "@/assets/image 10.png";
 import image17 from "@/assets/image 17.png";
 import image18 from "@/assets/image 18.png";
 import image65 from "@/assets/image-65.png";
-import line203 from "@/assets/Line-203.png";
 import social from "@/assets/Social.png";
 import line from "@/assets/line.png";
 import vector2 from "@/assets/Vector-2.png";
@@ -20,20 +17,8 @@ import todak from "@/assets/todak.png";
 export const MainPage = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
-  const [animatedSections, setAnimatedSections] = useState(new Set()); // 초기는 비워둔 상태
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const containerRef = useRef(null);
-  
-  // 섹션별 3D 텍스트
-  const sectionTexts = [
-    "갈등",
-    "고민", 
-    "해결",
-    "서비스",
-    "참견도치"
-  ];
+  const [animatedSections, setAnimatedSections] = useState(new Set());
 
-  // 애니메이션 CSS
   const typewriterStyle = `
     .typewriter {
       overflow: hidden;
@@ -186,27 +171,6 @@ export const MainPage = () => {
       50% { transform: scale(1.1); }
       100% { transform: scale(1); }
     }
-    
-    @keyframes shatter {
-      0% { 
-        transform: scale(1) rotate(0deg); 
-        opacity: 1; 
-      }
-      50% { 
-        transform: scale(0.8) rotate(5deg); 
-        opacity: 0.7; 
-        filter: blur(1px);
-      }
-      100% { 
-        transform: scale(1) rotate(0deg); 
-        opacity: 1; 
-        filter: blur(0px);
-      }
-    }
-    
-    .shatter-effect {
-      animation: shatter 1.5s ease-in-out;
-    }
   `;
 
   useEffect(() => {
@@ -217,9 +181,8 @@ export const MainPage = () => {
       const currentScrollTop = window.scrollY;
       const sectionHeight = window.innerHeight;
       
-      // 5번째 섹션 진입 후에는 자연스러운 스크롤 허용
       if (currentScrollTop >= sectionHeight * 3.9) {
-        return; // 기본 스크롤 동작 허용
+        return;
       }
       
       e.preventDefault();
@@ -232,26 +195,24 @@ export const MainPage = () => {
       let targetScroll;
       
       if (delta > 0) {
-        // 아래로 스크롤
         if (currentScrollTop < sectionHeight * 0.8) {
-          targetScroll = sectionHeight; // 2번째 섹션
+          targetScroll = sectionHeight;
         } else if (currentScrollTop < sectionHeight * 1.8) {
-          targetScroll = sectionHeight * 2; // 3번째 섹션
+          targetScroll = sectionHeight * 2;
         } else if (currentScrollTop < sectionHeight * 2.8) {
-          targetScroll = sectionHeight * 3; // 4번째 섹션
+          targetScroll = sectionHeight * 3;
         } else if (currentScrollTop < sectionHeight * 3.8) {
-          targetScroll = sectionHeight * 4; // 5번째 섹션
+          targetScroll = sectionHeight * 4;
         }
       } else {
-        // 위로 스크롤
         if (currentScrollTop > sectionHeight * 3.2) {
-          targetScroll = sectionHeight * 3; // 4번째 섹션
+          targetScroll = sectionHeight * 3;
         } else if (currentScrollTop > sectionHeight * 2.2) {
-          targetScroll = sectionHeight * 2; // 3번째 섹션
+          targetScroll = sectionHeight * 2;
         } else if (currentScrollTop > sectionHeight * 1.2) {
-          targetScroll = sectionHeight; // 2번째 섹션
+          targetScroll = sectionHeight;
         } else if (currentScrollTop > sectionHeight * 0.2) {
-          targetScroll = 0; // 1번째 섹션
+          targetScroll = 0;
         }
       }
       
@@ -285,18 +246,9 @@ export const MainPage = () => {
         newSection = 4;
       }
       
-      // 현재 섹션과 다른 섹션이면 상태 업데이트 및 애니메이션 처리
       if (currentSection !== newSection) {
-        setIsTransitioning(true);
         setCurrentSection(newSection);
         
-        // 전환 완료 후 트랜지션 상태 해제
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 1500);
-        
-        // 모든 섹션의 애니메이션 클래스 제거
-        // 섹션 0
         const typewriterEl = document.querySelector('.typewriter');
         const shakeEl = document.querySelector('.shake-text');
         if (typewriterEl) {
@@ -306,7 +258,6 @@ export const MainPage = () => {
           shakeEl.classList.remove('animate', 'finished');
         }
         
-        // 섹션 1
         const line1El = document.querySelector('.typewriter-line1');
         const line2El = document.querySelector('.typewriter-line2');
         const pulseEl = document.querySelector('.pulse-text');
@@ -314,20 +265,9 @@ export const MainPage = () => {
         if (line2El) line2El.classList.remove('animate', 'finished');
         if (pulseEl) pulseEl.classList.remove('animate');
         
-        // 섹션 2
         const fadeElements = document.querySelectorAll('#section-2 .fade-in-element, #section-2 .fade-in-title, #section-2 .fade-in-image, #section-2 .fade-in-button, #section-2 .fade-in-link');
         fadeElements.forEach(el => el.classList.remove('animate'));
         
-        // 전체 화면에 부서지는 효과 적용
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-          mainContent.classList.add('shatter-effect');
-          setTimeout(() => {
-            mainContent.classList.remove('shatter-effect');
-          }, 1500);
-        }
-        
-        // 짧은 딜레이 후 새로운 섹션의 애니메이션 시작
         setTimeout(() => {
           if (newSection === 0) {
             const typewriterEl = document.querySelector('.typewriter');
@@ -335,7 +275,6 @@ export const MainPage = () => {
             if (typewriterEl) typewriterEl.classList.add('animate');
             if (shakeEl) shakeEl.classList.add('animate');
             
-            // 애니메이션 완료 후 커서 제거
             setTimeout(() => {
               if (typewriterEl) typewriterEl.classList.add('finished');
               if (shakeEl) shakeEl.classList.add('finished');
@@ -363,9 +302,8 @@ export const MainPage = () => {
             const fadeElements = document.querySelectorAll('#section-2 .fade-in-element, #section-2 .fade-in-title, #section-2 .fade-in-image, #section-2 .fade-in-button, #section-2 .fade-in-link');
             fadeElements.forEach(el => el.classList.add('animate'));
           }
-        }, 100); // DOM 렌더링 완료 대기
+        }, 100);
         
-        // animatedSections 상태를 현재 섹션만 포함하도록 업데이트
         setAnimatedSections(new Set([newSection]));
       }
     };
@@ -373,7 +311,6 @@ export const MainPage = () => {
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('scroll', handleScroll);
     
-    // 초기 로드 시 첫 번째 섹션 애니메이션 시작
     setTimeout(() => {
       const typewriterEl = document.querySelector('.typewriter');
       const shakeEl = document.querySelector('.shake-text');
@@ -396,7 +333,7 @@ export const MainPage = () => {
       clearTimeout(scrollTimeout);
     };
   }, [currentSection]);
-
+  
   const scrollToSection = (sectionIndex) => {
     const targetY = sectionIndex * window.innerHeight;
     window.scrollTo({
@@ -407,26 +344,17 @@ export const MainPage = () => {
 
   return (
     <div className="bg-white overflow-x-hidden" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
-      {/* Three.js 3D 배경 */}
-      <SimpleThreeBackground 
-        currentSection={currentSection}
-        isTransitioning={isTransitioning}
-      />
-      
-      {/* 타자기 애니메이션 스타일 */}
       <style>{typewriterStyle}</style>
       
-      {/* Fixed Navbar */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <Nav />
       </div>
       
-      {/* Sticky Pagination */}
-      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-40 flex flex-col space-y-4">
+      <div className="fixed right-4 sm:right-6 lg:right-8 xl:right-12 top-1/2 transform -translate-y-1/2 z-40 flex flex-col space-y-3 sm:space-y-4">
         {[0, 1, 2, 3, 4].map((index) => (
           <div
             key={index}
-            className={`w-3 h-3 rounded-full cursor-pointer transition-all duration-300 ${
+            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full cursor-pointer transition-all duration-300 ${
               currentSection === index 
                 ? 'bg-[#bf7d2c] scale-125' 
                 : 'bg-gray-300 hover:bg-gray-400'
@@ -436,21 +364,27 @@ export const MainPage = () => {
         ))}
       </div>
       
-      <div className="bg-white w-full mx-auto relative pt-24 main-content">
+      <div className="bg-white w-full mx-auto relative">
         
         {/* Section 0: 좁혀지지 않는 갈등 */}
         <section id="section-0" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
-            <div className="absolute top-12 sm:top-16 lg:top-20 right-8 sm:right-16 lg:right-32">
+            <div className="absolute top-[6vh] sm:top-[8vh] lg:top-[10vh] xl:top-[8vh] 2xl:top-[6vh] right-8 sm:right-16 lg:right-32">
               <div className="text-right">
-                <div className="font-['Pretendard-SemiBold'] font-semibold text-black text-9xl leading-tight typewriter">
+                <div 
+                  className="font-['Pretendard-SemiBold'] font-semibold text-black leading-tight typewriter"
+                  style={{ fontSize: 'clamp(60px, 6.5vw, 128px)' }}
+                >
                   좁혀지지 않는 갈등
                 </div>
               </div>
             </div>
-            <div className="absolute bottom-1/3 right-8 sm:right-16 lg:right-32">
+            <div className="absolute bottom-[28vh] sm:bottom-[32vh] lg:bottom-[35vh] xl:bottom-[32vh] 2xl:bottom-[28vh] right-8 sm:right-16 lg:right-32">
               <div className="text-right">
-                <div className="font-['Pretendard-SemiBold'] font-semibold text-8xl leading-tight shake-text">
+                <div 
+                  className="font-['Pretendard-SemiBold'] font-semibold leading-tight shake-text"
+                  style={{ fontSize: 'clamp(50px, 5.5vw, 112px)' }}
+                >
                   <span className="text-black">참견도치가 </span>
                   <br />
                   <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견</span>
@@ -459,9 +393,13 @@ export const MainPage = () => {
               </div>
             </div>
             <img
-              className="absolute w-56 h-68 sm:w-68 sm:h-80 lg:w-80 lg:h-92 xl:w-88 xl:h-104 top-1/2 left-8 sm:left-16 lg:left-32 transform -translate-y-1/2 object-cover"
+              className="absolute top-1/2 left-8 sm:left-16 lg:left-32 transform -translate-y-1/2 object-cover"
               alt="Image"
               src={image9}
+              style={{
+                width: 'clamp(220px, 22vw, 352px)',
+                height: 'auto'
+              }}
             />
           </div>
         </section>
@@ -469,26 +407,37 @@ export const MainPage = () => {
         {/* Section 1: 고민이 있다면? */}
         <section id="section-1" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
-            <header className="absolute top-4 sm:top-8 lg:top-12 left-8 sm:left-16 lg:left-32 text-black text-9xl max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight pulse-text">
+            <header 
+              className="absolute top-[6vh] sm:top-[8vh] lg:top-[10vh] xl:top-[8vh] 2xl:top-[6vh] left-8 sm:left-16 lg:left-32 text-black max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight pulse-text"
+              style={{ fontSize: 'clamp(60px, 6.5vw, 128px)' }}
+            >
               고민이 있다면?
             </header>
             <main className="absolute w-full top-1/2 left-8 sm:left-16 lg:left-32 right-8 sm:right-16 lg:right-32 transform -translate-y-2/5">
-              {/* 첫 번째 줄 */}
-              <div className="relative text-8xl max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line1">
+              <div 
+                className="relative max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line1"
+                style={{ fontSize: 'clamp(50px, 5.5vw, 112px)' }}
+              >
                 <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">비밀보장</span>
                 <span className="text-black">되는</span>
               </div>
               
-              {/* 두 번째 줄 */}
-              <div className="relative mt-4 sm:mt-6 lg:mt-8 text-8xl max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line2">
+              <div 
+                className="relative mt-4 sm:mt-6 lg:mt-8 max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line2"
+                style={{ fontSize: 'clamp(50px, 5.5vw, 112px)' }}
+              >
                 <span className="text-[#030303]">참견도치</span>
                 <span className="text-black">가 들어줄게요</span>
               </div>
               
               <img
-                className="absolute w-72 h-72 sm:w-88 sm:h-88 lg:w-104 lg:h-104 xl:w-[32rem] xl:h-[32rem] -top-28 sm:-top-36 lg:-top-44 right-0 sm:right-8 lg:right-20 object-cover"
+                className="absolute -top-28 sm:-top-36 lg:-top-44 right-0 sm:right-8 lg:right-20 object-cover"
                 alt="참곬도치 캐릭터 이미지"
                 src={image10}
+                style={{
+                  width: 'clamp(288px, 25vw, 512px)',
+                  height: 'auto'
+                }}
               />
             </main>
           </div>
@@ -497,41 +446,48 @@ export const MainPage = () => {
         {/* Section 2: 나만의 고민해결 플랫폼 */}
         <section id="section-2" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
-            {/* Main Title */}
-            <div className="absolute top-20 sm:top-24 lg:top-28 left-8 sm:left-16 lg:left-32 fade-in-title max-w-4xl">
-              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-9xl leading-tight whitespace-nowrap">
+            <div className="absolute top-[10vh] sm:top-[12vh] lg:top-[15vh] xl:top-[12vh] 2xl:top-[10vh] left-8 sm:left-16 lg:left-32 fade-in-title max-w-4xl">
+              <div 
+                className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] leading-tight whitespace-nowrap"
+                style={{ fontSize: 'clamp(56px, 6vw, 128px)' }}
+              >
                 나만의{" "}
                 <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
                   고민해결
                 </span>{" "}
                 플랫폼,
               </div>
-              <div className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] text-8xl leading-tight mt-2">
+              <div 
+                className="font-['Pretendard-SemiBold'] font-semibold text-[#333333] leading-tight mt-2"
+                style={{ fontSize: 'clamp(48px, 5vw, 112px)' }}
+              >
                 참견도치 🦔
               </div>
             </div>
 
-            {/* Main Hedgehog Image */}
             <img
-              className="absolute w-72 h-72 sm:w-88 sm:h-88 lg:w-104 lg:h-104 xl:w-[30rem] xl:h-[30rem] top-1/2 right-4 sm:right-8 lg:right-12 transform -translate-y-1/2 object-cover fade-in-image"
+              className="absolute top-1/2 right-4 sm:right-8 lg:right-12 transform -translate-y-1/2 object-cover fade-in-image"
               alt="Main Hedgehog"
               src={image65}
+              style={{
+                width: 'clamp(280px, 25vw, 480px)',
+                height: 'auto'
+              }}
             />
 
-            {/* CTA Buttons */}
-            <div className="absolute bottom-1/3 left-8 sm:left-16 lg:left-32 fade-in-button">
+            <div className="absolute bottom-[28vh] sm:bottom-[32vh] lg:bottom-[35vh] xl:bottom-[30vh] 2xl:bottom-[25vh] left-8 sm:left-16 lg:left-32 fade-in-button">
               <div 
-                className="w-52 sm:w-60 lg:w-68 xl:w-76 h-16 sm:h-18 lg:h-20 bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
+                className="w-48 sm:w-56 lg:w-64 xl:w-64 2xl:w-64 h-14 sm:h-16 lg:h-18 xl:h-18 2xl:h-18 bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
                 onClick={() => navigate('/service')}
               >
-                <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-sm sm:text-base lg:text-lg xl:text-xl">
+                <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-sm sm:text-base lg:text-lg xl:text-lg 2xl:text-lg">
                   참견도치 사용해보기
                 </div>
               </div>
             </div>
             
             <div 
-              className="absolute bottom-1/3 left-72 sm:left-88 lg:left-108 xl:left-124 mt-4 font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-sm sm:text-base lg:text-lg xl:text-xl underline cursor-pointer hover:text-[#bf7d2c] transition-colors fade-in-link"
+              className="absolute bottom-[28vh] sm:bottom-[32vh] lg:bottom-[35vh] xl:bottom-[30vh] 2xl:bottom-[25vh] left-64 sm:left-80 lg:left-96 xl:left-96 2xl:left-96 mt-4 font-['Pretendard-SemiBold'] font-semibold text-[#3d2b1f] text-sm sm:text-base lg:text-lg xl:text-lg 2xl:text-lg underline cursor-pointer hover:text-[#bf7d2c] transition-colors fade-in-link"
               onClick={() => scrollToSection(3)}
             >
               더 둘러보기 →
@@ -539,242 +495,156 @@ export const MainPage = () => {
           </div>
         </section>
 
-        {/* Service Cards Section */}
-        <section id="section-3" className="relative w-full h-screen bg-white flex items-start justify-center pt-12" style={{scrollSnapAlign: 'start'}}>
-          <div className="w-full px-4 sm:px-8 lg:px-20">
-            <div className="text-center mb-16 sm:mb-20 lg:mb-24">
-              <h2 className="font-['Pretendard-SemiBold'] font-semibold text-4xl sm:text-6xl lg:text-7xl xl:text-8xl leading-tight">
+        {/* Section 3: 서비스 이용해보기 */}
+        <section id="section-3" className="relative w-full min-h-screen bg-white flex items-start justify-center pt-8 sm:pt-12 lg:pt-16 xl:pt-12 2xl:pt-8 pb-12 px-4 sm:px-8 lg:px-20 scale-90" style={{scrollSnapAlign: 'start'}}>
+          <div>
+            <div className="text-center mb-6 sm:mb-8 lg:mb-12 xl:mb-10 2xl:mb-8">
+              <h2 
+                className="font-['Pretendard-SemiBold'] font-semibold leading-tight"
+                style={{ fontSize: 'clamp(32px, 5.2vw, 100px)' }}
+              >
                 <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
                 <span className="text-[#333333]"> 서비스 이용해보기</span>
               </h2>
             </div>
-            {/* Cards Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-6xl mx-auto">
-              {/* Left Column */}
-              <div className="space-y-6 lg:space-y-8">
-                {/* Community Card */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-7 max-w-5xl mx-auto">
+              <div className="space-y-5 lg:space-y-7">
                 <div 
-                  className="bg-[#f8d6b3] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative"
+                  className="bg-[#f8d6b3] rounded-[16px] p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative"
                   onClick={() => navigate('/community')}
                 >
-                  <img
-                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
-                    alt="Vector"
-                    src={vector}
-                  />
-                  
-                  <div className="font-['Pretendard-Bold'] font-bold text-[#3d2b1f] text-xl sm:text-2xl lg:text-3xl mb-4">
-                    참견도치 커뮤니티
-                  </div>
-                  
-                  <div className="font-['Pretendard-Regular'] font-normal text-[#3d2b1f] text-base sm:text-lg lg:text-xl pr-8">
-                    비슷한 고민을 가진 사람들과 이야기해보세요
-                  </div>
+                  <img className="absolute w-3.5 h-7 top-5 sm:top-7 right-5 sm:right-7" alt="Vector" src={vector} />
+                  <div className="font-['Pretendard-Bold'] font-bold text-[#3d2b1f] text-lg sm:text-xl lg:text-2xl mb-3.5">참견도치 커뮤니티</div>
+                  <div className="font-['Pretendard-Regular'] font-normal text-[#3d2b1f] text-sm sm:text-base lg:text-lg pr-7">비슷한 고민을 가진 사람들과 이야기해보세요</div>
                 </div>
-
-                {/* Conflict Resolution Card */}
                 <div 
-                  className="bg-[#83673f] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative min-h-[200px] sm:min-h-[240px]"
+                  className="bg-[#83673f] rounded-[16px] p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative min-h-[180px] sm:min-h-[216px]"
                   onClick={() => navigate('/conflicts/create')}
                 >
-                  <img
-                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
-                    alt="Vector"
-                    src={vector2}
-                  />
-                  
-                  <div className="font-['Pretendard-Bold'] font-bold text-white text-xl sm:text-2xl lg:text-3xl mb-4">
-                    참견도치와 갈등 해결하기
-                  </div>
-                  
-                  <div className="font-['Pretendard-Regular'] font-normal text-white text-base sm:text-lg lg:text-xl leading-relaxed pr-8">
-                    화상 대화 속 감정과 대화를 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
-                  </div>
+                  <img className="absolute w-3.5 h-7 top-5 sm:top-7 right-5 sm:right-7" alt="Vector" src={vector2} />
+                  <div className="font-['Pretendard-Bold'] font-bold text-white text-lg sm:text-xl lg:text-2xl mb-3.5">참견도치와 갈등 해결하기</div>
+                  <div className="font-['Pretendard-Regular'] font-normal text-white text-sm sm:text-base lg:text-lg leading-relaxed pr-7">화상 대화 속 감정과 대화를 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요</div>
                 </div>
               </div>
-
-              {/* Right Column */}
-              <div className="space-y-6 lg:space-y-8">
-                {/* Comfort Service Card */}
+              <div className="space-y-5 lg:space-y-7">
                 <div 
-                  className="bg-[#7f5539] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative min-h-[200px] sm:min-h-[240px]"
+                  className="bg-[#7f5539] rounded-[16px] p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative min-h-[180px] sm:min-h-[216px]"
                   onClick={() => navigate('/comfort')}
                 >
-                  <img
-                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
-                    alt="Vector"
-                    src={vector2}
-                  />
-                  
-                  <div className="font-['Pretendard-Bold'] font-bold text-white text-xl sm:text-2xl lg:text-3xl mb-4">
-                    토닥토닥 서비스
-                  </div>
-                  
-                  <div className="font-['Pretendard-Regular'] font-normal text-white text-base sm:text-lg lg:text-xl leading-relaxed pr-8">
-                    참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
-                  </div>
+                  <img className="absolute w-3.5 h-7 top-5 sm:top-7 right-5 sm:right-7" alt="Vector" src={vector2} />
+                  <div className="font-['Pretendard-Bold'] font-bold text-white text-lg sm:text-xl lg:text-2xl mb-3.5">토닥토닥 서비스</div>
+                  <div className="font-['Pretendard-Regular'] font-normal text-white text-sm sm:text-base lg:text-lg leading-relaxed pr-7">참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요</div>
                 </div>
-
-                {/* My Page Card */}
                 <div 
-                  className="bg-[#cd9f6e] rounded-[18px] p-6 sm:p-8 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative"
+                  className="bg-[#cd9f6e] rounded-[16px] p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-1 relative"
                   onClick={() => navigate('/mypage')}
                 >
-                  <img
-                    className="absolute w-4 h-8 top-6 sm:top-8 right-6 sm:right-8"
-                    alt="Vector"
-                    src={vector3}
-                  />
-                  
-                  <div className="font-['Pretendard-Bold'] font-bold text-[#4E2B1A] text-xl sm:text-2xl lg:text-3xl mb-4">
-                    마이페이지
-                  </div>
-                  
-                  <div className="font-['Pretendard-Regular'] font-normal text-[#4E2B1A] text-base sm:text-lg lg:text-xl pr-8">
-                    나의 대화·중재 기록을 확인하고 관리해요
-                  </div>
+                  <img className="absolute w-3.5 h-7 top-5 sm:top-7 right-5 sm:right-7" alt="Vector" src={vector3} />
+                  <div className="font-['Pretendard-Bold'] font-bold text-[#4E2B1A] text-lg sm:text-xl lg:text-2xl mb-3.5">마이페이지</div>
+                  <div className="font-['Pretendard-Regular'] font-normal text-[#4E2B1A] text-sm sm:text-base lg:text-lg pr-7">나의 대화·중재 기록을 확인하고 관리해요</div>
                 </div>
               </div>
             </div>
           </div>
         </section>
-
-        </div>
+      </div>
         
-        {/* Detailed Services Section with Footer - Full Width */}
-        <div className="relative w-full" style={{background: 'linear-gradient(to top, #f0f4ff 0%, #ffffff 100%)'}}>
-        <section id="section-4" className="relative w-full pt-[0px] left-0" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
-          <div className="w-full max-w-[1296px] mx-auto relative">
-          
-          <img
-            className="absolute w-[409px] h-[409px] top-[644px] left-[42px] object-cover z-10"
-            alt="Image"
-            src={image10}
-          />
-
-          <img
-            className="absolute w-[95px] h-[122px] top-[240px] left-[432px] object-cover cursor-pointer group z-10"
-            onClick={() => navigate('/comfort')}
-            alt="Image"
-            src={todak}
-          />
-
-          <div 
-            className="absolute top-[227px] left-[109px] cursor-pointer group z-10"
-            onClick={() => navigate('/comfort')}
-          >
-            <div className="w-[289px] h-[27px] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[38px] leading-5 tracking-[0] group-hover:text-[#FFAF53] transition-colors">
-              토닥토닥 서비스
+      <div className="relative w-full" style={{background: 'linear-gradient(to top, #f0f4ff 0%, #ffffff 100%)'}}>
+        {/* Section 4: Detailed Services Section */}
+        <section id="section-4" className="w-full flex flex-col items-center justify-center px-4 sm:px-8 lg:px-20 py-16" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
+            {/* 전체 제목 */}
+            <div className="text-center mb-16">
+                <h2
+                    className="font-['Pretendard-SemiBold'] font-semibold"
+                    style={{ fontSize: 'clamp(48px, 5vw, 86px)' }}
+                >
+                    <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
+                    <span className="text-[#333333]">의 서비스</span>
+                </h2>
             </div>
-            <div className="w-[276px] h-[52px] mt-[44px] font-['Pretendard-Medium'] font-medium text-black text-[22px] leading-[23px] tracking-[0] group-hover:text-[#FFAF53] transition-colors">
-              참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
+
+            {/* 메인 콘텐츠 영역 (좌/우 분리) */}
+            <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                
+                {/* 왼쪽 컬럼: 큰 이미지 */}
+                <div className="flex justify-center items-center">
+                    <img 
+                        alt="참견도치 캐릭터" 
+                        src={image10} 
+                        style={{
+                            width: 'clamp(300px, 100%, 409px)',
+                            height: 'auto'
+                        }}
+                    />
+                </div>
+
+                {/* 오른쪽 컬럼: 서비스 목록 */}
+                <div className="flex flex-col justify-center space-y-12 pl-4 border-l-2 border-gray-200">
+                    {/* 1. 토닥토닥 서비스 */}
+                    <div className="flex items-start space-x-6 cursor-pointer group" onClick={() => navigate('/comfort')}>
+                        <img alt="토닥 서비스 아이콘" src={todak} className="w-16 h-auto flex-shrink-0"/>
+                        <div>
+                            <h3 className="font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-2xl lg:text-3xl mb-3 group-hover:text-[#FFAF53] transition-colors">토닥토닥 서비스</h3>
+                            <p className="font-['Pretendard-Medium'] font-medium text-black text-base lg:text-lg">참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요</p>
+                        </div>
+                    </div>
+
+                    {/* 2. 갈등 해결하기 */}
+                    <div className="flex items-start space-x-6 cursor-pointer group" onClick={() => navigate('/conflicts/create')}>
+                        <img alt="갈등 해결 아이콘" src={image9} className="w-16 h-auto flex-shrink-0"/>
+                        <div>
+                            <h3 className="font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-2xl lg:text-3xl mb-3 group-hover:text-[#FFAF53] transition-colors">참견도치와 갈등 해결하기</h3>
+                            <p className="font-['Pretendard-Medium'] font-medium text-black text-base lg:text-lg">화상 대화 속 감정과 대화을 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요</p>
+                        </div>
+                    </div>
+                    
+                    {/* 3. 커뮤니티 */}
+                    <div className="flex items-start space-x-6 cursor-pointer group" onClick={() => navigate('/community')}>
+                        <img alt="커뮤니티 아이콘" src={image18} className="w-16 h-auto flex-shrink-0"/>
+                        <div>
+                            <h3 className="font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-2xl lg:text-3xl mb-3 group-hover:text-[#FFAF53] transition-colors">커뮤니티</h3>
+                            <p className="font-['Pretendard-Medium'] font-medium text-[#3d2b1f] text-base lg:text-lg">비슷한 고민을 가진 사람들과 이야기해보세요</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div className="absolute w-[810px] h-[83px] top-[20px] left-[243px]  font-['Pretendard-SemiBold'] font-semibold text-[86px] leading-5 tracking-[0] z-10"
-          >
-            <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">참견도치</span>
-            <span className="text-[#333333]">의 서비스</span>
-          </div>
-
-          <img
-            className="absolute w-[95px] h-[122px] top-[618px] right-[70px] object-cover cursor-pointer group z-10"
-            onClick={() => navigate('/conflicts/create')}
-            alt="Image"
-            src={image9}
-          />
-
-          <div 
-            className="absolute top-[603px] left-[704px] cursor-pointer group z-10"
-            onClick={() => navigate('/conflicts/create')}
-          >
-            <div className="w-[437px] h-[28px] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[38px] leading-5 tracking-[0] group-hover:text-[#FFAF53] transition-colors">
-              참견도치와 갈등 해결하기
-            </div>
-            <div className="w-[380px] h-[53px] mt-[55px] font-['Pretendard-Medium'] font-medium text-black text-[22px] tracking-[0] leading-[23px] group-hover:text-[#FFAF53] transition-colors">
-              화상 대화 속 감정과 대화을 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
-            </div>
-          </div>
-
-          <img
-            className="absolute w-[95px] h-[122px] top-[837px] right-[70px] object-cover cursor-pointer group z-10"
-            onClick={() => navigate('/community')}
-            alt="Image"
-            src={image18}
-          />
-
-          <div 
-            className="absolute top-[835px] left-[704px] cursor-pointer group z-10"
-            onClick={() => navigate('/community')}
-          >
-            <div className="w-[437px] h-[27px] font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-[38px] leading-5 tracking-[0] group-hover:text-[#FFAF53] transition-colors">
-              커뮤니티
-            </div>
-            <div className="w-[276px] h-[53px] mt-[54px] font-['Pretendard-Medium'] font-medium text-[#3d2b1f] text-[22px] leading-normal tracking-[0] group-hover:text-[#FFAF53] transition-colors">
-              비슷한 고민을 가진 사람들과 이야기해보세요
-            </div>
-          </div>
-
-          <img
-            className="absolute w-[118px] h-[704px] top-[292px] left-[567px] z-10"
-            alt="line"
-            src={line}
-          />
-
-          </div>
         </section>
         
         {/* Footer Section */}
-        <div className="relative w-full h-[370px]">
-          <div className="w-full max-w-[1296px] mx-auto relative">
+        <footer className="relative w-full py-16 px-4 sm:px-8 lg:px-20 bg-[#f0f4ff]">
+          <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              
+              {/* About */}
+              <div className="md:col-span-1 lg:col-span-2">
+                  <h4 className="[-webkit-text-stroke:0.3px_#000000] font-['Pretendard-Regular'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap mb-3">About Team DDabong-Dochi</h4>
+                  <p className="font-['Pretendard-Regular'] font-normal text-gray-600 text-sm tracking-[0] leading-[20px] mb-4">
+                    AI 갈등 도우미 참견도치가 고민을 들어두고 해결을 위한 다양한 서비스를 제공해 드립니다.
+                  </p>
+                  <img className="w-[136px] h-[16px]" alt="Social" src={social} />
+              </div>
 
-          <div className="absolute w-[323px] top-[240px] left-[124px] font-['Pretendard-Regular'] font-normal text-gray-600 text-sm tracking-[0] leading-[20px] z-10">
-            AI 갈등 도우미 참견도치가 고민을 들어두고 해결을 위한 다양한 서비스를 제공해 드립니다.
+              {/* Front-End Members */}
+              <div>
+                  <h4 className="font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap mb-3">Front-End</h4>
+                  <ul className="font-['Plus_Jakarta_Sans-Regular'] font-normal text-sm tracking-[0] leading-8 text-zinc-800">
+                    <li>Sunwoo Park</li>
+                    <li>Dahye Lee</li>
+                    <li>Yongbin Kim</li>
+                  </ul>
+              </div>
 
+              {/* Back-End Members */}
+              <div>
+                  <h4 className="font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap mb-3">Back-End</h4>
+                  <ul className="font-['Plus_Jakarta_Sans-Regular'] font-normal text-sm tracking-[0] leading-8 text-gray-900">
+                      <li>TaeYoung Kim</li>
+                      <li>Junho Shin</li>
+                      <li>Soyeon Kim</li>
+                  </ul>
+              </div>
           </div>
-
-          <div className="absolute w-[114px] top-[195px] left-[122px] [-webkit-text-stroke:0.3px_#000000] font-['Pretendard-Regular'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap z-10">
-            About Team DDabong-Dochi
-          </div>
-
-          <img
-            className="absolute w-[136px] h-[16px] top-[344px] left-[124px] z-10"
-            alt="Social"
-            src={social}
-          />
-
-          {/* Footer Links */}
-          <div className="absolute w-[125px] h-[167px] top-[196px] left-[617px] z-10">
-            
-            <div className="absolute w-[113px] top-0 left-0 font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
-              Team Members
-            </div>
-          </div>
-
-          <div className="absolute w-[150px] h-[167px] top-[196px] left-[798px] z-10">
-            <div className="absolute w-[147px] top-[37px] left-0 font-['Plus_Jakarta_Sans-Regular'] font-normal text-sm tracking-[0] leading-9">
-              <span className="text-zinc-800">Sunwoo Park<br /></span>
-              <span className="text-zinc-900">Dahye Lee<br /></span>
-              <span className="text-zinc-800">Yongbin Kim</span>
-            </div>
-            <div className="absolute w-[42px] top-0 left-0 font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
-              Front-End
-            </div>
-          </div>
-
-          <div className="absolute w-[147px] h-[167px] top-[196px] left-[1016px] z-10">
-            <div className="absolute w-[143px] text-gray-900 top-[37px] left-0 font-['Plus_Jakarta_Sans-Regular'] font-normal text-sm tracking-[0] leading-9">
-              TaeYoung Kim<br />
-              Junho Shin<br />
-              Soyeon Kim<br />
-            </div>
-            <div className="absolute w-[83px] top-0 left-0 font-['Plus_Jakarta_Sans-Bold'] font-bold text-gray-900 text-base tracking-[0] leading-6 whitespace-nowrap">
-              Back-End
-            </div>
-          </div>
-          </div>
-        </div>
-        </div>
+        </footer>
+      </div>
     </div>
   );
 };

@@ -52,13 +52,20 @@ const VideoCallMain = () => {
     }
   };
 
-  // 통화 종료 후 메인으로 돌아가기
+  // 통화 종료 후 갈등 레포트 페이지로 이동
   const handleEndCall = () => {
-    setCurrentPage('main');
-    setRoomCode('');
-    setJoinCode('');
-    setRoomInfo(null);
-    setError('');
+    // roomCode가 있으면 갈등 레포트 페이지로 이동
+    if (roomCode) {
+      // React Router의 navigate 사용
+      window.location.href = `/conflict-report/${roomCode}`;
+    } else {
+      // roomCode가 없으면 메인으로
+      setCurrentPage('main');
+      setRoomCode('');
+      setJoinCode('');
+      setRoomInfo(null);
+      setError('');
+    }
   };
 
   // 영상통화방 화면

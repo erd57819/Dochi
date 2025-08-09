@@ -55,15 +55,17 @@ public class AiSummaryService {
         try {
             String conflictTypeKorean = getKoreanConflictType(conflictType);
             
-            // 갈등 분석을 위한 프롬프트 구성
+            // 갈등 분석을 위한 프롬프트 구성 (요약 더 단축, 볼드 서식 추가)
             String analysisPrompt = String.format(
-                "다음은 %s 관련 갈등 상황입니다. 이를 분석하여 요약과 해결방안을 제시해주세요.\n\n" +
+                "다음은 %s 관련 갈등 상황입니다. 핵심만 간결하게 분석해주세요.\n\n" +
                 "갈등 내용: %s\n\n" +
-                "다음 형식으로 응답해주세요:\n" +
-                "=== 갈등 상황 분석 ===\n" +
-                "[갈등의 핵심 내용과 원인을 2-3문장으로 요약]\n\n" +
-                "=== 해결 방안 ===\n" +
-                "[구체적이고 실용적인 해결방안을 3-5개 제시]",
+                "다음 형식으로 응답하세요:\n" +
+                "갈등 상황 분석:\n" +
+                "핵심 원인과 문제점을 70-100자 이내로 요약하고, 중요한 키워드는 <strong>키워드</strong> HTML 태그로 강조하세요.\n\n" +
+                "해결 방안:\n" +
+                "1. 첫 번째 해결방안 (30-40자, 핵심 단어는 <strong>강조</strong>)\n" +
+                "2. 두 번째 해결방안 (30-40자, 핵심 단어는 <strong>강조</strong>)\n" +
+                "3. 세 번째 해결방안 (30-40자, 핵심 단어는 <strong>강조</strong>)",
                 conflictTypeKorean, description
             );
             
@@ -75,22 +77,37 @@ public class AiSummaryService {
                 throw new RuntimeException(gmsResponse);
             }
             
-            // 응답 파싱
-            String[] sections = gmsResponse.split("=== 해결 방안 ===");
+            // 응답 파싱 (볼드 서식 유지, 다른 마크다운 제거)
+            String[] sections = gmsResponse.split("해결 방안:");
             String summary = "";
             String solutions = "";
             
             if (sections.length >= 1) {
-                summary = sections[0].replace("=== 갈등 상황 분석 ===", "").trim();
+                summary = sections[0]
+                    .replace("갈등 상황 분석:", "")
+                    .replaceAll("[#\\-]{1,3}\\s*", "")  // # - 기호 제거
+                    .replaceAll("__(.*?)__", "$1")  // __ 볼드 제거
+                    .replaceAll("\\*((?!\\*).)*\\*", "$1")  // * 이탤릭 제거 (** 볼드는 유지)
+                    .replaceAll("_((?!_).)_", "$1")  // _ 이탤릭 제거
+                    .replaceAll("`(.*?)`", "$1")  // 코드 블록 제거
+                    .trim();
             }
             
             if (sections.length >= 2) {
-                solutions = sections[1].trim();
+                solutions = sections[1]
+                    .replaceAll("[#\\-]{1,3}\\s*", "")  // # - 기호 제거
+                    .replaceAll("__(.*?)__", "$1")  // __ 볼드 제거
+                    .replaceAll("\\*((?!\\*).)*\\*", "$1")  // * 이탤릭 제거 (** 볼드는 유지)
+                    .replaceAll("_((?!_).)_", "$1")  // _ 이탤릭 제거
+                    .replaceAll("`(.*?)`", "$1")  // 코드 블록 제거
+                    .trim();
             }
             
-            // 파싱이 실패한 경우 전체 응답을 요약으로 사용
+            // 파싱이 실패한 경우 전체 응답을 요약으로 사용 (100자 제한)
             if (summary.isEmpty()) {
-                summary = gmsResponse.length() > 200 ? gmsResponse.substring(0, 200) + "..." : gmsResponse;
+                summary = gmsResponse.length() > 100 ? gmsResponse.substring(0, 100) + "..." : gmsResponse;
+            } else if (summary.length() > 100) {
+                summary = summary.substring(0, 100) + "...";
             }
             
             if (solutions.isEmpty()) {
@@ -178,42 +195,48 @@ public class AiSummaryService {
     private Map<String, Object> generateAdvancedAnalysisWithGMS(String description, ConflictType conflictType) {
         String conflictTypeKorean = getKoreanConflictType(conflictType);
         
-        // 고도화된 갈등 분석 프롬프트
+        // 고도화된 갈등 분석 프롬프트 (더 단축, 볼드 서식 허용)
         String analysisPrompt = String.format(
-            "당신은 갈등 해결 및 심리 상담 전문가입니다. 다음 %s 갈등을 심층적으로 분석하여 실용적이고 구체적인 조언을 제공해주세요.\n\n" +
+            "당신은 갈등 해결 전문가입니다. 다음 %s 갈등 상황을 자세히 분석해주세요.\n\n" +
             "갈등 상황: %s\n\n" +
-            "다음 형식으로 전문적인 분석을 제공해주세요:\n\n" +
+            "중요한 지침:\n" +
+            "- 각 섹션별로 구체적이고 실용적인 내용을 작성하세요\n" +
+            "- 중요한 키워드는 <strong>키워드</strong> HTML 태그로 강조하세요\n" +
+            "- 목록 작성 시 마크다운(-)이 아닌 HTML <br> 태그를 사용하세요\n" +
+            "- 일반적인 조언이 아닌, 이 특정 상황에 맞는 분석을 제공하세요\n" +
+            "- 반드시 각 섹션에 완전한 분석 내용을 작성하세요\n\n" +
+            "다음 형식으로 반드시 완전한 분석을 작성하세요:\n\n" +
             "=== 감정 분석 ===\n" +
-            "[현재 감정의 깊은 층위 분석]\n" +
-            "- 표면 감정과 숨겨진 진짜 감정 구분\n" +
-            "- 감정의 트리거와 패턴 분석\n" +
-            "- 감정이 행동과 판단에 미치는 영향\n" +
-            "- 건강한 감정 표현 방법 제시\n\n" +
+            "이 갈등 상황에서 나타나는 구체적인 감정들을 HTML 형식으로 분석하세요:\n" +
+            "<strong>표면 감정:</strong> [구체적으로 나타나는 감정들]<br>\n" +
+            "<strong>숨겨진 진짜 감정:</strong> [내면 깊은 곳의 감정들]<br>\n" +
+            "<strong>트리거:</strong> [감정을 자극하는 구체적인 요소들]<br>\n" +
+            "<strong>건강한 감정 표현 방법:</strong> [구체적인 실행 방법]<br>" +
             "=== 갈등 원인 분석 ===\n" +
-            "[다차원적 원인 분석]\n" +
-            "- 즉각적 원인 vs 근본적 원인\n" +
-            "- 소통 패턴의 문제점\n" +
-            "- 가치관과 기대치의 차이\n" +
-            "- 환경적/상황적 요인\n\n" +
+            "이 갈등의 구체적인 원인들을 HTML 형식으로 분석하세요:\n" +
+            "<strong>즉각적 원인:</strong> [바로 드러나는 문제들]<br>\n" +
+            "<strong>근본적 원인:</strong> [깊숙한 곳에 있는 진짜 문제들]<br>\n" +
+            "<strong>소통 패턴의 문제점:</strong> [대화 방식의 구체적인 문제]<br>\n" +
+            "<strong>상황적 요인:</strong> [환경이나 상황의 영향]<br>" +
             "=== 내 입장 분석 ===\n" +
-            "[당사자 심리 상태 종합 분석]\n" +
-            "- 현재의 감정적 니즈와 욕구\n" +
-            "- 갈등에서 원하는 진짜 결과\n" +
-            "- 무의식적 행동 패턴과 방어기제\n" +
-            "- 성장과 변화가 필요한 부분\n\n" +
+            "갈등 상황에서 당신의 상태를 HTML 형식으로 분석하세요:\n" +
+            "<strong>현재의 감정적 니즈:</strong> [지금 필요한 것들]<br>\n" +
+            "<strong>갈등에서 원하는 진짜 결과:</strong> [진심으로 바라는 결과]<br>\n" +
+            "<strong>무의식적 행동 패턴:</strong> [자신도 모르게 하는 행동들]<br>\n" +
+            "<strong>변화가 필요한 부분:</strong> [개선해야 할 점들]<br>" +
             "=== 상대방 입장 분석 ===\n" +
-            "[상대방 관점 깊이 있는 추론]\n" +
-            "- 상대방의 가능한 감정 상태\n" +
-            "- 행동의 숨겨진 동기와 필요\n" +
-            "- 상대방이 느끼는 압박감이나 두려움\n" +
-            "- 관계에서 상대방이 추구하는 가치\n\n" +
+            "상대방의 관점에서 상황을 HTML 형식으로 분석하세요:\n" +
+            "<strong>상대방의 가능한 감정 상태:</strong> [상대방이 느낄 감정들]<br>\n" +
+            "<strong>숨겨진 동기와 필요:</strong> [상대방이 진정 원하는 것]<br>\n" +
+            "<strong>느끼는 압박감:</strong> [상대방이 받는 스트레스나 부담]<br>\n" +
+            "<strong>상대방이 추구하는 가치:</strong> [상대방에게 중요한 것들]<br>" +
             "=== 실질적 해결 방안 ===\n" +
-            "[단계별 실행 가능한 해결 전략]\n" +
-            "1. 즉시 실행 가능한 응급처치 (감정 조절)\n" +
-            "2. 단기 해결책 (1-2주 내)\n" +
-            "3. 중기 관계 회복 전략 (1-3개월)\n" +
-            "4. 장기 예방 및 성장 방안\n" +
-            "5. 실패 시 대안 계획",
+            "구체적이고 실행 가능한 해결 단계를 제시하세요:\n" +
+            "1. 즉시 실행: [오늘 당장 할 수 있는 것]\n" +
+            "2. 단기 해결: [1-2주 내에 할 수 있는 것]\n" +
+            "3. 중기 회복: [1-3개월간 지속할 것]\n" +
+            "4. 장기 예방: [3개월 이상 꾸준히 할 것]\n" +
+            "5. 대안 계획: [해결되지 않을 때의 Plan B]",
             conflictTypeKorean, description
         );
         
@@ -222,6 +245,9 @@ public class AiSummaryService {
         if (gmsResponse.startsWith("GMS 호출 실패:")) {
             throw new RuntimeException(gmsResponse);
         }
+        
+        // 디버그 로그 추가
+        log.info("GMS 원본 응답: {}", gmsResponse);
         
         // 응답 파싱
         Map<String, Object> result = new HashMap<>();
@@ -235,16 +261,32 @@ public class AiSummaryService {
             String solutions = "";
             
             for (String section : sections) {
-                if (section.startsWith("감정 분석")) {
-                    emotionAnalysis = section.replace("감정 분석 ===\n", "").trim();
-                } else if (section.startsWith("갈등 원인 분석")) {
-                    conflictAnalysis = section.replace("갈등 원인 분석 ===\n", "").trim();
-                } else if (section.startsWith("내 입장 분석")) {
-                    myPosition = section.replace("내 입장 분석 ===\n", "").trim();
-                } else if (section.startsWith("상대방 입장 분석")) {
-                    partnerPosition = section.replace("상대방 입장 분석 ===\n", "").trim();
-                } else if (section.startsWith("실질적 해결 방안")) {
-                    solutions = section.replace("실질적 해결 방안 ===\n", "").trim();
+                if (section.contains("감정 분석")) {
+                    // "감정 분석" 텍스트 이후 첫 줄바꿈 다음의 내용 추출
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        emotionAnalysis = lines[1].trim();
+                    }
+                } else if (section.contains("갈등 원인 분석")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        conflictAnalysis = lines[1].trim();
+                    }
+                } else if (section.contains("내 입장 분석")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        myPosition = lines[1].trim();
+                    }
+                } else if (section.contains("상대방 입장 분석")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        partnerPosition = lines[1].trim();
+                    }
+                } else if (section.contains("실질적 해결 방안")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        solutions = lines[1].trim();
+                    }
                 }
             }
             
@@ -262,11 +304,18 @@ public class AiSummaryService {
                 conflictAnalysis = fullText.substring(Math.min(200, fullText.length()));
             }
             
+            // 디버그 로그 추가
+            log.info("파싱 결과 확인:");
+            log.info("- emotionAnalysis: '{}'", emotionAnalysis);
+            log.info("- conflictAnalysis: '{}'", conflictAnalysis);
+            log.info("- myPosition: '{}'", myPosition);
+            log.info("- partnerPosition: '{}'", partnerPosition);
+            
             result.put("emotion_analysis", emotionAnalysis.isEmpty() ? "AI가 감정 상태를 분석하여 맞춤형 조언을 제공합니다." : emotionAnalysis);
             result.put("conflict_analysis", conflictAnalysis.isEmpty() ? "갈등의 근본 원인을 파악하여 해결 방향을 제시합니다." : conflictAnalysis);
             result.put("my_position", myPosition.isEmpty() ? generateMyPositionAnalysis(description, conflictType) : myPosition);
             result.put("partner_position", partnerPosition.isEmpty() ? generatePartnerPositionAnalysis(description, conflictType) : partnerPosition);
-            result.put("recommended_actions", parseActionsFromSolutions(solutions));
+            result.put("recommended_actions", parseActionsIntoPhases(solutions));
             result.put("priority_recommendation", generatePriorityRecommendation(description, conflictType));
             
             return result;
@@ -497,26 +546,90 @@ public class AiSummaryService {
         return actions.isEmpty() ? generateBasicPracticalActions("", ConflictType.COUPLE) : actions;
     }
     
-    private List<String> parseActionsFromSolutions(String solutions) {
+    private Map<String, List<String>> parseActionsIntoPhases(String solutions) {
+        Map<String, List<String>> phasedActions = new HashMap<>();
+        List<String> immediate = new ArrayList<>();
+        List<String> shortTerm = new ArrayList<>();
+        List<String> midTerm = new ArrayList<>();
+        List<String> longTerm = new ArrayList<>();
+        List<String> alternative = new ArrayList<>();
+        
         if (solutions.isEmpty()) {
-            return List.of("전문가의 조언을 구하는 것을 권장합니다.");
-        }
-        
-        List<String> actions = new ArrayList<>();
-        String[] lines = solutions.split("\n");
-        
-        for (String line : lines) {
-            line = line.trim();
-            if (!line.isEmpty() && !line.startsWith("===")) {
-                // 불필요한 기호 제거
-                line = line.replaceAll("^[\\d\\-\\*•]+\\s*", "");
-                if (line.length() > 10) { // 너무 짧은 텍스트 제외
-                    actions.add(line);
+            immediate.add("감정을 진정시키고 상황을 객관적으로 정리하기");
+            shortTerm.add("상대방과 차분한 대화 시도하기");
+            midTerm.add("관계 회복을 위한 지속적인 노력하기");
+            longTerm.add("갈등 예방을 위한 소통 패턴 개선하기");
+            alternative.add("전문가의 도움을 받는 것을 고려하기");
+        } else {
+            String[] lines = solutions.split("\n");
+            String currentPhase = "immediate";
+            
+            for (String line : lines) {
+                line = line.trim();
+                
+                // 단계 구분 키워드 확인
+                if (line.contains("즉시") || line.contains("응급") || line.contains("오늘") || line.contains("내일")) {
+                    currentPhase = "immediate";
+                } else if (line.contains("단기") || line.contains("1-2주") || line.contains("일주일")) {
+                    currentPhase = "shortTerm";
+                } else if (line.contains("중기") || line.contains("1-3개월") || line.contains("한달")) {
+                    currentPhase = "midTerm";
+                } else if (line.contains("장기") || line.contains("3개월") || line.contains("예방")) {
+                    currentPhase = "longTerm";
+                } else if (line.contains("실패") || line.contains("대안") || line.contains("Plan B")) {
+                    currentPhase = "alternative";
+                }
+                
+                // 실제 액션 아이템 추가
+                if (!line.isEmpty() && !line.startsWith("【") && !line.startsWith("===") && !line.startsWith("#")) {
+                    line = line.replaceAll("^[\\d\\-\\*•]+\\s*", "").trim();
+                    if (line.length() > 10) {
+                        switch (currentPhase) {
+                            case "immediate":
+                                if (immediate.size() < 4) immediate.add(line);
+                                break;
+                            case "shortTerm":
+                                if (shortTerm.size() < 4) shortTerm.add(line);
+                                break;
+                            case "midTerm":
+                                if (midTerm.size() < 4) midTerm.add(line);
+                                break;
+                            case "longTerm":
+                                if (longTerm.size() < 4) longTerm.add(line);
+                                break;
+                            case "alternative":
+                                if (alternative.size() < 4) alternative.add(line);
+                                break;
+                        }
+                    }
                 }
             }
+            
+            // 비어있는 단계 기본값 채우기
+            if (immediate.isEmpty()) immediate.add("24시간 쿨링 타임을 가진 후 상황 정리하기");
+            if (shortTerm.isEmpty()) shortTerm.add("상대방과 만나 대화할 시간 정하기");
+            if (midTerm.isEmpty()) midTerm.add("신뢰 회복을 위한 꾸준한 노력하기");
+            if (longTerm.isEmpty()) longTerm.add("건강한 관계 패턴 만들어가기");
+            if (alternative.isEmpty()) alternative.add("관계 재정립이나 전문가 상담 고려하기");
         }
         
-        return actions.isEmpty() ? List.of("상황에 맞는 맞춤형 해결 방안을 제시해드립니다.") : actions;
+        phasedActions.put("immediate", immediate);
+        phasedActions.put("shortTerm", shortTerm);
+        phasedActions.put("midTerm", midTerm);
+        phasedActions.put("longTerm", longTerm);
+        phasedActions.put("alternative", alternative);
+        
+        return phasedActions;
+    }
+    
+    private List<String> parseActionsFromSolutions(String solutions) {
+        Map<String, List<String>> phasedActions = parseActionsIntoPhases(solutions);
+        List<String> allActions = new ArrayList<>();
+        
+        // 모든 단계의 액션을 하나의 리스트로 합치기
+        phasedActions.values().forEach(allActions::addAll);
+        
+        return allActions.isEmpty() ? List.of("상황에 맞는 맞춤형 해결 방안을 제시해드립니다.") : allActions;
     }
     
     private String generatePriorityRecommendation(String description, ConflictType conflictType) {
@@ -649,35 +762,43 @@ public class AiSummaryService {
     private String generateSimpleSummary(String description, ConflictType conflictType) {
         StringBuilder summary = new StringBuilder();
         
-        // 갈등 유형별 맞춤형 접두사
-        String typePrefix = getTypePrefix(conflictType);
+        // 갈등 유형별 맞춤형 접두사 (더 간결하게)
+        String typePrefix = getShortTypePrefix(conflictType);
         summary.append(typePrefix);
         
-        // 텍스트 길이에 따른 요약
-        if (description.length() <= 100) {
-            summary.append("간단한 갈등 상황으로, ");
-        } else if (description.length() <= 300) {
-            summary.append("중간 정도의 복잡한 갈등 상황으로, ");
-        } else {
-            summary.append("복잡하고 다면적인 갈등 상황으로, ");
-        }
-        
-        // 키워드 분석
+        // 키워드 분석 (더 간결하게, HTML 태그 적용)
         if (description.contains("화가") || description.contains("분노") || description.contains("짜증")) {
-            summary.append("감정적인 요소가 강하게 나타나고 있습니다. ");
+            summary.append("<strong>감정적 갈등</strong>이 원인으로, ");
+        } else if (description.contains("오해") || description.contains("misunderstand")) {
+            summary.append("<strong>소통 문제</strong>가 핵심으로, ");
+        } else if (description.contains("자주") || description.contains("반복") || description.contains("계속")) {
+            summary.append("<strong>반복 패턴</strong>으로, ");
+        } else {
+            summary.append("<strong>상황적 갈등</strong>으로, ");
         }
         
-        if (description.contains("오해") || description.contains("misunderstand")) {
-            summary.append("의사소통의 문제가 주요 원인으로 보입니다. ");
+        summary.append("<strong>대화</strong>를 통한 해결 필요");
+        
+        // 100자 제한
+        String result = summary.toString();
+        if (result.length() > 100) {
+            result = result.substring(0, 100) + "...";
         }
         
-        if (description.contains("자주") || description.contains("반복") || description.contains("계속")) {
-            summary.append("반복적으로 발생하는 패턴이 있어 근본적인 해결이 필요합니다. ");
+        return result;
+    }
+    
+    private String getShortTypePrefix(ConflictType conflictType) {
+        switch (conflictType) {
+            case WORK: return "<strong>직장</strong> 갈등: ";
+            case FAMILY: return "<strong>가족</strong> 갈등: ";
+            case FRIEND: return "<strong>친구</strong> 갈등: ";
+            case COUPLE: return "<strong>연인</strong> 갈등: ";
+            case NEIGHBOR: return "<strong>이웃</strong> 갈등: ";
+            case FINANCIAL: return "<strong>금전</strong> 갈등: ";
+            case ONLINE: return "<strong>온라인</strong> 갈등: ";
+            default: return "<strong>일반</strong> 갈등: ";
         }
-        
-        summary.append("상호 이해와 소통을 통한 해결이 필요한 상황입니다.");
-        
-        return summary.toString();
     }
     
     private String generateSolutions(String description, ConflictType conflictType) {

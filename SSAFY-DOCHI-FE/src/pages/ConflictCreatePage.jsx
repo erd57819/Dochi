@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api.js';
 import useAuthStore from '../stores/AuthStore.js';
@@ -34,10 +34,19 @@ const ConflictCreatePage = () => {
   const [advancedAnalysis, setAdvancedAnalysis] = useState(null);
   const [tempConflictId, setTempConflictId] = useState(null);
 
-  // 로그인 확인
+  // 비로그인 시 접근 차단
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
   if (!isLoggedIn) {
-    navigate('/login');
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">로그인 페이지로 이동 중...</div>
+      </div>
+    );
   }
 
   const handleFormChange = (updates) => {

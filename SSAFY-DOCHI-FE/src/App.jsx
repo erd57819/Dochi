@@ -17,11 +17,6 @@ import ConflictResultPage from './pages/ConflictResultPage';
 import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
 import ComfortPage from './pages/ComfortPage';
 import ComfortChatPage from './pages/ComfortChatPage';
-import VoiceChatPage from './pages/VoiceChatPage';
-import VideoRoomPage from './pages/VideoRoomPage';
-import VoiceDemoPage from './pages/VoiceDemoPage';
-import STTPage from './pages/STTPage';
-import STTVideoRoomPage from './pages/STTVideoRoomPage';
 import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
 import GamePage from './pages/GamePage';
@@ -30,6 +25,7 @@ import ProfileEditPage from './pages/ProfileEditPage';
 import PasswordChangePage from './pages/PasswordChangePage';
 import RoadmapPage from './pages/RoadmapPage';
 import ExpertMatchingPage from './pages/ExpertMatchingPage';
+import ConflictReportPage from './pages/ConflictReportPage';
 import './App.css';
 import VideoCallRoom from './components/videocall/VideoCallRoom';
 
@@ -37,7 +33,7 @@ import VideoCallRoom from './components/videocall/VideoCallRoom';
 function AppContent() {
   const location = useLocation();
   const showNav = location.pathname !== '/';
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {showNav && <Nav />}
@@ -60,6 +56,7 @@ function AppContent() {
           <Route path="/conflicts/analysis/:tempId" element={<ConflictAnalysisResultPage />} />
           <Route path="/conflicts" element={<ConflictListPage />} />
           <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
+          <Route path="/conflict-report/:roomId" element={<ConflictReportPage />} />
           <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
           <Route path="/comfort" element={<ComfortPage />} />
           <Route path="/comfort/chat" element={<ComfortChatPage />} />

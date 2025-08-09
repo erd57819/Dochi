@@ -9,3 +9,7 @@ ffmpeg-python
 openai
 SpeechRecognition
 google-cloud-language
+confluent-kafka
+redis
+pydantic
+typing-extensions

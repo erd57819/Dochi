@@ -24,6 +24,19 @@ services:
     networks:
       - dochi-network
 
+  # == REDIS COMMANDER ==
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8083:8081"
+    depends_on:
+      - dochi-redis
+    networks:
+      - dochi-network
+
   dochi-backend:
     build:
       context: ./SSAFY-DOCHI-BE
@@ -83,6 +96,7 @@ services:
       - GMS_KEY=${GMS_KEY}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/google-service-account.json
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+
     networks:
       - dochi-network
 
@@ -94,7 +108,7 @@ services:
     ports:
       - "7880:7880"     # HTTP/WebSocket
       - "7881:7881"     # TCP
-      - "50000-50100:50000-50100/udp"  # UDP/RTC
+      - "55000-55100:55000-55100/udp"  # UDP/RTC
     networks:
       - dochi-network
     environment:
@@ -102,9 +116,9 @@ services:
       LIVEKIT_CONFIG: |
         port: 7880
         rtc:
+          port_range_start: 55000
+          port_range_end: 55100
           tcp_port: 7881
-          port_range_start: 50000
-          port_range_end: 50100
           use_external_ip: true
           
         log_level: debug
@@ -128,6 +142,36 @@ services:
       - dochi-openvidu
     networks:
       - dochi-network
+  # == KAFKA & ZOOKEEPER ==
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: dochi-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - dochi-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: dochi-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: dochi-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    networks:
+      - dochi-network
+    restart: unless-stopped
 
 networks:
   dochi-network:

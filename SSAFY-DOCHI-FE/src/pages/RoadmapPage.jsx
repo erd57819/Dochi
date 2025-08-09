@@ -6,56 +6,155 @@ const RoadmapPage = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [conflictAnalysis, setConflictAnalysis] = useState(null);
+  const [dynamicSteps, setDynamicSteps] = useState([]);
   
-  // 분석 결과 로드
+  // 분석 결과 로드 및 동적 스텝 생성
   useEffect(() => {
     const analysisData = sessionStorage.getItem('conflictAnalysisData');
     if (analysisData) {
       try {
-        setConflictAnalysis(JSON.parse(analysisData));
+        const parsedData = JSON.parse(analysisData);
+        setConflictAnalysis(parsedData);
+        
+        // AI 분석 결과로부터 동적 스텝 생성
+        if (parsedData.recommended_actions) {
+          const steps = createDynamicSteps(parsedData.recommended_actions);
+          setDynamicSteps(steps);
+        }
       } catch (error) {
         console.error('분석 데이터 파싱 에러:', error);
+        setDynamicSteps(getDefaultSteps());
       }
+    } else {
+      setDynamicSteps(getDefaultSteps());
     }
   }, []);
 
-  const steps = [
-    {
-      id: 1,
-      title: "갈등 상황 인식",
-      description: "현재 갈등 상황을 명확히 파악하고 정리해보세요",
-      content: "갈등의 원인, 관련된 사람들, 그리고 현재 상황을 객관적으로 분석해보는 단계입니다.",
-      color: "#83673f"
-    },
-    {
-      id: 2,
-      title: "감정 정리하기",
-      description: "자신과 상대방의 감정을 이해하고 정리해보세요",
-      content: "갈등 상황에서 느끼는 감정들을 인정하고, 상대방의 입장에서도 생각해보는 시간을 가져보세요.",
-      color: "#cd9f6e"
-    },
-    {
-      id: 3,
-      title: "대화 준비하기",
-      description: "건설적인 대화를 위한 준비를 해보세요",
-      content: "무엇을 말할지, 어떤 방식으로 대화할지 미리 계획을 세워보는 단계입니다.",
-      color: "#f8d6b3"
-    },
-    {
-      id: 4,
-      title: "대화 실행하기",
-      description: "준비된 내용을 바탕으로 실제 대화를 진행해보세요",
-      content: "서로의 이야기를 듣고, 공감하며, 해결방안을 함께 찾아가는 단계입니다.",
-      color: "#EE9278"
-    },
-    {
-      id: 5,
-      title: "관계 회복하기",
-      description: "갈등 해결 후 관계를 더욱 발전시켜 나가세요",
-      content: "갈등을 통해 배운 점들을 바탕으로 더 나은 관계를 만들어가는 단계입니다.",
-      color: "#7F5539"
-    }
-  ];
+  // AI 분석 결과를 기반으로 동적 스텝 생성
+  const createDynamicSteps = (recommendedActions) => {
+    const steps = [
+      {
+        id: 1,
+        title: "즉시 실행 (감정 조절)",
+        description: "오늘~내일 안에 할 수 있는 응급처치",
+        content: "감정이 격해질 때 즉시 실행할 수 있는 응급 대응 방법입니다.",
+        actions: recommendedActions.immediate || [],
+        period: "오늘~내일",
+        color: "#83673f"
+      },
+      {
+        id: 2,
+        title: "단기 해결책",
+        description: "1-2주 내에 실행할 구체적인 행동",
+        content: "갈등의 직접적인 해결을 위한 첫 걸음입니다.",
+        actions: recommendedActions.shortTerm || [],
+        period: "1-2주 내",
+        color: "#cd9f6e"
+      },
+      {
+        id: 3,
+        title: "중기 관계 회복",
+        description: "1-3개월 동안 진행할 관계 개선 전략",
+        content: "신뢰를 회복하고 관계를 재건하는 단계입니다.",
+        actions: recommendedActions.midTerm || [],
+        period: "1-3개월",
+        color: "#f8d6b3"
+      },
+      {
+        id: 4,
+        title: "장기 예방 및 성장",
+        description: "3개월 이상의 지속적인 관계 발전",
+        content: "갈등 재발 방지와 더 나은 관계로의 성장입니다.",
+        actions: recommendedActions.longTerm || [],
+        period: "3개월 이상",
+        color: "#EE9278"
+      },
+      {
+        id: 5,
+        title: "대안 계획",
+        description: "문제가 해결되지 않을 때의 Plan B",
+        content: "모든 노력에도 불구하고 해결되지 않을 때의 대안입니다.",
+        actions: recommendedActions.alternative || [],
+        period: "필요시",
+        color: "#7F5539"
+      }
+    ];
+    
+    return steps;
+  };
+
+  // 기본 스텝 (AI 분석이 없을 때)
+  const getDefaultSteps = () => {
+    return [
+      {
+        id: 1,
+        title: "갈등 상황 인식",
+        description: "현재 갈등 상황을 명확히 파악하고 정리해보세요",
+        content: "갈등의 원인, 관련된 사람들, 그리고 현재 상황을 객관적으로 분석해보는 단계입니다.",
+        actions: [
+          "갈등이 언제부터 시작되었는지 파악하기",
+          "갈등의 핵심 원인 찾아보기",
+          "관련된 모든 사람들의 입장 정리하기"
+        ],
+        period: "지금 바로",
+        color: "#83673f"
+      },
+      {
+        id: 2,
+        title: "감정 정리하기",
+        description: "자신과 상대방의 감정을 이해하고 정리해보세요",
+        content: "갈등 상황에서 느끼는 감정들을 인정하고, 상대방의 입장에서도 생각해보는 시간을 가져보세요.",
+        actions: [
+          "내가 느끼는 감정을 솔직하게 인정하기",
+          "상대방이 느낄 수 있는 감정 생각해보기",
+          "감정에 휩쓸리지 않고 객관적으로 바라보기"
+        ],
+        period: "1-2일 내",
+        color: "#cd9f6e"
+      },
+      {
+        id: 3,
+        title: "대화 준비하기",
+        description: "건설적인 대화를 위한 준비를 해보세요",
+        content: "무엇을 말할지, 어떤 방식으로 대화할지 미리 계획을 세워보는 단계입니다.",
+        actions: [
+          "대화의 목표 명확히 하기",
+          "말하고 싶은 내용 정리하기",
+          "상대방의 이야기를 들을 준비하기"
+        ],
+        period: "1주일 내",
+        color: "#f8d6b3"
+      },
+      {
+        id: 4,
+        title: "대화 실행하기",
+        description: "준비된 내용을 바탕으로 실제 대화를 진행해보세요",
+        content: "서로의 이야기를 듣고, 공감하며, 해결방안을 함께 찾아가는 단계입니다.",
+        actions: [
+          "차분하고 존중하는 태도로 대화하기",
+          "서로의 입장을 충분히 듣기",
+          "함께 해결방안 찾아보기"
+        ],
+        period: "2-4주 내",
+        color: "#EE9278"
+      },
+      {
+        id: 5,
+        title: "관계 회복하기",
+        description: "갈등 해결 후 관계를 더욱 발전시켜 나가세요",
+        content: "갈등을 통해 배운 점들을 바탕으로 더 나은 관계를 만들어가는 단계입니다.",
+        actions: [
+          "해결된 내용을 서로 확인하기",
+          "앞으로의 관계 개선 방안 논의하기",
+          "갈등 경험을 통한 성장 인정하기"
+        ],
+        period: "지속적으로",
+        color: "#7F5539"
+      }
+    ];
+  };
+
+  const steps = dynamicSteps;
 
   const handleGoBack = () => {
     navigate(-1);
@@ -66,7 +165,15 @@ const RoadmapPage = () => {
     setCurrentStep(stepId);
   };
 
-  const currentStepData = steps.find(step => step.id === currentStep);
+  const currentStepData = steps.find(step => step.id === currentStep) || steps[0] || {
+    id: 1,
+    title: "로딩중...",
+    description: "분석 결과를 불러오는 중입니다.",
+    content: "잠시만 기다려주세요.",
+    actions: [],
+    period: "",
+    color: "#83673f"
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -190,71 +297,26 @@ const RoadmapPage = () => {
 
               {/* 단계별 가이드 내용 */}
               <div className="space-y-6">
-                {/* AI 분석 결과 기반 맞춤 가이드 */}
-                {conflictAnalysis && (
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-50 border-l-4 border-blue-400 pl-6 py-4 rounded-r-lg mb-6">
-                    <h4 className="text-lg font-bold mb-3 text-blue-800">
-                      🤖 당신의 갈등 분석 결과 기반 가이드
-                    </h4>
-                    <div className="text-sm text-blue-700 leading-relaxed">
-                      {currentStep === 1 && conflictAnalysis.conflictAnalysis && (
-                        <p><strong>갈등 인식:</strong> {conflictAnalysis.conflictAnalysis.substring(0, 200)}...</p>
-                      )}
-                      {currentStep === 2 && conflictAnalysis.emotionAnalysis && (
-                        <p><strong>감정 정리:</strong> {conflictAnalysis.emotionAnalysis.substring(0, 200)}...</p>
-                      )}
-                      {currentStep === 3 && conflictAnalysis.myPosition && (
-                        <p><strong>대화 준비:</strong> {conflictAnalysis.myPosition.substring(0, 200)}...</p>
-                      )}
-                      {currentStep === 4 && conflictAnalysis.partnerPosition && (
-                        <p><strong>대화 실행:</strong> {conflictAnalysis.partnerPosition.substring(0, 200)}...</p>
-                      )}
-                      {currentStep === 5 && conflictAnalysis.priorityRecommendation && (
-                        <p><strong>관계 회복:</strong> {conflictAnalysis.priorityRecommendation}</p>
-                      )}
-                    </div>
+                {/* 기간 표시 */}
+                {currentStepData && currentStepData.period && (
+                  <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full" 
+                       style={{ backgroundColor: currentStepData.color + '20' }}>
+                    <span className="text-sm font-bold" style={{ color: currentStepData.color }}>⏱️ 실행 기간:</span>
+                    <span className="text-sm font-medium" style={{ color: currentStepData.color }}>{currentStepData.period}</span>
                   </div>
                 )}
                 
-                <div className="border-l-4 pl-6" style={{ borderColor: currentStepData.color }}>
+                <div className="border-l-4 pl-6" style={{ borderColor: currentStepData?.color || '#333' }}>
                   <h4 className="text-xl font-bold mb-3" style={{ color: '#333333' }}>
                     이 단계에서 해야 할 일
                   </h4>
                   <ul className="space-y-2 text-lg" style={{ color: '#666666' }}>
-                    {currentStep === 1 && (
-                      <>
-                        <li>• 갈등이 언제부터 시작되었는지 파악하기</li>
-                        <li>• 갈등의 핵심 원인 찾아보기</li>
-                        <li>• 관련된 모든 사람들의 입장 정리하기</li>
-                      </>
-                    )}
-                    {currentStep === 2 && (
-                      <>
-                        <li>• 내가 느끼는 감정을 솔직하게 인정하기</li>
-                        <li>• 상대방이 느낄 수 있는 감정 생각해보기</li>
-                        <li>• 감정에 휩쓸리지 않고 객관적으로 바라보기</li>
-                      </>
-                    )}
-                    {currentStep === 3 && (
-                      <>
-                        <li>• 대화의 목표 명확히 하기</li>
-                        <li>• 말하고 싶은 내용 정리하기</li>
-                        <li>• 상대방의 이야기를 들을 준비하기</li>
-                      </>
-                    )}
-                    {currentStep === 4 && (
-                      <>
-                        <li>• 차분하고 존중하는 태도로 대화하기</li>
-                        <li>• 서로의 입장을 충분히 듣기</li>
-                        <li>• 함께 해결방안 찾아보기</li>
-                      </>
-                    )}
-                    {currentStep === 5 && (
-                      <>
-                        <li>• 해결된 내용을 서로 확인하기</li>
-                        <li>• 앞으로의 관계 개선 방안 논의하기</li>
-                        <li>• 갈등 경험을 통한 성장 인정하기</li>
-                      </>
+                    {currentStepData && currentStepData.actions && currentStepData.actions.length > 0 ? (
+                      currentStepData.actions.map((action, idx) => (
+                        <li key={idx}>• {action}</li>
+                      ))
+                    ) : (
+                      <li>• AI 분석 결과를 기다리고 있습니다...</li>
                     )}
                   </ul>
                 </div>

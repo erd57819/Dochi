@@ -23,3 +23,8 @@ class AdvancedAnalysisRequest(BaseModel):
     original_text: str
     conflict_type: str
     model_type: ModelType = ModelType.gpt
+
+
+class SummaryRequest(BaseModel):
+    roomId: str
+    text: str
