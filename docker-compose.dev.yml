@@ -85,7 +85,7 @@ services:
 
   dochi-ai-service:
     build:
-      context: ./SSAFY-DOCJI-AI
+      context: SSAFY-DOCHI-AI
       dockerfile: Dockerfile
     container_name: dochi-ai-service
     ports:
