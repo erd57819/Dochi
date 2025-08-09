@@ -46,7 +46,7 @@
 
     <select id="findById" parameterType="long" resultMap="CommunityResultMap">
         SELECT
-        cp.id, cp.user_id as userId, u.name as author, cp.category, cp.title, cp.content, 
+        cp.id, cp.user_id as userId, u.nickname as author, cp.category, cp.title, cp.content, 
         cp.view_count as viewCount, cp.comment_count as commentCount, cp.tags,
         DATE_FORMAT(cp.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
         DATE_FORMAT(cp.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
@@ -57,7 +57,7 @@
 
     <select id="findAllWithPaging" parameterType="map" resultMap="CommunityResultMap">
         SELECT
-        cp.id, cp.user_id as userId, u.name as author, cp.category, cp.title, cp.content,
+        cp.id, cp.user_id as userId, u.nickname as author, cp.category, cp.title, cp.content,
         cp.view_count as viewCount, cp.comment_count as commentCount, cp.tags,
         DATE_FORMAT(cp.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
         DATE_FORMAT(cp.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt
