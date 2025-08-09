@@ -11,12 +11,6 @@ class Settings(BaseSettings):
     kafka_bootstrap_servers: str = Field(default="localhost:9092", alias="KAFKA_BOOTSTRAP_SERVERS")
     use_kafka: bool = Field(default=False, alias="USE_KAFKA")  # Kafka 사용 여부
 
-    # .env 미사용: env_file 설정 제거
-    model_config = SettingsConfigDict(
-        extra="ignore",
-        populate_by_name=True,
-    )
-
 # 설정 로딩 시 디버깅 정보 출력
 settings = Settings()
 print(f"[Config] GMS_KEY 로드됨: {'있음' if settings.gms_key else '없음'}")
