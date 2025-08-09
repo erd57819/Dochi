@@ -1,14 +1,18 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import useAuthStore from "../stores/AuthStore.js";
 
 const MyPageNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthStore();
 
+  // 소셜 로그인 사용자는 비밀번호 변경 탭 제외
   const navItems = [
     { path: "/mypage", label: "갈등 모아보기" },
     { path: "/mypage/profile", label: "내 정보 수정" },
-    { path: "/mypage/password", label: "비밀번호 변경" }
+    // 일반 회원(isSocial이 false)만 비밀번호 변경 탭 표시
+    ...(user && !user.isSocial ? [{ path: "/mypage/password", label: "비밀번호 변경" }] : [])
   ];
 
   const handleNavClick = (path) => {

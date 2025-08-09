@@ -334,6 +334,7 @@ const SignupPage = () => {
               value={formData.address}
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
+              required
             />
           </div>
 
@@ -345,6 +346,7 @@ const SignupPage = () => {
               value={formData.age}
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
+              required
             />
           </div>
 
@@ -354,6 +356,7 @@ const SignupPage = () => {
               value={formData.gender}
               onChange={handleInputChange}
               className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800"
+              required
             >
               <option value="">성별</option>
               <option value="male">남성</option>
