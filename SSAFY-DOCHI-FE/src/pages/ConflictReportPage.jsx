@@ -145,7 +145,6 @@ const ConflictReportPage = () => {
           
           {activeTab === 'emotion' && (
             <EmotionTab 
-              emotionData={reportData?.sections?.emotion_analysis?.data}
               selectedSpeaker={selectedSpeaker}
               setSelectedSpeaker={setSelectedSpeaker}
             />
