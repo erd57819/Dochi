@@ -53,11 +53,11 @@ pipeline {
     }
 
     stages {
-        // ===== 1단계: 초기화 =====
-        stage('Initialize') {
+        // ===== 1단계: 현재 설정 확인 =====
+        stage('Show Current State') {
             steps {
-                echo "🚀 배포 시작"
-                echo "📋 배포 대상: ${params.DEPLOY_TARGET}"
+                echo "배포 시작"
+                echo "배포 대상: ${params.DEPLOY_TARGET}"
                 echo "⚡ 병렬 배포: ${params.PARALLEL_DEPLOY}"
                 sh '''
                     echo "현재 실행 중인 서비스:"
@@ -66,13 +66,13 @@ pipeline {
             }
         }
 
-        // ===== 2단계: 인프라 정리 (FULL_STACK만) =====
-        stage('Clean Infrastructure') {
+        // ===== 2단계: docker 서비스 정리 (FULL_STACK 선택 시) =====
+        stage('Clean Docker Service') {
             when {
                 expression { params.DEPLOY_TARGET == 'FULL_STACK' }
             }
             steps {
-                echo "🧹 전체 인프라 정리..."
+                echo "DOcker 서비스 정리..."
                 sh '''
                     docker-compose down --remove-orphans || true
                     docker network rm dochi-network 2>/dev/null || true
@@ -82,12 +82,12 @@ pipeline {
             }
         }
 
-        // ===== 3단계: 소스 준비 (병렬) =====
-        stage('Preparation') {
+        // ===== 3단계: 소스코드 가져오기 + 도커 로그인 (병렬처리 가능) =====
+        stage('Get Source Code from GitLab') {
             parallel {
                 stage('Git Clone') {
                     steps {
-                        echo "📥 소스 코드 가져오기..."
+                        echo "GitLab에서 소스 코드 가져오기..."
                         git credentialsId: '8981d002-36d7-41a2-a36d-c3ec2add7a5b',
                             url: 'https://lab.ssafy.com/s13-webmobile1-sub1/S13P11C209.git',
                             branch: 'master'
@@ -96,7 +96,7 @@ pipeline {
                 
                 stage('Docker Login') {
                     steps {
-                        echo "🔐 Docker Hub 로그인..."
+                        echo "Docker Hub 로그인..."
                         withCredentials([usernamePassword(
                             credentialsId: 'docker-hub',
                             usernameVariable: 'DOCKER_USER',
@@ -109,51 +109,74 @@ pipeline {
             }
         }
 
-        // ===== 4단계: 빌드 준비 (병렬) =====
-        stage('Build Preparation') {
-            when {
-                expression { !params.SKIP_BUILD }
-            }
-            parallel {
-                stage('Setup Credentials') {
-                    steps {
-                        withCredentials([
-                            file(credentialsId: 'GOOGLE-SERVICE-ACCOUNT', variable: 'JSON_PATH')
-                        ]) {
-                            sh '''
-                                cp "$JSON_PATH" google-service-account.json
-                                chmod 644 google-service-account.json
-                                echo "✅ 인증 파일 준비"
-                            '''
-                        }
-                    }
-                }
-                
-                stage('Build Backend JAR') {
-                    steps {
-                        echo "🔨 Backend JAR 빌드..."
-                        dir('SSAFY-DOCHI-BE') {
-                            sh 'mvn clean package -DskipTests -T 1C'
-                        }
-                    }
-                }
-                
-                stage('Prepare Frontend') {
-                    steps {
-                        echo "📦 Frontend 의존성 설치..."
-                        dir('SSAFY-DOCHI-FE') {
-                            sh '''
-                                if [ -f "package.json" ]; then
-                                    npm ci --cache .npm --prefer-offline || npm install
-                                fi
-                            '''
-                        }
-                    }
-                }
-            }
-        }
+         // ===== 4단계: 빌드 준비 (병렬처리 가능) =====
+         stage('Build Preparation') {
+             when {
+                 expression { !params.SKIP_BUILD }
+             }
+             parallel {
+                 stage('Google Credentials') {
+                     steps {
+                         withCredentials([
+                             file(credentialsId: 'GOOGLE-SERVICE-ACCOUNT', variable: 'JSON_PATH')
+                         ]) {
+                             sh '''
+                                 cp "$JSON_PATH" google-service-account.json
+                                 chmod 644 google-service-account.json
+                                 echo "✅ Google Service Account 준비 완료"
+                             '''
+                         }
+                     }
+                 }
 
-        // ===== 5단계: 인프라 서비스 (조건부 병렬) =====
+                 stage('Environment Variables') {
+                     steps {
+                         withCredentials([
+                             file(credentialsId: 'ENV_FILE', variable: 'ENV_PATH')
+                         ]) {
+                             sh '''
+                                 if [ -f "$ENV_PATH" ]; then
+                                     cp "$ENV_PATH" .env
+                                     chmod 644 .env
+                                     echo "✅ .env 파일 준비 완료"
+
+                                     # 환경 변수 확인
+                                     echo "📋 설정된 환경 변수:"
+                                     grep -E "^[A-Z_]+" .env | awk -F= '{print "  - " $1}'
+                                 else
+                                     echo "❌ .env 파일이 없습니다!"
+                                     exit 1
+                                 fi
+                             '''
+                         }
+                     }
+                 }
+
+                 stage('Build Backend JAR') {
+                     steps {
+                         echo "🔨 Backend JAR 빌드..."
+                         dir('SSAFY-DOCHI-BE') {
+                             sh 'mvn clean package -DskipTests -T 1C'
+                         }
+                     }
+                 }
+
+                 stage('Prepare Frontend') {
+                     steps {
+                         echo "📦 Frontend 의존성 설치..."
+                         dir('SSAFY-DOCHI-FE') {
+                             sh '''
+                                 if [ -f "package.json" ]; then
+                                     npm ci --cache .npm --prefer-offline || npm install
+                                 fi
+                             '''
+                         }
+                     }
+                 }
+             }
+         }
+
+        // ===== 5단계: 인프라 서비스 (병렬처리 가능) =====
         stage('Infrastructure Services') {
             when {
                 expression { 
@@ -166,10 +189,10 @@ pipeline {
                 script {
                     def infrastructureStages = [:]
                     
-                    // MySQL (WITH_DB, FULL_STACK만)
+                    // MySQL (WITH_DB, FULL_STACK 선택 시)
                     if (params.DEPLOY_TARGET == 'WITH_DB' || params.DEPLOY_TARGET == 'FULL_STACK') {
                         infrastructureStages['MySQL'] = {
-                            echo "🗄️ MySQL 시작..."
+                            echo " MySQL 시작..."
                             sh '''
                                 docker-compose up -d mysql
                                 for i in {1..30}; do
@@ -177,16 +200,16 @@ pipeline {
                                         echo "✅ MySQL ready"
                                         break
                                     }
-                                    sleep 2
+                                    sleep 1
                                 done
                             '''
                         }
                     }
                     
-                    // Redis (WITH_CACHE, WITH_DB, FULL_STACK)
+                    // Redis (WITH_CACHE, WITH_DB, FULL_STACK 선택 시)
                     if (params.DEPLOY_TARGET != 'APP_ONLY') {
                         infrastructureStages['Redis'] = {
-                            echo "💾 Redis 시작..."
+                            echo "Redis 시작..."
                             sh '''
                                 docker-compose up -d redis redis-commander
                                 for i in {1..15}; do
@@ -200,10 +223,10 @@ pipeline {
                         }
                     }
                     
-                    // Kafka (FULL_STACK만)
+                    // Kafka (FULL_STACK 선택 시)
                     if (params.DEPLOY_TARGET == 'FULL_STACK') {
                         infrastructureStages['Kafka'] = {
-                            echo "📨 Kafka 시작..."
+                            echo "Kafka 시작..."
                             sh '''
                                 docker-compose up -d zookeeper kafka
                                 sleep 10
@@ -213,13 +236,13 @@ pipeline {
                                         echo "✅ Kafka ready"
                                         break
                                     }
-                                    sleep 2
+                                    sleep 1
                                 done
                             '''
                         }
                         
                         infrastructureStages['OpenVidu'] = {
-                            echo "📹 OpenVidu 시작..."
+                            echo "OpenVidu 시작..."
                             sh '''
                                 docker-compose up -d openvidu-server
                                 sleep 10
@@ -240,10 +263,10 @@ pipeline {
             }
         }
 
-        // ===== 6단계: 필수 서비스 확인 =====
-        stage('Ensure Required Services') {
+        // ===== 6단계: 필수 서비스 동작 확인 =====
+        stage('Check Required Services') {
             steps {
-                echo "🔍 필수 서비스 확인..."
+                echo "필수 서비스 확인..."
                 sh '''
                     # 네트워크 확인
                     if ! docker network ls | grep -q dochi-network; then
@@ -269,7 +292,7 @@ pipeline {
             }
         }
 
-        // ===== 7단계: 애플리케이션 배포 (병렬/순차 선택) =====
+        // ===== 7단계: 애플리케이션 배포 (병렬처리 가능) =====
         stage('Application Deployment') {
             steps {
                 script {
@@ -277,7 +300,7 @@ pipeline {
                     
                     // AI Service
                     appStages['AI Service'] = {
-                        echo "🤖 AI Service 배포..."
+                        echo "AI Service 배포..."
                         sh '''
                             docker-compose stop ai-service || true
                             docker-compose rm -f ai-service || true
@@ -319,7 +342,7 @@ pipeline {
                     
                     // Frontend
                     appStages['Frontend'] = {
-                        echo "🎨 Frontend 배포..."
+                        echo "Frontend 배포..."
                         sh '''
                             docker-compose stop frontend || true
                             docker-compose rm -f frontend || true
@@ -331,12 +354,12 @@ pipeline {
                         '''
                     }
                     
-                    // 병렬 또는 순차 실행
+                    // 병렬처리 가능
                     if (params.PARALLEL_DEPLOY) {
-                        echo "⚡ 병렬 배포 시작..."
+                        echo "병렬 배포 시작..."
                         parallel appStages
                     } else {
-                        echo "📝 순차 배포 시작..."
+                        echo "순차 배포 시작..."
                         // AI Service 먼저
                         appStages['AI Service']()
                         // Backend와 Frontend는 동시에 가능
@@ -352,7 +375,7 @@ pipeline {
         // ===== 8단계: Nginx 배포 =====
         stage('Deploy Nginx') {
             steps {
-                echo "🌐 Nginx 배포..."
+                echo "Nginx 배포..."
                 sh '''
                     docker-compose stop nginx || true
                     docker-compose rm -f nginx || true
@@ -375,7 +398,7 @@ pipeline {
         // ===== 9단계: 검증 =====
         stage('Verification') {
             steps {
-                echo "🔍 배포 검증..."
+                echo "배포 검증..."
                 sh '''
                     echo "===== 서비스 상태 ====="
                     docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E "dochi-|redis-commander"
@@ -410,7 +433,7 @@ pipeline {
                     docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" | head -10
                     
                     echo ""
-                    echo "🎉 배포 완료!"
+                    echo "# 배포 완료!"
                 '''
             }
         }
@@ -444,7 +467,7 @@ pipeline {
                 def duration = currentBuild.duration / 1000
                 echo """
                 ====================================
-                🎉 배포 성공!
+                배포 성공-
                 ====================================
                 배포 대상: ${params.DEPLOY_TARGET}
                 병렬 배포: ${params.PARALLEL_DEPLOY}
@@ -472,7 +495,7 @@ pipeline {
         }
         
         cleanup {
-            echo "🧹 임시 파일 정리..."
+            echo "임시 파일 정리..."
             sh 'rm -f *.tmp *.log 2>/dev/null || true'
         }
     }
