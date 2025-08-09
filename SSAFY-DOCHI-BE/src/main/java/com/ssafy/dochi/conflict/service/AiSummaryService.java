@@ -261,26 +261,32 @@ public class AiSummaryService {
             String solutions = "";
             
             for (String section : sections) {
-                if (section.startsWith("감정 분석")) {
-                    emotionAnalysis = section.replace("감정 분석 ===", "")
-                                            .replaceAll("\\n=== .*", "")  // 다음 섹션 제거
-                                            .trim();
-                } else if (section.startsWith("갈등 원인 분석")) {
-                    conflictAnalysis = section.replace("갈등 원인 분석 ===", "")
-                                             .replaceAll("\\n=== .*", "")  // 다음 섹션 제거
-                                             .trim();
-                } else if (section.startsWith("내 입장 분석")) {
-                    myPosition = section.replace("내 입장 분석 ===", "")
-                                       .replaceAll("\\n=== .*", "")  // 다음 섹션 제거
-                                       .trim();
-                } else if (section.startsWith("상대방 입장 분석")) {
-                    partnerPosition = section.replace("상대방 입장 분석 ===", "")
-                                            .replaceAll("\\n=== .*", "")  // 다음 섹션 제거
-                                            .trim();
-                } else if (section.startsWith("실질적 해결 방안")) {
-                    solutions = section.replace("실질적 해결 방안 ===", "")
-                                      .replaceAll("\\n=== .*", "")  // 다음 섹션 제거
-                                      .trim();
+                if (section.contains("감정 분석")) {
+                    // "감정 분석" 텍스트 이후 첫 줄바꿈 다음의 내용 추출
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        emotionAnalysis = lines[1].trim();
+                    }
+                } else if (section.contains("갈등 원인 분석")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        conflictAnalysis = lines[1].trim();
+                    }
+                } else if (section.contains("내 입장 분석")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        myPosition = lines[1].trim();
+                    }
+                } else if (section.contains("상대방 입장 분석")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        partnerPosition = lines[1].trim();
+                    }
+                } else if (section.contains("실질적 해결 방안")) {
+                    String[] lines = section.split("\n", 2);
+                    if (lines.length > 1) {
+                        solutions = lines[1].trim();
+                    }
                 }
             }
             

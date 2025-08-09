@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api.js';
 import useAuthStore from '../stores/AuthStore.js';
 import { videoCallApi } from '../services/videoCallApi.js';
+import hedgehogImg from '../assets/conflict.png';
 
 const ConflictDetailPage = () => {
   const { conflictId } = useParams();
@@ -381,283 +382,309 @@ ${summary.join('\n')}
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* 헤더 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/conflicts')}
-                className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
-              >
-                <span className="text-lg">←</span>
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">{conflict.title}</h1>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
-                    {getConflictTypeText(conflict.conflictType)}
-                  </span>
-                  <span className="text-gray-500 text-sm">
-                    {new Date(conflict.createdAt).toLocaleDateString('ko-KR')}
-                  </span>
+    <div className="relative min-h-screen">
+      {/* 상단 버튼들 */}
+      <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center">
+        {/* 뒤로 가기 버튼 */}
+        <button
+          onClick={() => navigate('/conflicts')}
+          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+        >
+          <span className="text-xl">←</span>
+        </button>
+        
+        {/* 갈등 삭제 버튼 */}
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium shadow-lg"
+        >
+          <span>🗑️</span>
+          갈등 삭제
+        </button>
+      </div>
+
+      {/* 상단 배경 영역 */}
+      <div className="w-full relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#F8D6B3',
+            opacity: 0.14,
+            zIndex: 1
+          }}
+        ></div>
+        
+        {/* 메인 컨텐츠 - 상단 부분 */}
+        <main className="max-w-5xl mx-auto px-4 py-12 relative z-10">
+          {/* 상단 메시지 */}
+          <div className="text-center mb-6">
+            <h2 className="text-4xl font-bold mb-4" style={{ 
+              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              갈등 상세 분석 결과
+            </h2>
+          </div>
+
+          {/* 갈등 분석 카드 */}
+          <div className="p-12 mb-12">
+            <h3 className="text-3xl font-bold text-center mb-12" style={{ color: '#333333' }}>
+              {conflict?.title || '갈등 제목'}
+            </h3>
+
+            {/* 감정 분석과 갈등 분석을 나란히, 그 아래에 입장 정리 */}
+            <div className="space-y-8">
+              {/* 감정 분석과 갈등 분석 - 이미지와 나란히 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* 이미지 영역 */}
+                <div className="text-center">
+                  <div 
+                    className="w-60 h-60 mx-auto rounded-full flex items-center justify-center shadow-lg mb-6"
+                    style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
+                  >
+                    <img 
+                      src={hedgehogImg} 
+                      alt="갈등도치" 
+                      className="w-44 h-44 object-contain"
+                    />
+                  </div>
+                  <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
+                    {getConflictTypeText(conflict?.conflictType || 'ETC')}
+                  </h4>
+                </div>
+
+                {/* 감정 분석과 갈등 분석 */}
+                <div className="space-y-6">
+                  {/* 감정 분석 */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                      <span>😊</span> 감정 분석
+                    </h4>
+                    <div 
+                      className="text-blue-700"
+                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                    >
+                      {analysisResult?.emotion_analysis || analysisResult?.emotionAnalysis || 
+                       `현재 ${getEmotionText(conflict?.initialEmotion)} 감정 상태로, 갈등 강도 ${conflict?.intensity || 0}/10입니다. 
+                       
+이 갈등에서 가장 중요하게 생각하는 것은 ${getPriorityText(conflict?.priority)}이며, 상대방과의 대화에 대해서는 ${getTalkWillingnessText(conflict?.talkWillingness)} 상태입니다.
+
+갈등 빈도는 월 ${conflict?.conflictFrequency || 0}회 정도 발생하고 있습니다.`}
+                    </div>
+                  </div>
+
+                  {/* 갈등 분석 */}
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                      <span>⚡</span> 갈등 분석
+                    </h4>
+                    <div 
+                      className="text-purple-700"
+                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                    >
+                      {analysisResult?.conflict_analysis || analysisResult?.conflictAnalysis || 
+                       `갈등 상황: ${conflict?.description || '상세 정보가 없습니다.'}
+
+원하는 결과: ${conflict?.desiredOutcome || '명시되지 않음'}
+
+${getConflictTypeText(conflict?.conflictType)} 갈등으로 분류되며, 이는 ${conflict?.conflictWhen ? `${conflict.conflictWhen}일 전에 발생` : '최근에 발생'}했습니다.
+
+${conflict?.participants ? `관련된 인물: ${JSON.parse(conflict.participants).join(', ')}` : ''}`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 입장 정리 - 감정/갈등 분석 아래로 */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span>📝</span> 입장 정리
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="mb-3">
+                      <span className="font-medium text-blue-700">내 입장 (등록된 정보):</span>
+                      <div 
+                        className="mt-1 text-gray-700"
+                        style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                      >
+                        {analysisResult?.my_position || analysisResult?.myPosition || 
+                         `갈등 상황: ${conflict?.description || '정보 없음'}
+                         
+원하는 결과: ${conflict?.desiredOutcome || '명시되지 않음'}
+
+중요한 가치: ${getPriorityText(conflict?.priority)}
+현재 감정: ${getEmotionText(conflict?.initialEmotion)}
+대화 의지: ${getTalkWillingnessText(conflict?.talkWillingness)}`}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div>
+                      <span className="font-medium text-red-700">추가 정보:</span>
+                      <div 
+                        className="mt-1 text-gray-700"
+                        style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
+                      >
+                        {analysisResult?.partner_position || analysisResult?.partnerPosition || 
+                         `갈등 유형: ${getConflictTypeText(conflict?.conflictType)}
+갈등 강도: ${conflict?.intensity || 0}/10
+발생 시기: ${conflict?.conflictWhen ? `${conflict.conflictWhen}일 전` : '최근'}
+발생 빈도: 월 ${conflict?.conflictFrequency || 0}회
+${conflict?.participants ? `관련 인물: ${JSON.parse(conflict.participants).join(', ')}` : '관련 인물 정보 없음'}
+
+AI 요약: ${conflict?.aiSummary || 'AI 요약 정보가 없습니다.'}`}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <button
+          </div>
+        </main>
+      </div>
+
+      {/* 하단 배경 영역 (흰색) */}
+      <div className="w-full relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#FFFFFF',
+            zIndex: 1
+          }}
+        ></div>
+        
+        <main className="max-w-5xl mx-auto px-4 relative z-10">
+          {/* 하단 메시지 - 강조된 스타일 */}
+          <div className="text-center mb-16 pt-12">
+            <div className="relative inline-block">
+              {/* 배경 어쿨트 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-2xl transform rotate-1 opacity-70"></div>
+              <div className="relative bg-white rounded-2xl p-8 border-2 border-orange-300 shadow-lg">
+                <h2 className="text-4xl font-bold mb-2" style={{ 
+                  background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  리포트를 기반으로
+                </h2>
+                <h2 className="text-5xl font-black" style={{ 
+                  background: 'linear-gradient(45deg, #D2691E, #FF8C00)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  '맞춤 해결책' 제안해드릴게요!
+                </h2>
+                <div className="mt-4">
+                  <span className="text-2xl">🎆</span>
+                  <span className="ml-2 text-xl text-orange-600 font-medium">당신에게 최적화된 솔루션</span>
+                  <span className="ml-2 text-2xl">🎆</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 서비스 카드들 */}
+          <div className="mb-16">
+            {/* 첫 번째 줄 - 2개 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* 화상채팅 카드 */}
+              <div 
+                className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#83673f' }}
+                onClick={createVideoCallRoom}
+              >
+                <div className="absolute top-4 right-4">
+                  <span className="bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full">
+                    추천
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold mb-6">화상채팅 방 생성</h3>
+                <p className="mb-8 leading-relaxed opacity-90">
+                  상대방과 직접 화상으로 대화하고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요
+                </p>
+                <div className="absolute bottom-8 right-8">
+                  <span className="text-2xl">📹</span>
+                </div>
+              </div>
+
+              {/* 토닥토닥 서비스 카드 */}
+              <div 
+                className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#7F5539' }}
+                onClick={() => navigate('/comfort')}
+              >
+                <h3 className="text-2xl font-bold mb-6">토닥토닥 서비스</h3>
+                <p className="mb-8 leading-relaxed opacity-90">
+                  참견도치 챗봇이 고민을 들어주고, 당신의 이야기를 따뜻하게 정리해줘요
+                </p>
+                <div className="absolute bottom-8 right-8">
+                  <span className="text-2xl">→</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 두 번째 줄 - 3개 작은 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* 갈등 커뮤니티 카드 */}
+              <div 
+                className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#CD9F6E' }}
                 onClick={handleShareConflict}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
               >
-                <span>📢</span>
-                갈등 공유하기
-              </button>
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                <h3 className="text-xl font-bold mb-4">갈등 커뮤니티</h3>
+                <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                  비슷한 고민을 가진 사람들과 이야기해보세요<br/>
+                </p>
+                <div className="absolute bottom-6 right-6">
+                  <span className="text-xl">→</span>
+                </div>
+              </div>
+
+              {/* 5단계 해결 로드맵 카드 */}
+              <div 
+                className="rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#f8d6b3', color: '#3d2b1f' }}
+                onClick={() => navigate('/roadmap')}
               >
-                <span>🗑️</span>
-                갈등 삭제
-              </button>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">갈등 강도</div>
-                <div className="text-lg font-bold text-red-600">{conflict.intensity}/10</div>
+                <div className="absolute top-3 right-3">
+                  <span className="bg-orange-400 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    추천
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold mb-4">5단계 로드맵</h3>
+                <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                  체계적인 갈등 해결을 위한 단계별 가이드를 확인하세요
+                </p>
+                <div className="absolute bottom-6 right-6">
+                  <span className="text-xl">→</span>
+                </div>
+              </div>
+
+              {/* 전문상담사 매칭 카드 */}
+              <div 
+                className="text-white rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
+                style={{ background: '#EE9278' }}
+                onClick={() => navigate('/expert-matching')}
+              >
+                <h3 className="text-xl font-bold mb-4">전문상담사 매칭</h3>
+                <p className="mb-6 leading-relaxed opacity-90 text-sm">
+                  더 깊은 상담이 필요하다면 전문 상담사와 매칭해보세요
+                </p>
+                <div className="absolute bottom-6 right-6">
+                  <span className="text-xl">→</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* 탭 메뉴 */}
-        <div className="bg-white rounded-2xl shadow-lg mb-6">
-          <div className="flex border-b">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
-                activeTab === 'overview' 
-                  ? 'text-orange-600 border-b-2 border-orange-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              📋 갈등 개요
-            </button>
-            <button
-              onClick={() => setActiveTab('analysis')}
-              className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
-                activeTab === 'analysis' 
-                  ? 'text-orange-600 border-b-2 border-orange-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              🔍 AI 분석 결과
-            </button>
-            <button
-              onClick={() => setActiveTab('roadmap')}
-              className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
-                activeTab === 'roadmap' 
-                  ? 'text-orange-600 border-b-2 border-orange-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              🗺️ 해결 로드맵
-            </button>
-          </div>
-
-          <div className="p-6">
-            {/* 갈등 개요 탭 */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2">갈등 상황</h3>
-                      <p className="text-gray-700 leading-relaxed">{conflict.description}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2">원하는 결과</h3>
-                      <p className="text-gray-700 leading-relaxed">{conflict.desiredOutcome || '명시되지 않음'}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-gray-700 mb-1">중요한 가치</h4>
-                        <p className="text-gray-600">{getPriorityText(conflict.priority)}</p>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-gray-700 mb-1">주된 감정</h4>
-                        <p className="text-gray-600">{getEmotionText(conflict.initialEmotion)}</p>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-gray-700 mb-1">대화 의지</h4>
-                        <p className="text-gray-600">{getTalkWillingnessText(conflict.talkWillingness)}</p>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-gray-700 mb-1">발생 빈도</h4>
-                        <p className="text-gray-600">월 {conflict.conflictFrequency || 0}회</p>
-                      </div>
-                    </div>
-
-                    {conflict.participants && (
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-2">관련 인물</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {JSON.parse(conflict.participants).map((person, index) => (
-                            <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                              {person}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* AI 요약 */}
-                {conflict.aiSummary && (
-                  <div className="bg-blue-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">🤖 AI 분석 요약</h3>
-                    <div className="text-gray-700 whitespace-pre-line">{conflict.aiSummary}</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* AI 분석 결과 탭 */}
-            {activeTab === 'analysis' && (
-              <div className="space-y-6">
-                {analysisResult ? (
-                  <div className="space-y-6">
-                    {/* 감정 분석 */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                        <span>😊</span> 감정 분석
-                      </h4>
-                      <p className="text-blue-700">{analysisResult.emotionAnalysis}</p>
-                    </div>
-
-                    {/* 갈등 분석 */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                        <span>⚡</span> 갈등 분석
-                      </h4>
-                      <p className="text-purple-700">{analysisResult.conflictAnalysis}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-3xl">🔍</span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">상세 AI 분석</h3>
-                    <p className="text-gray-500 mb-6">
-                      이 갈등에 대한 상세한 AI 분석 결과가 없습니다.
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      * 고급 분석은 새로운 갈등 카드 생성 시에만 제공됩니다.
-                    </p>
-                  </div>
-                )}
-
-                {/* 우선순위 추천 */}
-                {analysisResult?.priorityRecommendation && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-6 mt-6">
-                    <h4 className="text-lg font-semibold text-yellow-800 mb-3 flex items-center gap-2">
-                      <span>⭐</span> AI 우선순위 추천
-                    </h4>
-                    <p className="text-yellow-700 font-medium">{analysisResult.priorityRecommendation}</p>
-                  </div>
-                )}
-
-                {/* 추천 행동 */}
-                {analysisResult?.recommendedActions && (
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <span>💡</span> AI 추천 행동
-                    </h4>
-                    <ul className="space-y-2">
-                      {JSON.parse(analysisResult.recommendedActions).map((action, index) => (
-                        <li key={index} className="flex items-start gap-3 text-gray-700">
-                          <span className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 mt-0.5">
-                            {index + 1}
-                          </span>
-                          <span>{action}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 해결 로드맵 탭 */}
-            {activeTab === 'roadmap' && (
-              <div className="space-y-6">
-                <div className="text-center mb-8">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">5단계 해결 로드맵</h3>
-                  <p className="text-gray-600">AI가 추천하는 단계별 갈등 해결 방법입니다</p>
-                </div>
-
-                {/* 로드맵 단계들 */}
-                <div className="space-y-4">
-                  {roadmap.map((step, index) => (
-                    <div key={step.step} className="relative">
-                      {/* 연결선 */}
-                      {index < roadmap.length - 1 && (
-                        <div className="absolute left-8 top-16 w-0.5 h-8 bg-gray-300"></div>
-                      )}
-                      
-                      <div className="flex items-start gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-                        <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-2xl">{step.icon}</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
-                              {step.step}단계
-                            </span>
-                            <h4 className="text-lg font-semibold text-gray-800">{step.title}</h4>
-                          </div>
-                          <p className="text-gray-600">{step.desc}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 추천 서비스 */}
-                <div className="mt-8 pt-8 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">🚀 추천 서비스 (우선순위순)</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {recommendedServices.map((service, index) => (
-                      <div key={service.name} className="relative">
-                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                          {service.priority}
-                        </div>
-                        <div className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
-                          <div className="text-center mb-3">
-                            <div className="text-3xl mb-2">{service.icon}</div>
-                            <h4 className="font-semibold text-gray-800">{service.name}</h4>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">{service.description}</p>
-                          <p className="text-xs text-blue-600 mb-4">💡 {service.suitable}</p>
-                          <button
-                            onClick={service.action}
-                            className="w-full py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
-                          >
-                            시작하기
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        </main>
       </div>
 
       {/* 삭제 확인 모달 */}
