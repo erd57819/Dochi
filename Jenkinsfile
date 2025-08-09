@@ -11,9 +11,9 @@ pipeline {
             name: 'DEPLOY_TARGET',
             choices: ['APP_ONLY', 'WITH_CACHE', 'WITH_DB', 'FULL_STACK'],
             description: '''배포 대상 선택:
-            APP_ONLY: 앱만 (Backend, Frontend, AI)
-            WITH_CACHE: 앱 + Redis
-            WITH_DB: 앱 + MySQL + Redis
+            APP_ONLY: 앱만 (Backend, Frontend, AI) 배포
+            WITH_CACHE: 앱 + Redis 배포
+            WITH_DB: 앱 + MySQL + Redis 배포
             FULL_STACK: 모든 서비스 재시작'''
         )
         
@@ -53,8 +53,8 @@ pipeline {
     }
 
     stages {
-        // ===== 1단계: 현재 설정 확인 =====
-        stage('Show Current State') {
+        // ===== 1단계: Show Current State =====
+        stage('현재 설정 확인') {
             steps {
                 echo "배포 시작"
                 echo "배포 대상: ${params.DEPLOY_TARGET}"
@@ -66,8 +66,8 @@ pipeline {
             }
         }
 
-        // ===== 2단계: docker 서비스 정리 (FULL_STACK 선택 시) =====
-        stage('Clean Docker Service') {
+        // ===== 2단계: Clean Docker Service (FULL_STACK 선택 시) =====
+        stage('docker 서비스 정리') {
             when {
                 expression { params.DEPLOY_TARGET == 'FULL_STACK' }
             }
@@ -82,8 +82,8 @@ pipeline {
             }
         }
 
-        // ===== 3단계: 소스코드 가져오기 + 도커 로그인 (병렬처리 가능) =====
-        stage('Get Source Code from GitLab') {
+        // ===== 3단계: Get Source Code from GitLab (병렬처리 가능) =====
+        stage('소스코드 가져오기 + 도커 로그인') {
             parallel {
                 stage('Git Clone') {
                     steps {
@@ -109,8 +109,8 @@ pipeline {
             }
         }
 
-         // ===== 4단계: 빌드 준비 (병렬처리 가능) =====
-         stage('Build Preparation') {
+         // ===== 4단계: Build Preparation (병렬처리 가능) =====
+         stage('빌드 준비') {
              when {
                  expression { !params.SKIP_BUILD }
              }
@@ -176,8 +176,8 @@ pipeline {
              }
          }
 
-        // ===== 5단계: 인프라 서비스 (병렬처리 가능) =====
-        stage('Infrastructure Services') {
+        // ===== 5단계: Deploy Infrastructure Services (병렬처리 가능) =====
+        stage('인프라 서비스 배포') {
             when {
                 expression { 
                     params.DEPLOY_TARGET == 'WITH_DB' || 
@@ -263,8 +263,8 @@ pipeline {
             }
         }
 
-        // ===== 6단계: 필수 서비스 동작 확인 =====
-        stage('Check Required Services') {
+        // ===== 6단계: Check Required Services =====
+        stage('필수 서비스 동작 확인') {
             steps {
                 echo "필수 서비스 확인..."
                 sh '''
@@ -292,8 +292,8 @@ pipeline {
             }
         }
 
-        // ===== 7단계: 애플리케이션 배포 (병렬처리 가능) =====
-        stage('Application Deployment') {
+        // ===== 7단계: Application Deployment (병렬처리 가능) =====
+        stage('애플리케이션 배포') {
             steps {
                 script {
                     def appStages = [:]
@@ -372,8 +372,8 @@ pipeline {
             }
         }
 
-        // ===== 8단계: Nginx 배포 =====
-        stage('Deploy Nginx') {
+        // ===== 8단계: Deploy Nginx =====
+        stage('Nginx 배포') {
             steps {
                 echo "Nginx 배포..."
                 sh '''
@@ -395,8 +395,8 @@ pipeline {
             }
         }
 
-        // ===== 9단계: 검증 =====
-        stage('Verification') {
+        // ===== 9단계: Verification =====
+        stage('검증 단계') {
             steps {
                 echo "배포 검증..."
                 sh '''
@@ -438,8 +438,8 @@ pipeline {
             }
         }
 
-        // ===== 10단계: Docker Hub 푸시 (선택적) =====
-        stage('Push to Registry') {
+        // ===== 10단계: Push to Docker Hub (선택적) =====
+        stage('Docker Hub 푸시') {
             when {
                 expression { params.PUSH_TO_HUB }
             }
