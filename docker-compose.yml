@@ -141,7 +141,7 @@ services:
   # == AI SERVICE (FastAPI) ==
   ai-service:
     build:
-      context: ./SSAFY-DOCHI-AI
+      context: SSAFY-DOCHI-AI
       dockerfile: Dockerfile
     container_name: dochi-ai-service
     ports:
