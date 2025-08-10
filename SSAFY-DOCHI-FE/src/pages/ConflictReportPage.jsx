@@ -45,7 +45,33 @@ const ConflictReportPage = () => {
   const fetchReport = async () => {
     try {
       setLoading(true);
+      console.log('[갈등 레포트] API 호출 시작, roomId:', roomId);
+      
       const data = await conflictReportApi.getFullReport(roomId);
+      console.log('[갈등 레포트] API 응답 받음:', data);
+      console.log('[레포트 구조] sections:', Object.keys(data?.sections || {}));
+      
+      // summary 섹션 상세 로그
+      if (data?.sections?.summary) {
+        console.log('[Summary 섹션]', data.sections.summary);
+      } else {
+        console.log('[경고] Summary 섹션이 없음!');
+      }
+      
+      // responsibility_analysis 섹션 상세 로그
+      if (data?.sections?.responsibility_analysis) {
+        console.log('[Responsibility 섹션]', data.sections.responsibility_analysis);
+      } else {
+        console.log('[경고] Responsibility 섹션이 없음!');
+      }
+      
+      // action_plans 섹션 상세 로그
+      if (data?.sections?.action_plans) {
+        console.log('[Action Plans 섹션]', data.sections.action_plans);
+      } else {
+        console.log('[경고] Action Plans 섹션이 없음!');
+      }
+      
       setReportData(data);
       
       // 첫 번째 화자 선택
