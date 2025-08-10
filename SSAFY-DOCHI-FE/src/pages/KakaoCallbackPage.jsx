@@ -42,7 +42,8 @@ const KakaoCallbackPage = () => {
                 nickname,
                 social: isSocial,
                 email,
-                userId
+                userId,
+                role
         } = loginData;
 
         console.log(' accessToken:', loginData.accessToken);
@@ -68,7 +69,8 @@ const KakaoCallbackPage = () => {
           nickname, 
           email, 
           profileImage, 
-          isSocial 
+          isSocial,
+          role: role || 'USER'
         }, accessToken);
 
         alert('로그인 확인');

@@ -156,7 +156,7 @@ const SignupPage = () => {
           if (loginResponse.ok) {
             const loginResult = await loginResponse.json();
             const loginData = loginResult.data || loginResult.response?.response || loginResult.response || loginResult;
-            const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId } = loginData;
+            const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId, role } = loginData;
             
             // JWT 토큰에서 memberId 추출
             let memberId = null;
@@ -179,7 +179,8 @@ const SignupPage = () => {
               nickname: nickname,
               email: email,
               profileImage: profileImage,
-              isSocial: isSocial
+              isSocial: isSocial,
+              role: role || 'USER'
             }, accessToken);
             
             alert('회원가입이 완료되었습니다. 자동 로그인되었습니다.');
