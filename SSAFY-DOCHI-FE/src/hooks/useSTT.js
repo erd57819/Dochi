@@ -98,10 +98,8 @@ export const useSTT = (roomName, participantName) => {
     // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
     await sendSTTToFastAPI(speaker, text);
 
-    // 코칭이 활성화된 경우 코칭 분석 수행
-    if (coachingEnabled) {
-      await checkCoachingNeeded();
-    }
+    // 코칭 분석 수행 (항상 실행)
+    await checkCoachingNeeded();
 
     // 프론트엔드 갈등 감지 및 AI 중재 기능 제거 (Google API만 사용)
     // const shouldMediate = await analyzeConflictAndTiming(text, speaker);
