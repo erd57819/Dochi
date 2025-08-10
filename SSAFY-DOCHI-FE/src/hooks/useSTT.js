@@ -68,24 +68,22 @@ export const useSTT = (roomName, participantName) => {
     // 실시간 감정 분석을 위한 데이터 전송 (추가)
     await sendEmotionAnalysis(speaker, text);
 
-    // 갈등 감지 및 중재 타이밍 결정
-    const shouldMediate = await analyzeConflictAndTiming(text, speaker);
-    
-    if (shouldMediate && aiMediationEnabled) {
-      try {
-        const suggestion = await getAISuggestion(text, speaker);
-        
-        setConversations(prev => 
-          prev.map(conv => 
-            conv.id === newConversation.id 
-              ? { ...conv, aiSuggestion: suggestion }
-              : conv
-          )
-        );
-      } catch (error) {
-        console.error('AI 중재 요청 실패:', error);
-      }
-    }
+    // 프론트엔드 갈등 감지 및 AI 중재 기능 제거 (Google API만 사용)
+    // const shouldMediate = await analyzeConflictAndTiming(text, speaker);
+    // if (shouldMediate && aiMediationEnabled) {
+    //   try {
+    //     const suggestion = await getAISuggestion(text, speaker);
+    //     setConversations(prev => 
+    //       prev.map(conv => 
+    //         conv.id === newConversation.id 
+    //           ? { ...conv, aiSuggestion: suggestion }
+    //           : conv
+    //       )
+    //     );
+    //   } catch (error) {
+    //     console.error('AI 중재 요청 실패:', error);
+    //   }
+    // }
   };
 
   // 갈등 분석 및 중재 타이밍 결정
