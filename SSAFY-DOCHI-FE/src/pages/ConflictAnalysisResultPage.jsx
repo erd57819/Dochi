@@ -364,7 +364,7 @@ const ConflictAnalysisResultPage = () => {
     try {
       await saveConflict();
       alert('갈등 카드가 성공적으로 생성되었습니다! 🦔');
-      navigate('/conflicts');
+      navigate('/mypage');
     } catch (error) {
       alert(error.message);
     } finally {
@@ -372,7 +372,7 @@ const ConflictAnalysisResultPage = () => {
     }
   };
 
-  const handleGoBack = () => navigate('/conflicts');
+  const handleGoBack = () => navigate('/mypage');
 
   // ConflictDetailPage에서 사용하는 타입 변환 함수들
   const getConflictTypeText = (type) => {

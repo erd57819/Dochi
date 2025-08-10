@@ -81,7 +81,7 @@ const ConflictReportPage = () => {
           <div className="text-center">
             <p className="text-xl text-red-600 mb-4">{error}</p>
             <button
-              onClick={() => navigate('/conflicts')}
+              onClick={() => navigate('/mypage')}
               className="px-6 py-3 bg-[#bf7d2c] text-white rounded-lg hover:bg-[#a06624] transition-colors"
             >
               돌아가기
@@ -172,7 +172,7 @@ const ConflictReportPage = () => {
         {/* 액션 버튼 */}
         <div className="flex justify-between items-center mt-8">
           <button
-            onClick={() => navigate('/conflicts')}
+            onClick={() => navigate('/mypage')}
             className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             목록으로
