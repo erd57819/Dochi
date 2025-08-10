@@ -571,7 +571,7 @@ async def analyze_conflict_integrated(analysis_text):
             },
             "action_plans": {
                 "priority_actions": [{"action": "전문가와 상담", "priority": 1, "timeline": "즉시"}],
-                "communication_tips": ["차분히 대화하기"],
+                "communication_tips": ["하드코딩임 잘못된거임 사실 진짜임 사실 구라임 "],
                 "long_term_suggestions": ["갈등 해결 교육 받기"]
             }
         }
