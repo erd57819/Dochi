@@ -20,12 +20,16 @@ async def get_conflict_report(room_id: str):
     최적화된 갈등 분석 레포트 생성 - GPT 1회 호출로 통합 분석
     """
     try:
+        print(f"[갈등 레포트 생성 시작] Room ID: {room_id}")
+        
         # 캐시 먼저 확인
         cache_key = f"conflict:report:{room_id}"
         cached_report = r.get(cache_key)
         if cached_report:
             print(f"[캐시 히트] {room_id}")
-            return json.loads(cached_report)
+            cached_data = json.loads(cached_report)
+            print(f"[캐시 데이터 구조] {list(cached_data.keys())}")
+            return cached_data
 
         print(f"[레포트 생성 시작] {room_id}")
         report = {
@@ -36,13 +40,20 @@ async def get_conflict_report(room_id: str):
         
         # 1. 전체 스크립트 가져오기 (Redis에서 빠르게)
         script_key = f"stt:raw:{room_id}"
+        print(f"[Redis 키 확인] {script_key}")
         full_script = r.lrange(script_key, 0, -1)
+        print(f"[스크립트 로드 완료] {len(full_script)}줄")
+        
+        if full_script:
+            print(f"[스크립트 샘플] 첫 3줄: {full_script[:3]}")
+        else:
+            print("[경고] Redis에서 스크립트가 비어있음!")
+            
         report["sections"]["full_transcript"] = {
             "title": "전체 대화 내용",
             "data": full_script,
             "total_lines": len(full_script)
         }
-        print(f"[스크립트 로드 완료] {len(full_script)}줄")
         
         # 2. 감정 데이터는 프론트엔드에서 localStorage로 처리 (빠른 성능)
         report["sections"]["emotion_analysis"] = {
@@ -54,15 +65,22 @@ async def get_conflict_report(room_id: str):
         
         # 3. 통합 GPT 분석 (1회 호출로 모든 분석 완료)
         if full_script:
+            print("[GPT 분석 조건] full_script가 존재함")
             # 전체 스크립트가 너무 길면 요약본 사용
             if len(full_script) > 50:  # 50줄 이상이면 중요한 부분만 추출
+                print(f"[스크립트 압축] {len(full_script)}줄 → 중요한 부분만 추출")
                 important_lines = extract_important_lines(full_script)
                 analysis_text = "\n".join(important_lines)
             else:
+                print(f"[스크립트 사용] {len(full_script)}줄 전체 사용")
                 analysis_text = "\n".join(full_script)
             
             print(f"[GPT 분석 시작] 텍스트 길이: {len(analysis_text)} 문자")
+            print(f"[GPT 입력 샘플] {analysis_text[:200]}...")
+            
             integrated_analysis = await analyze_conflict_integrated(analysis_text)
+            print(f"[GPT 분석 결과] 타입: {type(integrated_analysis)}")
+            print(f"[GPT 결과 키] {list(integrated_analysis.keys()) if integrated_analysis else 'None'}")
             
             # GPT 결과를 섹션별로 분리
             report["sections"]["responsibility_analysis"] = {
@@ -157,15 +175,20 @@ async def analyze_conflict_integrated(analysis_text):
         # 실제 STT 데이터에서 화자들 추출
         speakers = []
         lines = analysis_text.split('\n')
+        print(f"[화자 추출] 총 {len(lines)}줄 분석")
+        
         for line in lines:
             if ': ' in line:
                 speaker = line.split(': ')[0].strip()
                 if speaker not in speakers:
                     speakers.append(speaker)
         
+        print(f"[화자 목록] {speakers}")
+        
         # 화자가 없으면 기본값
         if not speakers:
             speakers = ['화자1', '화자2']
+            print("[화자 기본값] 화자가 감지되지 않아 기본값 사용")
         
         # GPT에게 보낼 통합 프롬프트 작성
         prompt = f"""
@@ -198,11 +221,18 @@ async def analyze_conflict_integrated(analysis_text):
 """
 
         # GPT API 호출 (비동기)
+        print("[GPT API 호출 시작]")
         gpt_response = await asyncio.to_thread(ask_gpt, prompt, model="gpt-4.1", temperature=0.7)
         print(f"[GPT 응답 완료] 응답 길이: {len(gpt_response)} 문자")
+        print(f"[GPT 응답 샘플] {gpt_response[:300]}...")
         
         # GPT 응답을 파싱하여 구조화된 데이터로 변환
+        print("[GPT 응답 파싱 시작]")
         result = parse_gpt_conflict_analysis(gpt_response, speakers)
+        print(f"[파싱 결과] {list(result.keys()) if result else 'None'}")
+        
+        if result and 'summary' in result:
+            print(f"[Summary 내용] {result['summary']}")
         
         print("[GPT 분석 완료] 실제 AI 분석 결과 생성됨")
         return result
@@ -291,6 +321,8 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
     GPT 응답을 파싱하여 구조화된 데이터로 변환
     """
     try:
+        print(f"[파싱 시작] GPT 응답 길이: {len(gpt_response)}자, 화자: {speakers}")
+        
         # GPT 응답을 섹션별로 분석
         lines = gpt_response.split('\n')
         
