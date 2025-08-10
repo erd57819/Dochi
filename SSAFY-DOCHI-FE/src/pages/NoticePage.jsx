@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { noticeApi } from '../services/noticeApi';
+import useAuthStore from '../stores/AuthStore';
 import hedgehogImg from '../assets/conflict.png';
 
 const NoticePage = () => {
+  const navigate = useNavigate();
+  const { isLoggedIn, user } = useAuthStore();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [error, setError] = useState(null);
   const [expandedNotices, setExpandedNotices] = useState(new Set());
+  const [showModal, setShowModal] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    category: 'ANNOUNCEMENT',
+    isImportant: false
+  });
 
   // 더미 데이터
   const dummyNotices = [
@@ -88,6 +100,11 @@ const NoticePage = () => {
 
   const filteredNotices = notices;
 
+  // 임시로 특정 userId에 대해 ADMIN 권한 부여 (테스트용)
+  // TODO: 백엔드에서 role 정보가 제대로 전달되면 이 코드 삭제
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin' || 
+                  user?.userId === 'admin' || user?.userId === 'test'
+
   // 공지사항 내용 토글 함수
   const toggleNoticeExpansion = (noticeId) => {
     const newExpanded = new Set(expandedNotices);
@@ -117,6 +134,102 @@ const NoticePage = () => {
       return content;
     }
     return lines.slice(0, 2).join('\n') + '...';
+  };
+
+  // 공지사항 삭제 함수
+  const handleDeleteNotice = async (noticeId, e) => {
+    e.stopPropagation();
+    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+      try {
+        // API 호출 구현 필요
+        // await noticeApi.deleteNotice(noticeId);
+        alert('공지사항이 삭제되었습니다.');
+        // 삭제 후 목록 새로고침
+        setNotices(notices.filter(n => n.id !== noticeId));
+      } catch (error) {
+        alert('삭제 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  // 공지사항 생성 모달 열기
+  const handleCreateNotice = () => {
+    setEditingNotice(null);
+    setFormData({
+      title: '',
+      content: '',
+      category: 'ANNOUNCEMENT',
+      isImportant: false
+    });
+    setShowModal(true);
+  };
+
+  // 공지사항 수정 모달 열기
+  const handleEditNotice = (notice, e) => {
+    e.stopPropagation();
+    setEditingNotice(notice);
+    setFormData({
+      title: notice.title,
+      content: notice.content,
+      category: notice.category,
+      isImportant: notice.isImportant || false
+    });
+    setShowModal(true);
+  };
+
+  // 폼 입력 처리
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  // 공지사항 저장 (생성/수정)
+  const handleSaveNotice = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      alert('제목을 입력해주세요.');
+      return;
+    }
+    
+    if (!formData.content.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      if (editingNotice) {
+        // 수정 API 호출
+        // await noticeApi.updateNotice(editingNotice.id, formData);
+        
+        // 더미 데이터 업데이트
+        setNotices(notices.map(n => 
+          n.id === editingNotice.id 
+            ? { ...n, ...formData }
+            : n
+        ));
+        alert('공지사항이 수정되었습니다.');
+      } else {
+        // 생성 API 호출
+        // await noticeApi.createNotice(formData);
+        
+        // 더미 데이터 추가
+        const newNotice = {
+          id: Date.now(),
+          ...formData,
+          publishDate: new Date().toISOString().split('T')[0],
+          viewCount: 0
+        };
+        setNotices([newNotice, ...notices]);
+        alert('공지사항이 작성되었습니다.');
+      }
+      setShowModal(false);
+    } catch (error) {
+      alert('저장 중 오류가 발생했습니다.');
+    }
   };
 
   if (loading) {
@@ -200,6 +313,18 @@ const NoticePage = () => {
               </p>
             </div>
           </div>
+          {/* 관리자인 경우 글쓰기 버튼 표시 */}
+          {isLoggedIn && user && isAdmin && (
+            <button
+              onClick={handleCreateNotice}
+              className="px-6 py-3 text-white text-xl font-bold rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              style={{
+                background: 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)'
+              }}
+            >
+              공지사항 작성
+            </button>
+          )}
         </div>
         
         {error && (
@@ -325,25 +450,51 @@ const NoticePage = () => {
                             </h4>
                           </div>
                           
-                          <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
-                            <span>{notice.publishDate}</span>
-                            {isLongContent(notice.content) && (
-                              <svg 
-                                className={`w-4 h-4 transition-transform duration-200 ${expandedNotices.has(notice.id) ? 'transform rotate-180' : ''}`} 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            )}
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
+                              <span>{notice.publishDate}</span>
+                              {isLongContent(notice.content) && (
+                                <svg 
+                                  className={`w-4 h-4 transition-transform duration-200 ${expandedNotices.has(notice.id) ? 'transform rotate-180' : ''}`} 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="pl-2">
+                        <div className="flex justify-between pl-2">
+                          <div>
                           <p className="text-gray-600 text-base mb-3 leading-relaxed whitespace-pre-wrap">
                             {getTruncatedContent(notice.content, expandedNotices.has(notice.id))}
                           </p>
+                          </div>
+                          <div>
+                            {/* 관리자인 경우 수정/삭제 버튼 표시 */}
+                            {isLoggedIn && user && isAdmin && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={(e) => handleEditNotice(notice, e)}
+                                  className="px-3 py-1 w-14 h-9 text-sm font-medium text-white rounded-md transition-all duration-100 hover:scale-105"
+                                  style={{ backgroundColor: '#CD9F6E' }}
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeleteNotice(notice.id, e)}
+                                  className="px-3 py-1 w-14 h-9 text-sm font-medium text-white rounded-md transition-all duration-100 hover:scale-105"
+                                  style={{ backgroundColor: '#EE9278' }}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
                         </div>
                       </div>
                     );
@@ -354,6 +505,117 @@ const NoticePage = () => {
           </div>
         </div>
       </main>
+
+      {/* 공지사항 생성/수정 모달 */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 p-4">
+          <div className="bg-orange-50 rounded-md max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* 모달 헤더 */}
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-4xl font-bold" style={{ color: '#8B4513' }}>
+                  {editingNotice ? '공지사항 수정' : '공지사항 작성'}
+                </h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-black hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveNotice} className="space-y-4">
+                {/* 카테고리 선택 */}
+                <div>
+                  <label className="block text-md font-medium text-gray-700 mb-2">
+                    카테고리 *
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border bg-gry-50 border-orange-700 text-xl text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 focus:bg-orange-100"
+                    required
+                  >
+                    <option value="ANNOUNCEMENT">공지사항</option>
+                    <option value="UPDATE">업데이트</option>
+                    <option value="MAINTENANCE">점검</option>
+                  </select>
+                </div>
+
+                {/* 제목 입력 */}
+                <div>
+                  <label className="block text-md font-medium text-gray-700 mb-2">
+                    제목 *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-orange-700 text-xl text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 "
+                    placeholder="공지사항 제목을 입력해주세요"
+                    required
+                  />
+                </div>
+
+                {/* 내용 입력 */}
+                <div>
+                  <label className="block text-md font-medium text-gray-700 mb-2">
+                    내용 *
+                  </label>
+                  <textarea
+                    name="content"
+                    value={formData.content}
+                    onChange={handleInputChange}
+                    rows={8}
+                    className="w-full px-4 py-4 border border-orange-700 text-xl text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 resize-none"
+                    placeholder="공지사항 내용을 입력해주세요"
+                    required
+                  />
+                </div>
+
+                {/* 중요 공지 체크 */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isImportant"
+                    name="isImportant"
+                    checked={formData.isImportant}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isImportant" className="ml-2 text-sm text-gray-700">
+                    중요 공지사항으로 설정
+                  </label>
+                </div>
+
+                {/* 버튼 그룹 */}
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-white font-medium rounded-lg transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)'
+                    }}
+                  >
+                    {editingNotice ? '수정 완료' : '작성 완료'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

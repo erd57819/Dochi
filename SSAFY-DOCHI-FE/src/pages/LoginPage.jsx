@@ -40,7 +40,7 @@ const LoginPage = () => {
         
         // ApiResponse 구조에 맞게 접근 - data 필드 사용
         const loginData = result.data || result.response?.response || result.response || result;
-        const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId } = loginData;
+        const { accessToken, refreshToken, profileImage, name, nickname, social: isSocial, email, userId, role } = loginData;
         // JWT 토큰에서 memberId 추출
          console.log('🔍 파싱 직전 accessToken 변수:', accessToken);
         let memberId = null;
@@ -63,7 +63,8 @@ const LoginPage = () => {
           nickname: nickname,
           email: email,
           profileImage: profileImage,
-          isSocial: isSocial
+          isSocial: isSocial,
+          role: role || 'USER'
         }, accessToken);
         
         // 1. 로그인 확인 알림
