@@ -42,6 +42,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 녹화 상태
   const [isRecording, setIsRecording] = useState(false);
 
+  // 타이머 관련 상태
+  const [callStartTime, setCallStartTime] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerInterval = useRef(null);
+  const maxCallDuration = 30 * 60 * 1000; // 30분 (밀리초)
+
   // OpenVidu 훅 사용
   const openViduHook = useOpenVidu(roomName, participantName, isGuestMode);
   const {
@@ -90,16 +96,19 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       return;
     }
 
-    // 로그인된 사용자는 바로 룸 참가
-    if (!room) {
-      console.log('룸 참가 시작...');
+    // 로그인된 사용자 또는 게스트는 바로 룸 참가
+    if (!room && (isLoggedIn || isGuestMode)) {
+      console.log('룸 참가 시작...', { isLoggedIn, isGuestMode, participantName });
       joinRoom();
+      
+      // 통화 시작 시간 기록
+      setCallStartTime(Date.now());
     }
 
     return () => {
       handleLeaveRoom();
     };
-  }, [isLoggedIn, isGuestMode]);
+  }, [isLoggedIn, isGuestMode, room]);
 
   // 페이지 언마운트시 정리 (브라우저 이벤트)
   useEffect(() => {
@@ -113,15 +122,31 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       handleLeaveRoom();
     };
 
+    // 상대방이 나갔을 때 처리
+    const handleRemoteUserLeft = () => {
+      console.log('[상대방 나감] 통화 종료 처리...');
+      handleLeaveRoom(true); // 갈등 레포트로 이동
+    };
+
+    // 대기실 모드 처리
+    const handleWaitingForUsers = () => {
+      console.log('[대기 모드] 새로운 참가자를 기다립니다...');
+      // 대기 중 메시지를 표시하거나 UI 업데이트
+    };
+
     // 브라우저 종료/새로고침/뒤로가기 이벤트 처리
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('popstate', handlePopState);
+    window.addEventListener('remoteUserLeft', handleRemoteUserLeft);
+    window.addEventListener('waitingForUsers', handleWaitingForUsers);
 
     // 컴포넌트 언마운트시 정리
     return () => {
       console.log('[컴포넌트 언마운트] 리소스 정리 시작...');
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('remoteUserLeft', handleRemoteUserLeft);
+      window.removeEventListener('waitingForUsers', handleWaitingForUsers);
       handleLeaveRoom();
     };
   }, []);
@@ -154,6 +179,48 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   useEffect(() => {
     analyzeConflictLevel(emotionScores);
   }, [emotionScores]);
+
+  // 타이머 업데이트 및 30분 제한
+  useEffect(() => {
+    if (callStartTime && isConnected) {
+      timerInterval.current = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - callStartTime;
+        setElapsedTime(elapsed);
+
+        // 30분 경과 시 자동 종료
+        if (elapsed >= maxCallDuration) {
+          console.log('[타이머] 30분 제한 도달 - 통화 종료');
+          alert('통화 시간 30분이 경과하여 자동으로 종료됩니다.');
+          handleLeaveRoom(true); // 갈등 레포트로 이동
+        }
+
+        // 25분 경과 시 경고
+        if (elapsed >= 25 * 60 * 1000 && elapsed < 25 * 60 * 1000 + 1000) {
+          alert('통화 시간이 5분 남았습니다.');
+        }
+      }, 1000);
+
+      return () => {
+        if (timerInterval.current) {
+          clearInterval(timerInterval.current);
+        }
+      };
+    }
+  }, [callStartTime, isConnected]);
+
+  // 시간 포맷 함수
+  const formatTime = (milliseconds) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const remainingMinutes = 30 - minutes;
+    
+    return {
+      elapsed: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+      remaining: remainingMinutes > 0 ? `${remainingMinutes}분 남음` : '곧 종료'
+    };
+  };
 
   // 참가자 비디오 참조 생성
   const createParticipantVideoRef = (participantSid) => {
@@ -319,20 +386,45 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="h-screen bg-gray-900 flex flex-col overflow-hidden">
       {/* 헤더 */}
-      <div className="bg-gray-800 p-4">
-        <h1 className="text-white text-xl font-bold text-center">
-          화상 회의
-        </h1>
-        <p className="text-sm text-gray-300">
-          룸: {roomName} | 상태: {isConnected ? '연결됨' : '연결 안됨'} |
-          {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
-        </p>
+      <div className="bg-gray-800 p-4 flex-shrink-0">
+        <div className="flex justify-between items-center">
+          <div className="flex-1">
+            <h1 className="text-white text-xl font-bold">화상 회의</h1>
+            <p className="text-sm text-gray-300">
+              룸: {roomName} | {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
+            </p>
+          </div>
+          
+          {/* 타이머 표시 */}
+          {isConnected && (
+            <div className="text-center px-4">
+              <div className="text-2xl font-bold text-white">
+                {formatTime(elapsedTime).elapsed}
+              </div>
+              <div className={`text-sm ${
+                elapsedTime >= 25 * 60 * 1000 ? 'text-red-400 animate-pulse' : 
+                elapsedTime >= 20 * 60 * 1000 ? 'text-yellow-400' : 
+                'text-gray-400'
+              }`}>
+                {formatTime(elapsedTime).remaining}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex-1 text-right">
+            <span className={`text-sm px-2 py-1 rounded ${
+              isConnected ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
+            }`}>
+              {isConnected ? '● 연결됨' : '○ 연결 중...'}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* 메인 비디오 영역 */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* 비디오 그리드 */}
         <div className="flex-1 relative">
           <div className={`h-full grid gap-2 p-4 ${
@@ -395,9 +487,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         </div>
 
         {/* 사이드바 - 대화 및 감정 정보 */}
-        <div className="w-80 bg-gray-800 flex flex-col">
+        <div className="w-80 bg-gray-800 flex flex-col h-full overflow-hidden">
           {/* 감정 및 갈등 레벨 표시 */}
-          <div className="p-4 border-b border-gray-700">
+          <div className="p-4 border-b border-gray-700 flex-shrink-0 max-h-64 overflow-y-auto">
             <h3 className="text-white font-semibold mb-2">감정 상태</h3>
             <div className="mb-2">
               <div className="flex justify-between text-sm text-gray-300">
@@ -492,7 +584,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       </div>
 
       {/* 하단 컨트롤 바 */}
-      <div className="bg-gray-800 p-4">
+      <div className="bg-gray-800 p-4 flex-shrink-0">
         <div className="flex justify-center items-center space-x-4">
           {/* 마이크 토글 */}
           <button

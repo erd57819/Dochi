@@ -176,6 +176,30 @@ export const useOpenVidu = (roomName, participantName, isGuestMode) => {
         analyser.audioContext.close();
         remoteAnalysersRef.current.delete(participant.sid);
       }
+
+      // 1:1 통화에서 상대방이 나가면 자동으로 통화 종료 제안
+      const remainingParticipants = Array.from(room.participants.values());
+      if (remainingParticipants.length === 0) {
+        console.log('모든 참가자가 나갔습니다.');
+        
+        // 3초 후 종료 여부 확인 (사용자에게 생각할 시간 제공)
+        setTimeout(() => {
+          const shouldExit = window.confirm(
+            '상대방이 통화를 종료했습니다.\n\n' +
+            '통화를 종료하시겠습니까?\n' +
+            '(취소를 누르면 대기실에 남아있습니다)'
+          );
+          
+          if (shouldExit) {
+            // VideoCallRoom 컴포넌트로 종료 이벤트 전달
+            window.dispatchEvent(new CustomEvent('remoteUserLeft'));
+          } else {
+            console.log('사용자가 대기실에 남기를 선택했습니다.');
+            // 대기 중 메시지 표시를 위한 이벤트
+            window.dispatchEvent(new CustomEvent('waitingForUsers'));
+          }
+        }, 3000);
+      }
     });
 
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
