@@ -12,6 +12,7 @@ export const useSTT = (roomName, participantName) => {
   const recognitionRef = useRef(null);
   const speechTimeoutRef = useRef(null);
   const conversationLogRef = useRef([]);
+  const lastSentTextRef = useRef(''); // 마지막 전송된 텍스트 저장
 
   // STT 데이터를 FastAPI로 전송
   const sendSTTToFastAPI = async (speaker, text) => {
@@ -46,6 +47,20 @@ export const useSTT = (roomName, participantName) => {
 
   // 음성 인식 결과 처리
   const handleSpeechResult = async (speaker, text) => {
+    // 중복 전송 방지: 마지막에 전송한 텍스트와 동일하면 스킵
+    if (lastSentTextRef.current === text.trim()) {
+      console.log('[STT] 중복 텍스트 감지, 전송 스킵:', text.trim());
+      return;
+    }
+
+    // 너무 짧은 텍스트는 무시 (노이즈 방지)
+    if (text.trim().length < 2) {
+      console.log('[STT] 텍스트가 너무 짧음, 전송 스킵:', text.trim());
+      return;
+    }
+
+    lastSentTextRef.current = text.trim();
+    
     const timestamp = new Date().toLocaleTimeString('ko-KR', {
       hour: '2-digit',
       minute: '2-digit'
@@ -355,6 +370,11 @@ export const useSTT = (roomName, participantName) => {
 
   // STT 시작
   const startSTT = () => {
+    if (sttEnabled) {
+      console.log('[STT] 이미 STT가 활성화되어 있습니다.');
+      return;
+    }
+
     if (!recognitionRef.current && !initSTT()) {
       return;
     }
@@ -363,8 +383,15 @@ export const useSTT = (roomName, participantName) => {
       recognitionRef.current.start();
       setSttEnabled(true);
       console.log('음성 인식 시작');
+      // STT 재시작 시 마지막 전송 텍스트 초기화
+      lastSentTextRef.current = '';
     } catch (error) {
       console.error('음성 인식 시작 실패:', error);
+      // 이미 시작된 상태라면 에러를 무시
+      if (error.message && error.message.includes('already started')) {
+        console.log('[STT] 이미 시작된 상태입니다.');
+        setSttEnabled(true);
+      }
     }
   };
 

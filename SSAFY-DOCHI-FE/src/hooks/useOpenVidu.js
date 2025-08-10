@@ -42,53 +42,47 @@ export const useOpenVidu = (roomName, participantName, isGuestMode) => {
     ? 'ws://192.168.100.63:7880'
     : 'wss://i13c209.p.ssafy.io/livekit';
 
-  // 토큰 서버에서 가져오기
+  // 토큰 서버에서 가져오기 (백업 파일 방식)
   const getTokenFromServer = async (roomName) => {
     try {
       console.log('토큰 요청 시작...', { roomName, hasToken: !!token, isGuest: isGuestMode });
 
-      if (isGuestMode) {
-        const guestData = {
-          room: roomName,
-          identity: `guest_${Date.now()}`,
-          name: participantName || `게스트_${Date.now()}`
-        };
+      let accessToken;
+      const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
+      
+      if (isGuestMode || !isLoggedIn) {
+        // 게스트용 토큰 요청 (백업 파일 방식)
+        const response = await fetch('/api/video/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            room: roomName,
+            identity: identity
+          }),
+        });
 
-        console.log('게스트 토큰 요청 데이터:', guestData);
+        if (!response.ok) {
+          throw new Error('토큰 생성에 실패했습니다');
+        }
 
-        try {
-          const guestResponse = await apiClient.post('/video-call/guest-token', guestData, {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-
-          console.log('게스트 토큰 응답:', guestResponse.data);
-
-          if (guestResponse.data && guestResponse.data.token) {
-            return guestResponse.data.token;
-          } else {
-            throw new Error('게스트 토큰이 응답에 없습니다');
-          }
-        } catch (guestError) {
-          console.error('게스트 토큰 요청 실패:', guestError);
-          throw new Error(`게스트 토큰 요청 실패: ${guestError.message}`);
+        const data = await response.json();
+        accessToken = data.accessToken;
+      } else {
+        // 로그인 사용자용 토큰 요청
+        const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
+        
+        if (response.data.status === 200 && response.data.data) {
+          accessToken = response.data.data.token;
+        } else if (response.data.data && response.data.data.token) {
+          accessToken = response.data.data.token;
+        } else {  
+          throw new Error('토큰 발급 실패: ' + (response.data.message || 'Unknown error'));
         }
       }
 
-      const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
-      console.log('토큰 응답 데이터:', response.data);
-
-      // 백엔드 응답 구조에 맞춰 수정
-      if (response.data.status === 200 && response.data.data) {
-        // VideoCallRoomCreateResDto에서 token 가져오기
-        return response.data.data.token;
-      } else if (response.data.data && response.data.data.token) {
-        // 대체 응답 구조
-        return response.data.data.token;
-      } else {  
-        throw new Error('토큰 발급 실패: ' + (response.data.message || 'Unknown error'));
-      }
+      console.log('토큰 획득 성공:', !!accessToken);
+      return accessToken;
+      
     } catch (error) {
       console.error('토큰 요청 실패:', error);
       if (error.response) {
@@ -116,27 +110,47 @@ export const useOpenVidu = (roomName, participantName, isGuestMode) => {
       const newRoom = new Room({
         adaptiveStream: true,
         dynacast: true,
-        videoCaptureDefaults: {
-          resolution: {
-            width: 1280,
-            height: 720,
-            frameRate: 15,
-          },
-        },
+        publishDefaults: {
+          simulcast: false,
+          videoCodec: 'h264'
+        }
       });
 
       const liverkitToken = await getTokenFromServer(roomName);
-      console.log('받은 token:', liverkitToken);
+      console.log('받은 token:', !!liverkitToken);
 
-      setupRoomEvents(newRoom);
-      
       await newRoom.connect(LIVEKIT_URL, liverkitToken);
       console.log('룸 연결 성공');
+      
+      // 로컬 트랙 활성화 (백업 파일 방식)
+      await newRoom.localParticipant.enableCameraAndMicrophone();
+      
+      // 트랙 참조 저장
+      const videoTracks = Array.from(newRoom.localParticipant.videoTrackPublications.values());
+      const audioTracks = Array.from(newRoom.localParticipant.audioTrackPublications.values());
+      
+      if (videoTracks.length > 0) {
+        setLocalVideoTrack(videoTracks[0].track);
+      }
+      if (audioTracks.length > 0) {
+        setLocalAudioTrack(audioTracks[0].track);
+      }
 
+      setupRoomEvents(newRoom);
       setRoom(newRoom);
       setIsConnected(true);
-
-      await enableLocalMedia(newRoom);
+      
+      // 로컬 비디오 참조 연결
+      if (localVideoRef.current) {
+        const videoTrack = Array.from(newRoom.localParticipant.videoTrackPublications.values())[0]?.track;
+        if (videoTrack) {
+          const mediaStream = new MediaStream([videoTrack.mediaStreamTrack]);
+          localVideoRef.current.srcObject = mediaStream;
+          localVideoRef.current.muted = true;
+          localVideoRef.current.play().catch(console.error);
+        }
+      }
+      
       updateParticipants(newRoom);
 
     } catch (error) {
