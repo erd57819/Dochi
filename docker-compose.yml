@@ -146,8 +146,6 @@ services:
     container_name: dochi-ai-service
     ports:
       - "8002:8002"
-    volumes:
-      - "/var/jenkins_home/workspace/docker pipeline test/google-service-account.json:/app/google-service-account.json:ro"
     environment:
       GMS_KEY: ${GMS_KEY}
       GOOGLE_APPLICATION_CREDENTIALS: /app/google-service-account.json
