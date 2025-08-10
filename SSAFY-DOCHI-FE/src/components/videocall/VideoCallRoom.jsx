@@ -57,6 +57,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConnectButton, setShowConnectButton] = useState(true); // 연결 버튼 표시 상태
 
   const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
@@ -138,9 +139,46 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       setRoom(newRoom);
       setIsConnected(true);
 
-      // 기존 참가자들 처리
+      // 기존 참가자들 처리 (백업 파일 방식)
       const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
       setParticipants(remoteParticipants);
+
+      // 기존 참가자들의 트랙을 수동으로 연결 (나중에 들어온 사람이 먼저 들어온 사람 볼 수 있도록)
+      remoteParticipants.forEach(participant => {
+        console.log('기존 참가자 트랙 연결:', participant.identity);
+        
+        // 비디오 트랙 연결
+        participant.videoTrackPublications.forEach(publication => {
+          if (publication.track) {
+            console.log('기존 참가자 비디오 트랙 발견:', participant.identity);
+            const videoRef = remoteVideoRefs.current.get(participant.sid);
+            if (videoRef?.current) {
+              publication.track.attach(videoRef.current);
+              console.log('기존 참가자 비디오 트랙 연결 완료:', participant.identity);
+            } else {
+              // 아직 ref가 없으면 pending에 저장
+              pendingVideoTracks.current.set(participant.sid, publication.track);
+              console.log('기존 참가자 비디오 트랙 pending 저장:', participant.identity);
+            }
+          }
+        });
+
+        // 오디오 트랙 연결
+        participant.audioTrackPublications.forEach(publication => {
+          if (publication.track) {
+            console.log('기존 참가자 오디오 트랙 발견:', participant.identity);
+            const audioRef = remoteAudioRefs.current.get(participant.sid);
+            if (audioRef?.current) {
+              publication.track.attach(audioRef.current);
+              console.log('기존 참가자 오디오 트랙 연결 완료:', participant.identity);
+            } else {
+              // 아직 ref가 없으면 pending에 저장
+              pendingAudioTracks.current.set(participant.sid, publication.track);
+              console.log('기존 참가자 오디오 트랙 pending 저장:', participant.identity);
+            }
+          }
+        });
+      });
 
     } catch (error) {
       console.error('방 연결 실패:', error);
@@ -294,14 +332,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       return;
     }
 
-    // 로그인된 사용자 또는 게스트는 바로 룸 참가
-    if (!room && (isLoggedIn || isGuestMode)) {
-      console.log('룸 참가 시작...', { isLoggedIn, isGuestMode, participantName });
-      connectToRoom();
-      
-      // 통화 시작 시간 기록
-      setCallStartTime(Date.now());
+    // 로그인 사용자도 연결 버튼 표시
+    if (isLoggedIn && !isGuestMode) {
+      setShowConnectButton(true);
     }
+
+    // 자동 연결 제거 - 수동 연결 버튼 방식으로 변경
 
     return () => {
       handleLeaveRoom();
@@ -441,7 +477,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setParticipantName(guestNickname);
     setIsGuestMode(true);
     setShowGuestModal(false);
-    connectToRoom(); // 백업 파일 방식으로 직접 연결
+    setShowConnectButton(true); // 연결 버튼 표시
+  };
+
+  // 연결 시작 버튼 클릭
+  const handleStartConnection = async () => {
+    setShowConnectButton(false);
+    setCallStartTime(Date.now());
+    await connectToRoom();
   };
 
   // 로그인 페이지로 이동
@@ -602,6 +645,37 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           >
             다시 시도
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 연결 버튼 표시 조건
+  if (showConnectButton && !isConnected && !isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">화상 회의 준비</h2>
+          <div className="mb-6">
+            <p className="text-gray-300 mb-2">룸: <span className="font-semibold text-white">{roomName}</span></p>
+            <p className="text-gray-300">
+              참가자: <span className="font-semibold text-white">{isGuestMode ? `게스트 ${participantName}` : participantName}</span>
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={handleStartConnection}
+              className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              🎥 연결 시작하기
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              나가기
+            </button>
+          </div>
         </div>
       </div>
     );
