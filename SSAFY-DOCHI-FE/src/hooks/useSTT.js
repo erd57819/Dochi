@@ -283,10 +283,8 @@ export const useSTT = (roomName, participantName) => {
     
     console.log(`[침묵 체크] ${actualSilence.toFixed(1)}초 침묵 감지`);
     
-    // 침묵 기반 코칭 체크 (대화 없이도 침묵만으로 체크)
-    if (conversationLogRef.current.length >= 1) {
-      await checkCoachingNeeded();
-    }
+    // 침묵 기반 코칭 체크 (대화 없어도 침묵만으로 체크 가능)
+    await checkCoachingNeeded();
     
     // 다음 침묵 체크 설정
     if (actualSilence >= 15 && actualSilence < 30) {
@@ -470,9 +468,21 @@ export const useSTT = (roomName, participantName) => {
     }
   };
 
-  // AI 중재 토글
+  // AI 중재 토글 (코칭도 함께 활성화)
   const toggleAIMediation = () => {
-    setAiMediationEnabled(!aiMediationEnabled);
+    const newMediationState = !aiMediationEnabled;
+    setAiMediationEnabled(newMediationState);
+    
+    // AI 중재 켜면 코칭도 함께 활성화
+    if (newMediationState && !coachingEnabled) {
+      const newCoachingState = true;
+      setCoachingEnabled(newCoachingState);
+      console.log('[코칭] AI 중재와 함께 활성화됨');
+      
+      // 코칭 활성화 시 침묵 모니터링 즉시 시작
+      lastSpeechTimeRef.current = Date.now();
+      startSilenceMonitoring();
+    }
   };
 
   // AI 코칭 토글
@@ -482,7 +492,11 @@ export const useSTT = (roomName, participantName) => {
     
     if (newCoachingState) {
       console.log('[코칭] 활성화됨');
-      // 코칭 활성화 시 첫 번째 체크 실행
+      // 코칭 활성화 시 침묵 모니터링 즉시 시작 (대화 없어도 30초 후 트리거)
+      lastSpeechTimeRef.current = Date.now(); // 현재 시간으로 설정
+      startSilenceMonitoring();
+      
+      // 기존 대화가 있으면 첫 번째 체크도 실행
       if (conversationLogRef.current.length >= 2) {
         setTimeout(() => checkCoachingNeeded(), 2000); // 2초 후 첫 체크
       }
