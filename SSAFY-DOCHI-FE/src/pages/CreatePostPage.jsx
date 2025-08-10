@@ -86,13 +86,13 @@ const CreatePostPage = () => {
         </div>
       </div>
       
-      <div className="max-w-5xl mx-auto px-4 py-8 relative z-10">
+      <div className="max-w-4xl mx-auto px-2 py-4 relative z-10">
         {/* 헤더 */}
-        <div className="px-8 py-4 mb-6 border border-gray-100">
+        <div className="px-6 py-4 mb-5 border border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div>
-                <h2 className="text-5xl font-bold mb-2" 
+                <h2 className="text-4xl font-bold mb-3" 
                   style={{ 
                     background: 'black',
                     WebkitBackgroundClip: 'text',
@@ -121,7 +121,7 @@ const CreatePostPage = () => {
 
         {/* 카테고리별 안내 */}
         {formData.category === 'CONFLICT_SHARING' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm">💡</span>
@@ -139,7 +139,7 @@ const CreatePostPage = () => {
         )}
         
         {formData.category === 'ADVICE_REQUEST' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm">🤝</span>
@@ -157,7 +157,7 @@ const CreatePostPage = () => {
         )}
         
         {formData.category === 'SUCCESS_STORIES' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm">🎉</span>
@@ -175,7 +175,7 @@ const CreatePostPage = () => {
         )}
         
         {formData.category === 'GENERAL' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm">💬</span>
@@ -194,7 +194,7 @@ const CreatePostPage = () => {
 
         {/* 작성 폼 */}
         <div className="bg-white rounded-2xl p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* 카테고리 선택 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">

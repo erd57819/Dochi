@@ -204,7 +204,7 @@ const PostDetailPage = () => {
           ></div>
         </div>
         
-        <main className="max-w-4xl mx-auto px-4 py-12 relative z-10">
+        <main className="max-w-3xl mx-auto px-2 py-6 relative z-10">
           <div className="bg-white rounded-3xl p-8 text-center">
             <div className="text-6xl mb-6">❌</div>
             <h2 className="text-3xl font-bold mb-4" style={{ color: '#333333' }}>게시글을 찾을 수 없습니다</h2>
@@ -241,15 +241,15 @@ const PostDetailPage = () => {
       </div>
 
       {/* 메인 컨텐츠 */}
-      <main className="max-w-5xl mx-auto px-4 py-12 relative z-10">
+      <main className="max-w-4xl mx-auto px-2 py-5 relative z-10">
         {/* 헤더 */}
-        <div className="flex items-center mb-8">
+        <div className="flex items-center mb-6">
           <div className="flex items-center gap-3">
-            <img src={hedgehogImg} alt="갈등도치" className="w-12 h-12 rounded-full" />
+            <img src={hedgehogImg} alt="갈등도치" className="w-10 h-10 rounded-full" />
             <h3 className="text-3xl font-bold" style={{ color: '#8B4513' }}>게시글 상세보기</h3>
             
             {/* 브레드크럼 */}
-            <nav className="flex items-center gap-2 text-lg ml-5" style={{ color: '#666666' }}>
+            <nav className="flex items-center gap-2 text-base ml-4" style={{ color: '#666666' }}>
               <Link to="/" className="hover:opacity-70 transition-opacity" style={{ color: '#8B4513' }}>홈</Link>
               <span>›</span>
               <Link to="/community" className="hover:opacity-70 transition-opacity" style={{ color: '#8B4513' }}>커뮤니티</Link>
@@ -263,7 +263,7 @@ const PostDetailPage = () => {
             <div className="text-left">
               <Link 
                 to="/community"
-                className="inline-flex items-center gap-3 px-8 py-4 text-white rounded-xl transition-all transform hover:-translate-y-1 hover:shadow-2xl font-bold text-lg mr-4 group"
+                className="inline-flex items-center gap-3 px-6 py-3 text-white rounded-xl transition-all transform hover:-translate-y-1 hover:shadow-2xl font-bold text-base mr-3 group"
                 style={{ 
                   background: 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
                   boxShadow: '0 4px 15px rgba(139, 69, 19, 0.3)'
@@ -278,10 +278,10 @@ const PostDetailPage = () => {
 
         <div className="space-y-6">
           {/* 게시글 헤더 카드 */}
-          <div className="bg-white rounded p-10 ">
+          <div className="bg-white rounded p-8 ">
             <div className="flex items-center gap-4 mb-">
               <div className="flex-1">
-                <h2 className="text-3xl font-bold pb-5" style={{ color: '#333333' }}>
+                <h2 className="text-3xl font-bold pb-4" style={{ color: '#333333' }}>
                   {post.title}
                 </h2>
                 <div className="flex justify-between items-center gap-3">
@@ -328,7 +328,7 @@ const PostDetailPage = () => {
           {/* 게시글 내용 */}
           <div className="rounded p-4">
             <div 
-              className="pl-2 py-5 min-h-90"
+              className="pl-2 py-4 min-h-80"
               style={{ borderColor: categoryData.color }}
             >
               <div 
@@ -355,7 +355,7 @@ const PostDetailPage = () => {
                   {/* 비율 바 제목 */}
                   <div className='flex justify-center mb-4'>
                     <p
-                      className="text-2xl font-bold mb-2 relative"
+                      className="text-xl font-bold mb-2 relative"
                       style={{
                         background: 'linear-gradient(90deg, #ff6d85ff 0%, #ff93a5ff 25%, #52c0ffff 50%, #93d7ffff 75%, #ff6d85ff 100%)',
                         backgroundSize: '200% 100%',
@@ -405,7 +405,7 @@ const PostDetailPage = () => {
                         alt="좋아요"
                         className="w-12 h-12 transition-transform duration-300 hover:scale-110"
                       />
-                      <span className='text text-xl'>난 네편이야</span>
+                      <span className='text text-lg'>난 네편이야</span>
                     </div>
 
                     {/* 싫어요 영역 */}
@@ -438,7 +438,7 @@ const PostDetailPage = () => {
                         alt="싫어요"
                         className="w-12 h-12 transition-transform duration-300 hover:scale-110"
                       />
-                      <span className='text text-xl'>너가 잘못했어</span>
+                      <span className='text text-lg'>너가 잘못했어</span>
                     </div>
                   </div>
 
@@ -490,7 +490,7 @@ const PostDetailPage = () => {
           
 
           {/* 댓글 목록 */}
-          <div className="bg-white rounded p-10">
+          <div className="bg-white rounded p-8">
             <div className="flex items-center gap-4 mb-5">
               <h3 className="text-2xl font-bold" style={{ color: '#333333' }}>
                 댓글 ({comments.length})
@@ -505,7 +505,7 @@ const PostDetailPage = () => {
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="건설적이고 따뜻한 댓글을 작성해주세요..."
                     rows={5}
-                    className="w-full h-30 px-6 py-4 border-2 rounded focus:outline-none text-lg placeholder-gray-400 resize-none transition-all"
+                    className="w-full h-28 px-5 py-4 border-2 rounded focus:outline-none text-lg placeholder-gray-400 resize-none transition-all"
                     style={{ 
                       borderColor: '#F0F0F0',
                       focusBorderColor: categoryData.color,
@@ -533,7 +533,7 @@ const PostDetailPage = () => {
                       <button
                         type="submit"
                         disabled={isSubmittingComment || !commentText.trim()}
-                        className="px-8 py-3 rounded-xl font-medium transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:transform-none"
+                        className="px-7 py-3 rounded-xl font-medium transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:transform-none"
                         style={{ 
                           backgroundColor: categoryData.color,
                           color: '#FFFFFF'
@@ -577,7 +577,7 @@ const PostDetailPage = () => {
                   return (
                     <div 
                       key={comment.id} 
-                      className="pl-8 py-4"
+                      className="pl-6 py-4"
                       style={{ borderColor: categoryData.color }}
                     >
                       <div className="flex items-center justify-between mb-4">

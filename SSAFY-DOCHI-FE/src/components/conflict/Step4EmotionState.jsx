@@ -145,11 +145,17 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
         </div>
       </div>
 
-      <div className="mt-8 flex justify-between items-center mb-32">
+      <div className="mt-8 flex justify-between items-center mb-32 relative z-10">
         <button
           onClick={onPrev}
           type="button"
-          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer px-4 py-2 bg-transparent border-none"
+          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer px-4 py-2 rounded-lg hover:bg-gray-100"
+          style={{ 
+            background: 'transparent', 
+            border: 'none',
+            outline: 'none',
+            minHeight: '40px'
+          }}
         >
           ← 이전으로
         </button>
