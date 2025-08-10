@@ -223,14 +223,10 @@ const NoticePage = () => {
               {categories.map((category) => (
                 <div
                   key={category.value}
-                  className={`p-2 rounded cursor-pointer transition-all transform hover:-translate-y-1 ${
-                    selectedCategory === category.value ? 'ring-4' : ''
-                  }`}
+                  className="p-2 rounded cursor-pointer transition-all transform hover:-translate-y-1"
                   style={{
                     background: selectedCategory === category.value ? category.gradient : '#FFFFFF',
                     color: selectedCategory === category.value ? '#FFFFFF' : '#333333',
-                    '--ring-color': category.color,
-                    '--tw-ring-color': category.color,
                     boxShadow: selectedCategory === category.value ? '0 4px 15px rgba(0, 0, 0, 0.2)' : 'none',
                     transition: 'all 0.3s ease'
                   }}
@@ -313,16 +309,10 @@ const NoticePage = () => {
                       >
                         <div className="flex items-center justify-between gap-3 mb-4">
                           <div className="flex gap-3 items-center flex-1 min-w-0">
-                            {notice.isImportant && (
-                              <span className="bg-red-500 text-white text-xs px-3 py-2 rounded-full font-medium min-w-[50px] text-center">
-                                중요
-                              </span>
-                            )}
                             <span
-                              className="text-xs px-3 py-2 rounded-full font-medium text-white min-w-[80px] text-center shadow-md"
+                              className="text-white text-xs px-2 py-1 rounded font-medium"
                               style={{ 
-                                background: noticeCategoryData?.gradient || 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
-                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+                                background: noticeCategoryData?.color || '#8B4513'
                               }}
                             >
                               {noticeCategoryData?.label || notice.category}
