@@ -42,7 +42,12 @@ const GamePage = () => {
     setIsSpinning(true);
     const winnerIndex = Math.floor(Math.random() * items.length);
     
-    const totalRotation = 360 * 5 + (360 - ((winnerIndex + 1) * segmentAngle));
+    // 각 세그먼트의 중앙에 멈추도록 각도 계산
+    const targetAngle = (winnerIndex * segmentAngle) + (segmentAngle / 2);
+
+    // 최종 회전 각도 계산.
+    // 화살표가 위쪽(270도)에 있으므로, 목표 각도가 270도에 오도록 회전량을 정함.
+    const totalRotation = (360 * 5) + 270 - targetAngle;
     
     setRotation(rotation + totalRotation);
     
