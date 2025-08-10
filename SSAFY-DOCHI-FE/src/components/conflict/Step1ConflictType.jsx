@@ -12,12 +12,6 @@ const Step1ConflictType = ({ formData, onChange, onNext }) => {
 
   return (
     <div className="animate-fade-in opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-3">
-          어떤 갈등을 겪고 계신가요?
-        </h2>
-      </div>
-
       <ConflictTypeSelector
         value={formData.conflictType}
         onChange={handleTypeSelect}

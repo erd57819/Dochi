@@ -28,9 +28,9 @@ const ConflictTypeSelector = ({ value, onChange }) => {
             }
           `}
         >
-          <div className="text-4xl mb-3">{type.icon}</div>
-          <div className="font-medium text-lg">{type.label}</div>
-          <div className="text-sm text-gray-500 mt-2">{type.description}</div>
+          <div className="text-3xl mb-2">{type.icon}</div>
+          <div className="font-medium text-base">{type.label}</div>
+          <div className="text-xs text-gray-500 mt-1">{type.description}</div>
           {value === type.value && (
             <div className="absolute top-2 right-2">
               <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">

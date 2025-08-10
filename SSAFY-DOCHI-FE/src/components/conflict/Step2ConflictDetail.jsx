@@ -20,33 +20,16 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
     { value: 365, label: '1년 이상', emoji: '🗂️' }
   ];
 
-  const isValid = formData.title.trim() !== '' && formData.description.trim() !== '' && formData.conflictWhen && formData.conflictFrequency;
+  const isValid = formData.title.trim() !== '' && formData.description.trim() !== '' && formData.conflictWhen && (formData.conflictFrequency || 1);
 
   return (
     <div className="animate-fadeIn">
-      {/* 이전 버튼 - 텍스트만 */}
-      <div className="mb-6">
-        <span
-          onClick={onPrev}
-          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
-        >
-          ← 이전으로
-        </span>
-      </div>
       
-      <div className="mb-8 text-center">
-        <h2 className="text-4xl font-bold text-gray-800 mb-4">
-          갈등 상황 설명하기
-        </h2>
-        <p className="text-xl text-gray-600">
-          어떤 사람과 갈등이 있었는지 작성해주세요
-        </p>
-      </div>
 
       <div className="space-y-8">
         {/* 갈등 대상 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등 대상
           </label>
           <input
@@ -56,14 +39,14 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
             onChange={handleTitleChange}
             placeholder="어떤 사람과 갈등이 있었는지 작성해주세요"
             className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-xl
-              transition-all duration-200 text-lg text-gray-800
+              transition-all duration-200 text-base text-gray-800
               focus:border-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-100"
           />
         </div>
 
         {/* 갈등 설명 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등 설명
           </label>
           <textarea
@@ -73,14 +56,14 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
             rows={6}
             placeholder="상황, 이유, 원인 등을 자세히 작성해주세요"
             className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-xl
-              transition-all duration-200 text-lg text-gray-800 resize-none
+              transition-all duration-200 text-base text-gray-800 resize-none
               focus:border-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-100"
           />
         </div>
 
         {/* 갈등 발생 시점 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등 발생 시점
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -97,8 +80,8 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
                   }
                 `}
               >
-                <div className="text-4xl mb-3">{option.emoji}</div>
-                <div className="font-medium text-lg">{option.label}</div>
+                <div className="text-3xl mb-2">{option.emoji}</div>
+                <div className="font-medium text-base">{option.label}</div>
               </button>
             ))}
           </div>
@@ -106,7 +89,7 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
 
         {/* 갈등 빈도 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등 빈도
           </label>
           <div className="bg-gray-50 p-6 rounded-2xl">
@@ -122,22 +105,22 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
                   background: `linear-gradient(to right, #8B4513 0%, #8B4513 ${(((formData.conflictFrequency || 1) - 1) / 5) * 100}%, #e5e7eb ${(((formData.conflictFrequency || 1) - 1) / 5) * 100}%, #e5e7eb 100%)`
                 }}
               />
-              <div className="flex justify-between mt-4 text-lg text-gray-600">
+              <div className="flex justify-between mt-3 text-sm text-gray-600">
                 <span>매일</span>
-                <span>주 1-2회</span>
                 <span>주 3-4회</span>
+                <span>주 1-2회</span>
                 <span>2주에 한번</span>
                 <span>1달에 한번</span>
                 <span>6달에 한번</span>
               </div>
             </div>
             <div className="mt-6 text-center">
-              <span className="text-4xl font-bold" style={{color: '#8B4513'}}>
+              <span className="text-3xl font-bold" style={{color: '#8B4513'}}>
                 {[
                   '',
                   '매일',
-                  '주 1-2회', 
-                  '주 3-4회',
+                  '주 3-4회', 
+                  '주 1-2회',
                   '2주에 한번',
                   '1달에 한번',
                   '6달에 한번'
@@ -148,7 +131,14 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end mb-32">
+      <div className="mt-8 flex justify-between items-center mb-32">
+        <button
+          onClick={onPrev}
+          type="button"
+          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer px-4 py-2 bg-transparent border-none"
+        >
+          ← 이전으로
+        </button>
         <button
           onClick={onNext}
           disabled={!isValid}

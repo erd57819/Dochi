@@ -431,7 +431,7 @@ export const MainPage = () => {
               </div>
               
               <img
-                className="absolute -top-28 sm:-top-36 lg:-top-44 right-0 sm:right-8 lg:right-20 object-cover"
+                className="absolute -top-8 sm:-top-12 lg:-top-20 right-0 sm:right-8 lg:right-20 object-cover"
                 alt="참곬도치 캐릭터 이미지"
                 src={image10}
                 style={{
@@ -475,9 +475,9 @@ export const MainPage = () => {
               }}
             />
 
-            <div className="absolute bottom-[28vh] sm:bottom-[32vh] lg:bottom-[35vh] xl:bottom-[30vh] 2xl:bottom-[25vh] left-8 sm:left-16 lg:left-32 fade-in-button">
+            <div className="absolute bottom-[26vh] sm:bottom-[30vh] lg:bottom-[33vh] xl:bottom-[28vh] 2xl:bottom-[23vh] left-8 sm:left-16 lg:left-32 fade-in-button">
               <div 
-                className="w-48 sm:w-56 lg:w-64 xl:w-64 2xl:w-64 h-14 sm:h-16 lg:h-18 xl:h-18 2xl:h-18 bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
+                className="w-36 sm:w-44 lg:w-52 xl:w-52 2xl:w-52 h-10 sm:h-12 lg:h-14 xl:h-14 2xl:h-14 bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
                 onClick={() => navigate('/service')}
               >
                 <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-sm sm:text-base lg:text-lg xl:text-lg 2xl:text-lg">
@@ -591,7 +591,7 @@ export const MainPage = () => {
 
                     {/* 2. 갈등 해결하기 */}
                     <div className="flex items-start space-x-6 cursor-pointer group" onClick={() => navigate('/conflicts/create')}>
-                        <img alt="갈등 해결 아이콘" src={image9} className="w-16 h-auto flex-shrink-0"/>
+                        <img alt="갈등 해결 아이콘" src={image9} className="w-14 h-auto flex-shrink-0"/>
                         <div>
                             <h3 className="font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-2xl lg:text-3xl mb-3 group-hover:text-[#FFAF53] transition-colors">참견도치와 갈등 해결하기</h3>
                             <p className="font-['Pretendard-Medium'] font-medium text-black text-base lg:text-lg">화상 대화 속 감정과 대화을 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요</p>

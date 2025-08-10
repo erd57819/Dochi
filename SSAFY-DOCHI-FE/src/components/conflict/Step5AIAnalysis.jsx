@@ -49,24 +49,7 @@ const Step5AIAnalysis = ({
 
   return (
     <div className="animate-fadeIn">
-      {/* 이전 버튼 - 텍스트만 */}
-      <div className="mb-6">
-        <span
-          onClick={onPrev}
-          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
-        >
-          ← 다시 작성하기
-        </span>
-      </div>
       
-      <div className="mb-8 text-center">
-        <h2 className="text-4xl font-bold text-gray-800 mb-4">
-          AI 분석 결과
-        </h2>
-        <p className="text-xl text-gray-600">
-          AI가 분석한 갈등 상황과 해결 방안입니다
-        </p>
-      </div>
 
       <div className="space-y-6">
         {/* AI 요약 */}
@@ -78,7 +61,7 @@ const Step5AIAnalysis = ({
             <h3 className="text-xl font-semibold text-gray-800">상황 요약</h3>
           </div>
           <div 
-            className="text-gray-700 text-lg"
+            className="text-gray-700 text-base"
             style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
             dangerouslySetInnerHTML={{ __html: aiSummary }}
           />
@@ -93,7 +76,7 @@ const Step5AIAnalysis = ({
             <h3 className="text-xl font-semibold text-gray-800">추천 해결방안</h3>
           </div>
           <div 
-            className="text-gray-700 text-lg"
+            className="text-gray-700 text-base"
             style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
             dangerouslySetInnerHTML={{ __html: aiSolutions }}
           />
@@ -208,7 +191,15 @@ const Step5AIAnalysis = ({
         </div>
       </div>
 
-      <div className="mt-8 flex justify-center gap-4 mb-32">
+      <div className="mt-8 flex justify-between items-center mb-32">
+        <button
+          onClick={onPrev}
+          type="button"
+          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer px-4 py-2 bg-transparent border-none"
+        >
+          ← 다시 작성하기
+        </button>
+        <div className="flex gap-4">
         <button
           onClick={handleViewResult}
           className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
@@ -241,6 +232,7 @@ const Step5AIAnalysis = ({
         >
           갈등 카드 저장하기
         </button>
+        </div>
       </div>
 
       <style jsx>{`
