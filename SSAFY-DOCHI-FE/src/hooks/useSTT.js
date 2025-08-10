@@ -5,6 +5,7 @@ export const useSTT = (roomName, participantName) => {
   // STT 관련 상태
   const [sttEnabled, setSttEnabled] = useState(false);
   const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
+  const [coachingEnabled, setCoachingEnabled] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
 
@@ -13,6 +14,10 @@ export const useSTT = (roomName, participantName) => {
   const speechTimeoutRef = useRef(null);
   const conversationLogRef = useRef([]);
   const lastSentTextRef = useRef(''); // 마지막 전송된 텍스트 저장
+  const coachingTimeoutRef = useRef(null);
+  const lastCoachingTimeRef = useRef(0);
+  const lastSpeechTimeRef = useRef(Date.now()); // 마지막 발언 시간
+  const silenceCheckTimeoutRef = useRef(null); // 침묵 체크 타이머
 
   // STT 데이터를 FastAPI로 전송
   const sendSTTToFastAPI = async (speaker, text) => {
@@ -77,11 +82,26 @@ export const useSTT = (roomName, participantName) => {
     setConversations(prev => [...prev, newConversation]);
     conversationLogRef.current.push(newConversation);
 
+    // 발언 시간 업데이트 (침묵 추적용)
+    lastSpeechTimeRef.current = Date.now();
+    
+    // 기존 침묵 체크 타이머 초기화
+    if (silenceCheckTimeoutRef.current) {
+      clearTimeout(silenceCheckTimeoutRef.current);
+    }
+    
+    // 새로운 침묵 체크 타이머 시작
+    if (coachingEnabled) {
+      startSilenceMonitoring();
+    }
+
     // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
     await sendSTTToFastAPI(speaker, text);
 
-    // 실시간 감정 분석을 위한 데이터 전송 (추가)
-    await sendEmotionAnalysis(speaker, text);
+    // 코칭이 활성화된 경우 코칭 분석 수행
+    if (coachingEnabled) {
+      await checkCoachingNeeded();
+    }
 
     // 프론트엔드 갈등 감지 및 AI 중재 기능 제거 (Google API만 사용)
     // const shouldMediate = await analyzeConflictAndTiming(text, speaker);
@@ -162,104 +182,126 @@ export const useSTT = (roomName, participantName) => {
     }
   };
 
-  // 실시간 감정 분석 요청 (새로 추가)
-  const sendEmotionAnalysis = async (speaker, text) => {
+
+  // 코칭 분석 요청 함수
+  const checkCoachingNeeded = async () => {
     try {
-      console.log('[감정분석] 요청 시작:', { speaker, text });
-      
-      // 최근 5개 대화를 포함한 conversation 구성
+      // 최근 대화 데이터 준비 (최근 5개)
       const recentConversations = conversationLogRef.current.slice(-5).map(conv => ({
         speaker: conv.speaker,
         text: conv.text
       }));
 
-      // 현재 발언도 포함
-      recentConversations.push({ speaker, text });
-      console.log('[감정분석] 전송할 대화 데이터:', recentConversations);
+      if (recentConversations.length < 2) {
+        console.log('[코칭] 대화가 충분하지 않음');
+        return;
+      }
 
-      const emotionApiUrl = window.location.hostname === 'localhost'
-        ? '/ai/speech/emotion/contextual'  // 로컬 개발 (vite proxy 사용)
-        : 'https://i13c209.p.ssafy.io/ai/speech/emotion/contextual';  // 배포 환경 (직접 연결)
+      const coachingApiUrl = window.location.hostname === 'localhost'
+        ? '/ai/speech/coaching/realtime'
+        : 'https://i13c209.p.ssafy.io/ai/speech/coaching/realtime';
       
-      const response = await fetch(emotionApiUrl, {
+      // 침묵 시간 계산
+      const silenceDuration = (Date.now() - lastSpeechTimeRef.current) / 1000;
+      
+      const response = await fetch(coachingApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          conversation: recentConversations
+          conversation: recentConversations,
+          roomId: roomName,
+          silenceDuration: silenceDuration
         })
       });
 
-      const emotionResult = await response.json();
-      console.log('[Google API 감정분석 결과]', emotionResult);
+      const coachingResult = await response.json();
+      console.log('[코칭 분석 결과]', coachingResult);
 
-      // Google API 원본 결과를 사용자에게 직접 표시
-      if (emotionResult && !emotionResult.error) {
-        const { emotion, score, magnitude, speaker: analyzedSpeaker, text: analyzedText } = emotionResult;
-        
-        const googleResultMessage = `🧠 Google 감정분석 결과
-📝 분석 대상: "${analyzedText}"
-😊 감정: ${emotion}
-📊 점수: ${score} (-1.0~1.0)
-📈 강도: ${magnitude}
-👤 화자: ${analyzedSpeaker}`;
+      if (coachingResult.coachingNeeded && coachingResult.coachingMessage) {
+        // 중복 코칭 방지 (30초 이내 재알림 방지)
+        const now = Date.now();
+        if (now - lastCoachingTimeRef.current < 30000) {
+          console.log('[코칭] 중복 방지 - 최근에 코칭함');
+          return;
+        }
 
+        lastCoachingTimeRef.current = now;
+
+        // 코칭 메시지를 채팅창에 표시
         setConversations(prev => [...prev, {
-          id: Date.now() + 1,
-          speaker: 'Google AI',
-          text: googleResultMessage,
+          id: Date.now() + 10,
+          speaker: 'AI 코치',
+          text: coachingResult.coachingMessage,
           timestamp: new Date().toLocaleTimeString('ko-KR', {
             hour: '2-digit',
             minute: '2-digit'
           }),
-          isGoogleAnalysis: true
+          isCoachingMessage: true,
+          triggerType: coachingResult.triggerType,
+          urgency: coachingResult.urgency
         }]);
-        
-        console.log('[Google API 성공] 감정:', emotion, '점수:', score, '강도:', magnitude);
-      } else {
-        console.error('[Google API 오류]', emotionResult);
-        
-        setConversations(prev => [...prev, {
-          id: Date.now() + 2,
-          speaker: 'Google AI',
-          text: `❌ Google 감정분석 실패: ${emotionResult?.error || emotionResult?.message || '알 수 없는 오류'}`,
-          timestamp: new Date().toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit'
-          }),
-          isGoogleAnalysis: true
-        }]);
+
+        console.log(`[코칭 제공] ${coachingResult.triggerType} - ${coachingResult.urgency}`);
       }
 
+      // 다음 체크 주기 설정
+      if (coachingTimeoutRef.current) {
+        clearTimeout(coachingTimeoutRef.current);
+      }
+
+      const nextInterval = coachingResult.nextCheckInterval || 60;
+      coachingTimeoutRef.current = setTimeout(() => {
+        if (coachingEnabled && conversationLogRef.current.length > 0) {
+          checkCoachingNeeded();
+        }
+      }, nextInterval * 1000);
+
     } catch (error) {
-      console.error('[감정분석 요청 실패]', error);
+      console.error('[코칭 분석 실패]', error);
     }
   };
 
-  // 감정 분석 결과를 바탕으로 코칭 메시지 생성 (새로 추가)
-  const generateEmotionCoaching = (emotionResult) => {
-    if (!emotionResult || emotionResult.emotion === 'error') {
-      return null;
-    }
-
-    const { emotion, score, magnitude, speaker } = emotionResult;
-
-    // Google API 테스트를 위해 필터링 기능 비활성화
-    // 감정 강도가 낮으면 코칭하지 않음
-    // if (!magnitude || magnitude < 0.3) {
-    //   return null;
-    // }
-
-    // if (emotion === 'sad' && score < -0.5) {
-    //   return `${speaker}님, 현재 부정적인 감정이 강하게 느껴집니다. 잠시 심호흡을 하고 차분하게 이야기해보는 것은 어떨까요?`;
-    // } else if (emotion === 'sad' && score < -0.25) {
-    //   return `${speaker}님, 약간의 부정적인 감정이 감지됩니다. 상대방의 입장에서 생각해보시는 것도 좋을 것 같아요.`;
-    // } else if (emotion === 'happy' && score > 0.5) {
-    //   return `${speaker}님, 긍정적인 분위기가 정말 좋네요! 이 에너지를 계속 유지해보세요.`;
-    // }
-
-    // 모든 감정에 대해 결과 표시 (테스트용)
-    return `${speaker}님, 감정 분석 완료 - ${emotion} (점수: ${score}, 강도: ${magnitude})`;
+  // 침묵 모니터링 시작
+  const startSilenceMonitoring = () => {
+    // 15초 후 첫 번째 침묵 체크
+    silenceCheckTimeoutRef.current = setTimeout(() => {
+      checkSilenceCoaching(15);
+    }, 15000);
   };
+
+  // 침묵 기반 코칭 체크
+  const checkSilenceCoaching = async (expectedSilence) => {
+    if (!coachingEnabled) return;
+    
+    const actualSilence = (Date.now() - lastSpeechTimeRef.current) / 1000;
+    
+    // 실제 침묵 시간이 예상보다 짧으면 (중간에 발언이 있었으면) 체크 안 함
+    if (actualSilence < expectedSilence - 2) {
+      console.log(`[침묵 체크] 중간에 발언 있음 (예상: ${expectedSilence}s, 실제: ${actualSilence.toFixed(1)}s)`);
+      return;
+    }
+    
+    console.log(`[침묵 체크] ${actualSilence.toFixed(1)}초 침묵 감지`);
+    
+    // 침묵 기반 코칭 체크 (대화 없이도 침묵만으로 체크)
+    if (conversationLogRef.current.length >= 1) {
+      await checkCoachingNeeded();
+    }
+    
+    // 다음 침묵 체크 설정
+    if (actualSilence >= 15 && actualSilence < 30) {
+      // 20초 체크
+      silenceCheckTimeoutRef.current = setTimeout(() => {
+        checkSilenceCoaching(20);
+      }, 5000);
+    } else if (actualSilence >= 20 && actualSilence < 30) {
+      // 30초 체크  
+      silenceCheckTimeoutRef.current = setTimeout(() => {
+        checkSilenceCoaching(30);
+      }, 10000);
+    }
+  };
+
 
   // AI 조언 요청
   const getAISuggestion = async (text, speaker) => {
@@ -403,10 +445,19 @@ export const useSTT = (roomName, participantName) => {
     if (speechTimeoutRef.current) {
       clearTimeout(speechTimeoutRef.current);
     }
+    if (coachingTimeoutRef.current) {
+      clearTimeout(coachingTimeoutRef.current);
+    }
+    if (silenceCheckTimeoutRef.current) {
+      clearTimeout(silenceCheckTimeoutRef.current);
+    }
     setSttEnabled(false);
     setAiMediationEnabled(false);
+    setCoachingEnabled(false);
     setConversations([]);
     setCurrentSpeech({ speaker: null, text: '' });
+    lastCoachingTimeRef.current = 0;
+    lastSpeechTimeRef.current = Date.now();
     console.log('음성 인식 중지');
   };
 
@@ -424,10 +475,33 @@ export const useSTT = (roomName, participantName) => {
     setAiMediationEnabled(!aiMediationEnabled);
   };
 
+  // AI 코칭 토글
+  const toggleCoaching = () => {
+    const newCoachingState = !coachingEnabled;
+    setCoachingEnabled(newCoachingState);
+    
+    if (newCoachingState) {
+      console.log('[코칭] 활성화됨');
+      // 코칭 활성화 시 첫 번째 체크 실행
+      if (conversationLogRef.current.length >= 2) {
+        setTimeout(() => checkCoachingNeeded(), 2000); // 2초 후 첫 체크
+      }
+    } else {
+      console.log('[코칭] 비활성화됨');
+      if (coachingTimeoutRef.current) {
+        clearTimeout(coachingTimeoutRef.current);
+      }
+      if (silenceCheckTimeoutRef.current) {
+        clearTimeout(silenceCheckTimeoutRef.current);
+      }
+    }
+  };
+
   return {
     // 상태
     sttEnabled,
     aiMediationEnabled,
+    coachingEnabled,
     conversations,
     currentSpeech,
 
@@ -439,9 +513,11 @@ export const useSTT = (roomName, participantName) => {
     // 함수
     toggleSTT,
     toggleAIMediation,
+    toggleCoaching,
     stopSTT,
     startSTT,
     handleSpeechResult,
-    sendSTTToFastAPI
+    sendSTTToFastAPI,
+    checkCoachingNeeded
   };
 };

@@ -17,8 +17,8 @@ def getApiInfo():
                 "health": "GET /stt/health"
             },
             "speech": {
-                "processAudio": "POST /speech/process-audio",
-                "processRealtimeChunk": "POST /speech/process-realtime-chunk",
+                "emotionAnalysis": "POST /speech/emotion/contextual",
+                "realtimeCoaching": "POST /speech/coaching/realtime",
                 "health": "GET /speech/health"
             },
             "voice": {
