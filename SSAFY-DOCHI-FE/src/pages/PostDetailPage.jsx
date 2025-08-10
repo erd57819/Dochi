@@ -22,6 +22,11 @@ const PostDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [error, setError] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const categories = {
     'GENERAL': { label: '자유게시판', color: '#7F5539' },
@@ -47,6 +52,7 @@ const PostDetailPage = () => {
     }
   }, [postId]);
 
+
   const loadPostDetail = async () => {
     setLoading(true);
     setError(null);
@@ -55,6 +61,9 @@ const PostDetailPage = () => {
       // 게시글 정보 로드
       const postData = await communityApi.getPost(postId);
       setPost(postData);
+      setEditTitle(postData.title);
+      setEditContent(postData.content);
+      setEditCategory(postData.category);
       
       // 댓글 로드
       const commentsData = await commentApi.getComments(postId);
@@ -68,7 +77,7 @@ const PostDetailPage = () => {
     }
   };
 
-  // 게시글 좋아요 처리 (수정됨)
+  // 게시글 좋아요 처리
   const handlePostLike = async (likeType) => {
     if (!isLoggedIn) {
       alert('로그인이 필요합니다.');
@@ -93,6 +102,69 @@ const PostDetailPage = () => {
     } catch (error) {
       console.error('좋아요 처리 실패:', error);
       alert('좋아요 처리에 실패했습니다.');
+    }
+  };
+
+  // 게시글 삭제
+  const handleDeletePost = async () => {
+    const confirmMessage = `게시글 "${post.title}"을 정말로 삭제하시겠습니까?\n\n삭제된 게시글은 복구할 수 없습니다.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      await communityApi.deletePost(postId);
+      alert('게시글이 삭제되었습니다.');
+      navigate('/community');
+    } catch (error) {
+      console.error('게시글 삭제 실패:', error);
+      alert('게시글 삭제에 실패했습니다.');
+    }
+  };
+
+  // 게시글 수정 모드 토글
+  const handleEditPost = () => {
+    setIsEditMode(true);
+    setEditTitle(post.title);
+    setEditContent(post.content);
+    setEditCategory(post.category);
+  };
+
+  // 수정 취소
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditTitle(post.title);
+    setEditContent(post.content);
+    setEditCategory(post.category);
+  };
+
+  // 게시글 수정 저장
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim()) {
+      alert('제목을 입력해주세요.');
+      return;
+    }
+    if (!editContent.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const updatedPost = await communityApi.updatePost(postId, {
+        title: editTitle,
+        content: editContent,
+        category: editCategory
+      });
+      
+      setPost(updatedPost);
+      setIsEditMode(false);
+      alert('게시글이 수정되었습니다.');
+    } catch (error) {
+      console.error('게시글 수정 실패:', error);
+      alert('게시글 수정에 실패했습니다.');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -281,17 +353,45 @@ const PostDetailPage = () => {
           <div className="bg-white rounded p-10 ">
             <div className="flex items-center gap-4 mb-">
               <div className="flex-1">
-                <h2 className="text-3xl font-bold pb-5" style={{ color: '#333333' }}>
-                  {post.title}
-                </h2>
+                {isEditMode ? (
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="text-3xl font-bold pb-5 mb-2 w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
+                    style={{ 
+                      color: '#333333',
+                      borderColor: '#F0F0F0'
+                    }}
+                    placeholder="제목을 입력하세요"
+                  />
+                ) : (
+                  <h2 className="text-3xl font-bold pb-5" style={{ color: '#333333' }}>
+                    {post.title}
+                  </h2>
+                )}
                 <div className="flex justify-between items-center gap-3">
                   <div className="flex items-center gap-4" style={{ color: '#666666' }}>
-                    <span 
-                      className="text-sm px-4 py-1 rounded-full font-medium text-white"
-                      style={{ backgroundColor: categoryData.color }}
-                    >
-                      {categoryData.label}
-                    </span>
+                    {isEditMode ? (
+                      <select
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        className="text-sm px-4 py-2 rounded-full font-medium border-2"
+                        style={{ borderColor: '#F0F0F0' }}
+                      >
+                        <option value="GENERAL">자유게시판</option>
+                        <option value="CONFLICT_SHARING">갈등공유</option>
+                        <option value="SUCCESS_STORIES">성공사례</option>
+                        <option value="ADVICE_REQUEST">조언요청</option>
+                      </select>
+                    ) : (
+                      <span 
+                        className="text-sm px-4 py-1 rounded-full font-medium text-white"
+                        style={{ backgroundColor: categoryData.color }}
+                      >
+                        {categoryData.label}
+                      </span>
+                    )}
                     <span>👁 {post.viewCount || 0}</span>
                   </div>
                   <div className="flex items-center gap-2" style={{ color: '#666666' }}>
@@ -331,16 +431,90 @@ const PostDetailPage = () => {
               className="pl-2 py-5 min-h-90"
               style={{ borderColor: categoryData.color }}
             >
-              <div 
-                className="text-lg leading-relaxed whitespace-pre-wrap"
-                style={{ color: '#333333' }}
-              >
-                {post.content}
-              </div>
+              {isEditMode ? (
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full text-lg leading-relaxed px-4 py-3 border-2 rounded-lg focus:outline-none resize-none"
+                  style={{ 
+                    color: '#333333',
+                    borderColor: '#F0F0F0',
+                    minHeight: '300px'
+                  }}
+                  placeholder="내용을 입력하세요"
+                  rows={10}
+                />
+              ) : (
+                <div 
+                  className="text-lg leading-relaxed whitespace-pre-wrap"
+                  style={{ color: '#333333' }}
+                >
+                  {post.content}
+                </div>
+              )}
             </div>
             
+            {/* 수정 삭제 버튼 */}
+            <div className="flex items-center justify-end ml-4 pt-2 gap-2">
+              {isLoggedIn && user && (post.userId === user.id || user.role === 'ADMIN') && (
+                <div className="flex gap-3">
+                  {isEditMode ? (
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={handleSaveEdit}
+                          disabled={isUpdating}
+                          className="px-4 py-2 rounded font-medium transition-all hover:-translate-y-1 disabled:opacity-50"
+                          style={{ 
+                            backgroundColor: '#CD9F6E',
+                            color: '#FFFFFF'
+                          }}
+                        >
+                          {isUpdating ? '저장 중...' : '저장'}
+                        </button>
+                        <button 
+                          onClick={handleCancelEdit}
+                          disabled={isUpdating}
+                          className="px-4 py- rounded font-medium transition-all hover:-translate-y-1 disabled:opacity-50"
+                          style={{ 
+                            backgroundColor: '#999999',
+                            color: '#FFFFFF'
+                          }}
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={handleEditPost}
+                        className="px-4 py-2 rounded font-medium transition-all hover:-translate-y-1"
+                        style={{ 
+                          backgroundColor: '#cd9f6e',
+                          color: '#FFFFFF'
+                        }}
+                      >
+                        수정
+                      </button>
+                      <button 
+                        onClick={handleDeletePost}
+                        className="px-4 py-2 rounded font-medium transition-all hover:-translate-y-1"
+                        style={{ 
+                          backgroundColor: '#7F5539',
+                          color: '#FFFFFF'
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          {/* 좋아요/싫어요 통합 바 */}
+          {/* 좋아요/싫어요 통합 바 - 수정 모드에서는 숨김 */}
+          {!isEditMode && (
           <div className="w-full mt-6">
             {(() => {
               const likeCount = Number(post?.likeCount ?? 0);
@@ -460,32 +634,7 @@ const PostDetailPage = () => {
               );
             })()}
           </div>
-
-            {/* 액션 버튼 */}
-              <div className="flex items-center justify-end ml-4 pt-5 gap-2">
-                {isLoggedIn && user && (post.userId === user.id || user.role === 'ADMIN') && (
-                  <div className="flex gap-3">
-                    <button 
-                      className="px-4 py-2 rounded font-medium transition-all hover:-translate-y-1"
-                      style={{ 
-                        backgroundColor: '#cd9f6e',
-                        color: '#FFFFFF'
-                      }}
-                    >
-                      수정
-                    </button>
-                    <button 
-                      className="px-4 py-2 rounded font-medium transition-all hover:-translate-y-1"
-                      style={{ 
-                        backgroundColor: '#7F5539',
-                        color: '#FFFFFF'
-                      }}
-                    >
-                      삭제
-                    </button>
-                  </div>
-                )}
-              </div>
+          )}
           </div>
           
 
