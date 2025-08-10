@@ -283,7 +283,7 @@ const ConflictCreatePage = () => {
         {/* Main Content Area */}
         <div className="bg-white rounded-3xl p-8 pt-4 min-h-[700px] relative" style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }}>
           {/* 고슴도치 이미지 - 왼쪽 하단 */}
-          <div className="absolute bottom-6 left-6 z-0">
+          <div className="absolute bottom-6 left-6" style={{ zIndex: -1 }}>
             <img src={hedgehogImg} alt="고슴도치" className="w-48 h-48 object-contain opacity-80" />
           </div>
           {/* Step 1: 갈등 유형 */}
