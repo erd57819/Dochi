@@ -135,7 +135,7 @@ const ConflictDetailPage = () => {
 
       if (response.ok) {
         alert('갈등이 성공적으로 삭제되었습니다.');
-        navigate('/conflicts'); // 갈등 목록 페이지로 이동
+        navigate('/mypage'); // 갈등 목록 페이지로 이동
       } else {
         throw new Error('갈등 삭제에 실패했습니다.');
       }
@@ -299,7 +299,7 @@ const ConflictDetailPage = () => {
           <h2 className="text-xl font-semibold text-gray-800 mb-2">오류가 발생했습니다</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => navigate('/conflicts')}
+            onClick={() => navigate('/mypage')}
             className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
           >
             목록으로 돌아가기
@@ -387,7 +387,7 @@ ${summary.join('\n')}
       <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center">
         {/* 뒤로 가기 버튼 */}
         <button
-          onClick={() => navigate('/conflicts')}
+          onClick={() => navigate('/mypage')}
           className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
         >
           <span className="text-xl">←</span>
