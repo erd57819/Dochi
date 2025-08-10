@@ -20,6 +20,8 @@ export const useEmotionDetection = (roomName, participantName) => {
       // CDN에서 모델 로드
       const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
       
+      console.log('모델 다운로드 시작:', MODEL_URL);
+      
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
@@ -28,13 +30,32 @@ export const useEmotionDetection = (roomName, participantName) => {
       ]);
 
       console.log('Face-API 모델 로딩 완료');
+      return true;
     } catch (error) {
       console.error('Face-API 모델 로딩 실패:', error);
+      console.error('에러 상세:', error.message);
+      return false;
     }
   };
 
+  // 모델 로드 상태 추가
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+
   // 표정 분석 시작
-  const startEmotionDetection = (videoElement) => {
+  const startEmotionDetection = async (videoElement) => {
+    console.log('표정 분석 시작 요청...');
+    
+    // 모델이 로드되지 않았으면 먼저 로드
+    if (!isModelLoaded) {
+      console.log('Face-API 모델이 로드되지 않음, 로딩 시도...');
+      const loadSuccess = await loadFaceApiModels();
+      if (!loadSuccess) {
+        console.error('Face-API 모델 로딩 실패로 표정 분석 중단');
+        return;
+      }
+      setIsModelLoaded(true);
+    }
+    
     console.log('표정 분석 시작...');
     
     emotionDetectionInterval.current = setInterval(async () => {

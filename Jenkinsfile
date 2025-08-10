@@ -72,7 +72,7 @@ pipeline {
                 expression { params.DEPLOY_TARGET == 'FULL_STACK' }
             }
             steps {
-                echo "DOcker 서비스 정리..."
+                echo "Docker 서비스 정리..."
                 sh '''
                         # 1. 컨테이너 정리
                         docker-compose down --remove-orphans || true
@@ -109,7 +109,7 @@ pipeline {
                             branch: 'master'
                     }
                 }
-                
+
                 stage('Docker Login') {
                     steps {
                         echo "Docker Hub 로그인..."
@@ -195,8 +195,8 @@ pipeline {
         // ===== 5단계: Deploy Infrastructure Services (병렬처리 가능) =====
         stage('인프라 서비스 배포') {
             when {
-                expression { 
-                    params.DEPLOY_TARGET == 'WITH_DB' || 
+                expression {
+                    params.DEPLOY_TARGET == 'WITH_DB' ||
                     params.DEPLOY_TARGET == 'FULL_STACK' ||
                     params.DEPLOY_TARGET == 'WITH_CACHE'
                 }
@@ -204,7 +204,7 @@ pipeline {
             steps {
                 script {
                     def infrastructureStages = [:]
-                    
+
                     // MySQL (WITH_DB, FULL_STACK 선택 시)
                     if (params.DEPLOY_TARGET == 'WITH_DB' || params.DEPLOY_TARGET == 'FULL_STACK') {
                         infrastructureStages['MySQL'] = {
@@ -221,7 +221,7 @@ pipeline {
                             '''
                         }
                     }
-                    
+
                     // Redis (WITH_CACHE, WITH_DB, FULL_STACK 선택 시)
                     if (params.DEPLOY_TARGET != 'APP_ONLY') {
                         infrastructureStages['Redis'] = {
@@ -238,7 +238,7 @@ pipeline {
                             '''
                         }
                     }
-                    
+
                     // Kafka (FULL_STACK 선택 시)
                     if (params.DEPLOY_TARGET == 'FULL_STACK') {
                         infrastructureStages['Kafka'] = {
@@ -256,7 +256,7 @@ pipeline {
                                 done
                             '''
                         }
-                        
+
                         infrastructureStages['OpenVidu'] = {
                             echo "OpenVidu 시작..."
                             sh '''
@@ -266,7 +266,7 @@ pipeline {
                             '''
                         }
                     }
-                    
+
                     if (params.PARALLEL_DEPLOY && infrastructureStages.size() > 0) {
                         parallel infrastructureStages
                     } else {
@@ -288,21 +288,21 @@ pipeline {
                     if ! docker network ls | grep -q dochi-network; then
                         docker network create dochi-network --driver bridge
                     fi
-                    
+
                     # MySQL 확인 (없으면 시작)
                     if ! docker ps | grep -q dochi-mysql; then
                         echo "⚠️ MySQL이 실행되지 않음. 시작 중..."
                         docker-compose up -d mysql
                         sleep 10
                     fi
-                    
+
                     # Redis 확인 (없으면 시작)
                     if ! docker ps | grep -q dochi-redis; then
                         echo "⚠️ Redis가 실행되지 않음. 시작 중..."
                         docker-compose up -d redis
                         sleep 5
                     fi
-                    
+
                     echo "✅ 필수 서비스 준비 완료"
                 '''
             }
@@ -313,7 +313,7 @@ pipeline {
             steps {
                 script {
                     def appStages = [:]
-                    
+
                     // AI Service
                     appStages['AI Service'] = {
                         echo "AI Service 배포..."
@@ -324,7 +324,7 @@ pipeline {
                                 docker-compose build ai-service
                             fi
                             docker-compose up -d ai-service
-                            
+
                             for i in {1..30}; do
                                 curl -sf http://localhost:8002/health >/dev/null 2>&1 && {
                                     echo "✅ AI Service healthy"
