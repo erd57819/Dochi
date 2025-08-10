@@ -125,25 +125,35 @@ pipeline {
             }
         }
 
-         // ===== 4단계: Build Preparation (병렬처리 가능) =====
+         // ===== 4단계: Google Service Account 준비 (항상 실행) =====
+         stage('Google Service Account 준비') {
+             steps {
+                 withCredentials([
+                     file(credentialsId: 'GOOGLE-SERVICE-ACCOUNT', variable: 'JSON_PATH')
+                 ]) {
+                     sh '''
+                         cp "$JSON_PATH" google-service-account.json
+                         chmod 644 google-service-account.json
+                         
+                         # 파일 확인
+                         if [ -f google-service-account.json ]; then
+                             echo "✅ Google Service Account 파일 생성 완료"
+                             echo "파일 크기: $(ls -lh google-service-account.json | awk '{print $5}')"
+                         else
+                             echo "❌ Google Service Account 파일 생성 실패!"
+                             exit 1
+                         fi
+                     '''
+                 }
+             }
+         }
+
+         // ===== 5단계: Build Preparation (병렬처리 가능) =====
          stage('빌드 준비') {
              when {
                  expression { !params.SKIP_BUILD }
              }
              parallel {
-                 stage('Google Credentials') {
-                     steps {
-                         withCredentials([
-                             file(credentialsId: 'GOOGLE-SERVICE-ACCOUNT', variable: 'JSON_PATH')
-                         ]) {
-                             sh '''
-                                 cp "$JSON_PATH" google-service-account.json
-                                 chmod 644 google-service-account.json
-                                 echo "✅ Google Service Account 준비 완료"
-                             '''
-                         }
-                     }
-                 }
 
                  stage('Environment Variables') {
                      steps {
@@ -318,6 +328,17 @@ pipeline {
                     appStages['AI Service'] = {
                         echo "AI Service 배포..."
                         sh '''
+                            # Google Service Account 파일 확인
+                            if [ ! -f google-service-account.json ]; then
+                                echo "❌ google-service-account.json 파일이 없습니다!"
+                                echo "현재 디렉토리 내용:"
+                                ls -la | grep -E "(google|json)" || echo "관련 파일 없음"
+                                exit 1
+                            fi
+                            
+                            echo "📄 Google Service Account 파일 확인: $(ls -lh google-service-account.json | awk '{print $5}')"
+                            
+                            # AI Service 재시작
                             docker-compose stop ai-service || true
                             docker-compose rm -f ai-service || true
                             if [ "${SKIP_BUILD}" != "true" ]; then
@@ -325,9 +346,14 @@ pipeline {
                             fi
                             docker-compose up -d ai-service
                             
+                            # 헬스체크
                             for i in {1..30}; do
                                 curl -sf http://localhost:8002/health >/dev/null 2>&1 && {
                                     echo "✅ AI Service healthy"
+                                    
+                                    # Volume 마운트 확인
+                                    echo "📁 Volume 마운트 상태 확인:"
+                                    docker exec dochi-ai-service ls -la /app/google-service-account.json 2>/dev/null || echo "⚠️ 컨테이너 내 파일 확인 실패"
                                     break
                                 }
                                 sleep 2
