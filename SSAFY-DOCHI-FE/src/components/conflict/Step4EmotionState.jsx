@@ -34,29 +34,12 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
   }
   return (
     <div className="animate-fade-in opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-      {/* 이전 버튼 - 텍스트만 */}
-      <div className="mb-6">
-        <span
-          onClick={onPrev}
-          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
-        >
-          ← 이전으로
-        </span>
-      </div>
       
-      <div className="mb-8 text-center">
-        <h2 className="text-4xl font-bold text-gray-800 mb-4">
-          내가 원하는 해결 결과
-        </h2>
-        <p className="text-xl text-gray-600">
-          갈등이 어떻게 해결되기를 원하는지 알려주세요
-        </p>
-      </div>
 
       <div className="space-y-8">
         {/* 느껴던 감정 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             느껴던 감정
           </label>
           <EmotionSelector
@@ -67,7 +50,7 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
 
         {/* 갈등 강도 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등의 강도 (1-10)
           </label>
           <IntensitySlider
@@ -78,7 +61,7 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
 
         {/* 갈등 해결 방향 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등 해결 방향
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -102,8 +85,8 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
                 `}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{option.emoji}</span>
-                  <span className="font-medium text-lg">{option.label}</span>
+                  <span className="text-xl">{option.emoji}</span>
+                  <span className="font-medium text-base">{option.label}</span>
                 </div>
               </button>
             ))}
@@ -112,7 +95,7 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
 
         {/* 대화 의지 */}
         <div>
-          <label className="block text-2xl font-semibold text-gray-700 mb-6">
+          <label className="block text-xl font-semibold text-gray-700 mb-4">
             대화 의지
           </label>
           <div className="grid grid-cols-3 gap-4">
@@ -127,8 +110,8 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
                 }
               `}
             >
-              <div className="text-4xl mb-3">😊</div>
-              <div className="font-medium text-lg">있음</div>
+              <div className="text-3xl mb-2">😊</div>
+              <div className="font-medium text-base">있음</div>
             </button>
             <button
               type="button"
@@ -141,8 +124,8 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
                 }
               `}
             >
-              <div className="text-4xl mb-3">🤔</div>
-              <div className="font-medium text-lg">보통</div>
+              <div className="text-3xl mb-2">🤔</div>
+              <div className="font-medium text-base">보통</div>
             </button>
             <button
               type="button"
@@ -155,14 +138,21 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
                 }
               `}
             >
-              <div className="text-4xl mb-3">😔</div>
-              <div className="font-medium text-lg">적극적</div>
+              <div className="text-3xl mb-2">😔</div>
+              <div className="font-medium text-base">적극적</div>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end mb-32">
+      <div className="mt-8 flex justify-between items-center mb-32">
+        <button
+          onClick={onPrev}
+          type="button"
+          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer px-4 py-2 bg-transparent border-none"
+        >
+          ← 이전으로
+        </button>
         <button
           onClick={onNext}
           style={{
