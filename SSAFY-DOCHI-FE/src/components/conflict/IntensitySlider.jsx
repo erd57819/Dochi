@@ -7,6 +7,12 @@ const IntensitySlider = ({ value, onChange }) => {
     return 'bg-red-500';
   };
 
+  const getColorHex = (val) => {
+    if (val <= 3) return '#10b981';
+    if (val <= 6) return '#eab308';
+    return '#ef4444';
+  };
+
   const getEmoji = (val) => {
     if (val <= 2) return '😌';
     if (val <= 4) return '😐';
@@ -43,7 +49,7 @@ const IntensitySlider = ({ value, onChange }) => {
           onChange={(e) => onChange(parseInt(e.target.value))}
           className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
           style={{
-            background: `linear-gradient(to right, ${getColorClass(value).replace('bg-', '#')} 0%, ${getColorClass(value).replace('bg-', '#')} ${(value - 1) * 10}%, #e5e7eb ${(value - 1) * 10}%, #e5e7eb 100%)`
+            background: `linear-gradient(to right, ${getColorHex(value)} 0%, ${getColorHex(value)} ${((value - 1) / 9) * 100}%, #e5e7eb ${((value - 1) / 9) * 100}%, #e5e7eb 100%)`
           }}
         />
         <div className="flex justify-between mt-2">
@@ -64,7 +70,7 @@ const IntensitySlider = ({ value, onChange }) => {
           width: 24px;
           height: 24px;
           background: white;
-          border: 3px solid ${getColorClass(value).replace('bg-', '#')};
+          border: 3px solid ${getColorHex(value)};
           border-radius: 50%;
           cursor: pointer;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -74,7 +80,7 @@ const IntensitySlider = ({ value, onChange }) => {
           width: 24px;
           height: 24px;
           background: white;
-          border: 3px solid ${getColorClass(value).replace('bg-', '#')};
+          border: 3px solid ${getColorHex(value)};
           border-radius: 50%;
           cursor: pointer;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);

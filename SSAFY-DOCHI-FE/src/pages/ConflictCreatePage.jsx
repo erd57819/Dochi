@@ -19,7 +19,7 @@ const ConflictCreatePage = () => {
     description: '',
     conflictType: '',
     conflictWhen: '',
-    conflictFrequency: '',
+    conflictFrequency: 1,
     participants: '',
     desiredOutcome: '',
     priority: 'NONE',
@@ -217,6 +217,39 @@ const ConflictCreatePage = () => {
     }
   };
 
+  // 단계별 제목과 설명 설정
+  const getStepInfo = (step) => {
+    switch (step) {
+      case 1:
+        return {
+          title: "갈등 유형을 골라주세요",
+          description: "어떤 갈등을 겪고 계신지 선택해주세요"
+        };
+      case 2:
+        return {
+          title: "갈등 상황 설명하기",
+          description: "어떤 사람과 갈등이 있었는지 작성해주세요"
+        };
+      case 3:
+        return {
+          title: "내가 원하는 해결 결과",
+          description: "갈등이 어떻게 해결되기를 원하는지 알려주세요"
+        };
+      case 4:
+        return {
+          title: "AI 분석 결과",
+          description: "AI가 분석한 갈등 상황과 해결 방안입니다"
+        };
+      default:
+        return {
+          title: "갈등 유형을 골라주세요",
+          description: "갈등 상황을 단계별로 작성해주시면 AI가 분석해드릴게요"
+        };
+    }
+  };
+
+  const stepInfo = getStepInfo(currentStep);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
       <div className="max-w-6xl mx-auto px-4 py-12">
@@ -232,20 +265,20 @@ const ConflictCreatePage = () => {
         
         {/* 헤더 */}
         <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">
+          <h1 className="text-4xl font-bold text-gray-800 mb-1">
             <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-              갈등 유형을 골라주세요
+              {stepInfo.title}
             </span>
           </h1>
           <p className="text-sm text-gray-600 mb-4">
-            갈등 상황을 단계별로 작성해주시면 AI가 분석해드릴게요
+            {stepInfo.description}
           </p>
           {/* Progress Indicator */}
           <ProgressIndicator currentStep={currentStep} totalSteps={4} />
         </div>
 
         {/* Main Content Area */}
-        <div className="bg-white rounded-3xl p-8 min-h-[700px] relative">
+        <div className="bg-white rounded-3xl p-8 pt-4 min-h-[700px] relative" style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }}>
           {/* 고슴도치 이미지 - 왼쪽 하단 */}
           <div className="absolute bottom-6 left-6 z-0">
             <img src={hedgehogImg} alt="고슴도치" className="w-48 h-48 object-contain opacity-80" />

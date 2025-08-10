@@ -23,8 +23,8 @@ const EmotionSelector = ({ emotions, value, onChange }) => {
             }
           `}
         >
-          <div className="text-4xl mb-3">{emotion.icon}</div>
-          <div className="text-lg font-medium">{emotion.label}</div>
+          <div className="text-3xl mb-2">{emotion.icon}</div>
+          <div className="text-base font-medium">{emotion.label}</div>
         </button>
       ))}
     </div>
