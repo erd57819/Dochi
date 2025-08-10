@@ -88,7 +88,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       setIsLoading(true);
 
       let accessToken;
-      const identity = isGuestMode ? guestNickname : (isLoggedIn ? participantName : 'guest');
+      const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
       
       if (isGuestMode || !isLoggedIn) {
         const response = await fetch(`${API_BASE_URL}/api/video/token`, {
@@ -474,6 +474,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     } catch (error) {
       console.error('비디오 토글 실패:', error);
     }
+  };
+
+  // 소음 억제 토글
+  const toggleNoiseSuppression = () => {
+    setNoiseSuppressionEnabled(!noiseSuppressionEnabled);
+    console.log('소음 억제:', !noiseSuppressionEnabled ? 'ON' : 'OFF');
   };
 
   // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
