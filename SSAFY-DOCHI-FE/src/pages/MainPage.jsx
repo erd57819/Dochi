@@ -28,7 +28,7 @@ export const MainPage = () => {
     }
     
     .typewriter.animate {
-      animation: typing 2s steps(8, end) 0.5s forwards, blink-caret 0.75s step-end infinite 0.5s;
+      animation: typing 1.5s steps(9, end) 0.3s forwards, blink-caret 0.75s step-end infinite 0.3s;
       animation-fill-mode: both;
     }
     
@@ -44,7 +44,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line1.animate {
-      animation: typing-line1 1.5s steps(5, end) 2.5s forwards, blink-caret 0.75s step-end infinite 2.5s;
+      animation: typing-line1 1.0s steps(6, end) 0.7s forwards, blink-caret 0.75s step-end infinite 0.7s;
       animation-fill-mode: both;
     }
     
@@ -61,7 +61,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line2.animate {
-      animation: fade-in 0.1s ease-in 4.5s forwards, typing-line2 2.1s steps(7, end) 4.5s forwards, blink-caret 0.75s step-end infinite 4.5s;
+      animation: fade-in 0.1s ease-in 1.8s forwards, typing-line2 1.5s steps(10, end) 1.8s forwards, blink-caret 0.75s step-end infinite 1.8s;
     }
     
     .typewriter-line2.animate.finished {
@@ -77,7 +77,7 @@ export const MainPage = () => {
     }
     
     .shake-text.animate {
-      animation: shake 0.6s ease-in-out 3s both;
+      animation: shake 0.5s ease-in-out 2.0s both;
     }
     
     .pulse-text {
@@ -85,7 +85,7 @@ export const MainPage = () => {
     }
     
     .pulse-text.animate {
-      animation: pulse-scale 1.5s ease-in-out 0.5s both;
+      animation: pulse-scale 1.0s ease-in-out 0.3s both;
     }
     
     .fade-in-element {
@@ -94,7 +94,7 @@ export const MainPage = () => {
     }
     
     .fade-in-element.animate {
-      animation: fadeInUp 0.8s ease-out forwards;
+      animation: fadeInUp 0.6s ease-out forwards;
     }
     
     .fade-in-title {
@@ -103,7 +103,7 @@ export const MainPage = () => {
     }
     
     .fade-in-title.animate {
-      animation: fadeInUp 0.8s ease-out 0.2s forwards;
+      animation: fadeInUp 0.6s ease-out 0.15s forwards;
     }
     
     .fade-in-image {
@@ -112,7 +112,7 @@ export const MainPage = () => {
     }
     
     .fade-in-image.animate {
-      animation: fadeInUp 0.8s ease-out 0.4s forwards;
+      animation: fadeInUp 0.6s ease-out 0.3s forwards;
     }
     
     .fade-in-button {
@@ -121,7 +121,7 @@ export const MainPage = () => {
     }
     
     .fade-in-button.animate {
-      animation: fadeInUp 0.8s ease-out 0.6s forwards;
+      animation: fadeInUp 0.6s ease-out 0.45s forwards;
     }
     
     .fade-in-link {
@@ -130,7 +130,7 @@ export const MainPage = () => {
     }
     
     .fade-in-link.animate {
-      animation: fadeInUp 0.8s ease-out 0.8s forwards;
+      animation: fadeInUp 0.6s ease-out 0.6s forwards;
     }
     
     @keyframes fadeInUp {
@@ -146,13 +146,13 @@ export const MainPage = () => {
     }
     
     @keyframes typing-line1 {
-      0% { width: 0; opacity: 1; }
-      100% { width: 100%; opacity: 1; }
+      0% { width: 0; }
+      100% { width: 10ch; }
     }
     
     @keyframes typing-line2 {
-      0% { width: 0; opacity: 1; }
-      100% { width: 100%; opacity: 1; }
+      0% { width: 0; }
+      100% { width: 16ch; }
     }
     
     @keyframes blink-caret {
@@ -278,7 +278,7 @@ export const MainPage = () => {
             setTimeout(() => {
               if (typewriterEl) typewriterEl.classList.add('finished');
               if (shakeEl) shakeEl.classList.add('finished');
-            }, 3500);
+            }, 2500);
           }
           
           if (newSection === 1) {
@@ -291,11 +291,11 @@ export const MainPage = () => {
             
             setTimeout(() => {
               if (line1El) line1El.classList.add('finished');
-            }, 4000);
+            }, 1800);
             
             setTimeout(() => {
               if (line2El) line2El.classList.add('finished');
-            }, 6600);
+            }, 3400);
           }
           
           if (newSection === 2) {
@@ -320,7 +320,7 @@ export const MainPage = () => {
       setTimeout(() => {
         if (typewriterEl) typewriterEl.classList.add('finished');
         if (shakeEl) shakeEl.classList.add('finished');
-      }, 3500);
+      }, 2500);
       
       setAnimatedSections(new Set([0]));
     }, 100);
@@ -431,7 +431,7 @@ export const MainPage = () => {
               </div>
               
               <img
-                className="absolute -top-28 sm:-top-36 lg:-top-44 right-0 sm:right-8 lg:right-20 object-cover"
+                className="absolute -top-8 sm:-top-12 lg:-top-20 right-0 sm:right-8 lg:right-20 object-cover"
                 alt="참곬도치 캐릭터 이미지"
                 src={image10}
                 style={{
@@ -475,9 +475,9 @@ export const MainPage = () => {
               }}
             />
 
-            <div className="absolute bottom-[28vh] sm:bottom-[32vh] lg:bottom-[35vh] xl:bottom-[30vh] 2xl:bottom-[25vh] left-8 sm:left-16 lg:left-32 fade-in-button">
+            <div className="absolute bottom-[26vh] sm:bottom-[30vh] lg:bottom-[33vh] xl:bottom-[28vh] 2xl:bottom-[23vh] left-8 sm:left-16 lg:left-32 fade-in-button">
               <div 
-                className="w-48 sm:w-56 lg:w-64 xl:w-64 2xl:w-64 h-14 sm:h-16 lg:h-18 xl:h-18 2xl:h-18 bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
+                className="w-36 sm:w-44 lg:w-52 xl:w-52 2xl:w-52 h-10 sm:h-12 lg:h-14 xl:h-14 2xl:h-14 bg-[#bf7d2c] rounded-[18px] flex items-center justify-center cursor-pointer hover:bg-[#a66a25] transition-colors"
                 onClick={() => navigate('/service')}
               >
                 <div className="font-['Pretendard-SemiBold'] font-semibold text-white text-sm sm:text-base lg:text-lg xl:text-lg 2xl:text-lg">
@@ -591,7 +591,7 @@ export const MainPage = () => {
 
                     {/* 2. 갈등 해결하기 */}
                     <div className="flex items-start space-x-6 cursor-pointer group" onClick={() => navigate('/conflicts/create')}>
-                        <img alt="갈등 해결 아이콘" src={image9} className="w-16 h-auto flex-shrink-0"/>
+                        <img alt="갈등 해결 아이콘" src={image9} className="w-14 h-auto flex-shrink-0"/>
                         <div>
                             <h3 className="font-['Pretendard-SemiBold'] font-semibold text-[#bf7d2c] text-2xl lg:text-3xl mb-3 group-hover:text-[#FFAF53] transition-colors">참견도치와 갈등 해결하기</h3>
                             <p className="font-['Pretendard-Medium'] font-medium text-black text-base lg:text-lg">화상 대화 속 감정과 대화을 읽고, AI 갈등 도우미 참견도치가 갈등 중재를 도와줘요</p>
