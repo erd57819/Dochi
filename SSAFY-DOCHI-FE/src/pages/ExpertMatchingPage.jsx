@@ -291,7 +291,7 @@ const ExpertMatchingPage = () => {
         {/* 하단 액션 버튼 */}
         <div className="text-center">
           <button
-            onClick={() => navigate('/conflicts')}
+            onClick={() => navigate('/mypage')}
             className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg mr-4"
             style={{ background: '#696969' }}
           >
