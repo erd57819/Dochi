@@ -18,7 +18,7 @@ const Step5AIAnalysis = ({
           <div className="relative">
             <div className="w-20 h-20 border-4 border-amber-200 rounded-full animate-spin"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl">🤖</span>
+              <span className="text-3xl">🦔</span>
             </div>
           </div>
           <h3 className="mt-4 text-xl font-semibold text-gray-800">AI가 분석 중입니다...</h3>
