@@ -87,12 +87,8 @@ class EmotionService:
             response = self.client.analyze_sentiment(document=document)
             sentiment = response.document_sentiment
 
-            if sentiment.score > 0.25:
-                emotion = "happy"
-            elif sentiment.score < -0.25:
-                emotion = "sad"
-            else:
-                emotion = "neutral"
+            # 한국어 특성을 고려한 더 세분화된 감정 분류
+            emotion = self._classify_korean_emotion(latest_utterance['text'], sentiment.score, sentiment.magnitude)
             
             # 5. 분석 결과에 화자 정보 포함하여 반환
             return {
@@ -106,6 +102,79 @@ class EmotionService:
         except Exception as e:
             print(f"Google NLP API 호출 중 오류 발생: {e}")
             return {"speaker": latest_utterance.get('speaker', 'unknown'), "emotion": "error", "message": str(e)}
+    
+    def _classify_korean_emotion(self, text: str, score: float, magnitude: float) -> str:
+        """
+        한국어 특성을 고려하여 더 세분화된 감정 분류를 수행합니다.
+        
+        Args:
+            text (str): 분석할 텍스트
+            score (float): Google API 감정 점수 (-1.0 ~ 1.0)
+            magnitude (float): 감정 강도 (0.0 ~ 무한대)
+        
+        Returns:
+            str: 분류된 감정 (happy, sad, angry, frustrated, concerned, neutral)
+        """
+        text_lower = text.lower()
+        
+        # 한국어 감정 키워드 패턴
+        frustrated_patterns = [
+            '답답', '스트레스', '힘들', '지쳤', '늦어졌', '꼬입니다', '피해', 
+            '문제', '오해', '일정', '마감', '계속', '매번', '또'
+        ]
+        
+        concerned_patterns = [
+            '걱정', '불안', '어떡해', '어쩌지', '문제', '위험',
+            '일정', '마감', '늦', '계획', '바뀌', '요구'
+        ]
+        
+        angry_patterns = [
+            '화가', '짜증', '열받', '빡쳐', '어이없', '말도 안돼', '황당',
+            '정말', '진짜', 'seriously', '어떻게'
+        ]
+        
+        sad_patterns = [
+            '속상', '서운', '실망', '억울', '슬프', '미안', '죄송', 
+            '후회', '안 좋', '우울'
+        ]
+        
+        positive_patterns = [
+            '좋', '기뻐', '행복', '만족', '고마', '감사', '훌륭', '완벽',
+            '성공', '해결', '잘됐', '다행', '알겠', '네'
+        ]
+        
+        # 한국어 간접 표현 패턴 (부정적 뉘앙스)
+        indirect_negative = [
+            '그런데', '하지만', '근데', '사실', '솔직히',
+            '좀 더', '아무래도', '그냥', '뭔가'
+        ]
+        
+        # 키워드 매칭
+        has_frustrated = any(pattern in text_lower for pattern in frustrated_patterns)
+        has_concerned = any(pattern in text_lower for pattern in concerned_patterns) 
+        has_angry = any(pattern in text_lower for pattern in angry_patterns)
+        has_sad = any(pattern in text_lower for pattern in sad_patterns)
+        has_positive = any(pattern in text_lower for pattern in positive_patterns)
+        has_indirect = any(pattern in text_lower for pattern in indirect_negative)
+        
+        # 감탄부호, 물음표로 감정 강도 측정
+        exclamation_count = text.count('!')
+        question_count = text.count('?')
+        emotional_punctuation = exclamation_count + question_count
+        
+        # 감정 분류 로직 (더 세분화된 임계값 적용)
+        if score > 0.3 or (has_positive and score > 0.1):
+            return "happy"
+        elif score < -0.4 or (has_angry and magnitude > 0.5):
+            return "angry"  
+        elif score < -0.2 or has_frustrated or (has_indirect and score < -0.05):
+            return "frustrated"
+        elif score < -0.1 or has_concerned or (emotional_punctuation > 0 and score < 0.1):
+            return "concerned"
+        elif score < 0 or has_sad or (has_indirect and magnitude > 0.2):
+            return "sad"
+        else:
+            return "neutral"
     
 
     def analyzeEmotion(self, text: str) -> dict:
