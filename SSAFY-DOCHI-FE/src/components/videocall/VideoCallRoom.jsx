@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import useAuthStore from '../../stores/AuthStore';
@@ -18,18 +18,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // 설정 - URL에서 방 ID 추출
-  const getRoomIdFromUrl = () => {
+  // 설정 - URL에서 방 ID 추출 (한 번만 계산)
+  const extractedFromUrl = useMemo(() => {
     const pathSegments = window.location.pathname.split('/');
     const extractedRoomId = pathSegments[pathSegments.length - 1] || 'test-room';
     console.log('URL에서 추출한 Room ID:', extractedRoomId);
     console.log('현재 URL:', window.location.pathname);
     console.log('Path segments:', pathSegments);
     return extractedRoomId;
-  };
+  }, [window.location.pathname]);
   
-  const roomName = roomCodeFromUrl || getRoomIdFromUrl();
-  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl: getRoomIdFromUrl() });
+  const roomName = roomCodeFromUrl || extractedFromUrl;
+  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl });
   // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
   const getUserIdentifier = () => {
     if (!isLoggedIn || !user) return '게스트';
@@ -79,8 +79,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const pendingVideoTracks = useRef(new Map());
   const pendingAudioTracks = useRef(new Map());
 
-  // 실제 방 ID 얻기 (연결된 room 객체에서)
-  const actualRoomId = room?.name || roomName;
+  // 실제 방 ID 얻기 (연결된 room 객체에서) - 메모이제이션으로 최적화
+  const actualRoomId = useMemo(() => {
+    const id = room?.name || roomName;
+    console.log('actualRoomId 계산:', id, { roomName, roomObjectName: room?.name });
+    return id;
+  }, [room?.name, roomName]);
 
   // LiveKit 방 연결 함수 (백업 파일 방식)
   const connectToRoom = async () => {
@@ -392,19 +396,29 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       localVideoRef.current.srcObject = mediaStream;
       localVideoRef.current.muted = true;
       localVideoRef.current.play().catch(console.error);
+      
+      // 비디오 메타데이터가 로드되면 표정 분석 시작
+      const handleLoadedMetadata = async () => {
+        console.log('비디오 메타데이터 로드됨, 표정 분석 시작');
+        await startEmotionDetection(localVideoRef.current);
+      };
+      
+      localVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+      
+      return () => {
+        if (localVideoRef.current) {
+          localVideoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        }
+      };
     }
   }, [localVideoTrack]);
 
-  // 표정 분석 시작 (로컬 비디오가 준비되면)
+  // 표정 분석 정리 (컴포넌트 언마운트시)
   useEffect(() => {
-    if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
-      startEmotionDetection(localVideoRef.current);
-    }
-
     return () => {
       stopEmotionDetection();
     };
-  }, [localVideoTrack, localVideoRef.current]);
+  }, []);
 
   // 마이크 상태에 따른 STT 자동 연동
   useEffect(() => {
