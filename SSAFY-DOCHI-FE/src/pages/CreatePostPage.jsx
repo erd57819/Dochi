@@ -270,7 +270,7 @@ const CreatePostPage = () => {
             <div className="flex gap-4 pt-6">
               <button
                 type="button"
-                onClick={() => navigate('/community')}
+                onClick={() => navigate(-1)}
                 className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition-all duration-250 ease-in-out transform hover:scale-105 font-bold text-2xl"
                 disabled={isLoading}
                 style={{
