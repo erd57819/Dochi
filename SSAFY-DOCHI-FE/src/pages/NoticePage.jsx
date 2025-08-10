@@ -190,7 +190,7 @@ const NoticePage = () => {
         {/* 상단 인사말 */}
         <div className="flex flex-row items-center justify-between text-4xl font-bold mb-5 p-2" style={{ color: '#8B4513' }}>
           <div className="flex items-center gap-4">
-            <img src={hedgehogImg} alt="갈등도치" className="w-12 h-12 animate-bounce" />
+            <img src={hedgehogImg} alt="갈등도치" className="w-12 h-12" />
             <div>
               <h3 className="text-5xl font-bold" style={{ color: '#333333' }}>
                 {selectedCategoryData?.label || '전체'} 공지사항

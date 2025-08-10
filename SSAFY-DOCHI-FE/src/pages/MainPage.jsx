@@ -28,7 +28,7 @@ export const MainPage = () => {
     }
     
     .typewriter.animate {
-      animation: typing 2s steps(8, end) 0.5s forwards, blink-caret 0.75s step-end infinite 0.5s;
+      animation: typing 1.5s steps(9, end) 0.3s forwards, blink-caret 0.75s step-end infinite 0.3s;
       animation-fill-mode: both;
     }
     
@@ -44,7 +44,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line1.animate {
-      animation: typing-line1 1.5s steps(5, end) 2.5s forwards, blink-caret 0.75s step-end infinite 2.5s;
+      animation: typing-line1 1.0s steps(6, end) 0.7s forwards, blink-caret 0.75s step-end infinite 0.7s;
       animation-fill-mode: both;
     }
     
@@ -61,7 +61,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line2.animate {
-      animation: fade-in 0.1s ease-in 4.5s forwards, typing-line2 2.1s steps(7, end) 4.5s forwards, blink-caret 0.75s step-end infinite 4.5s;
+      animation: fade-in 0.1s ease-in 1.8s forwards, typing-line2 1.5s steps(10, end) 1.8s forwards, blink-caret 0.75s step-end infinite 1.8s;
     }
     
     .typewriter-line2.animate.finished {
@@ -77,7 +77,7 @@ export const MainPage = () => {
     }
     
     .shake-text.animate {
-      animation: shake 0.6s ease-in-out 3s both;
+      animation: shake 0.5s ease-in-out 2.0s both;
     }
     
     .pulse-text {
@@ -85,7 +85,7 @@ export const MainPage = () => {
     }
     
     .pulse-text.animate {
-      animation: pulse-scale 1.5s ease-in-out 0.5s both;
+      animation: pulse-scale 1.0s ease-in-out 0.3s both;
     }
     
     .fade-in-element {
@@ -94,7 +94,7 @@ export const MainPage = () => {
     }
     
     .fade-in-element.animate {
-      animation: fadeInUp 0.8s ease-out forwards;
+      animation: fadeInUp 0.6s ease-out forwards;
     }
     
     .fade-in-title {
@@ -103,7 +103,7 @@ export const MainPage = () => {
     }
     
     .fade-in-title.animate {
-      animation: fadeInUp 0.8s ease-out 0.2s forwards;
+      animation: fadeInUp 0.6s ease-out 0.15s forwards;
     }
     
     .fade-in-image {
@@ -112,7 +112,7 @@ export const MainPage = () => {
     }
     
     .fade-in-image.animate {
-      animation: fadeInUp 0.8s ease-out 0.4s forwards;
+      animation: fadeInUp 0.6s ease-out 0.3s forwards;
     }
     
     .fade-in-button {
@@ -121,7 +121,7 @@ export const MainPage = () => {
     }
     
     .fade-in-button.animate {
-      animation: fadeInUp 0.8s ease-out 0.6s forwards;
+      animation: fadeInUp 0.6s ease-out 0.45s forwards;
     }
     
     .fade-in-link {
@@ -130,7 +130,7 @@ export const MainPage = () => {
     }
     
     .fade-in-link.animate {
-      animation: fadeInUp 0.8s ease-out 0.8s forwards;
+      animation: fadeInUp 0.6s ease-out 0.6s forwards;
     }
     
     @keyframes fadeInUp {
@@ -146,13 +146,13 @@ export const MainPage = () => {
     }
     
     @keyframes typing-line1 {
-      0% { width: 0; opacity: 1; }
-      100% { width: 100%; opacity: 1; }
+      0% { width: 0; }
+      100% { width: 10ch; }
     }
     
     @keyframes typing-line2 {
-      0% { width: 0; opacity: 1; }
-      100% { width: 100%; opacity: 1; }
+      0% { width: 0; }
+      100% { width: 16ch; }
     }
     
     @keyframes blink-caret {
@@ -278,7 +278,7 @@ export const MainPage = () => {
             setTimeout(() => {
               if (typewriterEl) typewriterEl.classList.add('finished');
               if (shakeEl) shakeEl.classList.add('finished');
-            }, 3500);
+            }, 2500);
           }
           
           if (newSection === 1) {
@@ -291,11 +291,11 @@ export const MainPage = () => {
             
             setTimeout(() => {
               if (line1El) line1El.classList.add('finished');
-            }, 4000);
+            }, 1800);
             
             setTimeout(() => {
               if (line2El) line2El.classList.add('finished');
-            }, 6600);
+            }, 3400);
           }
           
           if (newSection === 2) {
@@ -320,7 +320,7 @@ export const MainPage = () => {
       setTimeout(() => {
         if (typewriterEl) typewriterEl.classList.add('finished');
         if (shakeEl) shakeEl.classList.add('finished');
-      }, 3500);
+      }, 2500);
       
       setAnimatedSections(new Set([0]));
     }, 100);
