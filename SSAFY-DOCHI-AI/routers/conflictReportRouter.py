@@ -558,21 +558,21 @@ async def analyze_conflict_integrated(analysis_text):
         return {
             "responsibility": {
                 "responsibility_analysis": {"participants": []}, 
-                "conflict_triggers": ["분석 실패"], 
+                "conflict_triggers": [], 
                 "overall_assessment": {"severity": "UNKNOWN", "resolution_difficulty": 0}
             },
             "summary": {
                 "conflict_level": "UNKNOWN",
                 "resolution_feasibility": "UNKNOWN", 
-                "key_issues": ["분석 불가"],
-                "immediate_actions": ["전문가 상담"],
+                "key_issues": [],
+                "immediate_actions": [],
                 "success_probability": 0,
-                "professional_help_needed": True
+                "professional_help_needed": False
             },
             "action_plans": {
-                "priority_actions": [{"action": "전문가와 상담", "priority": 1, "timeline": "즉시"}],
-                "communication_tips": ["하드코딩임 잘못된거임 사실 진짜임 사실 구라임 "],
-                "long_term_suggestions": ["갈등 해결 교육 받기"]
+                "priority_actions": [],
+                "communication_tips": [],
+                "long_term_suggestions": []
             }
         }
 
@@ -645,14 +645,14 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
             "responsibility": {
                 "responsibility_analysis": {"participants": []},
                 "conflict_triggers": [],
-                "overall_assessment": {"severity": "MEDIUM", "resolution_difficulty": 5}
+                "overall_assessment": {"severity": "UNKNOWN", "resolution_difficulty": 0}
             },
             "summary": {
-                "conflict_level": "MEDIUM",
-                "resolution_feasibility": "MEDIUM", 
+                "conflict_level": "UNKNOWN",
+                "resolution_feasibility": "UNKNOWN", 
                 "key_issues": [],
                 "immediate_actions": [],
-                "success_probability": 50,
+                "success_probability": 0,
                 "professional_help_needed": False
             },
             "action_plans": {
@@ -663,6 +663,8 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
         }
         
         current_section = None
+        collecting_key_issues = False
+        collecting_immediate_actions = False
         
         for line in lines:
             line = line.strip()
@@ -672,15 +674,36 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
             # 섹션 구분
             if "1. 책임 비율" in line or "책임 비율" in line:
                 current_section = "responsibility"
+                collecting_key_issues = False
+                collecting_immediate_actions = False
             elif "2. 갈등 상황" in line or "상황 요약" in line:
-                current_section = "summary"  
+                current_section = "summary"
+                collecting_key_issues = False  
+                collecting_immediate_actions = False
             elif "3. 구체적 액션" in line or "액션 플랜" in line:
                 current_section = "action_plans"
-            elif line.startswith('-') or line.startswith('•'):
+                collecting_key_issues = False
+                collecting_immediate_actions = False
+            elif "핵심 쟁점" in line:
+                collecting_key_issues = True
+                collecting_immediate_actions = False
+                continue  # 헤더 라인은 건너뜀
+            elif "즉시 실행" in line:
+                collecting_immediate_actions = True
+                collecting_key_issues = False
+                continue  # 헤더 라인은 건너뜀
+            elif line.startswith('-') or line.startswith('•') or re.match(r'^\d+[\.\)]\s*', line):
                 # 항목 파싱
-                content = line.lstrip('- •').strip()
+                content = re.sub(r'^[-•\d\.\)]+\s*', '', line).strip()
                 
-                if current_section == "summary":
+                # 수집 중인 섹션에 따라 처리
+                if collecting_key_issues:
+                    if content and "**" not in content and "3가지" not in content and len(content) > 3:
+                        result["summary"]["key_issues"].append(content)
+                elif collecting_immediate_actions:
+                    if content and "**" not in content and "3가지" not in content and len(content) > 3:
+                        result["summary"]["immediate_actions"].append(content)
+                elif current_section == "summary":
                     if "갈등 수준" in content:
                         if "HIGH" in content.upper():
                             result["summary"]["conflict_level"] = "HIGH"
@@ -692,12 +715,22 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                         elif "LOW" in content.upper():
                             result["summary"]["resolution_feasibility"] = "LOW"
                     elif "핵심 쟁점" in content or "쟁점" in content:
+                        # "핵심 쟁점 3가지" 같은 템플릿 텍스트는 제외
+                        if "3가지" in content or "**" in content:
+                            continue
                         issue = content.split(':')[-1].strip() if ':' in content else content
-                        if issue and issue not in result["summary"]["key_issues"]:
+                        # 번호나 불렛 포인트 제거
+                        issue = re.sub(r'^[-•\d\.]+\s*', '', issue).strip()
+                        if issue and issue not in result["summary"]["key_issues"] and len(issue) > 3:
                             result["summary"]["key_issues"].append(issue)
                     elif "즉시 실행" in content or "즉시" in content:
+                        # "즉시 실행할 행동 3가지" 같은 템플릿 텍스트는 제외
+                        if "3가지" in content or "**" in content or "행동" in content and len(content) < 15:
+                            continue
                         action = content.split(':')[-1].strip() if ':' in content else content
-                        if action and action not in result["summary"]["immediate_actions"]:
+                        # 번호나 불렛 포인트 제거
+                        action = re.sub(r'^[-•\d\.]+\s*', '', action).strip()
+                        if action and action not in result["summary"]["immediate_actions"] and len(action) > 3:
                             result["summary"]["immediate_actions"].append(action)
                     elif "성공 확률" in content:
                         import re
@@ -714,7 +747,7 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 result["responsibility"]["responsibility_analysis"]["participants"].append({
                     "name": speaker,
                     "responsibility_percentage": responsibility_per_speaker + (100 % len(speakers) if i == 0 else 0),
-                    "reasons": ["GPT 분석을 통해 도출된 책임 요인", "대화 패턴 및 갈등 기여도 분석"]
+                    "reasons": []
                 })
         
         # 프론트엔드 호환성을 위해 데이터 구조 변환
@@ -724,65 +757,46 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
             frontend_responsibility[speaker_key] = {
                 "name": participant["name"],
                 "responsibility_percentage": participant["responsibility_percentage"],
-                "communication_style": "분석적/감정적 혼합형",  # GPT에서 추출하거나 기본값
-                "key_issues": participant.get("reasons", ["소통 방식 개선 필요"])
+                "communication_style": "",  # GPT에서 추출
+                "key_issues": participant.get("reasons", [])
             }
         
         # 프론트엔드 구조로 변환
         result["responsibility"]["responsibility_analysis"] = frontend_responsibility
         
-        # 갈등 고조 지점 추가 (프론트엔드 호환성)
-        result["responsibility"]["escalation_points"] = [
-            {
-                "description": "감정적 표현이 격해진 순간",
-                "responsible_party": speakers[0] if speakers else "화자1"
-            },
-            {
-                "description": "상대방 의견에 대한 강한 반박",
-                "responsible_party": speakers[1] if len(speakers) > 1 else "화자2"
-            }
-        ]
+        # 갈등 고조 지점 추가 (GPT에서 추출되지 않은 경우 빈 배열)
+        if "escalation_points" not in result["responsibility"]:
+            result["responsibility"]["escalation_points"] = []
         
-        # 기본값 보장
-        if not result["summary"]["key_issues"]:
-            result["summary"]["key_issues"] = ["소통 방식 개선", "감정 조절", "상호 이해 증진"]
-        if not result["summary"]["immediate_actions"]:
-            result["summary"]["immediate_actions"] = ["차분한 대화", "경청하기", "감정 표현 개선"]
-        if not result["action_plans"]["priority_actions"]:
-            result["action_plans"]["priority_actions"] = [
-                {"action": "감정적일 때 잠시 휴식", "priority": 1, "timeline": "즉시", "speaker": speakers[0] if speakers else "화자1", "purpose": "감정 조절을 통한 건설적 대화 환경 조성", "urgency": 9},
-                {"action": "상대방 입장 이해하기", "priority": 2, "timeline": "1주일", "speaker": speakers[1] if len(speakers) > 1 else "화자2", "purpose": "상호 이해를 통한 갈등 해결", "urgency": 7},  
-                {"action": "정기적 대화 시간 만들기", "priority": 3, "timeline": "1개월", "speaker": "공통", "purpose": "지속적인 소통을 통한 관계 개선", "urgency": 5}
-            ]
-        if not result["action_plans"]["communication_tips"]:
-            result["action_plans"]["communication_tips"] = ["'나' 메시지 사용", "비난 대신 설명", "긍정적 표현 늘리기"]
-        if not result["action_plans"]["long_term_suggestions"]:
-            result["action_plans"]["long_term_suggestions"] = ["갈등 해결 기법 학습", "필요시 전문가 상담"]
+        # 기본값 제거 - GPT 응답이 없으면 빈 배열
+        # 데이터가 없을 때는 명시적으로 표시
+        # 액션 플랜도 하드코딩 제거 - 빈 배열 유지
+        # communication_tips와 long_term_suggestions도 하드코딩 제거
             
         return result
         
     except Exception as e:
         print(f"[GPT 응답 파싱 실패] {e}")
-        # 파싱 실패시 기본 구조 반환
+        # 파싱 실패시 빈 데이터 구조 반환
         return {
             "responsibility": {
                 "responsibility_analysis": {
-                    "participants": [{"name": speaker, "responsibility_percentage": 50, "reasons": ["분석 실패"]} for speaker in speakers]
+                    "participants": []
                 },
-                "conflict_triggers": ["파싱 실패로 인한 기본값"],
-                "overall_assessment": {"severity": "MEDIUM", "resolution_difficulty": 5}
+                "conflict_triggers": [],
+                "overall_assessment": {"severity": "UNKNOWN", "resolution_difficulty": 0}
             },
             "summary": {
-                "conflict_level": "MEDIUM",
-                "resolution_feasibility": "MEDIUM",
-                "key_issues": ["분석 결과 파싱 실패"],
-                "immediate_actions": ["전문가와 상담"],
-                "success_probability": 50,
-                "professional_help_needed": True
+                "conflict_level": "UNKNOWN",
+                "resolution_feasibility": "UNKNOWN",
+                "key_issues": [],
+                "immediate_actions": [],
+                "success_probability": 0,
+                "professional_help_needed": False
             },
             "action_plans": {
-                "priority_actions": [{"action": "전문가 상담", "priority": 1, "timeline": "즉시"}],
-                "communication_tips": ["차분히 대화하기"],
-                "long_term_suggestions": ["갈등 해결 교육"]
+                "priority_actions": [],
+                "communication_tips": [],
+                "long_term_suggestions": []
             }
         }

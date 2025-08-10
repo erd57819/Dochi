@@ -25,7 +25,7 @@ const ReportSummaryCards = ({ summary, emotionSummary }) => {
           <img src={vector} alt="icon" className="w-5 h-5" />
         </div>
         <div className={`inline-block px-4 py-2 rounded-full font-bold ${getConflictLevelColor(summary.conflict_level)}`}>
-          {summary.conflict_level || 'MEDIUM'}
+          {summary.conflict_level || '데이터 없음'}
         </div>
       </div>
 
@@ -35,10 +35,10 @@ const ReportSummaryCards = ({ summary, emotionSummary }) => {
           <img src={vector2} alt="icon" className="w-5 h-5" />
         </div>
         <div className="text-2xl font-bold text-[#bf7d2c]">
-          {summary.resolution_feasibility || 'MEDIUM'}
+          {summary.resolution_feasibility || '데이터 없음'}
         </div>
         <div className="text-sm text-gray-600 mt-2">
-          성공 확률: {summary.success_probability || 70}%
+          성공 확률: {summary.success_probability ? `${summary.success_probability}%` : '데이터 없음'}
         </div>
       </div>
 
