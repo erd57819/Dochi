@@ -137,8 +137,14 @@ pipeline {
                              file(credentialsId: 'GOOGLE-SERVICE-ACCOUNT', variable: 'JSON_PATH')
                          ]) {
                              sh '''
+                                 # 루트 디렉토리에 복사
                                  cp "$JSON_PATH" google-service-account.json
                                  chmod 644 google-service-account.json
+                                 
+                                 # AI 서비스 디렉토리에도 복사 (Docker 빌드용)
+                                 cp "$JSON_PATH" SSAFY-DOCHI-AI/google-service-account.json
+                                 chmod 644 SSAFY-DOCHI-AI/google-service-account.json
+                                 
                                  echo "✅ Google Service Account 준비 완료"
                              '''
                          }
