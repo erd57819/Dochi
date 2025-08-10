@@ -26,7 +26,11 @@ export const useSTT = (roomName, participantName) => {
       console.log('[STT] FastAPI로 전송:', payload);
       
       
-      await fetch('/ai/speech/process-conflict-chunk', {
+      const apiUrl = window.location.hostname === 'localhost'
+        ? '/ai/speech/process-conflict-chunk'  // 로컬 개발 (vite proxy 사용)
+        : 'https://i13c209.p.ssafy.io/ai/speech/process-conflict-chunk';  // 배포 환경 (직접 연결)
+      
+      await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -158,7 +162,11 @@ export const useSTT = (roomName, participantName) => {
       recentConversations.push({ speaker, text });
       console.log('[감정분석] 전송할 대화 데이터:', recentConversations);
 
-      const response = await fetch('/ai/speech/emotion/contextual', {
+      const emotionApiUrl = window.location.hostname === 'localhost'
+        ? '/ai/speech/emotion/contextual'  // 로컬 개발 (vite proxy 사용)
+        : 'https://i13c209.p.ssafy.io/ai/speech/emotion/contextual';  // 배포 환경 (직접 연결)
+      
+      const response = await fetch(emotionApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

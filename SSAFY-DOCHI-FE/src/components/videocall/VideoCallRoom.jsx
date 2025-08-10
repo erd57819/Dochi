@@ -1,26 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import useAuthStore from '../../stores/AuthStore';
 import { useOpenVidu } from '../../hooks/useOpenVidu';
 import { useSTT } from '../../hooks/useSTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
 
-const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
+const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 인증 스토어에서 토큰과 사용자 정보 가져오기
   const { token, isLoggedIn, user } = useAuthStore();
   const navigate = useNavigate();
+  const params = useParams();
+  const roomCodeFromUrl = params.roomCode;
 
   // 게스트 모드 관련 상태
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // 설정 - props에서 방 코드 사용
-  const roomName = roomCode || 'test-room';
+  // 설정 - URL에서 방 ID 추출
+  const getRoomIdFromUrl = () => {
+    const pathSegments = window.location.pathname.split('/');
+    const extractedRoomId = pathSegments[pathSegments.length - 1] || 'test-room';
+    console.log('URL에서 추출한 Room ID:', extractedRoomId);
+    console.log('현재 URL:', window.location.pathname);
+    console.log('Path segments:', pathSegments);
+    return extractedRoomId;
+  };
+  
+  const roomName = roomCodeFromUrl || getRoomIdFromUrl();
+  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl: getRoomIdFromUrl() });
   // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
-  const [participantName, setParticipantName] = useState(
-    isLoggedIn && user ? `user-${user.id}` : '게스트'
-  );
+  const getUserIdentifier = () => {
+    if (!isLoggedIn || !user) return '게스트';
+    
+    // userId (ssafysy) 사용 - 갈등 레포트에서 누가 말했는지 명확하게 표시
+    return user.userId || user.username || user.loginId || `user-${user.id}`;
+  };
+  
+  const [participantName, setParticipantName] = useState(getUserIdentifier());
 
   // 녹화 상태
   const [isRecording, setIsRecording] = useState(false);
@@ -56,6 +73,15 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
     sendFinalEmotionData
   } = emotionHook;
 
+  // 사용자 정보 변경 감지하여 participantName 업데이트
+  useEffect(() => {
+    const newParticipantName = getUserIdentifier();
+    if (newParticipantName !== participantName) {
+      setParticipantName(newParticipantName);
+      console.log('Participant name 업데이트:', newParticipantName);
+    }
+  }, [isLoggedIn, user]);
+
   // 초기화 및 정리
   useEffect(() => {
     // 로그인 상태 확인
@@ -75,6 +101,31 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
     };
   }, [isLoggedIn, isGuestMode]);
 
+  // 페이지 언마운트시 정리 (브라우저 이벤트)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log('[페이지 종료] 리소스 정리 시작...');
+      handleLeaveRoom();
+    };
+
+    const handlePopState = () => {
+      console.log('[뒤로 가기] 리소스 정리 시작...');
+      handleLeaveRoom();
+    };
+
+    // 브라우저 종료/새로고침/뒤로가기 이벤트 처리
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    // 컴포넌트 언마운트시 정리
+    return () => {
+      console.log('[컴포넌트 언마운트] 리소스 정리 시작...');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+      handleLeaveRoom();
+    };
+  }, []);
+
   // 표정 분석 시작 (로컬 비디오가 준비되면)
   useEffect(() => {
     if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
@@ -85,6 +136,19 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
       stopEmotionDetection();
     };
   }, [localVideoTrack, localVideoRef.current]);
+
+  // 마이크 상태에 따른 STT 자동 연동
+  useEffect(() => {
+    if (isMicOn && !sttEnabled) {
+      // 마이크가 켜지면 STT도 자동으로 시작
+      console.log('마이크 켜짐 - STT 자동 시작');
+      startSTT();
+    } else if (!isMicOn && sttEnabled) {
+      // 마이크가 꺼지면 STT도 자동으로 중지
+      console.log('마이크 꺼짐 - STT 자동 중지');
+      stopSTT();
+    }
+  }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
   // 갈등 레벨 분석 (감정 점수 변화 감지)
   useEffect(() => {
@@ -155,8 +219,8 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
     setIsRecording(!isRecording);
   };
 
-  // 통합 룸 나가기 함수
-  const handleLeaveRoom = async () => {
+  // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
+  const handleLeaveRoom = async (isEndCall = false) => {
     // STT 정리
     stopSTT();
 
@@ -166,13 +230,16 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
     // OpenVidu 룸 나가기 (최종 감정 데이터 전송 포함)
     await openViduLeaveRoom(sendFinalEmotionData);
 
-    // 통화 종료 후 갈등 레포트 페이지로 이동
-    if (onEndCall) {
-      onEndCall();
-    } else {
-      // onEndCall이 없으면 직접 갈등 레포트로 이동 (실제 방 ID 사용)
-      navigate(`/conflict-report/${actualRoomId}`);
+    // 종료 버튼 클릭 시에만 갈등 레포트로 이동
+    if (isEndCall) {
+      if (onEndCall) {
+        onEndCall();
+      } else {
+        // onEndCall이 없으면 직접 갈등 레포트로 이동 (실제 방 ID 사용)
+        navigate(`/conflict-report/${actualRoomId}`);
+      }
     }
+    // 뒤로가기나 페이지 이탈 시에는 단순히 리소스만 정리
   };
 
   // 게스트 모달 컴포넌트
@@ -365,8 +432,8 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
           </div>
 
           {/* 대화 내용 */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-4 border-b border-gray-700">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-gray-700 flex-shrink-0">
               <h3 className="text-white font-semibold">실시간 대화</h3>
               <div className="flex gap-2 mt-2">
                 <button
@@ -388,7 +455,7 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {/* 현재 음성 */}
               {currentSpeech.text && (
                 <div className="bg-blue-900 bg-opacity-50 p-3 rounded">
@@ -475,7 +542,7 @@ const VideoCallRoom = ({ roomCode, userId, isHost, onEndCall }) => {
 
           {/* 나가기 버튼 */}
           <button
-            onClick={handleLeaveRoom}
+            onClick={() => handleLeaveRoom(true)}
             className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white transition-colors"
           >
             📞

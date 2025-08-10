@@ -63,17 +63,37 @@ export const useEmotionDetection = (roomName, participantName) => {
   const updateEmotionScores = (participantName, expressions) => {
     const currentTime = Date.now();
     
+    const newEmotionScore = {
+      angry: Math.round(expressions.angry * 100),
+      sad: Math.round(expressions.sad * 100),
+      happy: Math.round(expressions.happy * 100),
+      surprised: Math.round(expressions.surprised * 100),
+      neutral: Math.round(expressions.neutral * 100),
+      timestamp: currentTime
+    };
+    
     // UI 업데이트용
     setEmotionScores(prev => ({
       ...prev,
-      [participantName]: {
-        angry: Math.round(expressions.angry * 100),
-        sad: Math.round(expressions.sad * 100),
-        happy: Math.round(expressions.happy * 100),
-        surprised: Math.round(expressions.surprised * 100),
-        neutral: Math.round(expressions.neutral * 100)
-      }
+      [participantName]: newEmotionScore
     }));
+
+    // localStorage에 감정 히스토리 저장 (갈등 레포트용)
+    const emotionHistoryKey = `emotion_history_${roomName}`;
+    const existingHistory = JSON.parse(localStorage.getItem(emotionHistoryKey) || '{}');
+    
+    if (!existingHistory[participantName]) {
+      existingHistory[participantName] = [];
+    }
+    
+    existingHistory[participantName].push(newEmotionScore);
+    
+    // 최대 1000개 데이터만 보관 (메모리 절약)
+    if (existingHistory[participantName].length > 1000) {
+      existingHistory[participantName] = existingHistory[participantName].slice(-1000);
+    }
+    
+    localStorage.setItem(emotionHistoryKey, JSON.stringify(existingHistory));
 
     // 누적기에 데이터 저장 (5분간 수집)
     if (!emotionAccumulatorRef.current[participantName]) {
@@ -138,7 +158,11 @@ export const useEmotionDetection = (roomName, participantName) => {
 
       console.log('[표정] FastAPI로 전송:', payload);
       
-      await fetch('/ai/emotion/face', {
+      const faceApiUrl = window.location.hostname === 'localhost'
+        ? '/ai/emotion/face'  // 로컬 개발 (vite proxy 사용)
+        : 'https://i13c209.p.ssafy.io/ai/emotion/face';  // 배포 환경 (직접 연결)
+      
+      await fetch(faceApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
