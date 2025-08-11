@@ -17,6 +17,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
 
   // 설정 - URL에서 방 ID 추출 (한 번만 계산)
   const extractedFromUrl = useMemo(() => {
@@ -93,7 +94,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       setIsLoading(true);
 
       let accessToken;
-      const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
+      const identity = isGuestMode ? guestNickname : (isLoggedIn ? participantName : 'guest');
       
       if (isGuestMode || !isLoggedIn) {
         const response = await fetch(`${API_BASE_URL}/api/video-call/guest-token`, {
@@ -656,9 +657,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               type="text"
               id="guestNickname"
               value={guestNickname}
-              onChange={(e) => setGuestNickname(e.target.value)}
+              onChange={(e) => {
+                if (!isComposing) {
+                  setGuestNickname(e.target.value);
+                }
+              }}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={(e) => {
+                setIsComposing(false);
+                setGuestNickname(e.target.value);
+              }}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !isComposing) {
                   handleGuestJoin();
                 }
               }}
@@ -724,7 +734,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <div className="space-y-3">
             <button
               onClick={handleStartConnection}
-              className="w-full px-6 py-3 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 transition-colors shadow-lg border-2 border-amber-500"
+              className="w-full px-6 py-3 bg-[#7f5539] text-white font-semibold rounded-lg hover:bg-amber-700 transition-colors shadow-lg border-2 border-amber-500"
             >
               🎥 연결 시작하기
             </button>
