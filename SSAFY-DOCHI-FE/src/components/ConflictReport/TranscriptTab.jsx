@@ -1,14 +1,31 @@
 import React from 'react';
 
 const TranscriptTab = ({ transcriptData }) => {
+  // 중복된 대화 내용 제거 함수
+  const removeDuplicates = (data) => {
+    if (!data || !Array.isArray(data)) return [];
+    
+    const seen = new Set();
+    return data.filter(line => {
+      const trimmedLine = line.trim();
+      if (seen.has(trimmedLine)) {
+        return false;
+      }
+      seen.add(trimmedLine);
+      return true;
+    });
+  };
+
+  const uniqueData = removeDuplicates(transcriptData?.data);
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">전체 대화 내용</h2>
       
       <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto">
-        {transcriptData?.data && transcriptData.data.length > 0 ? (
+        {uniqueData.length > 0 ? (
           <div className="space-y-2">
-            {transcriptData.data.map((line, idx) => {
+            {uniqueData.map((line, idx) => {
               const [speaker, ...textParts] = line.split(':');
               const text = textParts.join(':');
               
@@ -26,7 +43,7 @@ const TranscriptTab = ({ transcriptData }) => {
       </div>
       
       <div className="text-sm text-gray-600 mt-4">
-        총 {transcriptData?.total_lines || 0}개의 대화가 기록되었습니다.
+        총 {uniqueData.length}개의 대화가 기록되었습니다.
       </div>
     </div>
   );
