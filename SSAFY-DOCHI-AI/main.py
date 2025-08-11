@@ -3,11 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import faceRouter, speechRouter, summary, apiRouter, conflictReportRouter, websocketRouter
 from services.kafkaService import init_kafka_producer, close_kafka_producer
 from core.config import settings
-# Consumer들 import
+# 실제 사용되는 Consumer들만 import
 from consumers.sttConsumer import STTConsumer
 from consumers.emotionConsumer import EmotionConsumer
-from consumers.scriptConsumer import ScriptConsumer
-from consumers.summaryConsumer import SummaryConsumer
 import threading
 
 app = FastAPI(
@@ -79,9 +77,7 @@ def startup_event():
         if settings.use_kafka:
             consumers = [
                 STTConsumer(),
-                EmotionConsumer(), 
-                ScriptConsumer(),
-                SummaryConsumer()
+                EmotionConsumer()
             ]
             
             for consumer in consumers:

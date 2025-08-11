@@ -202,22 +202,30 @@ async def analyze_conflict_integrated(analysis_text):
 다음 형식으로 정확히 분석해주세요:
 
 1. 책임 비율 분석:
-각 참가자별로 갈등에 대한 책임 비율(%)과 구체적 이유를 제시해주세요.
+각 참가자의 갈등 책임 비율을 %로 표시하고 이유를 설명하세요. 
+예시:                                                       
+ - 화자1: 60% - 상대방 의견을 무시하고 일방적으로 주장함      
+ - 화자2: 40% - 감정적으로 대응하여 갈등을 증폭시킴 
 
 2. 갈등 상황 요약:
-- 갈등 수준: HIGH/MEDIUM/LOW 중 선택
-- 해결 가능성: HIGH/MEDIUM/LOW 중 선택  
 - 핵심 쟁점 3가지
 - 즉시 실행할 행동 3가지
-- 성공 확률 (0-100%)
 - 전문가 도움 필요 여부: true/false
 
 3. 구체적 액션 플랜:
-- 우선순위별 행동계획 3가지 (즉시/1주일/1개월)
-- 소통 개선 팁 3가지
-- 장기적 제안 2가지
+우선순위별 행동계획:                                     
+ 즉시 실행: 구체적 행동 1                                   
+- 1주일 내: 구체적 행동 2                                   
+- 1개월 내: 구체적 행동 3   
+소통 개선 팁:                                            
+- 팁 1                                                      
+- 팁 2                                                       
+- 팁 3                                                      
+장기적 제안:                                            
+ - 제안 1                                                    
+- 제안 2    
 
-갈등의 원인, 각자의 행동 패턴, 감정적 반응을 종합적으로 고려하여 객관적이고 건설적인 분석을 제공해주세요.
+ 모든 답변은 한국어로 대답하고, 실제 대화 내용을 바탕으로 구체적이고 실행 가능한 조언을 제공해주세요
 """
 
         # GPT API 호출 (비동기)
@@ -321,7 +329,17 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
     GPT 응답을 파싱하여 구조화된 데이터로 변환
     """
     try:
+        # --- 안전장치: gpt_response가 dict면 텍스트 꺼내기 ---
+        if isinstance(gpt_response, dict):
+            gpt_response = (
+                gpt_response.get("text")
+                or gpt_response.get("content")
+                or json.dumps(gpt_response, ensure_ascii=False)
+            )
+        
         print(f"[파싱 시작] GPT 응답 길이: {len(gpt_response)}자, 화자: {speakers}")
+        print(f"[파싱 디버그] GPT 응답 첫 500자: {gpt_response[:500]}")
+        
         
         # GPT 응답을 섹션별로 분석
         lines = gpt_response.split('\n')
@@ -512,50 +530,53 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                     elif "전문가" in content:
                         result["summary"]["professional_help_needed"] = "true" in content.lower()
                         
+        # 변환 전 참가자 수 로그 (리스트일 때!)
+        participant_list = result["responsibility"]["responsibility_analysis"]["participants"]
+        print(f"[파싱 완료 전] 책임 분석 참가자 수: {len(participant_list)}명")
+
         # 화자별 책임 비율 검증 및 보정
-        if result["responsibility"]["responsibility_analysis"]["participants"]:
+        if participant_list:
             # 총 퍼센트가 100%가 되도록 조정
-            total_percent = sum(p["responsibility_percentage"] for p in result["responsibility"]["responsibility_analysis"]["participants"])
+            total_percent = sum(p["responsibility_percentage"] for p in participant_list)
             if total_percent != 100:
                 # 첫 번째 화자에게 차이만큼 조정
-                if result["responsibility"]["responsibility_analysis"]["participants"]:
-                    result["responsibility"]["responsibility_analysis"]["participants"][0]["responsibility_percentage"] += (100 - total_percent)
+                if participant_list:
+                    participant_list[0]["responsibility_percentage"] += (100 - total_percent)
         else:
             # GPT 응답에서 추출하지 못한 경우 빈 배열로 유지 (하드코딩 제거)
             print("[경고] GPT 응답에서 책임 비율을 추출하지 못했습니다.")
-            # 기본값 제거 - 빈 배열로 유지하여 프론트엔드에서 "데이터 없음" 처리
         
-        # 프론트엔드 호환성을 위해 데이터 구조 변환
-        if result["responsibility"]["responsibility_analysis"]["participants"]:
+        # --- 프론트 호환 형태로 변환 ---
+        if participant_list:
             frontend_responsibility = {}
-            for participant in result["responsibility"]["responsibility_analysis"]["participants"]:
-                speaker_key = f"speaker_{participant['name']}"
+            for p in participant_list:
+                speaker_key = f"speaker_{p['name']}"
                 frontend_responsibility[speaker_key] = {
-                    "name": participant["name"],
-                    "responsibility_percentage": participant["responsibility_percentage"],
-                    "communication_style": "",  # GPT에서 추출
-                    "key_issues": participant.get("reasons", [])
+                    "name": p["name"],
+                    "responsibility_percentage": p["responsibility_percentage"],
+                    "communication_style": "",
+                    "key_issues": p.get("reasons", []),
                 }
-            
-            # 프론트엔드 구조로 변환
             result["responsibility"]["responsibility_analysis"] = frontend_responsibility
         else:
-            # 데이터가 없을 때는 빈 객체
             result["responsibility"]["responsibility_analysis"] = {}
         
         # 갈등 고조 지점 추가 (GPT에서 추출되지 않은 경우 빈 배열)
         if "escalation_points" not in result["responsibility"]:
             result["responsibility"]["escalation_points"] = []
         
-        # 모든 데이터는 GPT 응답에서 실제로 추출된 내용만 사용
-        
-        # 최종 결과 로깅
-        print(f"[파싱 완료] 액션 플랜 데이터:")
-        print(f"  - 우선순위 액션: {len(result['action_plans']['priority_actions'])}개")
-        print(f"  - 소통 팁: {len(result['action_plans']['communication_tips'])}개")  
-        print(f"  - 장기 제안: {len(result['action_plans']['long_term_suggestions'])}개")
-        print(f"[파싱 완료] 책임 분석 데이터:")
-        print(f"  - 참가자 수: {len(result['responsibility']['responsibility_analysis']['participants'])}명")
+        # 최종 파싱 결과 상세 로깅
+        print("=== [파싱 완료] 상세 결과 ===")
+        print(f"갈등 수준: {result['summary']['conflict_level']}")
+        print(f"해결 가능성: {result['summary']['resolution_feasibility']}")  
+        print(f"핵심 이슈 수: {len(result['summary']['key_issues'])}")
+        print(f"즉시 행동 수: {len(result['summary']['immediate_actions'])}")
+        print(f"성공 확률: {result['summary']['success_probability']}%")
+        print(f"우선순위 액션: {len(result['action_plans']['priority_actions'])}개")
+        print(f"소통 팁: {len(result['action_plans']['communication_tips'])}개")
+        print(f"장기 제안: {len(result['action_plans']['long_term_suggestions'])}개")
+        print(f"책임 참가자 수: {len(result['responsibility']['responsibility_analysis'])}명")
+        print("==============================")
         
         return result
         
