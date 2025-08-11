@@ -8,6 +8,10 @@ export const useSTT = (roomName, participantName) => {
   const [coachingEnabled, setCoachingEnabled] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
+  
+  // WebSocket 관련 상태
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef(null);
 
   // STT 관련 참조
   const recognitionRef = useRef(null);
@@ -20,6 +24,83 @@ export const useSTT = (roomName, participantName) => {
   const silenceCheckTimeoutRef = useRef(null); // 침묵 체크 타이머
   const uiDisplayTimeoutRef = useRef(null); // UI 표시용 타이머
   const apiSendTimeoutRef = useRef(null); // API 전송용 타이머
+
+  // WebSocket 연결 설정
+  const initWebSocket = () => {
+    try {
+      const wsUrl = window.location.hostname === 'localhost' 
+        ? `ws://localhost:5173/ai/ws/speech-analysis/${roomName}/${participantName}`
+        : `wss://i13c209.p.ssafy.io/ai/ws/speech-analysis/${roomName}/${participantName}`;
+      
+      console.log('[WebSocket STT] 연결 시도:', wsUrl);
+      
+      wsRef.current = new WebSocket(wsUrl);
+      
+      wsRef.current.onopen = () => {
+        console.log('[WebSocket STT] 연결 성공');
+        setWsConnected(true);
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[WebSocket STT] 메시지 수신:', data);
+          
+          // 상대방의 STT 결과를 받아서 화면에 추가
+          if (data.type === 'stt_result' && data.speaker !== participantName) {
+            const remoteConversation = {
+              id: Date.now() + Math.random(),
+              speaker: data.speaker,
+              text: data.text,
+              timestamp: new Date().toLocaleTimeString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit'
+              }),
+              aiSuggestion: null,
+              isRemote: true
+            };
+            
+            setConversations(prev => [...prev, remoteConversation]);
+            conversationLogRef.current.push(remoteConversation);
+            console.log('[WebSocket STT] 상대방 발언 추가:', remoteConversation);
+          }
+        } catch (error) {
+          console.error('[WebSocket STT] 메시지 파싱 오류:', error);
+        }
+      };
+
+      wsRef.current.onclose = () => {
+        console.log('[WebSocket STT] 연결 종료');
+        setWsConnected(false);
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error('[WebSocket STT] 연결 오류:', error);
+        setWsConnected(false);
+      };
+
+    } catch (error) {
+      console.error('[WebSocket STT] 초기화 실패:', error);
+    }
+  };
+
+  // WebSocket으로 STT 결과 전송
+  const sendSTTToWebSocket = (speaker, text) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      const message = {
+        type: 'stt_result',
+        speaker: speaker,
+        text: text,
+        roomId: roomName,
+        timestamp: new Date().toISOString()
+      };
+      
+      wsRef.current.send(JSON.stringify(message));
+      console.log('[WebSocket STT] 전송:', message);
+      return true;
+    }
+    return false;
+  };
 
   // STT 데이터를 FastAPI로 전송
   const sendSTTToFastAPI = async (speaker, text) => {
@@ -96,6 +177,9 @@ export const useSTT = (roomName, participantName) => {
     if (coachingEnabled) {
       startSilenceMonitoring();
     }
+
+    // WebSocket으로 실시간 전송 (상대방 화면에 즉시 표시)
+    sendSTTToWebSocket(speaker, text);
 
     // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
     await sendSTTToFastAPI(speaker, text);
@@ -480,6 +564,10 @@ export const useSTT = (roomName, participantName) => {
       recognitionRef.current.start();
       setSttEnabled(true);
       console.log('음성 인식 시작');
+      
+      // WebSocket 연결 시작
+      initWebSocket();
+      
       // STT 재시작 시 마지막 전송 텍스트 초기화
       lastSentTextRef.current = '';
     } catch (error) {
@@ -488,6 +576,8 @@ export const useSTT = (roomName, participantName) => {
       if (error.message && error.message.includes('already started')) {
         console.log('[STT] 이미 시작된 상태입니다.');
         setSttEnabled(true);
+        // WebSocket 연결 시작
+        initWebSocket();
       }
     }
   };
@@ -513,6 +603,13 @@ export const useSTT = (roomName, participantName) => {
       clearTimeout(apiSendTimeoutRef.current);
     }
     
+    // WebSocket 연결 해제
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    setWsConnected(false);
+
     // speaking 이벤트 리스너 제거
     const handleSpeakerChange = (event) => {
       const { speakerId, level } = event.detail;
@@ -529,7 +626,7 @@ export const useSTT = (roomName, participantName) => {
     setCurrentSpeech({ speaker: null, text: '' });
     lastCoachingTimeRef.current = 0;
     lastSpeechTimeRef.current = Date.now();
-    console.log('음성 인식 중지');
+    console.log('음성 인식 및 WebSocket 연결 중지');
   };
 
   // STT 토글
@@ -591,6 +688,7 @@ export const useSTT = (roomName, participantName) => {
     coachingEnabled,
     conversations,
     currentSpeech,
+    wsConnected,
 
     // 참조 (필요한 경우 외부에서 접근)
     recognitionRef,
