@@ -130,96 +130,148 @@ const ConflictReportPage = () => {
   const emotionSummary = reportData?.sections?.emotion_analysis?.summary || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-[#f0f4ff]">
-      
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-[#FF9800] to-[#bf7d2c] bg-clip-text text-transparent">
+    <div className="min-h-screen">
+      {/* 헤더 + 종합 요약 섹션 - Jia Curated 스타일 */}
+      <section className="min-h-screen bg-[#F2EDE2] flex items-center justify-center relative overflow-hidden">
+        {/* 미묘한 텍스처 오버레이 */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-amber-800 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-amber-900 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="container mx-auto px-12 py-24 max-w-6xl relative z-10">
+          {/* 헤더 */}
+          <div className="text-center mb-20">
+            <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
               갈등 분석 레포트
-            </span>
-          </h1>
-          <p className="text-gray-600">
-            생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
-          </p>
+            </h1>
+            <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
+            <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
+              AI가 분석한 갈등의 깊이와 해결책을 만나보세요
+            </p>
+            <p className="text-[#8B7B7B] text-sm mt-4 font-light">
+              생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
+            </p>
+          </div>
+
+          {/* 종합 요약 */}
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-light text-[#2A2A2A] mb-4 tracking-tight">
+                종합 분석 요약
+              </h2>
+              <div className="w-16 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
+            </div>
+            
+            <div className="bg-white/90 backdrop-blur-sm shadow-2xl p-16 rounded-none border-l-4 border-[#8B5A3C]">
+              <SummaryTab summary={summary} />
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* 요약 카드 */}
-        <ReportSummaryCards summary={summary} emotionSummary={emotionSummary} />
-
-        {/* 탭 네비게이션 */}
-        <div className="flex space-x-4 mb-6 border-b border-gray-200">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-3 px-4 font-semibold transition-colors ${
-                activeTab === tab.id 
-                  ? 'text-[#bf7d2c] border-b-2 border-[#bf7d2c]' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 탭 콘텐츠 */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          {activeTab === 'summary' && <SummaryTab summary={summary} />}
+      {/* 감정 분석 섹션 */}
+      <section className="min-h-screen bg-[#EAE3D8] flex items-center py-24">
+        <div className="container mx-auto px-12 max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+              감정 분석
+            </h2>
+            <div className="w-16 h-0.5 bg-[#6B4226] mx-auto mb-8"></div>
+            <p className="text-[#5A5A5A] text-xl font-light">대화 속 숨겨진 감정의 흐름</p>
+          </div>
           
-          {activeTab === 'emotion' && (
+          <div className="bg-white shadow-xl p-16 rounded-none border-l-4 border-[#6B4226]">
             <EmotionTab 
               selectedSpeaker={selectedSpeaker}
               setSelectedSpeaker={setSelectedSpeaker}
             />
-          )}
+          </div>
+        </div>
+      </section>
+
+      {/* 책임 분석 섹션 */}
+      <section className="min-h-screen bg-[#E0D7C9] flex items-center py-24">
+        <div className="container mx-auto px-12 max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+              책임 분석
+            </h2>
+            <div className="w-16 h-0.5 bg-[#5C351A] mx-auto mb-8"></div>
+            <p className="text-[#4A4A4A] text-xl font-light">갈등의 원인과 각자의 역할</p>
+          </div>
           
-          {activeTab === 'responsibility' && (
+          <div className="bg-[#FEFCF8] shadow-xl p-16 rounded-none border-l-4 border-[#5C351A]">
             <ResponsibilityTab 
               responsibilityData={reportData?.sections?.responsibility_analysis?.data}
             />
-          )}
+          </div>
+        </div>
+      </section>
+
+      {/* 액션 플랜 섹션 */}
+      <section className="min-h-screen bg-[#D6CDB8] flex items-center py-24">
+        <div className="container mx-auto px-12 max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+              액션 플랜
+            </h2>
+            <div className="w-16 h-0.5 bg-[#4D280E] mx-auto mb-8"></div>
+            <p className="text-[#3A3A3A] text-xl font-light">구체적인 해결 방안과 실행 계획</p>
+          </div>
           
-          {activeTab === 'action' && (
+          <div className="bg-[#F8F5F0] shadow-xl p-16 rounded-none border-l-4 border-[#4D280E]">
             <ActionPlanTab 
               actionPlans={reportData?.sections?.action_plans?.data || {}}
             />
-          )}
+          </div>
+        </div>
+      </section>
+
+      {/* 대화 내용 섹션 */}
+      <section className="min-h-screen bg-[#CCC2A7] flex items-center py-24">
+        <div className="container mx-auto px-12 max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+              대화 내용
+            </h2>
+            <div className="w-16 h-0.5 bg-[#3E1F0A] mx-auto mb-8"></div>
+            <p className="text-[#2A2A2A] text-xl font-light">실제 대화의 전체 기록</p>
+          </div>
           
-          {activeTab === 'transcript' && (
+          <div className="bg-[#F2EDE2] shadow-xl p-16 rounded-none border-l-4 border-[#3E1F0A]">
             <TranscriptTab 
               transcriptData={reportData?.sections?.full_transcript}
             />
-          )}
-        </div>
-
-        {/* 액션 버튼 */}
-        <div className="flex justify-between items-center mt-8">
-          <button
-            onClick={() => navigate('/mypage')}
-            className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            목록으로
-          </button>
-          
-          <div className="space-x-4">
-            <button
-              onClick={() => window.print()}
-              className="px-6 py-3 bg-[#cd9f6e] text-white rounded-lg hover:bg-[#b88956] transition-colors"
-            >
-              레포트 인쇄
-            </button>
-            <button
-              onClick={() => alert('PDF 다운로드 기능은 준비중입니다.')}
-              className="px-6 py-3 bg-[#7f5539] text-white rounded-lg hover:bg-[#6a4630] transition-colors"
-            >
-              PDF 다운로드
-            </button>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* 액션 버튼 섹션 */}
+      <section className="bg-[#C2B596] py-24">
+        <div className="container mx-auto px-12 max-w-4xl text-center">
+          <h3 className="text-4xl font-light mb-16 text-[#2A2A2A] tracking-tight">
+            레포트 활용하기
+          </h3>
+          
+          <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
+            <button
+              onClick={() => navigate('/mypage')}
+              className="px-10 py-4 bg-[#2A2A2A] text-[#F2EDE2] font-light text-lg tracking-wide hover:bg-[#1A1A1A] transition-all duration-500 uppercase"
+            >
+              마이페이지로 돌아가기
+            </button>
+            
+            <button
+              onClick={() => window.print()}
+              className="px-10 py-4 bg-[#5C351A] text-[#F2EDE2] font-light text-lg tracking-wide hover:bg-[#4D280E] transition-all duration-500 uppercase"
+            >
+              레포트 인쇄하기
+            </button>
+            
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
