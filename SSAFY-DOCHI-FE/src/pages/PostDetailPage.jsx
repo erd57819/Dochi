@@ -526,7 +526,7 @@ const PostDetailPage = () => {
                     <p
                       className="text-lg font-bold mb-2 bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]"
                     >
-                      긍정 부정 비율이 그래프로 표시됩니다.
+                      긍정 부정 비율이 그래프로 표시됩니다
                     </p>
                   </div>
 
