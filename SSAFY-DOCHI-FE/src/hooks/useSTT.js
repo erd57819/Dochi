@@ -342,6 +342,9 @@ export const useSTT = (roomName, participantName) => {
     let finalTranscript = '';
     let isProcessing = false;
     let currentSpeaker = participantName;
+    let lastProcessTime = Date.now();
+    let speakerQueue = []; // 최근 화자 이력
+    let activeSpeaker = participantName; // 현재 실제로 말하고 있는 화자
 
     recognition.onresult = (event) => {
       let interimTranscript = '';
@@ -372,12 +375,20 @@ export const useSTT = (roomName, participantName) => {
         speechTimeoutRef.current = setTimeout(async () => {
           if (finalTranscript.trim() && !isProcessing) {
             isProcessing = true;
+            
+            // WebRTC speaking 감지로 화자 결정
+            currentSpeaker = activeSpeaker || participantName;
+            
             await handleSpeechResult(currentSpeaker, finalTranscript.trim());
+            speakerQueue.push(currentSpeaker);
+            if (speakerQueue.length > 3) speakerQueue.shift(); // 최근 3개만 유지
+            lastProcessTime = Date.now();
+            
             finalTranscript = '';
             setCurrentSpeech({ speaker: null, text: '' });
             isProcessing = false;
           }
-        }, 3000);
+        }, 1500);
       }
     };
 
@@ -401,6 +412,18 @@ export const useSTT = (roomName, participantName) => {
         }, 1000);
       }
     };
+
+    // WebRTC speaking 감지 이벤트 리스너
+    const handleSpeakerChange = (event) => {
+      const { speakerId, level } = event.detail;
+      if (level > 0.1) {
+        activeSpeaker = speakerId;
+        console.log(`[Speaking 감지] 화자 변경: ${activeSpeaker}`);
+      }
+    };
+
+    // 이벤트 리스너 등록
+    window.addEventListener('speakerChanged', handleSpeakerChange);
 
     recognitionRef.current = recognition;
     return true;
@@ -447,6 +470,16 @@ export const useSTT = (roomName, participantName) => {
     if (silenceCheckTimeoutRef.current) {
       clearTimeout(silenceCheckTimeoutRef.current);
     }
+    
+    // speaking 이벤트 리스너 제거
+    const handleSpeakerChange = (event) => {
+      const { speakerId, level } = event.detail;
+      if (level > 0.1) {
+        // activeSpeaker update logic would be here
+      }
+    };
+    window.removeEventListener('speakerChanged', handleSpeakerChange);
+    
     setSttEnabled(false);
     setAiMediationEnabled(false);
     setCoachingEnabled(false);

@@ -260,6 +260,48 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       console.log('트랙 구독 해제됨:', track.kind, participant.identity);
     });
+
+    // Speaking 감지를 위한 AudioLevelChanged 이벤트
+    room.on(RoomEvent.AudioLevelChanged, (level, participant) => {
+      if (level > 0.1) { // speaking threshold
+        setSpeakingParticipants(prev => {
+          const newSet = new Set(prev);
+          if (participant) {
+            newSet.add(participant.sid);
+            // STT 화자 업데이트 알림
+            window.dispatchEvent(new CustomEvent('speakerChanged', {
+              detail: { 
+                speakerId: participant.identity,
+                participantSid: participant.sid,
+                level: level
+              }
+            }));
+          } else {
+            // local participant speaking
+            setIsLocalSpeaking(true);
+            window.dispatchEvent(new CustomEvent('speakerChanged', {
+              detail: { 
+                speakerId: participantName,
+                participantSid: 'local',
+                level: level
+              }
+            }));
+          }
+          return newSet;
+        });
+      } else {
+        // Not speaking anymore
+        setSpeakingParticipants(prev => {
+          const newSet = new Set(prev);
+          if (participant) {
+            newSet.delete(participant.sid);
+          } else {
+            setIsLocalSpeaking(false);
+          }
+          return newSet;
+        });
+      }
+    });
   };
 
   // 참가자 비디오 참조 생성
@@ -885,7 +927,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               )}
 
               {/* 대화 기록 */}
-              {conversations.map((conv) => (
+              {conversations.slice().reverse().map((conv) => (
                 <div key={conv.id} className="bg-gray-700 p-3 rounded">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-green-400 text-sm font-medium">
