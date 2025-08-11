@@ -67,6 +67,17 @@ const comfortService = {
     }
   },
 
+  // 채팅방 제목 수정
+  updateChatRoomTitle: async (chatRoomId, title) => {
+    try {
+      const response = await apiClient.put(`/chat/rooms/${chatRoomId}/title`, { title });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update chat room title:', error);
+      throw error;
+    }
+  },
+
   // 메시지 전송 (핵심 기능)
   sendMessage: async (sessionId, message, mode = 'NORMAL') => {
     try {

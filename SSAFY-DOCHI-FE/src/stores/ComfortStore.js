@@ -59,6 +59,50 @@ const useComfortStore = create(
         }
       },
 
+      // 첫 메시지로 새 세션 생성 (클로드 스타일)
+      createNewSessionWithFirstMessage: async (firstMessage) => {
+        try {
+          const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+          // 첫 메시지를 제목으로 사용 (최대 30자)
+          const title = firstMessage.length > 30 ? firstMessage.slice(0, 30) + '...' : firstMessage;
+          const response = await comfortService.createChatRoom(title);
+          const chatRoomId = response.data;
+          
+          const newSession = {
+            id: chatRoomId,
+            sessionId: sessionId,
+            title: title,
+            messages: [{
+              id: 1,
+              sender: 'bot',
+              content: '안녕하세요! 말씀해주신 상황에 대해 자세히 이야기해보세요. 제가 도움을 드릴게요. 🤗',
+              timestamp: new Date()
+            }],
+            createdAt: new Date()
+          };
+          
+          set((state) => ({
+            sessions: [newSession, ...state.sessions],
+            currentSessionId: sessionId,
+            currentChatRoomId: chatRoomId,
+            messages: newSession.messages,
+            selectedMode: 'NORMAL',
+            showTimeline: false,
+            showManhwa: false
+          }));
+
+          // 첫 메시지 자동 전송
+          setTimeout(async () => {
+            const { sendMessage } = get();
+            await sendMessage(firstMessage);
+          }, 100);
+          
+        } catch (error) {
+          console.error('Failed to create new session with first message:', error);
+          set({ error: '새 대화를 생성하는데 실패했습니다.' });
+        }
+      },
+
       // 제목으로 새 세션 생성
       createNewSessionWithTitle: async (title) => {
         try {
@@ -278,6 +322,11 @@ const useComfortStore = create(
       updateSessionTitle: async (sessionId, newTitle) => {
         try {
           const { sessions } = get();
+          
+          // 서버에 제목 변경 API 호출
+          await comfortService.updateChatRoomTitle(sessionId, newTitle);
+          
+          // 로컬 상태 업데이트
           const updatedSessions = sessions.map(session => 
             session.id === sessionId 
               ? { ...session, title: newTitle }
@@ -286,11 +335,10 @@ const useComfortStore = create(
           
           set({ sessions: updatedSessions });
           
-          // TODO: 서버에 제목 변경 API 호출 (현재는 로컬만 업데이트)
-          // await comfortService.updateChatRoomTitle(sessionId, newTitle);
         } catch (error) {
           console.error('Failed to update session title:', error);
           set({ error: '제목 변경에 실패했습니다.' });
+          throw error; // 에러를 다시 던져서 UI에서 처리할 수 있도록
         }
       },
 
