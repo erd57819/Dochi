@@ -238,7 +238,9 @@ const ProfileEditPage = () => {
       await loadUserInfo();
       
       if (uploadedImage && errorMessage.includes('이미지 업로드에 실패')) {
-        alert('사용자 정보는 업데이트되었지만 \n이미지 업로드에 실패했습니다. \n다시 시도해주세요.');
+        alert(`사용자 정보는 업데이트되었지만
+이미지 업로드에 실패했습니다.
+다시 시도해주세요.`);
       } else if (isDataChanged || uploadedImage) {
         alert('프로필이 성공적으로 저장되었습니다.');
       } else {
@@ -264,7 +266,7 @@ const ProfileEditPage = () => {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
-        }).replace(/\s/g, '') + ' 가입';
+        }) + ' 가입';
       }
 
       // 일반 문자열 날짜 처리
@@ -273,7 +275,7 @@ const ProfileEditPage = () => {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
-      }).replace(/\s/g, '') + ' 가입';
+      }) + ' 가입';
     } catch (e) {
       console.error('날짜 포맷팅 오류:', e, dateData);
       return '가입일 알 수 없음';
@@ -283,10 +285,10 @@ const ProfileEditPage = () => {
   if (loading) {
     return (
       <div className="bg-white min-h-screen flex justify-center">
-        <div className="w-full max-w-[1440px] bg-white">
+        <div className="w-full max-w-[1080px] bg-white">
           <MyPageNavigation />
-          <div className="flex justify-center items-center py-20">
-            <div className="text-xl text-[#999999]">로딩 중...</div>
+          <div className="flex justify-center items-center py-16">
+            <div className="text-lg text-[#999999]">로딩 중...</div>
           </div>
         </div>
       </div>
@@ -295,23 +297,23 @@ const ProfileEditPage = () => {
 
   return (
     <div className="bg-white min-h-screen flex justify-center">
-      <div className="w-full max-w-[1440px] bg-white">
+      <div className="w-full max-w-[1080px] bg-white">
         <MyPageNavigation />
 
         {/* 메인 컨텐츠 */}
-        <div className="flex justify-center px-4 py-12">
-          <div className="w-full max-w-[900px]">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="flex justify-center px-4 py-8">
+          <div className="w-full max-w-[675px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-9">
               
               {/* 왼쪽: 프로필 정보 */}
               <div className="flex flex-col items-center">
                 {/* 프로필 섹션 */}
-                <div className="text-center mb-8 w-full">
+                <div className="text-center mb-6 w-full">
                   {/* 프로필 이미지 */}
-                  <div className="flex justify-center mb-6">
+                  <div className="flex justify-center mb-4">
                     <div className="relative">
                       {imagePreview ? (
-                        <div className="w-[140px] h-[140px] rounded-full overflow-hidden border-4 border-white shadow-lg">
+                        <div className="w-[105px] h-[105px] rounded-full overflow-hidden border-4 border-white shadow-lg">
                           <img 
                             src={imagePreview} 
                             alt="프로필 이미지" 
@@ -319,17 +321,19 @@ const ProfileEditPage = () => {
                           />
                         </div>
                       ) : (
-                        <div className="w-[140px] h-[140px] rounded-full flex items-center justify-center bg-gray-200 border-4 border-white shadow-lg">
-                          <span className="text-4xl text-gray-500">🗄️</span>
+                        <div className="w-[105px] h-[105px] rounded-full flex items-center justify-center bg-[#bf7d2c] border-4 border-white shadow-lg">
+                          <span className="text-3xl font-bold text-white">
+                            {formData.nickname ? formData.nickname.charAt(0) : '?'}
+                          </span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* 프로필 사진 선택 옵션 */}
-                  <div className="mb-6">
+                  <div className="mb-4">
                     <div className="flex justify-center">
-                      <label className="bg-[#E6E6FA] hover:bg-[#D8BFD8] text-[#333] px-6 py-3 rounded-lg font-medium cursor-pointer transition-colors">
+                      <label className="text-[#333] font-medium cursor-pointer transition-colors text-sm underline hover:no-underline">
                         <input 
                           type="file" 
                           accept="image/*" 
@@ -342,10 +346,10 @@ const ProfileEditPage = () => {
                   </div>
 
                   {/* 사용자 정보 */}
-                  <h2 className="text-2xl font-bold text-black mb-2">
+                  <h2 className="text-xl font-bold text-black mb-1">
                     {userInfo.name && userInfo.name !== 'string' ? userInfo.name : '이름 없음'}, {userInfo.age > 0 ? `${userInfo.age}세` : ''}{userInfo.age > 0 && userInfo.gender && userInfo.gender !== 'NONE' ? ', ' : ''}{userInfo.gender === 'MALE' ? '남성' : userInfo.gender === 'FEMALE' ? '여성' : ''}
                   </h2>
-                  <p className="text-[#666] text-sm">
+                  <p className="text-[#666] text-xs">
                     {formatDate(userInfo.created_at)}
                   </p>
                 </div>
@@ -355,16 +359,16 @@ const ProfileEditPage = () => {
               <div className="flex flex-col">
                 {/* 에러 메시지 */}
                 {error && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-center">
+                  <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-center text-sm">
                     {error}
                   </div>
                 )}
 
                 {/* 입력 폼 */}
-                <div className="space-y-6 flex-1">
+                <div className="space-y-4 flex-1">
                   {/* 닉네임 */}
                   <div>
-                    <label className="block text-left text-[#333] font-medium mb-2">
+                    <label className="block text-left text-[#333] font-medium mb-1 text-sm">
                       닉네임
                     </label>
                     <input
@@ -372,40 +376,40 @@ const ProfileEditPage = () => {
                       name="nickname"
                       value={formData.nickname}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg border border-[#d1d5db] focus:border-[#D2691E] focus:outline-none bg-white text-base"
+                      className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-sm transition-colors"
                       placeholder="닉네임을 입력해주세요"
                     />
                   </div>
 
                   {/* 아이디 */}
                   <div>
-                    <label className="block text-left text-[#333] font-medium mb-2">
+                    <label className="block text-left text-[#333] font-medium mb-1 text-sm">
                       아이디
                     </label>
                     <input
                       type="text"
                       value={userInfo.userId}
                       disabled
-                      className="w-full px-4 py-3 rounded-lg border border-[#e5e7eb] bg-[#f9fafb] text-[#666] text-base"
+                      className="w-full px-0 py-3 bg-gray-50 border-0 border-b-2 border-b-gray-300 text-[#666] text-sm"
                     />
                   </div>
 
                   {/* 이메일 */}
                   <div>
-                    <label className="block text-left text-[#333] font-medium mb-2">
+                    <label className="block text-left text-[#333] font-medium mb-1 text-sm">
                       이메일
                     </label>
                     <input
                       type="email"
                       value={userInfo.email}
                       disabled
-                      className="w-full px-4 py-3 rounded-lg border border-[#e5e7eb] bg-[#f9fafb] text-[#666] text-base"
+                      className="w-full px-0 py-3 bg-gray-50 border-0 border-b-2 border-b-gray-300 text-[#666] text-sm"
                     />
                   </div>
 
                   {/* 주소 */}
                   <div>
-                    <label className="block text-left text-[#333] font-medium mb-2">
+                    <label className="block text-left text-[#333] font-medium mb-1 text-sm">
                       주소
                     </label>
                     <input
@@ -414,48 +418,47 @@ const ProfileEditPage = () => {
                       value={formData.address}
                       readOnly
                       onClick={openDaumPostcode}
-                      className="w-full px-4 py-3 rounded-lg border border-[#d1d5db] cursor-pointer bg-white"
+                      className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] cursor-pointer text-sm transition-colors"
                       placeholder="주소를 검색해주세요"
                     />
                   </div>
                 </div>
 
-                {/* 저장 및 회원탈퇴 버튼 */}
-                <div className="mt-8">
-                  <div className="flex justify-center gap-4">
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 flex-1 max-w-[140px]"
-                      style={{ 
-                        backgroundColor: '#2563eb', 
-                        color: 'white',
-                        border: 'none'
-                      }}
-                      onMouseEnter={(e) => !saving && (e.target.style.backgroundColor = '#1d4ed8')}
-                      onMouseLeave={(e) => !saving && (e.target.style.backgroundColor = '#2563eb')}
-                    >
-                      {saving ? '저장 중...' : '프로필 저장'}
-                    </button>
-                    
-                    <button
-                      onClick={() => setShowDeleteModal(true)}
-                      className="px-8 py-3 rounded-lg font-medium transition-colors flex-1 max-w-[140px]"
-                      style={{ 
-                        backgroundColor: '#dc2626', 
-                        color: 'white',
-                        border: 'none'
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
-                    >
-                      회원탈퇴
-                    </button>
-                  </div>
-                </div>
               </div>
               
             </div>
+            
+            {/* 저장 및 회원탈퇴 버튼 - 전체 페이지 폭 기준 */}
+            <div className="mt-8 relative w-full">
+              {/* 프로필 저장 버튼 - 전체 페이지 가운데 */}
+              <div className="flex justify-center">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 text-xs"
+                  style={{ 
+                    backgroundColor: '#bf7d2c', 
+                    color: 'white',
+                    border: 'none'
+                  }}
+                  onMouseEnter={(e) => !saving && (e.target.style.backgroundColor = '#D2691E')}
+                  onMouseLeave={(e) => !saving && (e.target.style.backgroundColor = '#bf7d2c')}
+                >
+                  {saving ? '저장 중...' : '프로필 저장'}
+                </button>
+              </div>
+              
+              {/* 회원탈퇴 버튼 - 절대 위치로 오른쪽 */}
+              <div className="absolute top-0 right-0">
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="text-red-600 font-bold text-xs hover:text-red-700 transition-colors"
+                >
+                  회원탈퇴
+                </button>
+              </div>
+            </div>
+            
           </div>
         </div>
       </div>
@@ -463,23 +466,23 @@ const ProfileEditPage = () => {
       {/* 회원탈퇴 확인 모달 */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-center mb-4">회원탈퇴</h3>
-            <p className="text-gray-600 text-center mb-6">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-bold text-center mb-3">회원탈퇴</h3>
+            <p className="text-gray-600 text-center mb-5 text-sm">
               정말로 탈퇴하시겠습니까?<br/>
               탈퇴 후에는 모든 데이터가 삭제되며<br/>
               복구할 수 없습니다.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-medium transition-colors"
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-colors text-sm"
               >
                 취소
               </button>
               <button
                 onClick={handleDeleteUser}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition-colors"
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium transition-colors text-sm"
               >
                 탈퇴하기
               </button>

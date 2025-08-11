@@ -107,7 +107,8 @@ const MyPage = () => {
         )}
 
         {/* 카드 그리드 - 3열 고정 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-8 lg:px-16">
+        <div className="flex justify-center px-4 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-40 gap-y-20 max-w-[1000px] justify-items-center">
           
           {/* 등록된 갈등 카드들 */}
           {conflicts.map((conflict) => (
@@ -145,6 +146,7 @@ const MyPage = () => {
             />
           ))}
 
+          </div>
         </div>
       </div>
     </div>
