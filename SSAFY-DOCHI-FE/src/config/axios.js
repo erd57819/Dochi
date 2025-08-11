@@ -45,8 +45,12 @@ apiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // 리프레시 토큰으로 액세스 토큰 재발급
-          const response = await axios.post(`${API_BASE_URL}/user/refresh`, {
-            refreshToken: refreshToken,
+          const expiredAccessToken = localStorage.getItem('accessToken');
+          const response = await axios.post(`${API_BASE_URL}/user/reissue`, {}, {
+            headers: {
+              'Authorization': `Bearer ${expiredAccessToken}`,
+              'X-Refresh-Token': refreshToken,
+            }
           });
           
           const { accessToken: newAccessToken } = response.data.data;
@@ -58,12 +62,19 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return apiClient(originalRequest);
         } catch (refreshError) {
-          // 리프레시 실패 시 로그아웃 처리
+          // 리프레시 실패 시 팝업 표시 후 로그아웃 처리
+          alert('세션이 만료되었습니다. 다시 로그인해주세요.');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           window.location.href = '/login';
           return Promise.reject(refreshError);
         }
+      } else {
+        // 리프레시 토큰이 없는 경우
+        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
       }
     }
     

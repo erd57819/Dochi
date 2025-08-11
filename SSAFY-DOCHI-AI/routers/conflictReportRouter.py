@@ -465,6 +465,8 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                     if "갈등 수준" in content:
                         if "HIGH" in content.upper():
                             result["summary"]["conflict_level"] = "HIGH"
+                        elif "MEDIUM" in content.upper():
+                            result["summary"]["conflict_level"] = "MEDIUM"
                         elif "LOW" in content.upper():
                             result["summary"]["conflict_level"] = "LOW"
                     elif "해결 가능성" in content:
