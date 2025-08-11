@@ -30,6 +30,7 @@ export default defineConfig({
         target: 'http://localhost:8002',
         changeOrigin: true,
         secure: false,
+        ws: true, // WebSocket 지원
         rewrite: (path) => path.replace(/^\/ai/, '')
       }
     }
