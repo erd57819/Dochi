@@ -2,7 +2,7 @@ import React from "react";
 import conflictImage from '../assets/conflict.png'; // conflict.png 이미지 import
 
 const HedgehogIcon = () => (
-  <div className="w-[100px] h-[100px] mt-[60px] rounded-full border-[4px] border-[#fbbf24] overflow-hidden flex items-center justify-center" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
+  <div className="w-[52px] h-[52px] mt-[10px] rounded-full border-[2px] border-[#fbbf24] overflow-hidden flex items-center justify-center" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
     <img 
       src={conflictImage} 
       alt="갈등" 
@@ -21,20 +21,31 @@ const ConflictCard = ({
   const isEmptyCard = type === "empty";
   
   return (
-    <div className="w-full max-w-[362px] mx-auto h-[529px] rounded-[20px] border border-solid border-[#e5e7eb] bg-white shadow-[0px_4px_6px_rgba(0,0,0,0.1)] flex flex-col items-center">
+    <div 
+      className="w-[260px] h-[360px] rounded-[12px] bg-white flex flex-col items-center pt-8 transition-all duration-300 cursor-pointer" 
+      style={{
+        boxShadow: '0 0 15px rgba(255, 165, 0, 0.3), 0 0 30px rgba(255, 165, 0, 0.2), 0 0 45px rgba(255, 165, 0, 0.1)'
+      }}
+      onClick={onButtonClick}
+      onMouseEnter={(e) => {
+        e.target.style.boxShadow = '0 0 25px rgba(255, 165, 0, 0.5), 0 0 50px rgba(255, 165, 0, 0.4), 0 0 75px rgba(255, 165, 0, 0.3)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.boxShadow = '0 0 15px rgba(255, 165, 0, 0.3), 0 0 30px rgba(255, 165, 0, 0.2), 0 0 45px rgba(255, 165, 0, 0.1)';
+      }}>
       
       {/* 갈등 이미지 아이콘 */}
       <HedgehogIcon />
       
       {/* 날짜 또는 갈등 등록일 텍스트 */}
       {!isEmptyCard && (
-        <div className="mt-10 text-lg text-[#999999]" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
+        <div className="mt-4 text-sm text-[#999999]" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
           {date || "갈등 등록일"}
         </div>
       )}
       
       {/* 메인 텍스트 */}
-      <div className={`${isEmptyCard ? 'mt-16' : 'mt-6'} text-center text-2xl font-bold leading-[1.3]`} 
+      <div className={`${isEmptyCard ? 'mt-6' : 'mt-2'} text-center text-lg font-bold leading-[1.2]`} 
            style={{ 
              fontFamily: 'Pretendard-Bold, Helvetica',
              background: 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)',
@@ -55,10 +66,10 @@ const ConflictCard = ({
       </div>
       
       {/* 버튼 */}
-      <div className="mt-auto mb-[60px]">
+      <div className="mt-auto mb-[50px]">
         <button 
           onClick={onButtonClick}
-          className="px-10 py-4 rounded-full text-lg font-medium transition-colors shadow-lg text-white"
+          className="px-5 py-2 rounded-full text-sm font-medium transition-colors shadow-lg text-white"
           style={{ 
             fontFamily: 'Pretendard-Medium, Helvetica',
             background: 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)',

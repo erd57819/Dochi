@@ -209,9 +209,9 @@ const CommunityPage = () => {
                 <h3 className="text-4xl font-bold" style={{ color: '#333333' }}>
                   {selectedCategoryData?.label || '전체'} 게시글
                 </h3>
-                <p className="text-base" style={{ color: '#666666' }}>
-                  총 {posts.length} 슴도치
-                </p>
+                {/* <p className="text-base" style={{ color: '#666666' }}>
+                  총 {posts.length} 고슴도치
+                </p> */}
               </div>
             </div>
 
