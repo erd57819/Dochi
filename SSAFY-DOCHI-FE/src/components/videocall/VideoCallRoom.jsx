@@ -49,7 +49,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const timerInterval = useRef(null);
   const maxCallDuration = 30 * 60 * 1000; // 30분 (밀리초)
 
-  // LiveKit 상태 (백업 파일 방식)
+  // LiveKit 상태 
   const [room, setRoom] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [participants, setParticipants] = useState([]);
@@ -86,7 +86,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     return id;
   }, [room?.name, roomName]);
 
-  // LiveKit 방 연결 함수 (백업 파일 방식)
+  // LiveKit 방 연결 함수 
   const connectToRoom = async () => {
     try {
       setError(null);
@@ -129,14 +129,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       await newRoom.connect(LIVEKIT_URL, accessToken);
       
       // 참가자 수 체크 (나 + 상대방 = 최대 2명)
-      const totalParticipants = Array.from(newRoom.remoteParticipants.values()).length + 1; // +1은 나 자신
+      const totalParticipants = Array.from(newRoom.remoteParticipants.values()).length + 1; 
       if (totalParticipants > 2) {
         throw new Error('이미 2명이 참여 중입니다. 1:1 대화방은 최대 2명까지만 참여할 수 있습니다.');
       }
-      
-      // 초기에는 카메라/마이크 비활성화 상태로 시작
-      // 사용자가 토글 버튼으로 직접 켜야 함
-      console.log('방 연결 완료 - 카메라/마이크는 비활성화 상태로 시작');
 
       // 이벤트 리스너 설정
       setupRoomEventListeners(newRoom);
@@ -144,11 +140,11 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       setRoom(newRoom);
       setIsConnected(true);
 
-      // 기존 참가자들 처리 (백업 파일 방식)
+      // 기존 참가자들 처리 
       const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
       setParticipants(remoteParticipants);
 
-      // 기존 참가자들의 트랙을 수동으로 연결 (나중에 들어온 사람이 먼저 들어온 사람 볼 수 있도록)
+      // 기존 참가자 join
       remoteParticipants.forEach(participant => {
         console.log('기존 참가자 트랙 연결:', participant.identity);
         
