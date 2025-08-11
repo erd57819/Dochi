@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
-import useAuthStore from '../stores/AuthStore';
 import { videoCallApi } from '../services/videoCallApi.js';
 import hedgehogImg from '../assets/conflict.png';
 
@@ -9,10 +8,17 @@ import hedgehogImg from '../assets/conflict.png';
 const ConflictAnalysisResultPage = () => {
   const [conflictData, setConflictData] = useState(null);
   const [isLoading, setIsLoading]       = useState(true);
-  const [activeTab, setActiveTab]       = useState('tab1');
-  const { tempId }                      = useParams();
-  const navigate                        = useNavigate();
-  const { token }                       = useAuthStore();
+  
+  // 분석 데이터 렌더링 헬퍼 함수 (최적화됨)
+  const renderAnalysisData = (data) => {
+    if (!data) return 'AI가 분석하고 있습니다...';
+    if (typeof data === 'string') return data;
+    
+    // 문자열이 아닌 경우 직접 텍스트로 처리
+    return String(data);
+  };
+  const { tempId } = useParams();
+  const navigate = useNavigate();
   
   // isEmptyOrError 헬퍼 함수 정의
   const isEmptyOrError = (value) => {
@@ -27,81 +33,22 @@ const ConflictAnalysisResultPage = () => {
     return false;
   };
 
-  // 백엔드에서 AI 분석이 실패했을 때의 개선된 폴백 처리
-  const generateImprovedFallback = (basicData) => {
-    console.log('백엔드 AI 분석 실패 - 개선된 폴백 분석 생성:', basicData);
-    
-    const intensityText = basicData.intensity >= 8 ? '매우 강한' : 
-                         basicData.intensity >= 6 ? '강한' : 
-                         basicData.intensity >= 4 ? '보통' : '약한';
-                         
-    const typeMap = {
-      WORK: '직장/업무',
-      FAMILY: '가족',
-      FRIEND: '친구',
-      COUPLE: '연인/부부',
-      NEIGHBOR: '이웃',
-      FINANCIAL: '금전',
-      ONLINE: '온라인',
-      ETC: '기타'
-    };
-    
-    const typeText = typeMap[basicData.conflictType] || '일반적인';
-    
-    // 갈등 내용 키워드 분석
-    const description = basicData.description.toLowerCase();
-    let emotionAnalysis = '';
-    let conflictAnalysis = '';
-    let myPosition = '';
-    let partnerPosition = '';
-    
-    // 감정 분석 생성
-    if (description.includes('동문서답') || description.includes('대화')) {
-      emotionAnalysis = `소통의 어려움으로 인한 ${intensityText} 좌절감과 답답함을 경험하고 있습니다. 대화가 원활하지 않아 감정적 거리감이 커지고 있는 상태입니다.`;
-    } else if (description.includes('화') || description.includes('분노')) {
-      emotionAnalysis = `현재 ${intensityText} 분노와 억울함을 느끼고 있으며, 감정 조절이 어려운 상황입니다. 갈등 강도 ${basicData.intensity}/10으로 즉각적인 해결이 필요합니다.`;
-    } else {
-      emotionAnalysis = `갈등 강도 ${basicData.intensity}/10의 ${intensityText} 감정적 상태를 경험하고 있습니다. 상황 해결을 위한 체계적인 접근이 필요합니다.`;
-    }
-    
-    // 갈등 분석 생성  
-    if (description.includes('동문서답') || description.includes('대화')) {
-      conflictAnalysis = `${typeText} 관계에서 서로 다른 소통 방식과 의사전달 패턴의 차이가 주요 원인입니다. 한쪽은 직접적인 소통을 원하지만 다른 쪽은 다른 방식으로 반응하여 의사소통 단절이 발생했습니다.`;
-    } else {
-      conflictAnalysis = `${typeText} 갈등으로, 근본적인 소통과 이해 부족이 주요 원인으로 보입니다. 서로의 관점과 필요를 이해하는 과정이 필요합니다.`;
-    }
-    
-    // 입장 분석 생성
-    if (basicData.conflictType === 'COUPLE' && description.includes('대화')) {
-      myPosition = '대화할 때 소통이 잘 안되는 상황에서 상대방이 동문서답을 한다고 느끼고 있으며, 의미 있는 대화를 하고 싶어합니다.';
-      partnerPosition = '상대방도 대화를 하려고 노력하고 있지만, 어떻게 대답해야 할지 모르거나 서로 다른 소통 방식을 선호할 가능성이 있습니다.';
-    } else {
-      myPosition = '갈등 상황에서 자신의 관점과 필요를 명확히 표현하고 해결을 원하고 있습니다.';
-      partnerPosition = '상대방도 나름의 이유와 관점을 가지고 있으며, 상황에 대한 다른 해석을 할 수 있습니다.';
-    }
-    
+  // 간단한 폴백 분석 (AI 백엔드 실패 시에만 사용)
+  const generateSimpleFallback = (basicData) => {
     return {
-      emotion_analysis: emotionAnalysis,
-      conflict_analysis: conflictAnalysis,
-      my_position: myPosition,
-      partner_position: partnerPosition,
-      relationship_health_score: Math.max(20, 100 - (basicData.intensity * 8)),
-      communication_score: Math.max(10, 80 - (basicData.intensity * 6)),
-      trust_score: { score: Math.max(15, 70 - (basicData.intensity * 7)), analysis: '신뢰 회복을 위한 노력이 필요합니다.' },
-      cooperation_score: { score: Math.max(20, 75 - (basicData.intensity * 5)), improvement_suggestions: ['열린 대화', '상호 이해', '공통 목표 설정'] },
-      priority_recommendation: basicData.intensity >= 7 ? 'HIGH' : basicData.intensity >= 4 ? 'MEDIUM' : 'LOW',
-      recommended_actions: ['진정한 대화 시간 갖기', '상대방 입장 이해하기', '구체적인 해결방안 모색']
+      emotion_analysis: '현재 갈등 상황으로 인해 스트레스를 받고 있는 상태입니다.',
+      conflict_analysis: '의사소통 부족과 서로 다른 관점이 주요 원인으로 보입니다.',
+      my_position: '갈등 해결을 위해 노력하고 있으며, 상대방과의 소통을 원하고 있습니다.',
+      partner_position: '상대방도 나름의 입장과 이유가 있을 것으로 추정됩니다.',
+      relationship_health_score: Math.max(30, 80 - (basicData.intensity * 5)),
+      communication_score: Math.max(20, 70 - (basicData.intensity * 4)),
+      trust_score: { score: Math.max(25, 65 - (basicData.intensity * 3)), analysis: '신뢰 회복이 필요합니다.' },
+      cooperation_score: { score: Math.max(30, 70 - (basicData.intensity * 3)), improvement_suggestions: ['대화하기', '이해하기'] },
+      priority_recommendation: basicData.intensity >= 7 ? 'HIGH' : 'MEDIUM',
+      recommended_actions: ['대화 시간 갖기', '상호 이해하기']
     };
   };
 
-  const handleConflictResolution = () => {
-    if (tempId) {
-      sessionStorage.setItem('currentTempId', tempId);
-      navigate(`/video-call?tempId=${tempId}`);
-    } else {
-      navigate('/video-call');
-    }
-  };
 
   // 토닥토닥 서비스로 이동
   const handleComfort = () => {
@@ -113,10 +60,6 @@ const ConflictAnalysisResultPage = () => {
     }
   };
 
-  // 커뮤니티 페이지로 이동 - 바로 글쓰기 페이지로
-  const handleCommunity = () => {
-    handleShareConflict();  // 기존 공유하기 함수 활용
-  };
 
   // 전문 상담사 매칭 페이지로 이동
   const handleExpertMatching = () => {
@@ -330,30 +273,26 @@ const ConflictAnalysisResultPage = () => {
       });
     } catch (err) {
       console.error('AI 백엔드 연결 오류:', err);
-      console.log('백엔드 AI 실패 - 개선된 폴백 분석 사용');
+      console.log('백엔드 AI 실패 - 간단한 폴백 분석 사용');
 
-      // 개선된 폴백 분석 사용
-      const improvedAnalysis = generateImprovedFallback(basicData);
+      // 간단한 폴백 분석 사용
+      const fallbackAnalysis = generateSimpleFallback(basicData);
       
       setConflictData({
         ...basicData,
         aiSummary:                basicData.aiSummary,
         aiSolutions:              basicData.aiSolutions,
-        emotionAnalysis:          improvedAnalysis.emotion_analysis,
-        conflictAnalysis:         improvedAnalysis.conflict_analysis,
-        myPosition:               improvedAnalysis.my_position,
-        partnerPosition:          improvedAnalysis.partner_position,
-        relationshipHealthScore:  improvedAnalysis.relationship_health_score,
-        communicationScore:       improvedAnalysis.communication_score,
-        trustScore:               improvedAnalysis.trust_score,
-        cooperationScore:         improvedAnalysis.cooperation_score,
-        priorityRecommendation:   improvedAnalysis.priority_recommendation,
-        recommendedActions:       improvedAnalysis.recommended_actions
+        emotionAnalysis:          fallbackAnalysis.emotion_analysis,
+        conflictAnalysis:         fallbackAnalysis.conflict_analysis,
+        myPosition:               fallbackAnalysis.my_position,
+        partnerPosition:          fallbackAnalysis.partner_position,
+        relationshipHealthScore:  fallbackAnalysis.relationship_health_score,
+        communicationScore:       fallbackAnalysis.communication_score,
+        trustScore:               fallbackAnalysis.trust_score,
+        cooperationScore:         fallbackAnalysis.cooperation_score,
+        priorityRecommendation:   fallbackAnalysis.priority_recommendation,
+        recommendedActions:       fallbackAnalysis.recommended_actions
       });
-      
-      console.log('개선된 폴백 분석 완료!');
-      console.log('감정 분석:', improvedAnalysis.emotion_analysis);
-      console.log('갈등 분석:', improvedAnalysis.conflict_analysis);
     } finally {
       setIsLoading(false);
     }
@@ -372,7 +311,6 @@ const ConflictAnalysisResultPage = () => {
     }
   };
 
-  const handleGoBack = () => navigate('/mypage');
 
   // ConflictDetailPage에서 사용하는 타입 변환 함수들
   const getConflictTypeText = (type) => {
@@ -389,36 +327,6 @@ const ConflictAnalysisResultPage = () => {
     return types[type] || '기타 갈등';
   };
 
-  const getPriorityText = (priority) => {
-    const texts = {
-      RELATIONSHIP: '관계 유지',
-      SOLUTION: '문제 해결',
-      SELF_CARE: '자기 보호',
-      PREVENTION: '재발 방지',
-      NONE: '선택 안함'
-    };
-    return texts[priority] || '선택 안함';
-  };
-
-  const getEmotionText = (emotion) => {
-    const emotions = {
-      ANGER: '분노',
-      SADNESS: '슬픈', 
-      FRUSTRATION: '좌절',
-      ETC: '기타'
-    };
-    return emotions[emotion] || '기타';
-  };
-
-  const getTalkWillingnessText = (willingness) => {
-    const texts = {
-      YES: '대화하고 싶음',
-      MAYBE: '상황에 따라',
-      NO: '대화하기 어려움',
-      NONE: '선택 안함'
-    };
-    return texts[willingness] || '선택 안함';
-  };
 
   // 갈등 저장 함수
   const saveConflict = async () => {
@@ -624,9 +532,9 @@ const ConflictAnalysisResultPage = () => {
             </h3>
 
 
-            {/* 감정 분석과 갈등 분석을 나란히, 그 아래에 입장 정리 */}
+            {/* 새로운 레이아웃: 이미지 + 감정분석 위쪽, 갈등분석 아래쪽 */}
             <div className="space-y-8">
-              {/* 감정 분석과 갈등 분석 - 이미지와 나란히 */}
+              {/* 상단: 이미지와 감정 분석 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 {/* 이미지 영역 */}
                 <div className="text-center">
@@ -645,32 +553,29 @@ const ConflictAnalysisResultPage = () => {
                   </h4>
                 </div>
 
-                {/* 감정 분석과 갈등 분석 */}
-                <div className="space-y-6">
-                  {/* 감정 분석 */}
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                      <span>😊</span> 감정 분석
-                    </h4>
-                    <div 
-                      className="text-blue-700"
-                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                      dangerouslySetInnerHTML={{ __html: conflictData?.emotionAnalysis || 'AI가 감정을 분석하고 있습니다...' }}
-                    />
-                  </div>
-
-                  {/* 갈등 분석 */}
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                      <span>⚡</span> 갈등 분석
-                    </h4>
-                    <div 
-                      className="text-purple-700"
-                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                      dangerouslySetInnerHTML={{ __html: conflictData?.conflictAnalysis || 'AI가 갈등 원인을 분석하고 있습니다...' }}
-                    />
-                  </div>
+                {/* 감정 분석 */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8">
+                  <h4 className="text-xl font-bold text-blue-800 mb-6 flex items-center gap-3">
+                    <span className="text-2xl">😊</span> 감정 분석
+                  </h4>
+                  <div 
+                    className="text-blue-700"
+                    style={{ lineHeight: '1.8' }}
+                    dangerouslySetInnerHTML={{ __html: renderAnalysisData(conflictData?.emotionAnalysis) }}
+                  />
                 </div>
+              </div>
+
+              {/* 갈등 분석 - 전체 너비 */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8">
+                <h4 className="text-xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+                  <span className="text-2xl">⚡</span> 갈등 분석
+                </h4>
+                <div 
+                  className="text-purple-700"
+                  style={{ lineHeight: '1.8' }}
+                  dangerouslySetInnerHTML={{ __html: renderAnalysisData(conflictData?.conflictAnalysis) }}
+                />
               </div>
 
               {/* 입장 정리 - 감정/갈등 분석 아래로 */}
@@ -685,7 +590,7 @@ const ConflictAnalysisResultPage = () => {
                       <div 
                         className="mt-1 text-gray-700"
                         style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                        dangerouslySetInnerHTML={{ __html: conflictData?.myPosition || '내 입장을 AI가 분석해서 정리해드립니다.' }}
+                        dangerouslySetInnerHTML={{ __html: renderAnalysisData(conflictData?.myPosition) }}
                       />
                     </div>
                   </div>
@@ -695,7 +600,7 @@ const ConflictAnalysisResultPage = () => {
                       <div 
                         className="mt-1 text-gray-700"
                         style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                        dangerouslySetInnerHTML={{ __html: conflictData?.partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.' }}
+                        dangerouslySetInnerHTML={{ __html: renderAnalysisData(conflictData?.partnerPosition) }}
                       />
                     </div>
                   </div>
