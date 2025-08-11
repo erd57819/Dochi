@@ -153,6 +153,28 @@ public class AiSummaryService {
     }
     
     /**
+     * 기본 AI 분석 (구 메서드 호환성용)
+     */
+    public AiAnalysisResDto generateAnalysis(String description, ConflictType conflictType) {
+        Map<String, Object> result = generateAdvancedAnalysis(description, conflictType);
+        String summary = (String) result.getOrDefault("summary", "분석을 생성할 수 없습니다.");
+        String solutions = (String) result.getOrDefault("solutions", "해결방안을 생성할 수 없습니다.");
+        
+        return AiAnalysisResDto.builder()
+            .summary(summary)
+            .solutions(solutions)
+            .build();
+    }
+    
+    /**
+     * AI 요약 생성 (구 메서드 호환성용)
+     */
+    public String generateSummary(String description, ConflictType conflictType) {
+        Map<String, Object> result = generateAdvancedAnalysis(description, conflictType);
+        return (String) result.getOrDefault("summary", "분석을 생성할 수 없습니다.");
+    }
+    
+    /**
      * 갈등 유형을 한국어로 변환
      */
     private String getKoreanConflictType(ConflictType conflictType) {
