@@ -1,6 +1,10 @@
 import React from 'react';
 
 const SummaryTab = ({ summary }) => {
+  // 받은 데이터 확인
+  console.log('[SummaryTab] 받은 summary 데이터:', summary);
+  console.log('[SummaryTab] summary 키들:', Object.keys(summary || {}));
+  
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">종합 분석 요약</h2>
