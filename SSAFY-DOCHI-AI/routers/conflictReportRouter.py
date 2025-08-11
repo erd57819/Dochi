@@ -361,13 +361,15 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 continue
                 
             # 섹션 구분
-            if "1. 책임 비율" in line or "책임 비율" in line:
+            if ("1. 책임 비율" in line or "책임 비율" in line or 
+                "책임 분석" in line or "responsibility" in line.lower()):
                 current_section = "responsibility"
                 collecting_key_issues = False
                 collecting_immediate_actions = False
                 collecting_priority_actions = False
                 collecting_communication_tips = False
                 collecting_long_term_suggestions = False
+                print(f"[파싱] 책임 분석 섹션 시작: {line}")
             elif "2. 갈등 상황" in line or "상황 요약" in line:
                 current_section = "summary"
                 collecting_key_issues = False  
@@ -375,13 +377,15 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 collecting_priority_actions = False
                 collecting_communication_tips = False
                 collecting_long_term_suggestions = False
-            elif "3. 구체적 액션" in line or "액션 플랜" in line:
+            elif ("3. 구체적 액션" in line or "액션 플랜" in line or 
+                  "구체적 액션" in line or "action" in line.lower()):
                 current_section = "action_plans"
                 collecting_key_issues = False
                 collecting_immediate_actions = False
                 collecting_priority_actions = False
                 collecting_communication_tips = False
                 collecting_long_term_suggestions = False
+                print(f"[파싱] 액션 플랜 섹션 시작: {line}")
             elif "핵심 쟁점" in line:
                 collecting_key_issues = True
                 collecting_immediate_actions = False
@@ -396,26 +400,32 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 collecting_communication_tips = False
                 collecting_long_term_suggestions = False
                 continue  # 헤더 라인은 건너뜀
-            elif "우선순위별" in line or "행동계획" in line or "priority" in line.lower():
+            elif ("우선순위별" in line or "행동계획" in line or "priority" in line.lower() or 
+                  "행동 계획" in line or "우선순위" in line):
                 collecting_priority_actions = True
                 collecting_key_issues = False
                 collecting_immediate_actions = False
                 collecting_communication_tips = False
                 collecting_long_term_suggestions = False
+                print(f"[파싱] 우선순위 액션 섹션 시작: {line}")
                 continue
-            elif "소통 개선" in line or "communication" in line.lower():
+            elif ("소통 개선" in line or "communication" in line.lower() or 
+                  "커뮤니케이션" in line or "소통" in line):
                 collecting_communication_tips = True
                 collecting_key_issues = False
                 collecting_immediate_actions = False
                 collecting_priority_actions = False
                 collecting_long_term_suggestions = False
+                print(f"[파싱] 소통 개선 섹션 시작: {line}")
                 continue
-            elif "장기적" in line or "long" in line.lower():
+            elif ("장기적" in line or "long" in line.lower() or 
+                  "장기" in line or "향후" in line):
                 collecting_long_term_suggestions = True
                 collecting_key_issues = False
                 collecting_immediate_actions = False
                 collecting_priority_actions = False
                 collecting_communication_tips = False
+                print(f"[파싱] 장기적 제안 섹션 시작: {line}")
                 continue
             elif line.startswith('-') or line.startswith('•') or re.match(r'^\d+[\.\)]\s*', line):
                 # 항목 파싱
@@ -431,12 +441,15 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 elif collecting_priority_actions:
                     if content and "**" not in content and "3가지" not in content and len(content) > 3:
                         result["action_plans"]["priority_actions"].append(content)
+                        print(f"[파싱] 우선순위 액션 추가: {content}")
                 elif collecting_communication_tips:
                     if content and "**" not in content and "3가지" not in content and len(content) > 3:
                         result["action_plans"]["communication_tips"].append(content)
+                        print(f"[파싱] 소통 팁 추가: {content}")
                 elif collecting_long_term_suggestions:
                     if content and "**" not in content and "2가지" not in content and len(content) > 3:
                         result["action_plans"]["long_term_suggestions"].append(content)
+                        print(f"[파싱] 장기 제안 추가: {content}")
                 elif current_section == "responsibility":
                     # 책임 비율 파싱 (예: "김철수: 60%", "화자1 70%", "A 화자: 40% - 이유...")
                     for speaker in speakers:
@@ -535,7 +548,15 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
             result["responsibility"]["escalation_points"] = []
         
         # 모든 데이터는 GPT 응답에서 실제로 추출된 내용만 사용
-            
+        
+        # 최종 결과 로깅
+        print(f"[파싱 완료] 액션 플랜 데이터:")
+        print(f"  - 우선순위 액션: {len(result['action_plans']['priority_actions'])}개")
+        print(f"  - 소통 팁: {len(result['action_plans']['communication_tips'])}개")  
+        print(f"  - 장기 제안: {len(result['action_plans']['long_term_suggestions'])}개")
+        print(f"[파싱 완료] 책임 분석 데이터:")
+        print(f"  - 참가자 수: {len(result['responsibility']['responsibility_analysis']['participants'])}명")
+        
         return result
         
     except Exception as e:

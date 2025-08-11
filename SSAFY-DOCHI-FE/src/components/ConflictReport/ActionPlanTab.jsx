@@ -1,26 +1,30 @@
 import React from 'react';
 
 const ActionPlanTab = ({ actionPlans }) => {
+  // 백엔드에서 받은 데이터 확인
+  console.log('ActionPlanTab received:', actionPlans);
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">맞춤형 액션 플랜</h2>
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-light text-gray-800 mb-2">맞춤형 액션 플랜</h2>
+        <div className="w-16 h-0.5 bg-amber-600 mx-auto"></div>
+      </div>
       
-      {/* 우선순위 액션 */}
-      {actionPlans.priority_actions && actionPlans.priority_actions.length > 0 && (
-        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-orange-800 mb-4">🎯 우선순위 액션</h3>
-          <div className="space-y-3">
+      {/* 우선순위별 행동계획 */}
+      {actionPlans?.priority_actions && actionPlans.priority_actions.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-8 border-l-4 border-amber-500">
+          <h3 className="text-xl font-semibold text-amber-800 mb-6 flex items-center">
+            <span className="mr-3">🎯</span>우선순위별 행동계획
+          </h3>
+          <div className="space-y-4">
             {actionPlans.priority_actions.map((action, idx) => (
-              <div key={idx} className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{action.speaker}</p>
-                    <p className="text-gray-700 mt-1">{action.action}</p>
-                    <p className="text-sm text-gray-600 mt-2">목적: {action.purpose}</p>
-                  </div>
-                  <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded">
-                    긴급도: {action.urgency}/10
+              <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border-l-2 border-amber-300">
+                <div className="flex items-start">
+                  <span className="bg-amber-100 text-amber-800 text-sm font-semibold px-3 py-1 rounded-full mr-4">
+                    {idx + 1}
                   </span>
+                  <p className="text-gray-700 flex-1">{action}</p>
                 </div>
               </div>
             ))}
@@ -28,75 +32,56 @@ const ActionPlanTab = ({ actionPlans }) => {
         </div>
       )}
 
-      {/* 화자별 상세 플랜 */}
-      {actionPlans.individual_plans && Object.keys(actionPlans.individual_plans).length > 0 && (
-        <div className="space-y-6">
-          {Object.entries(actionPlans.individual_plans).map(([speaker, plan]) => (
-            <div key={speaker} className="border rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-[#7f5539] mb-4">{speaker}님을 위한 액션 플랜</h3>
-              
-              <div className="mb-4">
-                <p className="text-gray-700">{plan.situation_analysis}</p>
+      {/* 소통 개선 팁 */}
+      {actionPlans?.communication_tips && actionPlans.communication_tips.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 border-l-4 border-blue-500">
+          <h3 className="text-xl font-semibold text-blue-800 mb-6 flex items-center">
+            <span className="mr-3">💬</span>소통 개선 팁
+          </h3>
+          <div className="space-y-4">
+            {actionPlans.communication_tips.map((tip, idx) => (
+              <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border-l-2 border-blue-300">
+                <div className="flex items-start">
+                  <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full mr-4">
+                    {idx + 1}
+                  </span>
+                  <p className="text-gray-700 flex-1">{tip}</p>
+                </div>
               </div>
-
-              {/* 즉시 실행 항목 */}
-              {plan.immediate_actions && plan.immediate_actions.length > 0 && (
-                <div className="bg-green-50 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-green-800 mb-2">즉시 실행</h4>
-                  {plan.immediate_actions.map((action, idx) => (
-                    <div key={idx} className="mb-3">
-                      <p className="font-medium text-gray-800">{action.action}</p>
-                      {action.example && (
-                        <p className="text-sm text-gray-600 mt-1 italic">"{action.example}"</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 의사소통 전략 */}
-              {plan.communication_strategies && plan.communication_strategies.length > 0 && (
-                <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">의사소통 전략</h4>
-                  {plan.communication_strategies.map((strategy, idx) => (
-                    <div key={idx} className="mb-2">
-                      <p className="text-sm font-medium text-gray-800">{strategy.strategy}</p>
-                      {strategy.sample_phrase && (
-                        <p className="text-sm text-gray-600 mt-1">예시: "{strategy.sample_phrase}"</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 자기 성찰 질문 */}
-              {plan.self_reflection_questions && plan.self_reflection_questions.length > 0 && (
-                <div className="bg-purple-50 rounded-lg p-4">
-                  <h4 className="font-semibold text-purple-800 mb-2">스스로에게 묻기</h4>
-                  <ul className="space-y-1">
-                    {plan.self_reflection_questions.map((question, idx) => (
-                      <li key={idx} className="text-sm text-gray-700">• {question}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {/* 공통 권장사항 */}
-      {actionPlans.collective_recommendations && actionPlans.collective_recommendations.length > 0 && (
-        <div className="bg-[#f8d6b3] bg-opacity-30 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[#7f5539] mb-3">모두를 위한 권장사항</h3>
-          <ul className="space-y-2">
-            {actionPlans.collective_recommendations.map((rec, idx) => (
-              <li key={idx} className="flex items-start">
-                <span className="text-[#bf7d2c] mr-2">✓</span>
-                <span className="text-gray-700">{rec}</span>
-              </li>
+      {/* 장기적 제안 */}
+      {actionPlans?.long_term_suggestions && actionPlans.long_term_suggestions.length > 0 && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-8 border-l-4 border-green-500">
+          <h3 className="text-xl font-semibold text-green-800 mb-6 flex items-center">
+            <span className="mr-3">🌱</span>장기적 제안
+          </h3>
+          <div className="space-y-4">
+            {actionPlans.long_term_suggestions.map((suggestion, idx) => (
+              <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border-l-2 border-green-300">
+                <div className="flex items-start">
+                  <span className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full mr-4">
+                    {idx + 1}
+                  </span>
+                  <p className="text-gray-700 flex-1">{suggestion}</p>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
+        </div>
+      )}
+
+      {/* 데이터가 없을 때 표시 */}
+      {(!actionPlans?.priority_actions || actionPlans.priority_actions.length === 0) &&
+       (!actionPlans?.communication_tips || actionPlans.communication_tips.length === 0) &&
+       (!actionPlans?.long_term_suggestions || actionPlans.long_term_suggestions.length === 0) && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">💭</div>
+          <p className="text-gray-500 text-lg">액션 플랜 데이터가 생성되지 않았습니다.</p>
+          <p className="text-gray-400 text-sm mt-2">대화 내용을 바탕으로 액션 플랜을 분석 중입니다...</p>
         </div>
       )}
     </div>

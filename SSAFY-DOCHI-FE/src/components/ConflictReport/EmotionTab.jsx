@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Doughnut } from 'react-chartjs-2';
 import { useParams } from 'react-router-dom';
 
 const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
@@ -82,7 +82,7 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
         pointRadius: 2,
       },
       {
-        label: '중립',
+        label: '무표정',
         data: sampledData.map(item => item.neutral),
         borderColor: '#6B7280',
         backgroundColor: 'rgba(107, 114, 128, 0.1)',
@@ -125,7 +125,7 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
 
     const emotionNames = {
       angry: '화남', sad: '슬픔', happy: '행복', 
-      surprised: '놀람', neutral: '중립'
+      surprised: '놀람', neutral: '무표정'
     };
 
     return {
@@ -133,6 +133,34 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
       average_score: averages[dominantEmotion],
       total_samples: speakerData.length,
       averages
+    };
+  };
+
+  // 파이차트 데이터 생성
+  const getPieChartData = () => {
+    if (!emotionSummary) return null;
+
+    const emotionNames = {
+      angry: '화남', sad: '슬픔', happy: '행복', 
+      surprised: '놀람', neutral: '무표정'
+    };
+
+    const emotionColors = [
+      '#EF4444', // 화남
+      '#3B82F6', // 슬픔  
+      '#10B981', // 행복
+      '#F59E0B', // 놀람
+      '#6B7280', // 중립
+    ];
+
+    return {
+      labels: Object.keys(emotionSummary.averages).map(emotion => emotionNames[emotion]),
+      datasets: [{
+        data: Object.values(emotionSummary.averages),
+        backgroundColor: emotionColors,
+        borderWidth: 2,
+        borderColor: '#ffffff',
+      }],
     };
   };
 
@@ -168,6 +196,27 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
     interaction: {
       mode: 'index',
       intersect: false,
+    },
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return context.label + ': ' + context.parsed.toFixed(1) + '%';
+          }
+        }
+      }
     },
   };
 
@@ -209,67 +258,30 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
         </div>
       )}
 
-      {/* 감정 그래프 */}
+      {/* 감정 그래프 - 라인 차트와 파이 차트 */}
       {selectedSpeaker && getChartData() && (
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            {selectedSpeaker}님의 실시간 감정 변화 추이
+          <h3 className="text-lg font-semibold text-gray-800 mb-6">
+            {selectedSpeaker}님의 감정 분석
           </h3>
-          <div style={{ height: '400px' }}>
-            <Line data={getChartData()} options={chartOptions} />
-          </div>
-        </div>
-      )}
-
-      {/* 감정 요약 정보 */}
-      {selectedSpeaker && emotionSummary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[#f8d6b3] bg-opacity-30 rounded-lg p-4">
-            <h4 className="font-semibold text-[#7f5539] mb-2">주요 감정</h4>
-            <p className="text-2xl font-bold text-gray-800">
-              {emotionSummary.dominant_emotion}
-            </p>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-800 mb-2">평균 감정 점수</h4>
-            <p className="text-2xl font-bold text-gray-800">
-              {emotionSummary.average_score.toFixed(1)}%
-            </p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <h4 className="font-semibold text-green-800 mb-2">분석 샘플 수</h4>
-            <p className="text-2xl font-bold text-gray-800">
-              {emotionSummary.total_samples}개
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* 감정별 상세 분석 */}
-      {selectedSpeaker && emotionSummary && (
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">감정별 평균 점수</h4>
-          <div className="grid grid-cols-5 gap-4">
-            {Object.entries(emotionSummary.averages).map(([emotion, score]) => {
-              const emotionColors = {
-                angry: 'bg-red-100 text-red-800',
-                sad: 'bg-blue-100 text-blue-800',
-                happy: 'bg-green-100 text-green-800',
-                surprised: 'bg-yellow-100 text-yellow-800',
-                neutral: 'bg-gray-100 text-gray-800'
-              };
-              const emotionNames = {
-                angry: '화남', sad: '슬픔', happy: '행복',
-                surprised: '놀람', neutral: '중립'
-              };
-              
-              return (
-                <div key={emotion} className={`rounded-lg p-3 text-center ${emotionColors[emotion]}`}>
-                  <p className="text-sm font-medium">{emotionNames[emotion]}</p>
-                  <p className="text-lg font-bold">{score.toFixed(1)}%</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* 감정 변화 추이 (라인 차트) */}
+            <div>
+              <h4 className="text-md font-medium text-gray-700 mb-4">실시간 감정 변화 추이</h4>
+              <div style={{ height: '350px' }}>
+                <Line data={getChartData()} options={chartOptions} />
+              </div>
+            </div>
+            
+            {/* 감정 분포 (파이 차트) */}
+            {emotionSummary && getPieChartData() && (
+              <div>
+                <h4 className="text-md font-medium text-gray-700 mb-4">전체 감정 분포</h4>
+                <div style={{ height: '350px' }}>
+                  <Doughnut data={getPieChartData()} options={pieChartOptions} />
                 </div>
-              );
-            })}
+              </div>
+            )}
           </div>
         </div>
       )}

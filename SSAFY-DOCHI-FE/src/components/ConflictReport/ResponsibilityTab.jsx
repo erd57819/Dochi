@@ -2,6 +2,9 @@ import React from 'react';
 import { Doughnut } from 'react-chartjs-2';
 
 const ResponsibilityTab = ({ responsibilityData }) => {
+  // 백엔드에서 받은 데이터 확인
+  console.log('ResponsibilityTab received:', responsibilityData);
+  
   const getChartData = () => {
     if (!responsibilityData?.responsibility_analysis) return null;
 
@@ -70,7 +73,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
       )}
 
       {/* 갈등 고조 지점 */}
-      {responsibilityData.escalation_points && responsibilityData.escalation_points.length > 0 && (
+      {responsibilityData?.escalation_points && responsibilityData.escalation_points.length > 0 && (
         <div className="bg-red-50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-red-800 mb-3">갈등 고조 지점</h3>
           <div className="space-y-3">
@@ -83,6 +86,15 @@ const ResponsibilityTab = ({ responsibilityData }) => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* 데이터가 없을 때 표시 */}
+      {(!responsibilityData?.responsibility_analysis || Object.keys(responsibilityData.responsibility_analysis).length === 0) && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">⚖️</div>
+          <p className="text-gray-500 text-lg">책임 분석 데이터가 생성되지 않았습니다.</p>
+          <p className="text-gray-400 text-sm mt-2">대화 내용을 바탕으로 책임 비율을 분석 중입니다...</p>
         </div>
       )}
     </div>
