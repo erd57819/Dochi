@@ -698,7 +698,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-amber-50 via-white to-orange-50 mt-20 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">연결 오류</h2>
           <p className="text-gray-700 mb-4">{error}</p>
@@ -716,7 +716,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 연결 버튼 표시 조건
   if (showConnectButton && !isConnected && !isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-amber-50 via-white to-orange-50 mt-20 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-amber-300">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">화상 회의 준비</h2>
           <div className="mb-6">
@@ -746,7 +746,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-amber-50 via-white to-orange-50 mt-20 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
           <p className="text-gray-800 text-xl font-medium">연결 중...</p>
@@ -756,7 +756,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col overflow-hidden">
+    <div className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col overflow-hidden mt-20">
       {/* 헤더 */}
       <div className="bg-white shadow-lg p-4 flex-shrink-0 border-b border-amber-200">
         <div className="flex justify-between items-center">
@@ -922,11 +922,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {/* 현재 음성 */}
               {currentSpeech.text && (
-                <div className="bg-gradient-to-r from-amber-200 to-yellow-200 p-3 rounded-lg shadow-lg border-l-4 border-amber-500">
-                  <p className="text-amber-900 text-sm font-bold">
-                    🎙️ {currentSpeech.speaker} (실시간)
+                <div className="bg-gradient-to-r from-blue-100 to-blue-200 p-3 rounded-lg shadow-lg border-l-4 border-blue-400 animate-pulse">
+                  <p className="text-blue-800 text-sm font-bold flex items-center">
+                    <span className="mr-2">🎙️</span>{currentSpeech.speaker} 
+                    <span className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-full">실시간</span>
                   </p>
-                  <p className="text-gray-800 font-medium">{currentSpeech.text}</p>
+                  <p className="text-gray-800 font-medium mt-1">{currentSpeech.text}</p>
                 </div>
               )}
 
@@ -943,9 +944,17 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                   </div>
                   <p className="text-gray-800 text-sm">{conv.text}</p>
                   {conv.aiSuggestion && (
-                    <div className="mt-2 p-2 bg-gradient-to-r from-amber-600 to-amber-700 rounded shadow-lg border border-amber-800">
-                      <p className="text-white text-xs font-bold">🤖 AI 조언:</p>
-                      <p className="text-white text-sm font-medium">{conv.aiSuggestion}</p>
+                    <div className="mt-3 p-3 bg-gradient-to-br from-amber-700 via-amber-600 to-yellow-600 rounded-lg shadow-xl border-2 border-amber-800 relative">
+                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-amber-800 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✨</span>
+                      </div>
+                      <p className="text-white text-xs font-bold flex items-center mb-1">
+                        <span className="mr-1">🤖</span> AI 대화코치 조언
+                      </p>
+                      <p className="text-white text-sm font-medium leading-relaxed">{conv.aiSuggestion}</p>
+                      <div className="mt-2 text-right">
+                        <span className="text-amber-200 text-xs opacity-80">powered by AI</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -962,7 +971,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <button
             onClick={toggleMicrophone}
             className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isMicOn ? 'bg-green-500 hover:bg-green-600 border-2 border-green-300' : 'bg-red-500 hover:bg-red-600 border-2 border-red-300'
+              isMicOn ? 'bg-amber-600 hover:bg-amber-700 border-2 border-amber-400' : 'bg-amber-300 hover:bg-amber-400 border-2 border-amber-200'
             }`}
             title={isMicOn ? '마이크 끄기' : '마이크 켜기'}
           >
@@ -973,7 +982,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <button
             onClick={toggleVideo}
             className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isCameraOn ? 'bg-blue-500 hover:bg-blue-600 border-2 border-blue-300' : 'bg-red-500 hover:bg-red-600 border-2 border-red-300'
+              isCameraOn ? 'bg-amber-700 hover:bg-amber-800 border-2 border-amber-500' : 'bg-amber-300 hover:bg-amber-400 border-2 border-amber-200'
             }`}
             title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
           >
@@ -984,7 +993,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <button
             onClick={toggleRecording}
             className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isRecording ? 'bg-red-500 hover:bg-red-600 border-2 border-red-300' : 'bg-gray-400 hover:bg-gray-500 border-2 border-gray-300'
+              isRecording ? 'bg-amber-800 hover:bg-amber-900 border-2 border-amber-600' : 'bg-amber-200 hover:bg-amber-300 border-2 border-amber-100 text-amber-800'
             }`}
             title={isRecording ? '녹화 중지' : '녹화 시작'}
           >
@@ -994,10 +1003,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           {/* 소음 억제 토글 */}
           <button
             onClick={toggleNoiseSuppression}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
               noiseSuppressionEnabled
-                ? 'bg-purple-500 hover:bg-purple-600 border-2 border-purple-300'
-                : 'bg-gray-400 hover:bg-gray-500 border-2 border-gray-300'
+                ? 'bg-amber-600 hover:bg-amber-700 border-2 border-amber-400 text-white'
+                : 'bg-amber-100 hover:bg-amber-200 border-2 border-amber-200 text-amber-700'
             }`}
             title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
           >
