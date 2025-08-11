@@ -277,7 +277,7 @@ const NoticePage = () => {
   const selectedCategoryData = categories.find(cat => cat.value === selectedCategory);
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ zoom: '0.75' }}>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ zoom: '0.85' }}>
       {/* 전체 배경 컨테이너 */}
       <div className="absolute inset-0">
         {/* 상단 배경 */}
@@ -306,7 +306,7 @@ const NoticePage = () => {
             <img src={hedgehogImg} alt="갈등도치" className="w-10 h-10" />
             <div>
               <h3 className="text-4xl font-bold" style={{ color: '#333333' }}>
-                {selectedCategoryData?.label || '전체'} 공지사항
+                {selectedCategoryData?.label === '공지사항' ? '공지사항' : `${selectedCategoryData?.label || '전체'} 공지사항`}
               </h3>
               <p className="text-base" style={{ color: '#666666' }}>
                 총 {filteredNotices.length}건의 공지사항
