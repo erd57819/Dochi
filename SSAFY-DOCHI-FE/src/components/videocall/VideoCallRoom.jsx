@@ -694,7 +694,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 mt-20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">연결 오류</h2>
           <p className="text-gray-700 mb-4">{error}</p>
@@ -712,7 +712,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 연결 버튼 표시 조건
   if (showConnectButton && !isConnected && !isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 mt-20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-amber-300">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">화상 회의 준비</h2>
           <div className="mb-6">
@@ -742,7 +742,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 mt-20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
           <p className="text-gray-800 text-xl font-medium">연결 중...</p>
@@ -752,7 +752,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col overflow-hidden mt-20">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col overflow-hidden">
       {/* 헤더 */}
       <div className="bg-white shadow-lg p-4 flex-shrink-0 border-b border-amber-200">
         <div className="flex justify-between items-center">
