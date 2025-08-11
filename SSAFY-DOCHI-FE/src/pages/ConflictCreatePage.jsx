@@ -205,7 +205,7 @@ const ConflictCreatePage = () => {
 
       if (response.ok) {
         alert('갈등 카드가 성공적으로 생성되었습니다! 🦔');
-        navigate('/conflicts');
+        navigate('/mypage');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || '갈등 카드 생성에 실패했습니다.');
@@ -253,34 +253,37 @@ const ConflictCreatePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
       <div className="max-w-6xl mx-auto px-4 py-12">
-        {/* 갈등 목록으로 돌아가기 버튼 - 맨 위 */}
-        <div className="mb-8">
-          <span
-            onClick={() => navigate('/conflicts')}
-            className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
-          >
-            ← 갈등 목록으로 돌아가기
-          </span>
+        {/* 상단 네비게이션 및 제목 */}
+        <div className="relative mb-8">
+          <div className="absolute left-0 top-0">
+            <span
+              onClick={() => navigate('/mypage')}
+              className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer"
+            >
+              ← 갈등 목록으로 돌아가기
+            </span>
+          </div>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-800 mb-1">
+              <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+                {stepInfo.title}
+              </span>
+            </h1>
+            <p className="text-sm text-gray-600">
+              {stepInfo.description}
+            </p>
+          </div>
         </div>
         
-        {/* 헤더 */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-gray-800 mb-1">
-            <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-              {stepInfo.title}
-            </span>
-          </h1>
-          <p className="text-sm text-gray-600 mb-4">
-            {stepInfo.description}
-          </p>
-          {/* Progress Indicator */}
+        {/* Progress Indicator */}
+        <div className="text-center mb-6">
           <ProgressIndicator currentStep={currentStep} totalSteps={4} />
         </div>
 
         {/* Main Content Area */}
         <div className="bg-white rounded-3xl p-8 pt-4 min-h-[700px] relative" style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }}>
           {/* 고슴도치 이미지 - 왼쪽 하단 */}
-          <div className="absolute bottom-6 left-6 z-0">
+          <div className="absolute bottom-6 left-6" style={{ zIndex: -1 }}>
             <img src={hedgehogImg} alt="고슴도치" className="w-48 h-48 object-contain opacity-80" />
           </div>
           {/* Step 1: 갈등 유형 */}

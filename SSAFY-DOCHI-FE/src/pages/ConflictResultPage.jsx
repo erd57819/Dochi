@@ -36,7 +36,7 @@ const ConflictResultPage = () => {
   };
 
   const handleGoBack = () => {
-    navigate('/conflicts');
+    navigate('/mypage');
   };
 
   const handleNewConflict = () => {

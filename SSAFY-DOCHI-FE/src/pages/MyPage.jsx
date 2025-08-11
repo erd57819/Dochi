@@ -114,7 +114,21 @@ const MyPage = () => {
             <ConflictCard
               key={`conflict-${conflict.id}`}
               type="normal"
-              date={conflict.formattedDate || conflict.createdAt}
+              date={(() => {
+                const dateData = conflict.createdAt;
+                if (!dateData) return '등록일 미상';
+                
+                // LocalDateTime 배열 형식: [2025, 8, 10, 22, 35, 29]
+                if (Array.isArray(dateData) && dateData.length >= 3) {
+                  const [year, month, day] = dateData;
+                  const date = new Date(year, month - 1, day); // JS는 month가 0부터 시작
+                  return date.toLocaleDateString('ko-KR');
+                }
+                
+                // 다른 형식일 경우
+                return new Date(dateData).toLocaleDateString('ko-KR');
+              })()
+              }
               title={conflict.title || conflict.description || "갈등 내용"}
               buttonText="자세히 보기"
               onButtonClick={() => handleCardClick(conflict.id)}

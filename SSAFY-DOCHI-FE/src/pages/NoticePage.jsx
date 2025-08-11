@@ -299,16 +299,16 @@ const NoticePage = () => {
       </div>
       
       {/* 메인 컨텐츠 */}
-      <main className="max-w-6xl mx-auto px-4 py-12 relative z-10">
+      <main className="max-w-5xl mx-auto px-3 py-10 relative z-10">
         {/* 상단 인사말 */}
-        <div className="flex flex-row items-center justify-between text-4xl font-bold mb-5 p-2" style={{ color: '#8B4513' }}>
+        <div className="flex flex-row items-center justify-between text-3xl font-bold mb-4 p-2" style={{ color: '#8B4513' }}>
           <div className="flex items-center gap-4">
-            <img src={hedgehogImg} alt="갈등도치" className="w-12 h-12" />
+            <img src={hedgehogImg} alt="갈등도치" className="w-10 h-10" />
             <div>
-              <h3 className="text-5xl font-bold" style={{ color: '#333333' }}>
+              <h3 className="text-4xl font-bold" style={{ color: '#333333' }}>
                 {selectedCategoryData?.label || '전체'} 공지사항
               </h3>
-              <p className="text-lg" style={{ color: '#666666' }}>
+              <p className="text-base" style={{ color: '#666666' }}>
                 총 {filteredNotices.length}건의 공지사항
               </p>
             </div>
@@ -317,7 +317,7 @@ const NoticePage = () => {
           {isLoggedIn && user && isAdmin && (
             <button
               onClick={handleCreateNotice}
-              className="px-6 py-3 text-white text-xl font-bold rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              className="px-5 py-2 text-white text-lg font-bold rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
               style={{
                 background: 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)'
               }}
@@ -344,7 +344,7 @@ const NoticePage = () => {
 
           {/* 왼쪽: 카테고리 목록 */}
           <div className="w-1/4">
-            <div className="space-y-3 mb-8 bg-white p-2 rounded-lg">
+            <div className="space-y-2 mb-6 bg-white p-2 rounded-lg">
               {categories.map((category) => (
                 <div
                   key={category.value}
@@ -373,7 +373,7 @@ const NoticePage = () => {
                 >
                   <div className="flex items-center pl-5 gap-4">
                     <div>
-                      <h4 className="font-bold text-lg" style={{ color: 'inherit' }}>{category.label}</h4>
+                      <h4 className="font-bold text-base" style={{ color: 'inherit' }}>{category.label}</h4>
                     </div>
                   </div>
                 </div>
@@ -381,9 +381,9 @@ const NoticePage = () => {
             </div>
             
             {/* 공지사항 가이드 */}
-            <div className="bg-white rounded p-6">
-              <h4 className="font-bold text-xl mb-4" style={{ color: '#8B4513' }}>📰 공지사항 가이드</h4>
-              <ul className="space-y-3" style={{ color: '#666666' }}>
+            <div className="bg-white rounded p-5">
+              <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>📰 공지사항 가이드</h4>
+              <ul className="space-y-2" style={{ color: '#666666' }}>
                 <li className="flex items-center gap-2">
                   <span style={{ color: '#BF7D2C' }}>•</span>
                   중요한 업데이트 확인
@@ -425,7 +425,7 @@ const NoticePage = () => {
                     return (
                       <div
                         key={notice.id}
-                        className="px-6 py-6 cursor-pointer transition-all duration-100 hover:bg-orange-50 rounded-r-lg"
+                        className="px-5 py-5 cursor-pointer transition-all duration-100 hover:bg-orange-50 rounded-r-lg"
                         onClick={() => {
                           if (isLongContent(notice.content)) {
                             toggleNoticeExpansion(notice.id);
@@ -443,7 +443,7 @@ const NoticePage = () => {
                               {noticeCategoryData?.label || notice.category}
                             </span>
                             <h4
-                              className="text-2xl font-bold transition-colors truncate"
+                              className="text-xl font-bold transition-colors truncate"
                               style={{ color: '#333333' }}
                             >
                               {notice.title}
@@ -469,7 +469,7 @@ const NoticePage = () => {
                         
                         <div className="flex justify-between pl-2">
                           <div>
-                          <p className="text-gray-600 text-base mb-3 leading-relaxed whitespace-pre-wrap">
+                          <p className="text-gray-600 text-sm mb-2 leading-relaxed whitespace-pre-wrap">
                             {getTruncatedContent(notice.content, expandedNotices.has(notice.id))}
                           </p>
                           </div>
@@ -479,14 +479,14 @@ const NoticePage = () => {
                               <div className="flex gap-2">
                                 <button
                                   onClick={(e) => handleEditNotice(notice, e)}
-                                  className="px-3 py-1 w-14 h-9 text-sm font-medium text-white rounded-md transition-all duration-100 hover:scale-105"
+                                  className="px-2 py-1 w-12 h-8 text-xs font-medium text-white rounded-md transition-all duration-100 hover:scale-105"
                                   style={{ backgroundColor: '#CD9F6E' }}
                                 >
                                   수정
                                 </button>
                                 <button
                                   onClick={(e) => handleDeleteNotice(notice.id, e)}
-                                  className="px-3 py-1 w-14 h-9 text-sm font-medium text-white rounded-md transition-all duration-100 hover:scale-105"
+                                  className="px-2 py-1 w-12 h-8 text-xs font-medium text-white rounded-md transition-all duration-100 hover:scale-105"
                                   style={{ backgroundColor: '#EE9278' }}
                                 >
                                   삭제
@@ -509,11 +509,11 @@ const NoticePage = () => {
       {/* 공지사항 생성/수정 모달 */}
       {showModal && (
         <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 p-4">
-          <div className="bg-orange-50 rounded-md max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-orange-50 rounded-md max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-5">
               {/* 모달 헤더 */}
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-4xl font-bold" style={{ color: '#8B4513' }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold" style={{ color: '#8B4513' }}>
                   {editingNotice ? '공지사항 수정' : '공지사항 작성'}
                 </h2>
                 <button
@@ -526,7 +526,7 @@ const NoticePage = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSaveNotice} className="space-y-4">
+              <form onSubmit={handleSaveNotice} className="space-y-3">
                 {/* 카테고리 선택 */}
                 <div>
                   <label className="block text-md font-medium text-gray-700 mb-2">
@@ -536,7 +536,7 @@ const NoticePage = () => {
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border bg-gry-50 border-orange-700 text-xl text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 focus:bg-orange-100"
+                    className="w-full px-3 py-2 border bg-gry-50 border-orange-700 text-lg text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 focus:bg-orange-100"
                     required
                   >
                     <option value="ANNOUNCEMENT">공지사항</option>
@@ -555,7 +555,7 @@ const NoticePage = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-orange-700 text-xl text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 "
+                    className="w-full px-3 py-2 border border-orange-700 text-lg text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 "
                     placeholder="공지사항 제목을 입력해주세요"
                     required
                   />
@@ -571,7 +571,7 @@ const NoticePage = () => {
                     value={formData.content}
                     onChange={handleInputChange}
                     rows={8}
-                    className="w-full px-4 py-4 border border-orange-700 text-xl text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 resize-none"
+                    className="w-full px-3 py-3 border border-orange-700 text-lg text-gray-600 hover:text-gray-800 rounded focus:ring-orange-700 resize-none"
                     placeholder="공지사항 내용을 입력해주세요"
                     required
                   />

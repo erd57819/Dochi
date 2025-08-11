@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Room, RoomEvent, Track } from 'livekit-client';
 import useAuthStore from '../../stores/AuthStore';
-import { useOpenVidu } from '../../hooks/useOpenVidu';
+import apiClient from '../../config/axios';
 import { useSTT } from '../../hooks/useSTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
 
@@ -17,18 +18,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // 설정 - URL에서 방 ID 추출
-  const getRoomIdFromUrl = () => {
+  // 설정 - URL에서 방 ID 추출 (한 번만 계산)
+  const extractedFromUrl = useMemo(() => {
     const pathSegments = window.location.pathname.split('/');
     const extractedRoomId = pathSegments[pathSegments.length - 1] || 'test-room';
     console.log('URL에서 추출한 Room ID:', extractedRoomId);
     console.log('현재 URL:', window.location.pathname);
     console.log('Path segments:', pathSegments);
     return extractedRoomId;
-  };
+  }, [window.location.pathname]);
   
-  const roomName = roomCodeFromUrl || getRoomIdFromUrl();
-  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl: getRoomIdFromUrl() });
+  const roomName = roomCodeFromUrl || extractedFromUrl;
+  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl });
   // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
   const getUserIdentifier = () => {
     if (!isLoggedIn || !user) return '게스트';
@@ -48,18 +49,257 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const timerInterval = useRef(null);
   const maxCallDuration = 30 * 60 * 1000; // 30분 (밀리초)
 
-  // OpenVidu 훅 사용
-  const openViduHook = useOpenVidu(roomName, participantName, isGuestMode);
-  const {
-    room, isConnected, participants, localVideoTrack, localAudioTrack, error,
-    speakingParticipants, isLocalSpeaking, lastSpeaker, isMicOn, isCameraOn, noiseSuppressionEnabled,
-    localVideoRef, remoteVideoRefs, remoteAudioRefs, pendingVideoTracks, pendingAudioTracks,
-    joinRoom, leaveRoom: openViduLeaveRoom, toggleMicrophone, toggleVideo, toggleNoiseSuppression,
-    updateParticipants, attachTrack
-  } = openViduHook;
+  // LiveKit 상태 (백업 파일 방식)
+  const [room, setRoom] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [localVideoTrack, setLocalVideoTrack] = useState(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showConnectButton, setShowConnectButton] = useState(true); // 연결 버튼 표시 상태
 
-  // 실제 방 ID 얻기 (연결된 room 객체에서)
-  const actualRoomId = room?.name || roomName;
+  const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
+  const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
+  const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
+
+  const [isMicOn, setIsMicOn] = useState(false);  // 초기 상태: OFF
+  const [isCameraOn, setIsCameraOn] = useState(false);  // 초기 상태: OFF
+
+  // LiveKit URL
+  const LIVEKIT_URL = window.location.hostname === 'localhost' 
+    ? 'ws://localhost:7880'
+    : 'wss://i13c209.p.ssafy.io/livekit';
+  const API_BASE_URL = '';
+
+  // 참조들
+  const localVideoRef = useRef(null);
+  const remoteVideoRefs = useRef(new Map());
+  const remoteAudioRefs = useRef(new Map());
+  const pendingVideoTracks = useRef(new Map());
+  const pendingAudioTracks = useRef(new Map());
+
+  // 실제 방 ID 얻기 (연결된 room 객체에서) - 메모이제이션으로 최적화
+  const actualRoomId = useMemo(() => {
+    const id = room?.name || roomName;
+    console.log('actualRoomId 계산:', id, { roomName, roomObjectName: room?.name });
+    return id;
+  }, [room?.name, roomName]);
+
+  // LiveKit 방 연결 함수 (백업 파일 방식)
+  const connectToRoom = async () => {
+    try {
+      setError(null);
+      setIsLoading(true);
+
+      let accessToken;
+      const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
+      
+      if (isGuestMode || !isLoggedIn) {
+        const response = await fetch(`${API_BASE_URL}/api/video/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            room: roomName,
+            identity: identity
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('토큰 생성에 실패했습니다');
+        }
+
+        const data = await response.json();
+        accessToken = data.accessToken;
+      } else {
+        const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
+        accessToken = response.data.data.token;
+      }
+
+      const newRoom = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+        publishDefaults: {
+          simulcast: false,
+          videoCodec: 'h264'
+        }
+      });
+
+      await newRoom.connect(LIVEKIT_URL, accessToken);
+      
+      // 참가자 수 체크 (나 + 상대방 = 최대 2명)
+      const totalParticipants = Array.from(newRoom.remoteParticipants.values()).length + 1; // +1은 나 자신
+      if (totalParticipants > 2) {
+        throw new Error('이미 2명이 참여 중입니다. 1:1 대화방은 최대 2명까지만 참여할 수 있습니다.');
+      }
+      
+      // 초기에는 카메라/마이크 비활성화 상태로 시작
+      // 사용자가 토글 버튼으로 직접 켜야 함
+      console.log('방 연결 완료 - 카메라/마이크는 비활성화 상태로 시작');
+
+      // 이벤트 리스너 설정
+      setupRoomEventListeners(newRoom);
+      
+      setRoom(newRoom);
+      setIsConnected(true);
+
+      // 기존 참가자들 처리 (백업 파일 방식)
+      const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
+      setParticipants(remoteParticipants);
+
+      // 기존 참가자들의 트랙을 수동으로 연결 (나중에 들어온 사람이 먼저 들어온 사람 볼 수 있도록)
+      remoteParticipants.forEach(participant => {
+        console.log('기존 참가자 트랙 연결:', participant.identity);
+        
+        // 비디오 트랙 연결
+        participant.videoTrackPublications.forEach(publication => {
+          if (publication.track) {
+            console.log('기존 참가자 비디오 트랙 발견:', participant.identity);
+            const videoRef = remoteVideoRefs.current.get(participant.sid);
+            if (videoRef?.current) {
+              publication.track.attach(videoRef.current);
+              console.log('기존 참가자 비디오 트랙 연결 완료:', participant.identity);
+            } else {
+              // 아직 ref가 없으면 pending에 저장
+              pendingVideoTracks.current.set(participant.sid, publication.track);
+              console.log('기존 참가자 비디오 트랙 pending 저장:', participant.identity);
+            }
+          }
+        });
+
+        // 오디오 트랙 연결
+        participant.audioTrackPublications.forEach(publication => {
+          if (publication.track) {
+            console.log('기존 참가자 오디오 트랙 발견:', participant.identity);
+            const audioRef = remoteAudioRefs.current.get(participant.sid);
+            if (audioRef?.current) {
+              publication.track.attach(audioRef.current);
+              console.log('기존 참가자 오디오 트랙 연결 완료:', participant.identity);
+            } else {
+              // 아직 ref가 없으면 pending에 저장
+              pendingAudioTracks.current.set(participant.sid, publication.track);
+              console.log('기존 참가자 오디오 트랙 pending 저장:', participant.identity);
+            }
+          }
+        });
+      });
+
+    } catch (error) {
+      console.error('방 연결 실패:', error);
+      setError(`연결 실패: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 방 이벤트 리스너 설정
+  const setupRoomEventListeners = (room) => {
+    room.on(RoomEvent.ParticipantConnected, (participant) => {
+      console.log('참가자 연결됨:', participant.identity);
+      
+      // 1:1 대화방 제한 체크 (나 + 상대방 = 최대 2명)
+      const totalParticipants = Array.from(room.remoteParticipants.values()).length + 1; // +1은 나 자신
+      if (totalParticipants > 2) {
+        console.log('최대 인원 초과로 새 참가자를 거부합니다.');
+        // 초과된 참가자에게 알림 (참가자 본인이 볼 수 있도록)
+        if (participant.identity !== room.localParticipant.identity) {
+          alert('이 대화방은 1:1 대화방으로 최대 2명까지만 참여할 수 있습니다.');
+        }
+        return;
+      }
+      
+      setParticipants(prev => [...prev, participant]);
+    });
+
+    room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      console.log('참가자 연결 해제됨:', participant.identity);
+      setParticipants(prev => prev.filter(p => p.sid !== participant.sid));
+      
+      // 1:1 통화에서 상대방이 나가면 자동으로 통화 종료 제안
+      const remainingParticipants = Array.from(room.remoteParticipants.values());
+      if (remainingParticipants.length === 0) {
+        console.log('모든 참가자가 나갔습니다.');
+        
+        setTimeout(() => {
+          const shouldExit = window.confirm(
+            '상대방이 통화를 종료했습니다.\n\n' +
+            '통화를 종료하시겠습니까?\n' +
+            '(취소를 누르면 대기실에 남아있습니다)'
+          );
+          
+          if (shouldExit) {
+            handleLeaveRoom(true);
+          } else {
+            console.log('사용자가 대기실에 남기를 선택했습니다.');
+          }
+        }, 3000);
+      }
+    });
+
+    room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      console.log('트랙 구독됨:', track.kind, participant.identity);
+      
+      if (track.kind === Track.Kind.Video) {
+        const videoRef = remoteVideoRefs.current.get(participant.sid);
+        if (videoRef?.current) {
+          track.attach(videoRef.current);
+        } else {
+          pendingVideoTracks.current.set(participant.sid, track);
+        }
+      } else if (track.kind === Track.Kind.Audio) {
+        const audioRef = remoteAudioRefs.current.get(participant.sid);
+        if (audioRef?.current) {
+          track.attach(audioRef.current);
+        } else {
+          pendingAudioTracks.current.set(participant.sid, track);
+        }
+      }
+    });
+
+    room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+      console.log('트랙 구독 해제됨:', track.kind, participant.identity);
+    });
+  };
+
+  // 참가자 비디오 참조 생성
+  const createParticipantVideoRef = (participantSid) => {
+    if (!remoteVideoRefs.current.has(participantSid)) {
+      remoteVideoRefs.current.set(participantSid, React.createRef());
+      
+      // 대기 중인 비디오 트랙이 있으면 연결
+      const pendingVideoTrack = pendingVideoTracks.current.get(participantSid);
+      if (pendingVideoTrack) {
+        setTimeout(() => {
+          const videoRef = remoteVideoRefs.current.get(participantSid);
+          if (videoRef?.current) {
+            pendingVideoTrack.attach(videoRef.current);
+          }
+        }, 100);
+        pendingVideoTracks.current.delete(participantSid);
+      }
+    }
+    return remoteVideoRefs.current.get(participantSid);
+  };
+
+  // 참가자 오디오 참조 생성
+  const createParticipantAudioRef = (participantSid) => {
+    if (!remoteAudioRefs.current.has(participantSid)) {
+      remoteAudioRefs.current.set(participantSid, React.createRef());
+      
+      // 대기 중인 오디오 트랙이 있으면 연결
+      const pendingAudioTrack = pendingAudioTracks.current.get(participantSid);
+      if (pendingAudioTrack) {
+        setTimeout(() => {
+          const audioRef = remoteAudioRefs.current.get(participantSid);
+          if (audioRef?.current) {
+            pendingAudioTrack.attach(audioRef.current);
+          }
+        }, 100);
+        pendingAudioTracks.current.delete(participantSid);
+      }
+    }
+    return remoteAudioRefs.current.get(participantSid);
+  };
 
   // STT 훅 사용 (실제 방 ID 사용)
   const sttHook = useSTT(actualRoomId, participantName);
@@ -96,14 +336,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       return;
     }
 
-    // 로그인된 사용자 또는 게스트는 바로 룸 참가
-    if (!room && (isLoggedIn || isGuestMode)) {
-      console.log('룸 참가 시작...', { isLoggedIn, isGuestMode, participantName });
-      joinRoom();
-      
-      // 통화 시작 시간 기록
-      setCallStartTime(Date.now());
+    // 로그인 사용자도 연결 버튼 표시
+    if (isLoggedIn && !isGuestMode) {
+      setShowConnectButton(true);
     }
+
+    // 자동 연결 제거 - 수동 연결 버튼 방식으로 변경
 
     return () => {
       handleLeaveRoom();
@@ -151,16 +389,36 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   }, []);
 
-  // 표정 분석 시작 (로컬 비디오가 준비되면)
+  // 로컬 비디오 연결 (백업 파일 방식)
   useEffect(() => {
-    if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
-      startEmotionDetection(localVideoRef.current);
+    if (localVideoTrack && localVideoRef.current) {
+      const mediaStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
+      localVideoRef.current.srcObject = mediaStream;
+      localVideoRef.current.muted = true;
+      localVideoRef.current.play().catch(console.error);
+      
+      // 비디오 메타데이터가 로드되면 표정 분석 시작
+      const handleLoadedMetadata = async () => {
+        console.log('비디오 메타데이터 로드됨, 표정 분석 시작');
+        await startEmotionDetection(localVideoRef.current);
+      };
+      
+      localVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+      
+      return () => {
+        if (localVideoRef.current) {
+          localVideoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        }
+      };
     }
+  }, [localVideoTrack]);
 
+  // 표정 분석 정리 (컴포넌트 언마운트시)
+  useEffect(() => {
     return () => {
       stopEmotionDetection();
     };
-  }, [localVideoTrack, localVideoRef.current]);
+  }, []);
 
   // 마이크 상태에 따른 STT 자동 연동
   useEffect(() => {
@@ -222,47 +480,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   };
 
-  // 참가자 비디오 참조 생성
-  const createParticipantVideoRef = (participantSid) => {
-    if (!remoteVideoRefs.current.has(participantSid)) {
-      remoteVideoRefs.current.set(participantSid, React.createRef());
-      
-      // 대기 중인 비디오 트랙이 있으면 연결
-      const pendingVideoTrack = pendingVideoTracks.current.get(participantSid);
-      if (pendingVideoTrack) {
-        setTimeout(() => {
-          const videoRef = remoteVideoRefs.current.get(participantSid);
-          if (videoRef?.current) {
-            videoRef.current.srcObject = pendingVideoTrack;
-            videoRef.current.play().catch(console.error);
-          }
-        }, 100);
-        pendingVideoTracks.current.delete(participantSid);
-      }
-    }
-    return remoteVideoRefs.current.get(participantSid);
-  };
-
-  // 참가자 오디오 참조 생성
-  const createParticipantAudioRef = (participantSid) => {
-    if (!remoteAudioRefs.current.has(participantSid)) {
-      remoteAudioRefs.current.set(participantSid, React.createRef());
-      
-      // 대기 중인 오디오 트랙이 있으면 연결
-      const pendingAudioTrack = pendingAudioTracks.current.get(participantSid);
-      if (pendingAudioTrack) {
-        setTimeout(() => {
-          const audioRef = remoteAudioRefs.current.get(participantSid);
-          if (audioRef?.current) {
-            audioRef.current.srcObject = pendingAudioTrack;
-            audioRef.current.play().catch(console.error);
-          }
-        }, 100);
-        pendingAudioTracks.current.delete(participantSid);
-      }
-    }
-    return remoteAudioRefs.current.get(participantSid);
-  };
 
   // 게스트로 참가
   const handleGuestJoin = () => {
@@ -274,6 +491,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setParticipantName(guestNickname);
     setIsGuestMode(true);
     setShowGuestModal(false);
+    setShowConnectButton(true); // 연결 버튼 표시
+  };
+
+  // 연결 시작 버튼 클릭
+  const handleStartConnection = async () => {
+    setShowConnectButton(false);
+    setCallStartTime(Date.now());
+    await connectToRoom();
   };
 
   // 로그인 페이지로 이동
@@ -286,6 +511,66 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setIsRecording(!isRecording);
   };
 
+  // 마이크 토글
+  const toggleMicrophone = async () => {
+    if (!room) return;
+
+    try {
+      if (isMicOn) {
+        // 마이크 끄기
+        await room.localParticipant.setMicrophoneEnabled(false);
+        console.log('마이크 비활성화');
+      } else {
+        // 마이크 켜기 (첫 번째 활성화 시 미디어 권한 요청)
+        await room.localParticipant.setMicrophoneEnabled(true);
+        console.log('마이크 활성화');
+        
+        // 오디오 트랙 참조 저장
+        const audioPublication = Array.from(room.localParticipant.audioTrackPublications.values())[0];
+        if (audioPublication?.track) {
+          setLocalAudioTrack(audioPublication.track);
+        }
+      }
+      setIsMicOn(!isMicOn);
+    } catch (error) {
+      console.error('마이크 토글 실패:', error);
+      alert('마이크 권한이 필요합니다. 브라우저 설정에서 마이크 접근을 허용해주세요.');
+    }
+  };
+
+  // 비디오 토글
+  const toggleVideo = async () => {
+    if (!room) return;
+
+    try {
+      if (isCameraOn) {
+        // 카메라 끄기
+        await room.localParticipant.setCameraEnabled(false);
+        console.log('카메라 비활성화');
+      } else {
+        // 카메라 켜기 (첫 번째 활성화 시 미디어 권한 요청)
+        await room.localParticipant.setCameraEnabled(true);
+        console.log('카메라 활성화');
+        
+        // 비디오 트랙 참조 저장
+        const videoPublication = Array.from(room.localParticipant.videoTrackPublications.values())[0];
+        if (videoPublication?.track) {
+          setLocalVideoTrack(videoPublication.track);
+        }
+      }
+      setIsCameraOn(!isCameraOn);
+    } catch (error) {
+      console.error('비디오 토글 실패:', error);
+      alert('카메라 권한이 필요합니다. 브라우저 설정에서 카메라 접근을 허용해주세요.');
+    }
+  };
+
+  // 소음 억제 토글
+  const toggleNoiseSuppression = () => {
+    setNoiseSuppressionEnabled(!noiseSuppressionEnabled);
+    console.log('소음 억제:', !noiseSuppressionEnabled ? 'ON' : 'OFF');
+  };
+
   // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
   const handleLeaveRoom = async (isEndCall = false) => {
     // STT 정리
@@ -294,8 +579,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     // 표정 분석 정리
     stopEmotionDetection();
 
-    // OpenVidu 룸 나가기 (최종 감정 데이터 전송 포함)
-    await openViduLeaveRoom(sendFinalEmotionData);
+    // Room 연결 해제
+    if (room) {
+      await sendFinalEmotionData();
+      room.disconnect();
+      setRoom(null);
+      setIsConnected(false);
+    }
 
     // 종료 버튼 클릭 시에만 갈등 레포트로 이동
     if (isEndCall) {
@@ -374,6 +664,37 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     );
   }
 
+  // 연결 버튼 표시 조건
+  if (showConnectButton && !isConnected && !isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">화상 회의 준비</h2>
+          <div className="mb-6">
+            <p className="text-gray-300 mb-2">룸: <span className="font-semibold text-white">{roomName}</span></p>
+            <p className="text-gray-300">
+              참가자: <span className="font-semibold text-white">{isGuestMode ? `게스트 ${participantName}` : participantName}</span>
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={handleStartConnection}
+              className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              🎥 연결 시작하기
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              나가기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -428,9 +749,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         {/* 비디오 그리드 */}
         <div className="flex-1 relative">
           <div className={`h-full grid gap-2 p-4 ${
-            participants.length === 0 ? 'grid-cols-1' :
-            participants.length === 1 ? 'grid-cols-2' :
-            'grid-cols-2 grid-rows-2'
+            participants.length === 0 ? 'grid-cols-1' : 'grid-cols-2'
           }`}>
             
             {/* 로컬 비디오 */}

@@ -200,16 +200,16 @@ const CommunityPage = () => {
         </div>
 
         {/* 메인 컨텐츠 */}
-        <main className="max-w-6xl mx-auto px-4 py-12 relative z-10">
+        <main className="max-w-5xl mx-auto px-3 py-10 relative z-10">
 
           {/* 상단 인사말 및 글쓰기 버튼 */}
-          <div className="flex flex-row items-center justify-between text-4xl font-bold mb-5 py-2 px-8" style={{ color: '#8B4513' }}>
+          <div className="flex flex-row items-center justify-between text-3xl font-bold mb-4 py-2 px-6" style={{ color: '#8B4513' }}>
             <div className="flex items-center gap-4">
               <div>
-                <h3 className="text-5xl font-bold" style={{ color: '#333333' }}>
+                <h3 className="text-4xl font-bold" style={{ color: '#333333' }}>
                   {selectedCategoryData?.label || '전체'} 게시글
                 </h3>
-                <p className="text-lg" style={{ color: '#666666' }}>
+                <p className="text-base" style={{ color: '#666666' }}>
                   총 {posts.length} 슴도치
                 </p>
               </div>
@@ -220,10 +220,9 @@ const CommunityPage = () => {
               {isLoggedIn ? (
                   <Link
                       to="/community/create"
-                      className="w-32 h-12 block flex items-center justify-center py-4 rounded hover:opacity-80 transition-all transform hover:bg-orange-50 font-medium text-lg"
+                      className="w-20 h-8 block flex items-center justify-center py-1 rounded hover:opacity-80 transition-all transform hover:bg-orange-50 font-medium text-xs"
                       style={{ 
-                        background: 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
-                        boxShadow: '0 4px 15px rgba(139, 69, 19, 0.3)'
+                        backgroundColor: '#8B4513'
                       }}
                   >
                     <span className='text-white'>글쓰기</span>
@@ -231,7 +230,7 @@ const CommunityPage = () => {
               ) : (
                   <Link
                       to="/login"
-                      className="w-full block text-center py-4 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-lg"
+                      className="w-full block text-center py-3 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-base"
                       style={{ backgroundColor: '#696969' }}
                   >
                     로그인하여 글쓰기
@@ -243,7 +242,7 @@ const CommunityPage = () => {
           <div className="flex flex-wrap justify-between gap-5" >
             {/* 왼쪽: 카테고리 목록 */}
             <div className="w-1/4">
-              <div className="space-y-3 mb-8 bg-white p-2 rounded-lg">
+              <div className="space-y-2 mb-6 bg-white p-2 rounded-lg">
                 {categories.map((category) => (
                   <div
                     key={category.value}
@@ -275,7 +274,7 @@ const CommunityPage = () => {
                   >
                     <div className="flex items-center pl-5 gap-4">
                       <div>
-                        <h4 className="font-bold text-lg">{category.label}</h4>
+                        <h4 className="font-bold text-base">{category.label}</h4>
                       </div>
                     </div>
                   </div>
@@ -283,9 +282,9 @@ const CommunityPage = () => {
               </div>
 
               {/* 커뮤니티 가이드 */}
-              <div className="bg-white rounded p-6">
-                <h4 className="font-bold text-xl mb-4" style={{ color: '#8B4513' }}>💡 커뮤니티 가이드</h4>
-                <ul className="space-y-3" style={{ color: '#666666' }}>
+              <div className="bg-white rounded p-5">
+                <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>💡 커뮤니티 가이드</h4>
+                <ul className="space-y-2" style={{ color: '#666666' }}>
                   <li className="flex items-center gap-2">
                     <span style={{ color: '#BF7D2C' }}>•</span>
                     서로 존중하는 대화
@@ -350,67 +349,40 @@ const CommunityPage = () => {
                         return (
                           <div
                               key={post.id}
-                              className="px-6 py-6 cursor-pointer transition-all duration-100 hover:bg-orange-50 rounded-r-lg"
+                              className="px-5 py-5 cursor-pointer transition-all duration-100 hover:bg-orange-50 rounded-r-lg"
                               onClick={() => handlePostClick(post.id)}
                           >
-
                             <div className="flex items-center justify-between gap-3 mb-4">
                               <div className="flex gap-3 items-center flex-1 min-w-0">
                                 <span
-                                  className="text-xs px-3 py-2 rounded-full font-medium text-white min-w-[80px] text-center shadow-md"
+                                  className="text-white text-xs px-2 py-1 rounded font-medium"
                                   style={{ 
-                                    background: postCategoryData?.gradient || 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
-                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+                                    background: postCategoryData?.color || '#8B4513'
                                   }}
                                 >
                                   {postCategoryData?.label || post.category}
                                 </span>
                                 <h4
-                                  className="text-2xl font-bold transition-colors truncate"
+                                  className="text-xl font-bold transition-colors truncate"
                                   style={{ color: '#333333' }}
                                 >
                                   {post.title}
                                 </h4>
                               </div>
-
+                              
                               <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
-                                <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
-                                  <div
-                                      className="w-6 h-6 rounded-full flex items-center justify-center"
-                                      style={{ 
-                                        backgroundColor: displayName === '탈퇴한 회원' ? '#CCCCCC' : '#F8D6B3'
-                                      }}
-                                  >
-                                    <span 
-                                      className="text-xs font-medium" 
-                                      style={{ 
-                                        color: displayName === '탈퇴한 회원' ? '#666666' : '#8B4513'
-                                      }}
-                                    >
-                                      {displayName.charAt(0)}
-                                    </span>
-                                  </div>
-                                  <span 
-                                    className="font-medium"
-                                    style={{
-                                      color: displayName === '탈퇴한 회원' ? '#999999' : '#666666'
-                                    }}
-                                  >
-                                    {displayName}
-                                  </span>
-                                  <span className="text-gray-400">•</span>
-                                  <span>{post.createdAt}</span>
-                                </div>
+                                <span>{displayName}</span>
+                                <span className="text-gray-400">•</span>
+                                <span>{post.createdAt}</span>
                               </div>
                             </div>
-
-                            <div className="flex items-center justify-between">
+                            
+                            <div className="flex items-center justify-between mt-4">
                               <div className="flex items-center gap-4 text-sm" style={{ color: '#666666' }}>
-                                <div className="flex items-center gap-1 text-xs" style={{ color: '#666666' }}>
-                                  <span>👁</span>
-                                  <span>{post.viewCount || 0}</span>
-                                  <span>💬</span>
-                                  <span>{post.commentCount || 0}</span>
+                                <div className="flex items-center gap-2 text-xs" style={{ color: '#666666' }}>
+                                  <span>조회수 {post.viewCount || 0}</span>
+                                  <span className="text-gray-400">•</span>
+                                  <span>댓글 {post.commentCount || 0}</span>
                                 </div>
                               </div>
 
@@ -418,7 +390,7 @@ const CommunityPage = () => {
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'LIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`w-25 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-sm transition-all ${
+                                    className={`w-20 h-9 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-xs transition-all ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'LIKE'
@@ -438,12 +410,12 @@ const CommunityPage = () => {
                                               : '#8B4513'
                                     }}
                                 >
-                                  <img src={thumbUp} alt="따봉" className="w-8 h-8" /> {post.likeCount || 0}
+                                  <img src={thumbUp} alt="따봉" className="w-7 h-7" /> {post.likeCount || 0}
                                 </button>
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'DISLIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`w-25 h-11 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-sm transition-all ${
+                                    className={`w-20 h-9 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-xs transition-all ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'DISLIKE'
@@ -463,7 +435,7 @@ const CommunityPage = () => {
                                               : '#666666'
                                     }}
                                 >
-                                  <img src={thumbDown} alt="안따봉" className="w-6 h-6" /> {post.dislikeCount || 0}
+                                  <img src={thumbDown} alt="안따봉" className="w-5 h-5" /> {post.dislikeCount || 0}
                                 </button>
                               </div>
                             </div>
@@ -475,16 +447,11 @@ const CommunityPage = () => {
 
                 {/* 페이지네이션 */}
                 {totalPages > 0 && (
-                    <div className="flex justify-between pt-8 px-6 pb-6">
+                    <div className="flex justify-between pt-6 px-5 pb-5">
                       <button
                           onClick={() => currentPage > 0 && handlePageChange(currentPage - 1)}
                           disabled={currentPage === 0}
-                          className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
-                          style={{
-                            background: currentPage === 0 ? '#E5E5E5' : 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)',
-                            color: '#FFFFFF',
-                            boxShadow: currentPage === 0 ? 'none' : '0 4px 10px rgba(105, 105, 105, 0.3)'
-                          }}
+                          className="px-3 py-1 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed text-gray-500 hover:text-gray-800"
                       >
                         이전 페이지
                       </button>
@@ -498,16 +465,9 @@ const CommunityPage = () => {
                               <button
                                   key={pageNum}
                                   onClick={() => handlePageChange(pageNum)}
-                                  className={`w-10 h-10 rounded-lg font-medium transition-all transform hover:scale-125 ${
-                                      currentPage === pageNum ? 'text-white scale-110' : 'hover:opacity-80'
+                                  className={`w-8 h-8 rounded-lg font-medium transition-all text-sm ${
+                                      currentPage === pageNum ? 'text-blue-600 font-bold' : 'text-gray-500 hover:text-gray-800'
                                   }`}
-                                  style={{
-                                    background: currentPage === pageNum
-                                        ? (selectedCategoryData?.gradient || 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)')
-                                        : '#F0F0F0',
-                                    color: currentPage === pageNum ? '#FFFFFF' : '#666666',
-                                    boxShadow: currentPage === pageNum ? '0 4px 10px rgba(0, 0, 0, 0.2)' : 'none'
-                                  }}
                               >
                                 {pageNum + 1}
                               </button>
@@ -518,12 +478,7 @@ const CommunityPage = () => {
                       <button
                           onClick={() => currentPage < totalPages - 1 && handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages - 1}
-                          className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
-                          style={{
-                            background: currentPage === totalPages - 1 ? '#E5E5E5' : (selectedCategoryData?.gradient || 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)'),
-                            color: '#FFFFFF',
-                            boxShadow: currentPage === totalPages - 1 ? 'none' : '0 4px 10px rgba(0, 0, 0, 0.2)'
-                          }}
+                          className="px-3 py-1 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed text-gray-500 hover:text-gray-800"
                       >
                         다음 페이지
                       </button>

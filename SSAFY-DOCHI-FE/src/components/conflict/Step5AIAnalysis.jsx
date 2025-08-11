@@ -18,7 +18,7 @@ const Step5AIAnalysis = ({
           <div className="relative">
             <div className="w-20 h-20 border-4 border-amber-200 rounded-full animate-spin"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl">🤖</span>
+              <span className="text-3xl">🦔</span>
             </div>
           </div>
           <h3 className="mt-4 text-xl font-semibold text-gray-800">AI가 분석 중입니다...</h3>
@@ -191,11 +191,17 @@ const Step5AIAnalysis = ({
         </div>
       </div>
 
-      <div className="mt-8 flex justify-between items-center mb-32">
+      <div className="mt-8 flex justify-between items-center mb-32 relative z-10">
         <button
           onClick={onPrev}
           type="button"
-          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer px-4 py-2 bg-transparent border-none"
+          className="text-gray-500 hover:text-gray-700 transition-colors text-sm cursor-pointer px-4 py-2 rounded-lg hover:bg-gray-100"
+          style={{ 
+            background: 'transparent', 
+            border: 'none',
+            outline: 'none',
+            minHeight: '40px'
+          }}
         >
           ← 다시 작성하기
         </button>
