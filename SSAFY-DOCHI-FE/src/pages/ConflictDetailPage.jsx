@@ -17,6 +17,15 @@ const ConflictDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview'); // overview, analysis, roadmap
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // 분석 데이터 렌더링 헬퍼 함수 (최적화됨)
+  const renderAnalysisData = (data) => {
+    if (!data) return 'AI가 분석하고 있습니다...';
+    if (typeof data === 'string') return data;
+    
+    // 문자열이 아닌 경우 직접 텍스트로 처리
+    return String(data);
+  };
+
   useEffect(() => {
     if (!isLoggedIn) {
       navigate('/login');
@@ -456,46 +465,39 @@ ${summary.join('\n')}
                   </h4>
                 </div>
 
-                {/* 감정 분석과 갈등 분석 */}
-                <div className="space-y-6">
-                  {/* 감정 분석 */}
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                      <span>😊</span> 감정 분석
-                    </h4>
-                    <div 
-                      className="text-blue-700"
-                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                    >
-                      {analysisResult?.emotion_analysis || analysisResult?.emotionAnalysis || 
-                       `현재 ${getEmotionText(conflict?.initialEmotion)} 감정 상태로, 갈등 강도 ${conflict?.intensity || 0}/10입니다. 
-                       
-이 갈등에서 가장 중요하게 생각하는 것은 ${getPriorityText(conflict?.priority)}이며, 상대방과의 대화에 대해서는 ${getTalkWillingnessText(conflict?.talkWillingness)} 상태입니다.
-
-갈등 빈도는 월 ${conflict?.conflictFrequency || 0}회 정도 발생하고 있습니다.`}
-                    </div>
-                  </div>
-
-                  {/* 갈등 분석 */}
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                      <span>⚡</span> 갈등 분석
-                    </h4>
-                    <div 
-                      className="text-purple-700"
-                      style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                    >
-                      {analysisResult?.conflict_analysis || analysisResult?.conflictAnalysis || 
-                       `갈등 상황: ${conflict?.description || '상세 정보가 없습니다.'}
-
-원하는 결과: ${conflict?.desiredOutcome || '명시되지 않음'}
-
-${getConflictTypeText(conflict?.conflictType)} 갈등으로 분류되며, 이는 ${conflict?.conflictWhen ? `${conflict.conflictWhen}일 전에 발생` : '최근에 발생'}했습니다.
-
-${conflict?.participants ? `관련된 인물: ${JSON.parse(conflict.participants).join(', ')}` : ''}`}
-                    </div>
-                  </div>
+                {/* 감정 분석 */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8">
+                  <h4 className="text-xl font-bold text-blue-800 mb-6 flex items-center gap-3">
+                    <span className="text-2xl">😊</span> 감정 분석
+                  </h4>
+                  <div 
+                    className="text-blue-700"
+                    style={{ lineHeight: '1.8' }}
+                    dangerouslySetInnerHTML={{
+                      __html: renderAnalysisData(
+                        analysisResult?.emotionAnalysis || analysisResult?.emotion_analysis ||
+                        `현재 ${getEmotionText(conflict?.initialEmotion)} 감정 상태로, 갈등 강도 ${conflict?.intensity || 0}/10입니다.`
+                      )
+                    }}
+                  />
                 </div>
+              </div>
+
+              {/* 갈등 분석 - 전체 너비 */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8">
+                <h4 className="text-xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+                  <span className="text-2xl">⚡</span> 갈등 분석
+                </h4>
+                <div 
+                  className="text-purple-700"
+                  style={{ lineHeight: '1.8' }}
+                  dangerouslySetInnerHTML={{
+                    __html: renderAnalysisData(
+                      analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis ||
+                      `갈등 상황: ${conflict?.description || '상세 정보가 없습니다.'}`
+                    )
+                  }}
+                />
               </div>
 
               {/* 입장 정리 - 감정/갈등 분석 아래로 */}
@@ -506,38 +508,32 @@ ${conflict?.participants ? `관련된 인물: ${JSON.parse(conflict.participants
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4">
                     <div className="mb-3">
-                      <span className="font-medium text-blue-700">내 입장 (등록된 정보):</span>
+                      <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
                       <div 
                         className="mt-1 text-gray-700"
                         style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                      >
-                        {analysisResult?.my_position || analysisResult?.myPosition || 
-                         `갈등 상황: ${conflict?.description || '정보 없음'}
-                         
-원하는 결과: ${conflict?.desiredOutcome || '명시되지 않음'}
-
-중요한 가치: ${getPriorityText(conflict?.priority)}
-현재 감정: ${getEmotionText(conflict?.initialEmotion)}
-대화 의지: ${getTalkWillingnessText(conflict?.talkWillingness)}`}
-                      </div>
+                        dangerouslySetInnerHTML={{
+                          __html: renderAnalysisData(
+                            analysisResult?.myPosition || analysisResult?.my_position ||
+                            `갈등 상황: ${conflict?.description || '정보 없음'}`
+                          )
+                        }}
+                      />
                     </div>
                   </div>
                   <div className="bg-white rounded-lg p-4">
                     <div>
-                      <span className="font-medium text-red-700">추가 정보:</span>
+                      <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
                       <div 
                         className="mt-1 text-gray-700"
                         style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                      >
-                        {analysisResult?.partner_position || analysisResult?.partnerPosition || 
-                         `갈등 유형: ${getConflictTypeText(conflict?.conflictType)}
-갈등 강도: ${conflict?.intensity || 0}/10
-발생 시기: ${conflict?.conflictWhen ? `${conflict.conflictWhen}일 전` : '최근'}
-발생 빈도: 월 ${conflict?.conflictFrequency || 0}회
-${conflict?.participants ? `관련 인물: ${JSON.parse(conflict.participants).join(', ')}` : '관련 인물 정보 없음'}
-
-AI 요약: ${conflict?.aiSummary || 'AI 요약 정보가 없습니다.'}`}
-                      </div>
+                        dangerouslySetInnerHTML={{
+                          __html: renderAnalysisData(
+                            analysisResult?.partnerPosition || analysisResult?.partner_position ||
+                            `갈등 유형: ${getConflictTypeText(conflict?.conflictType)}, 갈등 강도: ${conflict?.intensity || 0}/10`
+                          )
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
