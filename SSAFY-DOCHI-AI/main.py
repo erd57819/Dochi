@@ -49,6 +49,7 @@ def read_root():
             "Speech Analysis",
             "Voice Chat",
             "AI Summary",
+            "AI Coaching",
             "Real-time WebSocket"
         ]
     }
