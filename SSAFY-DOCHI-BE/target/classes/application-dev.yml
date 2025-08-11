@@ -1,0 +1,80 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/dochi?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:ssafy}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
+
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+      timeout: ${REDIS_TIMEOUT:2000ms}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${EMAIL_USERNAME:}
+    password: ${EMAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET:default-secret-key}
+
+# 카카오 OAuth 설정  
+kakao:
+  rest:
+    api:
+      key: ${KAKAO_REST_API_KEY:}
+  redirect-uri: ${KAKAO_REDIRECT_URI:}
+  redirect-withdraw-uri: ${KAKAO_REDIRECT_WITHDRAW_URI:}
+
+# AWS S3 설정
+aws:
+  credentials:
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+  s3:
+    region: ${AWS_REGION:us-east-1}
+    bucket: ${AWS_S3_BUCKET:}
+
+# 소셜 로그인 설정
+social:
+  default:
+    password: ${SOCIAL_PW:social_login}
+
+# AI 서비스 설정
+ai:
+  service:
+    url: ${AI_SERVICE_URL:http://localhost:8002}
+
+# LiveKit 설정 (WebRTC 화상통화용)
+livekit:
+  api:
+    key: ${LIVEKIT_API_KEY}
+    secret: ${LIVEKIT_API_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
