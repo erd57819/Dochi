@@ -201,24 +201,23 @@ public class ConflictService {
                 
                 // 고급 분석 결과가 있으면 해당 분석으로 대체
                 if (advancedAnalysis != null && advancedAnalysis.getConflictAnalysis() != null) {
-                    return ConflictResDto.builder()
-                        .id(conflict.getId())
-                        .userId(conflict.getUserId())
-                        .title(conflict.getTitle())
-                        .description(conflict.getDescription())
-                        .conflictType(conflict.getConflictType())
-                        .conflictWhen(conflict.getConflictWhen())
-                        .conflictFrequency(conflict.getConflictFrequency())
-                        .participants(conflict.getParticipants())
-                        .desiredOutcome(conflict.getDesiredOutcome())
-                        .priority(conflict.getPriority())
-                        .talkWillingness(conflict.getTalkWillingness())
-                        .initialEmotion(conflict.getInitialEmotion())
-                        .intensity(conflict.getIntensity())
-                        .aiSummary(advancedAnalysis.getConflictAnalysis()) // 고급 분석 결과 사용
-                        .createdAt(conflict.getCreatedAt())
-                        .updatedAt(conflict.getUpdatedAt())
-                        .build();
+                    return new ConflictResDto(
+                        conflict.getId(),
+                        conflict.getTitle(),
+                        conflict.getDescription(),
+                        conflict.getConflictType(),
+                        conflict.getConflictWhen(),
+                        conflict.getConflictFrequency(),
+                        conflict.getParticipants(),
+                        conflict.getDesiredOutcome(),
+                        conflict.getPriority(),
+                        conflict.getTalkWillingness(),
+                        conflict.getInitialEmotion(),
+                        conflict.getIntensity(),
+                        advancedAnalysis.getConflictAnalysis(), // 고급 분석 결과 사용
+                        conflict.getCreatedAt(),
+                        conflict.getUpdatedAt()
+                    );
                 }
                 
                 return result; // 고급 분석이 없으면 기본 요약 사용
