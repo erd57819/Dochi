@@ -176,7 +176,7 @@ const CommunityPage = () => {
   const selectedCategoryData = categories.find(cat => cat.value === selectedCategory);
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative ">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative " style={{ zoom: '0.75' }}>
         {/* 전체 배경 컨테이너 */}
         <div className="absolute inset-0">
           {/* 상단 배경 */}

@@ -96,12 +96,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
       
       if (isGuestMode || !isLoggedIn) {
-        const response = await fetch(`${API_BASE_URL}/api/video/token`, {
+        const response = await fetch(`${API_BASE_URL}/api/video-call/guest-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             room: roomName,
-            identity: identity
+            identity: identity,
+            name: identity
           }),
         });
 
@@ -110,7 +111,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         }
 
         const data = await response.json();
-        accessToken = data.accessToken;
+        accessToken = data.data.token;
       } else {
         const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
         accessToken = response.data.data.token;
@@ -618,8 +619,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               id="guestNickname"
               value={guestNickname}
               onChange={(e) => setGuestNickname(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleGuestJoin();
+                }
+              }}
               placeholder="닉네임을 입력하세요"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
             />
           </div>
 

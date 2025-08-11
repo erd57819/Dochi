@@ -1,6 +1,45 @@
 import React from 'react';
 
 const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
+  // AI 자동 제목 생성 함수
+  const generateTitle = (description) => {
+    if (!description || description.trim().length < 10) return '';
+    
+    // 핵심 키워드 추출
+    const keywords = [
+      { pattern: /여자친구|남자친구|연인|애인/g, title: '연인 갈등' },
+      { pattern: /부모|엄마|아빠|어머니|아버지/g, title: '부모 갈등' },
+      { pattern: /친구|동료|선배|후배/g, title: '대인 관계' },
+      { pattern: /상사|팀장|부장|직장/g, title: '직장 갈등' },
+      { pattern: /돈|금전|비용|빚/g, title: '금전 문제' },
+      { pattern: /연락|카톡|메시지|전화/g, title: '소통 문제' },
+      { pattern: /약속|시간|늦/g, title: '약속 문제' },
+      { pattern: /음식|식사|밥/g, title: '식사 갈등' },
+    ];
+    
+    // 키워드 매칭
+    for (const { pattern, title } of keywords) {
+      if (pattern.test(description)) {
+        return title;
+      }
+    }
+    
+    // 매칭되는 키워드가 없으면 첫 8자 추출
+    const cleanText = description.replace(/[^\w\s가-힣]/g, ' ').trim();
+    const words = cleanText.split(/\s+/);
+    let title = '';
+    
+    for (const word of words) {
+      if (title.length + word.length <= 8) {
+        title += (title ? ' ' : '') + word;
+      } else {
+        break;
+      }
+    }
+    
+    return title || '갈등 상황';
+  };
+
   const handleTitleChange = (e) => {
     const value = e.target.value;
     onChange({ title: value });
@@ -9,35 +48,43 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
   const handleDescChange = (e) => {
     const value = e.target.value;
     onChange({ description: value });
+    
+    // 제목이 비어있으면 자동 생성
+    if (!formData.title || formData.title.trim() === '') {
+      const autoTitle = generateTitle(value);
+      if (autoTitle) {
+        onChange({ description: value, title: autoTitle });
+      }
+    }
   };
 
   const frequencyOptions = [
+    { value: 0, label: '하루', emoji: '☀️' },
     { value: 1, label: '1일 이내', emoji: '🌅' },
     { value: 7, label: '1주일 이내', emoji: '📅' },
     { value: 30, label: '1개월 이내', emoji: '🗓️' },
     { value: 90, label: '3개월 이내', emoji: '📆' },
-    { value: 180, label: '6개월 이내', emoji: '📊' },
-    { value: 365, label: '1년 이상', emoji: '🗂️' }
+    { value: 180, label: '6개월 이상', emoji: '📊' }
   ];
 
-  const isValid = formData.title.trim() !== '' && formData.description.trim() !== '' && formData.conflictWhen && (formData.conflictFrequency || 1);
+  const isValid = formData.description.trim() !== '' && (formData.conflictWhen !== undefined && formData.conflictWhen !== null) && (formData.conflictFrequency || 1);
 
   return (
     <div className="animate-fadeIn">
       
 
       <div className="space-y-8">
-        {/* 갈등 대상 */}
+        {/* 갈등 제목 (선택사항) */}
         <div>
           <label className="block text-xl font-semibold text-gray-700 mb-4">
-            갈등 대상
+            갈등 제목 <span className="text-sm font-normal text-gray-500">(선택사항)</span>
           </label>
           <input
             type="text"
             name="title"
             value={formData.title}
             onChange={handleTitleChange}
-            placeholder="어떤 사람과 갈등이 있었는지 작성해주세요"
+            placeholder="갈등을 간단히 표현할 제목을 입력해주세요 (예: 연락 문제)"
             className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-xl
               transition-all duration-200 text-base text-gray-800
               focus:border-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-100"
@@ -92,7 +139,7 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
           <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등 빈도
           </label>
-          <div className="bg-gray-50 p-6 rounded-2xl">
+          <div className={`bg-gray-50 p-6 rounded-2xl ${formData.conflictWhen === 0 ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="relative">
               <input
                 type="range"
@@ -105,7 +152,7 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
                   background: `linear-gradient(to right, #8B4513 0%, #8B4513 ${(((formData.conflictFrequency || 1) - 1) / 5) * 100}%, #e5e7eb ${(((formData.conflictFrequency || 1) - 1) / 5) * 100}%, #e5e7eb 100%)`
                 }}
               />
-              <div className="flex justify-between mt-3 text-sm text-gray-600">
+              <div className="flex justify-between mt-3 text-xs text-gray-600">
                 <span>매일</span>
                 <span>주 3-4회</span>
                 <span>주 1-2회</span>

@@ -351,6 +351,9 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
         current_section = None
         collecting_key_issues = False
         collecting_immediate_actions = False
+        collecting_priority_actions = False
+        collecting_communication_tips = False
+        collecting_long_term_suggestions = False
         
         for line in lines:
             line = line.strip()
@@ -362,22 +365,58 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 current_section = "responsibility"
                 collecting_key_issues = False
                 collecting_immediate_actions = False
+                collecting_priority_actions = False
+                collecting_communication_tips = False
+                collecting_long_term_suggestions = False
             elif "2. 갈등 상황" in line or "상황 요약" in line:
                 current_section = "summary"
                 collecting_key_issues = False  
                 collecting_immediate_actions = False
+                collecting_priority_actions = False
+                collecting_communication_tips = False
+                collecting_long_term_suggestions = False
             elif "3. 구체적 액션" in line or "액션 플랜" in line:
                 current_section = "action_plans"
                 collecting_key_issues = False
                 collecting_immediate_actions = False
+                collecting_priority_actions = False
+                collecting_communication_tips = False
+                collecting_long_term_suggestions = False
             elif "핵심 쟁점" in line:
                 collecting_key_issues = True
                 collecting_immediate_actions = False
+                collecting_priority_actions = False
+                collecting_communication_tips = False
+                collecting_long_term_suggestions = False
                 continue  # 헤더 라인은 건너뜀
             elif "즉시 실행" in line:
                 collecting_immediate_actions = True
                 collecting_key_issues = False
+                collecting_priority_actions = False
+                collecting_communication_tips = False
+                collecting_long_term_suggestions = False
                 continue  # 헤더 라인은 건너뜀
+            elif "우선순위별" in line or "행동계획" in line or "priority" in line.lower():
+                collecting_priority_actions = True
+                collecting_key_issues = False
+                collecting_immediate_actions = False
+                collecting_communication_tips = False
+                collecting_long_term_suggestions = False
+                continue
+            elif "소통 개선" in line or "communication" in line.lower():
+                collecting_communication_tips = True
+                collecting_key_issues = False
+                collecting_immediate_actions = False
+                collecting_priority_actions = False
+                collecting_long_term_suggestions = False
+                continue
+            elif "장기적" in line or "long" in line.lower():
+                collecting_long_term_suggestions = True
+                collecting_key_issues = False
+                collecting_immediate_actions = False
+                collecting_priority_actions = False
+                collecting_communication_tips = False
+                continue
             elif line.startswith('-') or line.startswith('•') or re.match(r'^\d+[\.\)]\s*', line):
                 # 항목 파싱
                 content = re.sub(r'^[-•\d\.\)]+\s*', '', line).strip()
@@ -389,10 +428,45 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 elif collecting_immediate_actions:
                     if content and "**" not in content and "3가지" not in content and len(content) > 3:
                         result["summary"]["immediate_actions"].append(content)
+                elif collecting_priority_actions:
+                    if content and "**" not in content and "3가지" not in content and len(content) > 3:
+                        result["action_plans"]["priority_actions"].append(content)
+                elif collecting_communication_tips:
+                    if content and "**" not in content and "3가지" not in content and len(content) > 3:
+                        result["action_plans"]["communication_tips"].append(content)
+                elif collecting_long_term_suggestions:
+                    if content and "**" not in content and "2가지" not in content and len(content) > 3:
+                        result["action_plans"]["long_term_suggestions"].append(content)
+                elif current_section == "responsibility":
+                    # 책임 비율 파싱 (예: "김철수: 60%", "화자1 70%", "A 화자: 40% - 이유...")
+                    for speaker in speakers:
+                        if speaker in content and ('%' in content or '퍼센트' in content):
+                            # 퍼센트 추출
+                            percent_match = re.search(r'(\d+)%?', content)
+                            if percent_match:
+                                percentage = int(percent_match.group(1))
+                                # 이미 추가된 화자인지 확인
+                                existing_participant = None
+                                for p in result["responsibility"]["responsibility_analysis"]["participants"]:
+                                    if p["name"] == speaker:
+                                        existing_participant = p
+                                        break
+                                
+                                if existing_participant:
+                                    existing_participant["responsibility_percentage"] = percentage
+                                else:
+                                    # 새로 추가
+                                    result["responsibility"]["responsibility_analysis"]["participants"].append({
+                                        "name": speaker,
+                                        "responsibility_percentage": percentage,
+                                        "reasons": [content.split('-')[-1].strip() if '-' in content else content]
+                                    })
                 elif current_section == "summary":
                     if "갈등 수준" in content:
                         if "HIGH" in content.upper():
                             result["summary"]["conflict_level"] = "HIGH"
+                        elif "MEDIUM" in content.upper():
+                            result["summary"]["conflict_level"] = "MEDIUM"
                         elif "LOW" in content.upper():
                             result["summary"]["conflict_level"] = "LOW"
                     elif "해결 가능성" in content:
@@ -419,45 +493,48 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                         if action and action not in result["summary"]["immediate_actions"] and len(action) > 3:
                             result["summary"]["immediate_actions"].append(action)
                     elif "성공 확률" in content:
-                        import re
                         numbers = re.findall(r'\d+', content)
                         if numbers:
                             result["summary"]["success_probability"] = int(numbers[0])
                     elif "전문가" in content:
                         result["summary"]["professional_help_needed"] = "true" in content.lower()
                         
-        # 화자별 책임 비율 (GPT 응답에서 추출하지 못한 경우 기본값)
-        if not result["responsibility"]["responsibility_analysis"]["participants"]:
-            responsibility_per_speaker = 100 // len(speakers)
-            for i, speaker in enumerate(speakers):
-                result["responsibility"]["responsibility_analysis"]["participants"].append({
-                    "name": speaker,
-                    "responsibility_percentage": responsibility_per_speaker + (100 % len(speakers) if i == 0 else 0),
-                    "reasons": []
-                })
+        # 화자별 책임 비율 검증 및 보정
+        if result["responsibility"]["responsibility_analysis"]["participants"]:
+            # 총 퍼센트가 100%가 되도록 조정
+            total_percent = sum(p["responsibility_percentage"] for p in result["responsibility"]["responsibility_analysis"]["participants"])
+            if total_percent != 100:
+                # 첫 번째 화자에게 차이만큼 조정
+                if result["responsibility"]["responsibility_analysis"]["participants"]:
+                    result["responsibility"]["responsibility_analysis"]["participants"][0]["responsibility_percentage"] += (100 - total_percent)
+        else:
+            # GPT 응답에서 추출하지 못한 경우 빈 배열로 유지 (하드코딩 제거)
+            print("[경고] GPT 응답에서 책임 비율을 추출하지 못했습니다.")
+            # 기본값 제거 - 빈 배열로 유지하여 프론트엔드에서 "데이터 없음" 처리
         
         # 프론트엔드 호환성을 위해 데이터 구조 변환
-        frontend_responsibility = {}
-        for participant in result["responsibility"]["responsibility_analysis"]["participants"]:
-            speaker_key = f"speaker_{participant['name']}"
-            frontend_responsibility[speaker_key] = {
-                "name": participant["name"],
-                "responsibility_percentage": participant["responsibility_percentage"],
-                "communication_style": "",  # GPT에서 추출
-                "key_issues": participant.get("reasons", [])
-            }
-        
-        # 프론트엔드 구조로 변환
-        result["responsibility"]["responsibility_analysis"] = frontend_responsibility
+        if result["responsibility"]["responsibility_analysis"]["participants"]:
+            frontend_responsibility = {}
+            for participant in result["responsibility"]["responsibility_analysis"]["participants"]:
+                speaker_key = f"speaker_{participant['name']}"
+                frontend_responsibility[speaker_key] = {
+                    "name": participant["name"],
+                    "responsibility_percentage": participant["responsibility_percentage"],
+                    "communication_style": "",  # GPT에서 추출
+                    "key_issues": participant.get("reasons", [])
+                }
+            
+            # 프론트엔드 구조로 변환
+            result["responsibility"]["responsibility_analysis"] = frontend_responsibility
+        else:
+            # 데이터가 없을 때는 빈 객체
+            result["responsibility"]["responsibility_analysis"] = {}
         
         # 갈등 고조 지점 추가 (GPT에서 추출되지 않은 경우 빈 배열)
         if "escalation_points" not in result["responsibility"]:
             result["responsibility"]["escalation_points"] = []
         
-        # 기본값 제거 - GPT 응답이 없으면 빈 배열
-        # 데이터가 없을 때는 명시적으로 표시
-        # 액션 플랜도 하드코딩 제거 - 빈 배열 유지
-        # communication_tips와 long_term_suggestions도 하드코딩 제거
+        # 모든 데이터는 GPT 응답에서 실제로 추출된 내용만 사용
             
         return result
         
