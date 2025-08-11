@@ -175,7 +175,7 @@ public class ConflictService {
         return aiSummaryService.generateSummary(reqDto.getDescription(), reqDto.getConflictType());
     }
     
-    // 갈등 조회
+    // 갈등 조회 (고급 AI 분석 결과 포함)
     @Transactional(readOnly = true)
     public ConflictResDto getConflict(Long conflictId, Long userId) {
         UserConflict conflict = conflictDao.findById(conflictId)
@@ -185,15 +185,69 @@ public class ConflictService {
             throw new IllegalArgumentException("접근 권한이 없습니다.");
         }
         
-        return ConflictResDto.from(conflict);
+        // 고급 AI 분석 결과가 있으면 해당 요약을 사용
+        AiAnalysisResult advancedAnalysis = aiAnalysisResultDao.findByConflictId(conflictId).orElse(null);
+        
+        // 고급 분석 결과가 있으면 해당 분석으로 대체
+        if (advancedAnalysis != null && advancedAnalysis.getConflictAnalysis() != null) {
+            return ConflictResDto.builder()
+                .id(conflict.getId())
+                .userId(conflict.getUserId())
+                .title(conflict.getTitle())
+                .description(conflict.getDescription())
+                .conflictType(conflict.getConflictType())
+                .conflictWhen(conflict.getConflictWhen())
+                .conflictFrequency(conflict.getConflictFrequency())
+                .participants(conflict.getParticipants())
+                .desiredOutcome(conflict.getDesiredOutcome())
+                .priority(conflict.getPriority())
+                .talkWillingness(conflict.getTalkWillingness())
+                .initialEmotion(conflict.getInitialEmotion())
+                .intensity(conflict.getIntensity())
+                .aiSummary(advancedAnalysis.getConflictAnalysis()) // 고급 분석 결과 사용
+                .createdAt(conflict.getCreatedAt())
+                .updatedAt(conflict.getUpdatedAt())
+                .build();
+        }
+        
+        return ConflictResDto.from(conflict); // 고급 분석이 없으면 기본 요약 사용
     }
     
-    // 사용자별 갈등 목록 조회
+    // 사용자별 갈등 목록 조회 (고급 AI 분석 결과 포함)
     @Transactional(readOnly = true)
     public List<ConflictResDto> getUserConflicts(Long userId) {
         List<UserConflict> conflicts = conflictDao.findByUserId(userId);
         return conflicts.stream()
-            .map(ConflictResDto::from)
+            .map(conflict -> {
+                // 고급 AI 분석 결과가 있으면 해당 요약을 사용
+                AiAnalysisResult advancedAnalysis = aiAnalysisResultDao.findByConflictId(conflict.getId()).orElse(null);
+                
+                ConflictResDto result = ConflictResDto.from(conflict);
+                
+                // 고급 분석 결과가 있으면 해당 분석으로 대체
+                if (advancedAnalysis != null && advancedAnalysis.getConflictAnalysis() != null) {
+                    return ConflictResDto.builder()
+                        .id(conflict.getId())
+                        .userId(conflict.getUserId())
+                        .title(conflict.getTitle())
+                        .description(conflict.getDescription())
+                        .conflictType(conflict.getConflictType())
+                        .conflictWhen(conflict.getConflictWhen())
+                        .conflictFrequency(conflict.getConflictFrequency())
+                        .participants(conflict.getParticipants())
+                        .desiredOutcome(conflict.getDesiredOutcome())
+                        .priority(conflict.getPriority())
+                        .talkWillingness(conflict.getTalkWillingness())
+                        .initialEmotion(conflict.getInitialEmotion())
+                        .intensity(conflict.getIntensity())
+                        .aiSummary(advancedAnalysis.getConflictAnalysis()) // 고급 분석 결과 사용
+                        .createdAt(conflict.getCreatedAt())
+                        .updatedAt(conflict.getUpdatedAt())
+                        .build();
+                }
+                
+                return result; // 고급 분석이 없으면 기본 요약 사용
+            })
             .collect(Collectors.toList());
     }
     
