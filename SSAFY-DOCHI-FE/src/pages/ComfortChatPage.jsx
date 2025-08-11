@@ -11,6 +11,8 @@ const ComfortChatPage = () => {
   const messagesEndRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [showTitleModal, setShowTitleModal] = useState(false);
+  const [editingTitleId, setEditingTitleId] = useState(null);
+  const [editTitleValue, setEditTitleValue] = useState('');
   
   const {
     sessions,
@@ -31,6 +33,7 @@ const ComfortChatPage = () => {
     sendMessage,
     loadChatRooms,
     exitCurrentSession,
+    updateSessionTitle,
     setLoading,
     setError,
     toggleSidebar,
@@ -104,6 +107,38 @@ const ComfortChatPage = () => {
       setShowTitleModal(false);
     } catch (error) {
       console.error('Failed to create session with title:', error);
+    }
+  };
+
+  // 제목 수정 핸들러 (인라인 편집)
+  const handleStartEditTitle = (sessionId, currentTitle) => {
+    setEditingTitleId(sessionId);
+    setEditTitleValue(currentTitle);
+  };
+
+  const handleSaveTitle = async () => {
+    if (!editTitleValue.trim()) return;
+    
+    try {
+      await updateSessionTitle(editingTitleId, editTitleValue.trim());
+      setEditingTitleId(null);
+      setEditTitleValue('');
+    } catch (error) {
+      console.error('Failed to update title:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTitleId(null);
+    setEditTitleValue('');
+  };
+
+  const handleTitleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
     }
   };
 
@@ -324,7 +359,58 @@ const ComfortChatPage = () => {
               >
                 <div className="flex justify-between items-center">
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-800 truncate mb-1">{session.title}</h3>
+                    {editingTitleId === session.id ? (
+                      // 인라인 편집 모드
+                      <div className="flex items-center gap-1 mb-1">
+                        <input
+                          type="text"
+                          value={editTitleValue}
+                          onChange={(e) => setEditTitleValue(e.target.value)}
+                          onKeyPress={handleTitleKeyPress}
+                          onBlur={handleSaveTitle}
+                          className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+                          autoFocus
+                          maxLength={50}
+                        />
+                        <button
+                          onClick={handleSaveTitle}
+                          className="p-1 text-green-600 hover:text-green-700"
+                          title="저장"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="p-1 text-gray-500 hover:text-gray-700"
+                          title="취소"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      // 일반 제목 보기 모드
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-gray-800 truncate mb-1">{session.title}</h3>
+                        {currentChatRoomId === session.id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEditTitle(session.id, session.title);
+                            }}
+                            className="p-1 text-gray-500 hover:text-orange-600 transition-colors ml-1"
+                            title="제목 수정"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <p className="text-sm text-gray-600">
                       {new Date(session.createdAt).toLocaleDateString('ko-KR')}
                     </p>
@@ -366,7 +452,7 @@ const ComfortChatPage = () => {
       <div className={`flex-1 flex flex-col transition-all duration-300 ${
         isSidebarOpen ? 'ml-[280px]' : 'ml-[60px]'
       }`}>
-        {/* 채팅 도구바 - navbar 제거하고 사진 부분도 제거 */}
+        {/* 채팅 도구바 */}
         <div className="bg-orange-50 border-b border-orange-200 px-6 py-4 flex justify-between items-center">
           {/* 드롭다운 (왼쪽으로 이동) */}
           <select
@@ -635,6 +721,7 @@ const ComfortChatPage = () => {
         isOpen={showTitleModal}
         onClose={() => setShowTitleModal(false)}
         onConfirm={handleCreateWithTitle}
+        mode="create"
       />
     </div>
   );

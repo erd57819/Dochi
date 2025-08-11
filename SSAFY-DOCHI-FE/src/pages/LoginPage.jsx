@@ -79,7 +79,7 @@ const LoginPage = () => {
         // 2. nickname과 name 비교
         if (nickname === name) {
           // 3. 같다면 추가 알림 후 프로필 페이지로
-          alert('nickname과 name이 같습니다');
+          alert('이름과 닉네임이 같습니다');
           navigate('/mypage/profile');
         } else {
           // 4. 다르면 메인 페이지로

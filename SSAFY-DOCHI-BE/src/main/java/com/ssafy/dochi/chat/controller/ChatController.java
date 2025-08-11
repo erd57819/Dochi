@@ -5,8 +5,10 @@ import com.ssafy.dochi.chat.domain.Chat;
 import com.ssafy.dochi.chat.domain.ChatRoom;
 import com.ssafy.dochi.chat.dto.request.ChatReqDto;
 import com.ssafy.dochi.chat.dto.request.ChatRoomCreateReqDto;
+import com.ssafy.dochi.chat.dto.request.ChatRoomTitleUpdateReqDto;
 import com.ssafy.dochi.chat.dto.response.ChatResDto;
 import com.ssafy.dochi.chat.service.ChatService;
+import com.ssafy.dochi.common.security.CustomUserDetails;
 import com.ssafy.dochi.common.security.CustomUserDetails;
 import com.ssafy.dochi.common.template.ApiResponse;
 import com.ssafy.dochi.common.template.ApiResponseGenerator;
@@ -61,6 +63,13 @@ public class ChatController {
     @DeleteMapping("/rooms/{chatRoomId}")
     public ApiResponse<?> deleteRoom(@PathVariable Long chatRoomId) {
         chatService.deleteRoom(chatRoomId);
+        return ApiResponseGenerator.success(HttpStatus.OK);
+    }
+
+    @PutMapping("/rooms/{chatRoomId}/title")
+    ApiResponse<?> updateRoomTitle(@PathVariable("chatRoomId") Long chatRoomId,
+                                   @RequestBody ChatRoomTitleUpdateReqDto reqDto) {
+        chatService.updateChatRoomTitle(chatRoomId, reqDto.getNewTitle());
         return ApiResponseGenerator.success(HttpStatus.OK);
     }
 
