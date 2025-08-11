@@ -347,8 +347,11 @@ const ProfileEditPage = () => {
 
                   {/* 사용자 정보 */}
                   <h2 className="text-xl font-bold text-black mb-1">
-                    {userInfo.name && userInfo.name !== 'string' ? userInfo.name : '이름 없음'}, {userInfo.age > 0 ? `${userInfo.age}세` : ''}{userInfo.age > 0 && userInfo.gender && userInfo.gender !== 'NONE' ? ', ' : ''}{userInfo.gender === 'MALE' ? '남성' : userInfo.gender === 'FEMALE' ? '여성' : ''}
+                    {userInfo.name && userInfo.name !== 'string' ? userInfo.name : '이름 없음'}
                   </h2>
+                  <p className="text-base text-[#666] mb-1">
+                    {userInfo.age > 0 ? `${userInfo.age}세` : ''}{userInfo.age > 0 && userInfo.gender && userInfo.gender !== 'NONE' ? ', ' : ''}{userInfo.gender === 'MALE' ? '남성' : userInfo.gender === 'FEMALE' ? '여성' : ''}
+                  </p>
                   <p className="text-[#666] text-xs">
                     {formatDate(userInfo.created_at)}
                   </p>

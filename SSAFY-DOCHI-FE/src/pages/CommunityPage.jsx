@@ -176,7 +176,7 @@ const CommunityPage = () => {
   const selectedCategoryData = categories.find(cat => cat.value === selectedCategory);
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative " style={{ zoom: '0.75' }}>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative " style={{ zoom: '0.85' }}>
         {/* 전체 배경 컨테이너 */}
         <div className="absolute inset-0">
           {/* 상단 배경 */}
@@ -386,56 +386,72 @@ const CommunityPage = () => {
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-3">
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'LIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`w-20 h-9 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-xs transition-all ${
+                                    className={`flex items-center gap-2 transition-all text-sm font-medium ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'LIKE'
-                                                ? 'text-white '
-                                                : 'hover:opacity-70'
+                                                ? 'cursor-pointer'
+                                                : 'text-gray-500 cursor-pointer'
                                     }`}
                                     style={{
-                                      backgroundColor: !isLoggedIn
-                                          ? 'transparent'
-                                          : post.userLikeType === 'LIKE'
-                                              ? '#e6854eff'
-                                              : '#fff1e4ff',
-                                      color: !isLoggedIn
-                                          ? '#cccccc'
-                                          : post.userLikeType === 'LIKE'
-                                              ? '#FFFFFF'
-                                              : '#8B4513'
+                                      backgroundColor: 'transparent',
+                                      border: 'none',
+                                      padding: '0',
+                                      color: !isLoggedIn 
+                                        ? '#d1d5db' 
+                                        : post.userLikeType === 'LIKE' 
+                                          ? 'rgba(255,177,32,1)' 
+                                          : '#6b7280'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (isLoggedIn && post.userLikeType !== 'LIKE') {
+                                        e.currentTarget.style.color = 'rgba(255,177,32,0.7)';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (isLoggedIn && post.userLikeType !== 'LIKE') {
+                                        e.currentTarget.style.color = '#6b7280';
+                                      }
                                     }}
                                 >
-                                  <img src={thumbUp} alt="따봉" className="w-7 h-7" /> {post.likeCount || 0}
+                                  <img src={thumbUp} alt="따봉" className="w-6 h-6" /> {post.likeCount || 0}
                                 </button>
                                 <button
                                     onClick={(e) => handlePostLike(post.id, 'DISLIKE', e)}
                                     disabled={!isLoggedIn}
-                                    className={`w-20 h-9 flex items-center justify-center gap-1 px-3 py-2 rounded-3xl text-xs transition-all ${
+                                    className={`flex items-center gap-2 transition-all text-sm font-medium ${
                                         !isLoggedIn
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : post.userLikeType === 'DISLIKE'
-                                                ? 'text-white '
-                                                : 'hover:opacity-70'
+                                                ? 'cursor-pointer'
+                                                : 'text-gray-500 cursor-pointer'
                                     }`}
                                     style={{
-                                      backgroundColor: !isLoggedIn
-                                          ? 'transparent'
-                                          : post.userLikeType === 'DISLIKE'
-                                              ? '#d3c576ff'
-                                              : '#f8f8f8ff',
-                                      color: !isLoggedIn
-                                          ? '#cccccc'
-                                          : post.userLikeType === 'DISLIKE'
-                                              ? '#FFFFFF'
-                                              : '#666666'
+                                      backgroundColor: 'transparent',
+                                      border: 'none',
+                                      padding: '0',
+                                      color: !isLoggedIn 
+                                        ? '#d1d5db' 
+                                        : post.userLikeType === 'DISLIKE' 
+                                          ? 'rgba(191,125,44,1)' 
+                                          : '#6b7280'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (isLoggedIn && post.userLikeType !== 'DISLIKE') {
+                                        e.currentTarget.style.color = 'rgba(191,125,44,0.7)';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (isLoggedIn && post.userLikeType !== 'DISLIKE') {
+                                        e.currentTarget.style.color = '#6b7280';
+                                      }
                                     }}
                                 >
-                                  <img src={thumbDown} alt="안따봉" className="w-5 h-5" /> {post.dislikeCount || 0}
+                                  <img src={thumbDown} alt="안따봉" className="w-6 h-6" /> {post.dislikeCount || 0}
                                 </button>
                               </div>
                             </div>

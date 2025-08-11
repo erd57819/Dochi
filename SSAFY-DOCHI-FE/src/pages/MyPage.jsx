@@ -107,7 +107,7 @@ const MyPage = () => {
         )}
 
         {/* 카드 그리드 - 3열 고정 */}
-        <div className="flex justify-center px-4 lg:px-8">
+        <div className="flex justify-center px-4 lg:px-8 pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-40 gap-y-20 max-w-[1000px] justify-items-center">
           
           {/* 등록된 갈등 카드들 */}
