@@ -19,9 +19,9 @@ const ConflictTypeSelector = ({ value, onChange }) => {
           key={type.value}
           type="button"
           onClick={() => onChange(type.value)}
-          style={{ paddingTop: '1.5rem', paddingBottom: '1.5rem', paddingLeft: '0.75rem', paddingRight: '0.75rem' }}
+          style={{ paddingTop: '2.5rem', paddingBottom: '2.5rem', paddingLeft: '1rem', paddingRight: '1rem' }}
           className={`
-            relative rounded-2xl border-2 transition-all duration-200 
+            relative rounded-2xl border-2 transition-all duration-200 min-h-[180px]
             ${value === type.value 
               ? 'border-orange-500 bg-orange-50 shadow-lg transform scale-105' 
               : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'

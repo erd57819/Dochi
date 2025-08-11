@@ -24,7 +24,7 @@ const ConflictCreatePage = () => {
     desiredOutcome: '',
     priority: 'NONE',
     talkWillingness: 'NONE',
-    initialEmotion: '',
+    initialEmotion: [],
     intensity: 5
   });
 
@@ -86,7 +86,9 @@ const ConflictCreatePage = () => {
         desiredOutcome: formData.desiredOutcome || 'NONE',
         priority: formData.priority || 'NONE',
         talkWillingness: formData.talkWillingness || 'NONE',
-        initialEmotion: formData.initialEmotion || 'ETC'
+        initialEmotion: Array.isArray(formData.initialEmotion) && formData.initialEmotion.length > 0 
+          ? formData.initialEmotion.join(',')
+          : 'ETC'
       };
 
       // sessionStorage에 데이터 저장
@@ -251,7 +253,7 @@ const ConflictCreatePage = () => {
   const stepInfo = getStepInfo(currentStep);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50" style={{ zoom: '0.75' }}>
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* 상단 네비게이션 및 제목 */}
         <div className="relative mb-8">
