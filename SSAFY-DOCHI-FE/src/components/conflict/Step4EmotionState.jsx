@@ -70,7 +70,8 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
               { value: 'RELATIONSHIP', label: '관계회복이 중요', emoji: '🤝' },
               { value: 'PROBLEM_SOLVING', label: '문제 해결이 중요', emoji: '🛠️' },
               { value: 'INNER_PEACE', label: '내 마음의 평화가 중요', emoji: '🧘' },
-              { value: 'PREVENTION', label: '재발 방지가 중요', emoji: '🛡️' }
+              { value: 'PREVENTION', label: '재발 방지가 중요', emoji: '🛡️' },
+              { value: 'COMMUNICATION', label: '소통 개선이 중요', emoji: '💬' }
             ].map((option) => (
               <button
                 key={option.value}
@@ -138,8 +139,8 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
                 }
               `}
             >
-              <div className="text-3xl mb-2">😔</div>
-              <div className="font-medium text-base">적극적</div>
+              <div className="text-3xl mb-2">😤</div>
+              <div className="font-medium text-base">없음</div>
             </button>
           </div>
         </div>
