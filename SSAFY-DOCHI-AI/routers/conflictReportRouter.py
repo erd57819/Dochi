@@ -321,14 +321,6 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
     GPT 응답을 파싱하여 구조화된 데이터로 변환
     """
     try:
-        # --- 안전장치: gpt_response가 dict면 텍스트 꺼내기 ---
-        if isinstance(gpt_response, dict):
-            gpt_response = (
-                gpt_response.get("text")
-                or gpt_response.get("content")
-                or json.dumps(gpt_response, ensure_ascii=False)
-            )
-        
         print(f"[파싱 시작] GPT 응답 길이: {len(gpt_response)}자, 화자: {speakers}")
         
         # GPT 응답을 섹션별로 분석
@@ -520,48 +512,50 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                     elif "전문가" in content:
                         result["summary"]["professional_help_needed"] = "true" in content.lower()
                         
-        # 변환 전 참가자 수 로그 (리스트일 때!)
-        participant_list = result["responsibility"]["responsibility_analysis"]["participants"]
-        print(f"[파싱 완료 전] 책임 분석 참가자 수: {len(participant_list)}명")
-
         # 화자별 책임 비율 검증 및 보정
-        if participant_list:
+        if result["responsibility"]["responsibility_analysis"]["participants"]:
             # 총 퍼센트가 100%가 되도록 조정
-            total_percent = sum(p["responsibility_percentage"] for p in participant_list)
+            total_percent = sum(p["responsibility_percentage"] for p in result["responsibility"]["responsibility_analysis"]["participants"])
             if total_percent != 100:
                 # 첫 번째 화자에게 차이만큼 조정
-                if participant_list:
-                    participant_list[0]["responsibility_percentage"] += (100 - total_percent)
+                if result["responsibility"]["responsibility_analysis"]["participants"]:
+                    result["responsibility"]["responsibility_analysis"]["participants"][0]["responsibility_percentage"] += (100 - total_percent)
         else:
             # GPT 응답에서 추출하지 못한 경우 빈 배열로 유지 (하드코딩 제거)
             print("[경고] GPT 응답에서 책임 비율을 추출하지 못했습니다.")
+            # 기본값 제거 - 빈 배열로 유지하여 프론트엔드에서 "데이터 없음" 처리
         
-        # --- 프론트 호환 형태로 변환 ---
-        if participant_list:
+        # 프론트엔드 호환성을 위해 데이터 구조 변환
+        if result["responsibility"]["responsibility_analysis"]["participants"]:
             frontend_responsibility = {}
-            for p in participant_list:
-                speaker_key = f"speaker_{p['name']}"
+            for participant in result["responsibility"]["responsibility_analysis"]["participants"]:
+                speaker_key = f"speaker_{participant['name']}"
                 frontend_responsibility[speaker_key] = {
-                    "name": p["name"],
-                    "responsibility_percentage": p["responsibility_percentage"],
-                    "communication_style": "",
-                    "key_issues": p.get("reasons", []),
+                    "name": participant["name"],
+                    "responsibility_percentage": participant["responsibility_percentage"],
+                    "communication_style": "",  # GPT에서 추출
+                    "key_issues": participant.get("reasons", [])
                 }
+            
+            # 프론트엔드 구조로 변환
             result["responsibility"]["responsibility_analysis"] = frontend_responsibility
         else:
+            # 데이터가 없을 때는 빈 객체
             result["responsibility"]["responsibility_analysis"] = {}
         
         # 갈등 고조 지점 추가 (GPT에서 추출되지 않은 경우 빈 배열)
         if "escalation_points" not in result["responsibility"]:
             result["responsibility"]["escalation_points"] = []
         
-        # 변환 후 로그는 dict 기준으로
-        print(
-            f"[파싱 완료] 우선순위 액션: {len(result['action_plans']['priority_actions'])}개, "
-            f"소통 팁: {len(result['action_plans']['communication_tips'])}개, "
-            f"장기 제안: {len(result['action_plans']['long_term_suggestions'])}개, "
-            f"책임 참가자 수: {len(result['responsibility']['responsibility_analysis'])}명"
-        )
+        # 모든 데이터는 GPT 응답에서 실제로 추출된 내용만 사용
+        
+        # 최종 결과 로깅
+        print(f"[파싱 완료] 액션 플랜 데이터:")
+        print(f"  - 우선순위 액션: {len(result['action_plans']['priority_actions'])}개")
+        print(f"  - 소통 팁: {len(result['action_plans']['communication_tips'])}개")  
+        print(f"  - 장기 제안: {len(result['action_plans']['long_term_suggestions'])}개")
+        print(f"[파싱 완료] 책임 분석 데이터:")
+        print(f"  - 참가자 수: {len(result['responsibility']['responsibility_analysis']['participants'])}명")
         
         return result
         

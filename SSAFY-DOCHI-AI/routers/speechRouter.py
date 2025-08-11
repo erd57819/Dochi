@@ -4,11 +4,8 @@ import typing
 from pydantic import BaseModel
 from services.emotionService import EmotionService 
 from services.coachingService import CoachingService
+from services.kafkaService import produce
 import json
-from redis import Redis
-
-# Redis 연결
-r = Redis(host="dochi-redis", port=6379, decode_responses=True)
 
 router = APIRouter(prefix="/speech", tags=["speech_processing"])
 
@@ -59,7 +56,7 @@ async def healthCheck():
             "emotionAnalysis": "키워드 기반 감정 분석",
             "conflictDetection": "다층 갈등 위험도 분석",
             "realtimeCoaching": "실시간 대화 코칭 시스템",
-            "redisIntegration": "Redis 기반 데이터 저장소"
+            "kafkaIntegration": "Kafka 기반 데이터 파이프라인"
         },
         "dataFormats": ["JSON STT", "JSON Emotion"],
         "languages": ["ko-KR"],
@@ -75,28 +72,28 @@ class ConflictSTTData(BaseModel):
 @router.post("/process-conflict-chunk")
 async def processConflictChunk(data: ConflictSTTData):
     """
-    갈등 레포트용 STT 데이터를 받아서 Redis에 직접 저장합니다.
+    갈등 레포트용 STT 데이터를 받아서 Kafka로 전송합니다.
     프론트엔드에서 JSON 형태의 STT 데이터를 받습니다.
     """
     try:
-        # Redis에 STT 데이터 직접 저장
-        stt_entry = f"{data.speakerId}: {data.text}"
-        redis_key = f"stt:raw:{data.roomId}"
-        
-        # Redis List에 추가
-        r.rpush(redis_key, stt_entry)
-        # 24시간 후 자동 삭제
-        r.expire(redis_key, 86400)
-        
-        processed_at = datetime.now().isoformat()
-        print(f"[Redis STT 저장 완료] Room: {data.roomId}, Speaker: {data.speakerId}")
+        # Kafka로 STT 데이터 전송
+        kafka_payload = {
+            "roomId": data.roomId,
+            "speakerId": data.speakerId,
+            "text": data.text,
+            "timestamp": data.timestamp,
+            "processedAt": datetime.now().isoformat()
+        }
+
+        produce("conflict-stt", json.dumps(kafka_payload, ensure_ascii=False))
+        print(f"[Kafka STT 발행 완료] {kafka_payload}")
 
         return {
             "status": "success",
-            "message": "STT 데이터가 성공적으로 저장되었습니다.",
+            "message": "STT 데이터가 성공적으로 처리되었습니다.",
             "roomId": data.roomId,
             "speakerId": data.speakerId,
-            "processedAt": processed_at
+            "processedAt": kafka_payload["processedAt"]
         }
 
     except Exception as e:
