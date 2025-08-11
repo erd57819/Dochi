@@ -53,4 +53,10 @@
         WHERE id = #{chatRoomId}
     </delete>
 
+    <!-- 8. 채팅방 이름 변경   -->
+    <update id="updateChatRoomTitle">
+        UPDATE chat_rooms
+        SET title = #{newTitle}
+        WHERE id = #{chatRoomId}
+    </update>
 </mapper>

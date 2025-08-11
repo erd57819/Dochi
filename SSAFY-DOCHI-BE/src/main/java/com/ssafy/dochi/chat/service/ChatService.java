@@ -159,4 +159,12 @@ public class ChatService {
         chatDao.deleteMessagesByRoomId(chatRoomId);
         chatDao.deleteRoomById(chatRoomId);
     }
+
+
+    @Transactional
+    public void updateChatRoomTitle(Long chatRoomId, String newTitle) {
+        chatDao.updateChatRoomTitle(chatRoomId, newTitle);
+    }
+
+
 }

@@ -22,4 +22,6 @@ public interface ChatDao {
     void deleteRoomById(@Param("chatRoomId") Long chatRoomId);
     // 특정 채팅방의 메시지 전체 삭제
     void deleteMessagesByRoomId(@Param("chatRoomId") Long chatRoomId);
+
+    void updateChatRoomTitle(@Param("chatRoomId") Long chatRoomId, @Param("newTitle") String newTitle);
 }

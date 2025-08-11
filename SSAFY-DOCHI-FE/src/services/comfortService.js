@@ -70,7 +70,7 @@ const comfortService = {
   // 채팅방 제목 수정
   updateChatRoomTitle: async (chatRoomId, title) => {
     try {
-      const response = await apiClient.put(`/chat/rooms/${chatRoomId}/title`, { title });
+      const response = await apiClient.put(`/chat/rooms/${chatRoomId}/title`, { newTitle: title });
       return response.data;
     } catch (error) {
       console.error('Failed to update chat room title:', error);
