@@ -419,7 +419,6 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                         if action and action not in result["summary"]["immediate_actions"] and len(action) > 3:
                             result["summary"]["immediate_actions"].append(action)
                     elif "성공 확률" in content:
-                        import re
                         numbers = re.findall(r'\d+', content)
                         if numbers:
                             result["summary"]["success_probability"] = int(numbers[0])
