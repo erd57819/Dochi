@@ -24,13 +24,11 @@
     <insert id="save" parameterType="com.ssafy.dochi.conflict.domain.AiAnalysisResult" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO ai_analysis_results (
             conflict_id, user_id, emotion_analysis, conflict_analysis, relationship_health_score,
-            trust_score, communication_score, cooperation_score,
-            priority_recommendation, recommended_actions
+            trust_score, communication_score, cooperation_score, priority_recommendation, recommended_actions
         )
         VALUES (
             #{conflictId}, #{userId}, #{emotionAnalysis}, #{conflictAnalysis}, #{relationshipHealthScore},
-            #{trustScore}, #{communicationScore}, #{cooperationScore},
-            #{priorityRecommendation}, #{recommendedActions}
+            #{trustScore}, #{communicationScore}, #{cooperationScore}, #{priorityRecommendation}, #{recommendedActions}
         )
     </insert>
 
