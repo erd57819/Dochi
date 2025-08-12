@@ -661,7 +661,7 @@ const ComfortChatPage = () => {
       {/* 네컷만화 모달 */}
       {showManhwa && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">오늘의 네컷만화</h3>
               <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
