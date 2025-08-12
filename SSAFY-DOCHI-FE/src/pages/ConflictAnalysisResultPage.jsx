@@ -127,37 +127,22 @@ const ConflictAnalysisResultPage = () => {
         if (cachedJson.data && Object.keys(cachedJson.data).length > 0) {
           console.log('Redis에서 캐시된 분석 결과 발견:', cachedJson.data);
           
-          // 기본 AI 요약/해결방안은 별도로 호출
-          const basicRes = await fetch(
-            `${API_BASE_URL}/conflict/analyze/${tempId}`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-          
-          let basicAi = { summary: basicData.aiSummary, solutions: basicData.aiSolutions };
-          if (basicRes.ok) {
-            const basicJson = await basicRes.json();
-            basicAi = basicJson.data;
-          }
+          // sessionStorage에 저장된 기본 AI 요약/해결방안 사용 (추가 API 호출 불필요)
+          const basicAi = { 
+            summary: basicData.aiSummary, 
+            solutions: basicData.aiSolutions 
+          };
           
           // 캐시된 데이터로 화면 구성
           const adv = cachedJson.data;
           
-          // 캐시된 데이터 디버그 로그
-          console.log('캐시된 분석 데이터 확인:');
-          console.log('- conflict_analysis:', adv.conflict_analysis);
-          console.log('- my_position:', adv.my_position);
-          console.log('- partner_position:', adv.partner_position);
+          console.log('✅ Redis 캐시 데이터 사용 - 빠른 로딩 완료');
           
+          // 데이터 먼저 설정한 후 로딩 상태 해제
           setConflictData({
             ...basicData,
-            aiSummary: basicAi.summary,
-            aiSolutions: basicAi.solutions,
+            aiSummary: basicAi.summary || '기본 요약',
+            aiSolutions: basicAi.solutions || '기본 해결방안',
             conflictAnalysis: adv.conflict_analysis ?? adv.conflictAnalysis ?? '',
             myPosition: adv.my_position ?? adv.myPosition ?? '내 입장을 AI가 분석해서 정리해드립니다.',
             partnerPosition: adv.partner_position ?? adv.partnerPosition ?? '상대방의 입장을 AI가 추정해서 분석해드립니다.',
@@ -169,6 +154,7 @@ const ConflictAnalysisResultPage = () => {
             recommendedActions: adv.recommended_actions ?? adv.recommendedActions ?? []
           });
           
+          // 데이터 설정 후 로딩 상태 해제
           setIsLoading(false);
           return;
         }
