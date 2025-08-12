@@ -97,11 +97,18 @@ const Step5AIAnalysis = ({
               {advancedAnalysis.emotion_analysis && (
                 <div className="bg-white rounded-xl p-6">
                   <h4 className="font-medium text-purple-700 mb-3 text-lg">😊 감정 분석</h4>
-                  <div 
-                    className="text-gray-600"
-                    style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
-                    dangerouslySetInnerHTML={{ __html: advancedAnalysis.emotion_analysis }}
-                  />
+                  <div className="text-gray-600" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                    {typeof advancedAnalysis.emotion_analysis === 'string' 
+                      ? <div dangerouslySetInnerHTML={{ __html: advancedAnalysis.emotion_analysis }} />
+                      : (
+                        <div>
+                          <p><strong>표면 감정:</strong> {advancedAnalysis.emotion_analysis.surface_emotion}</p>
+                          <p><strong>숨겨진 감정:</strong> {advancedAnalysis.emotion_analysis.hidden_emotion}</p>
+                          <p><strong>감정적 영향:</strong> {advancedAnalysis.emotion_analysis.emotional_impact}</p>
+                        </div>
+                      )
+                    }
+                  </div>
                 </div>
               )}
 

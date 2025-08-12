@@ -5,15 +5,7 @@ from services.summaryService import SummaryService
 
 router = APIRouter(prefix="/api/summary", tags=["summary"])
 
-@router.post("/", response_model=summary_schema.SummaryResponse)
-def get_summary(
-    request: summary_schema.SummaryRequest,
-    summary_service: SummaryService = Depends(SummaryService)
-):
-    summary_text = summary_service.summarize(
-        text=request.original_text, 
-    )
-    return summary_schema.SummaryResponse(summary_text=summary_text)
+# 기본 분석 엔드포인트 제거됨 - /advanced 엔드포인트로 통합
 
 @router.post("/advanced", response_model=dict)
 def get_advanced_analysis(
