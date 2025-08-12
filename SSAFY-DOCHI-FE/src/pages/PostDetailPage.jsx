@@ -298,16 +298,16 @@ const PostDetailPage = () => {
   const postDisplayName = getDisplayName(post);
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ minHeight: '100vh' }}>
       {/* 전체 배경 컨테이너 */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 w-full" style={{ minHeight: '100vh' }}>
         {/* 상단 배경 */}
         <div 
           className="absolute top-0 left-0 w-full bg-gradient-to-br from-orange-50 via-white to-yellow-50" 
           style={{ 
-            height: '100%',
-            // backgroundColor: '#F8D6B3',
-            opacity: 0.14
+            opacity: 0.14,
+            minHeight: '100vh',
+            height: '100%'
           }}
         ></div>
       </div>
