@@ -28,10 +28,10 @@ const ConflictCard = ({
       }}
       onClick={onButtonClick}
       onMouseEnter={(e) => {
-        e.target.style.boxShadow = '0 0 25px rgba(255, 165, 0, 0.5), 0 0 50px rgba(255, 165, 0, 0.4), 0 0 75px rgba(255, 165, 0, 0.3)';
+        e.currentTarget.style.boxShadow = '0 0 25px rgba(255, 165, 0, 0.5), 0 0 50px rgba(255, 165, 0, 0.4), 0 0 75px rgba(255, 165, 0, 0.3)';
       }}
       onMouseLeave={(e) => {
-        e.target.style.boxShadow = '0 0 15px rgba(255, 165, 0, 0.3), 0 0 30px rgba(255, 165, 0, 0.2), 0 0 45px rgba(255, 165, 0, 0.1)';
+        e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 165, 0, 0.3), 0 0 30px rgba(255, 165, 0, 0.2), 0 0 45px rgba(255, 165, 0, 0.1)';
       }}>
       
       {/* 갈등 이미지 아이콘 */}
@@ -72,11 +72,11 @@ const ConflictCard = ({
           className="px-5 py-2 rounded-full text-sm font-medium transition-colors shadow-lg text-white"
           style={{ 
             fontFamily: 'Pretendard-Medium, Helvetica',
-            background: 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)',
+            background: '#EC9109',
             border: 'none'
           }}
-          onMouseEnter={(e) => e.target.style.background = 'linear-gradient(135deg, #E55A43 0%, #F0B85C 100%)'}
-          onMouseLeave={(e) => e.target.style.background = 'linear-gradient(135deg, #FF6C50 0%, #FFC269 100%)'}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#d08208'}
+          onMouseLeave={(e) => e.currentTarget.style.background = '#EC9109'}
         >
           {buttonText}
         </button>
