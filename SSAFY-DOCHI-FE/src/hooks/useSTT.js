@@ -570,22 +570,54 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
 
     recognition.onerror = (event) => {
       console.error('음성 인식 오류:', event.error);
+      console.error('오류 상세:', {
+        error: event.error,
+        message: event.message,
+        timeStamp: event.timeStamp,
+        type: event.type
+      });
+      
       if (event.error === 'no-speech') {
         console.log('음성이 감지되지 않았습니다.');
+      } else if (event.error === 'audio-capture') {
+        console.error('오디오 캡처 실패 - 마이크 접근 문제일 수 있습니다.');
+      } else if (event.error === 'not-allowed') {
+        console.error('마이크 권한이 거부되었습니다.');
+      } else if (event.error === 'aborted') {
+        console.error('음성 인식이 중단되었습니다.');
       }
     };
 
     recognition.onend = () => {
       console.log('음성 인식이 중단되었습니다.');
+      console.log('STT 상태:', {
+        sttEnabled,
+        readyState: recognition.readyState,
+        continuous: recognition.continuous,
+        interimResults: recognition.interimResults
+      });
+      
       if (sttEnabled) {
+        console.log('1초 후 재시작 시도...');
         setTimeout(() => {
           try {
+            console.log('재시작 시도 전 상태:', {
+              sttEnabled,
+              readyState: recognition.readyState
+            });
             recognition.start();
             console.log('음성 인식을 다시 시작합니다.');
           } catch (error) {
             console.error('음성 인식 재시작 실패:', error);
+            console.error('에러 상세:', {
+              name: error.name,
+              message: error.message,
+              code: error.code
+            });
           }
         }, 1000);
+      } else {
+        console.log('STT가 비활성화되어 재시작하지 않습니다.');
       }
     };
 
@@ -617,9 +649,14 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
     }
 
     try {
+      console.log('STT 시작 시도...', {
+        continuous: recognitionRef.current.continuous,
+        interimResults: recognitionRef.current.interimResults,
+        lang: recognitionRef.current.lang
+      });
       recognitionRef.current.start();
       setSttEnabled(true);
-      console.log('음성 인식 시작');
+      console.log('음성 인식 시작 성공');
       
       // LiveKit Data Channel 초기화
       initLivekitDataChannel();
