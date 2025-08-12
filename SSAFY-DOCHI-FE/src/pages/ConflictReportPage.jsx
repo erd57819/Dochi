@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { conflictReportApi } from '../services/conflictReportApi';
+import consultantDochiImg from '../assets/consultantdochi.png';
 
 // Chart.js 설정
 import {
@@ -141,17 +142,29 @@ const ConflictReportPage = () => {
         
         <div className="container mx-auto px-12 py-24 max-w-6xl relative z-10">
           {/* 헤더 */}
-          <div className="text-center mb-20">
-            <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
-              갈등 분석 레포트
-            </h1>
-            <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
-            <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
-              AI가 분석한 갈등의 깊이와 해결책을 만나보세요
-            </p>
-            <p className="text-[#8B7B7B] text-sm mt-4 font-light">
-              생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
-            </p>
+          <div className="flex items-center justify-between mb-20">
+            {/* 왼쪽: 도치 이미지 */}
+            <div className="flex-shrink-0">
+              <img 
+                src={consultantDochiImg} 
+                alt="컨설턴트 도치" 
+                className="w-40 h-40 object-contain drop-shadow-lg opacity-90 hover:opacity-100 transition-opacity duration-300"
+              />
+            </div>
+            
+            {/* 오른쪽: 헤더 텍스트 */}
+            <div className="flex-1 text-right pl-12">
+              <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
+                갈등 분석 레포트
+              </h1>
+              <div className="w-24 h-0.5 bg-[#8B5A3C] ml-auto mb-8"></div>
+              <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
+                AI가 분석한 갈등의 깊이와 해결책을 만나보세요
+              </p>
+              <p className="text-[#8B7B7B] text-sm mt-4 font-light">
+                생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
+              </p>
+            </div>
           </div>
 
           {/* 종합 요약 */}
