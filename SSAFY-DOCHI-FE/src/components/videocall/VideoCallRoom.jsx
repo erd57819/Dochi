@@ -946,7 +946,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               {/* 대화 기록 */}
               {conversations.slice().reverse().map((conv) => {
                 // AI 코칭 메시지인지 확인
-                const isCoachingMessage = conv.isCoachingMessage || conv.speaker === 'AI 코치';
+                const isCoachingMessage = conv.isCoachingMessage || conv.speaker === '참견도치';
                 
                 return (
                   <div key={conv.id} className={`p-3 rounded-lg shadow border mb-3 ${
@@ -961,7 +961,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                         {isCoachingMessage ? (
                           <>
                             <span className="mr-2">🤖</span>
-                            <span className="bg-[#5C351A] text-white px-2 py-1 rounded-full text-xs mr-2">AI 코칭</span>
+                            <span className="bg-[#5C351A] text-white px-2 py-1 rounded-full text-xs mr-2">참견중</span>
                             {conv.speaker}
                           </>
                         ) : (
