@@ -59,12 +59,12 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
   };
 
   const frequencyOptions = [
-    { value: 0, label: '하루', emoji: '☀️' },
     { value: 1, label: '1일 이내', emoji: '🌅' },
     { value: 7, label: '1주일 이내', emoji: '📅' },
     { value: 30, label: '1개월 이내', emoji: '🗓️' },
     { value: 90, label: '3개월 이내', emoji: '📆' },
-    { value: 180, label: '6개월 이상', emoji: '📊' }
+    { value: 180, label: '6개월 이내', emoji: '📊' },
+    { value: 365, label: '1년 이상', emoji: '🕐' }
   ];
 
   const isValid = formData.description.trim() !== '' && (formData.conflictWhen !== undefined && formData.conflictWhen !== null) && (formData.conflictFrequency || 1);
@@ -139,20 +139,21 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
           <label className="block text-xl font-semibold text-gray-700 mb-4">
             갈등 빈도
           </label>
-          <div className={`bg-gray-50 p-6 rounded-2xl ${formData.conflictWhen === 0 ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className="bg-gray-50 p-6 rounded-2xl">
             <div className="relative">
               <input
                 type="range"
                 min="1"
-                max="6"
+                max="7"
                 value={formData.conflictFrequency || 1}
                 onChange={(e) => onChange({ conflictFrequency: parseInt(e.target.value) })}
                 className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, #8B4513 0%, #8B4513 ${(((formData.conflictFrequency || 1) - 1) / 5) * 100}%, #e5e7eb ${(((formData.conflictFrequency || 1) - 1) / 5) * 100}%, #e5e7eb 100%)`
+                  background: `linear-gradient(to right, #8B4513 0%, #8B4513 ${(((formData.conflictFrequency || 1) - 1) / 6) * 100}%, #e5e7eb ${(((formData.conflictFrequency || 1) - 1) / 6) * 100}%, #e5e7eb 100%)`
                 }}
               />
               <div className="flex justify-between mt-3 text-xs text-gray-600">
+                <span>1회성</span>
                 <span>매일</span>
                 <span>주 3-4회</span>
                 <span>주 1-2회</span>
@@ -165,6 +166,7 @@ const Step2ConflictDetail = ({ formData, onChange, onNext, onPrev }) => {
               <span className="text-3xl font-bold" style={{color: '#8B4513'}}>
                 {[
                   '',
+                  '1회성',
                   '매일',
                   '주 3-4회', 
                   '주 1-2회',

@@ -72,13 +72,46 @@ public class ConflictService {
         // Redis에서 갈등 데이터 조회
         ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
         
-        // 고급 AI 분석 수행
-        Map<String, Object> analysisResult = aiSummaryService.generateAdvancedAnalysis(
-            conflictData.getDescription(), conflictData.getConflictType());
+        // Redis에서 기존 분석 결과 조회 (있으면 재사용)
+        Map<String, Object> analysisResult = conflictRedisService.getAnalysisResult(tempConflictId);
         
-        // 기본 AI 분석도 수행 (요약 및 해결방안)
-        AiAnalysisResDto basicAnalysis = aiSummaryService.generateAnalysis(
-            conflictData.getDescription(), conflictData.getConflictType());
+        log.info("Redis 분석 결과 조회 결과 - tempConflictId: {}, result: {}", tempConflictId, 
+                analysisResult != null ? "존재" : "없음");
+        
+        // 분석 결과가 없을 때만 새로 분석 수행
+        if (analysisResult == null) {
+            log.info("Redis에 저장된 분석 결과가 없어 새로 분석을 수행합니다: {}", tempConflictId);
+            analysisResult = aiSummaryService.generateAdvancedAnalysis(
+                conflictData.getDescription(), conflictData.getConflictType());
+        } else {
+            log.info("Redis에 저장된 분석 결과를 재사용합니다: {}", tempConflictId);
+            log.info("Redis 분석 결과 키: {}", analysisResult.keySet());
+        }
+        
+        // 분석 결과에서 summary와 solutions 추출
+        // Redis에는 summary/solutions가 아닌 conflict_analysis가 저장되므로 이를 활용
+        String conflictAnalysis = convertObjectToString(analysisResult.get("conflict_analysis"));
+        String recommendedActions = convertObjectToString(analysisResult.get("recommended_actions"));
+        
+        // summary는 conflict_analysis에서 추출하거나 기본값 사용
+        String summary = conflictAnalysis != null ? conflictAnalysis : "AI가 갈등 상황을 분석했습니다.";
+        
+        // solutions는 recommended_actions에서 추출하거나 기본값 사용  
+        String solutions;
+        if (recommendedActions != null) {
+            // JSON 문자열인 경우 파싱해서 readable한 형태로 변환
+            try {
+                solutions = extractSolutionsFromRecommendedActions(recommendedActions);
+            } catch (Exception e) {
+                solutions = recommendedActions; // JSON 파싱 실패시 원본 사용
+            }
+        } else {
+            solutions = "AI가 추천하는 해결방안을 제공합니다.";
+        }
+        
+        log.info("추출된 summary 길이: {}, solutions 길이: {}", 
+                summary != null ? summary.length() : 0, 
+                solutions != null ? solutions.length() : 0);
         
         // UserConflict 객체 생성 (기본 분석 결과 포함)
         UserConflict conflict = new UserConflict(
@@ -94,7 +127,7 @@ public class ConflictService {
             conflictData.getTalkWillingness(),
             conflictData.getInitialEmotion(),
             conflictData.getIntensity(),
-            basicAnalysis.getSummary() + "\n\n[해결방안]\n" + basicAnalysis.getSolutions()
+            summary + "\n\n[해결방안]\n" + solutions
         );
         
         // 갈등 데이터를 MySQL에 저장
@@ -271,5 +304,78 @@ public class ConflictService {
         // AI 분석 결과 조회
         return aiAnalysisResultDao.findByConflictId(conflictId)
             .orElse(null); // 분석 결과가 없으면 null 반환
+    }
+    
+    /**
+     * Redis에서 가져온 객체를 안전하게 String으로 변환
+     */
+    private String convertObjectToString(Object obj) {
+        if (obj == null) return null;
+        if (obj instanceof String) return (String) obj;
+        if (obj instanceof Map || obj instanceof List) {
+            // JSON 객체/배열인 경우 문자열로 변환
+            try {
+                return obj.toString(); // 간단한 변환
+            } catch (Exception e) {
+                log.warn("객체를 문자열로 변환 실패: {}", e.getMessage());
+                return obj.toString();
+            }
+        }
+        return obj.toString();
+    }
+    
+    /**
+     * recommended_actions JSON에서 해결방안 텍스트 추출
+     */
+    private String extractSolutionsFromRecommendedActions(String recommendedActions) {
+        if (recommendedActions == null) return null;
+        
+        try {
+            // JSON 문자열인 경우 간단한 파싱으로 처리
+            if (recommendedActions.startsWith("{") && recommendedActions.contains("immediate")) {
+                // JSON 구조에서 주요 행동 지침들을 추출
+                StringBuilder solutions = new StringBuilder();
+                solutions.append("🔍 즉시 행동:\n");
+                
+                // 간단한 문자열 추출 (정규식 사용)
+                String immediate = extractArrayFromJson(recommendedActions, "immediate");
+                if (immediate != null) solutions.append(immediate).append("\n\n");
+                
+                solutions.append("📋 단기 계획:\n");
+                String shortTerm = extractArrayFromJson(recommendedActions, "shortTerm");
+                if (shortTerm != null) solutions.append(shortTerm).append("\n\n");
+                
+                solutions.append("🎯 중기 계획:\n");
+                String midTerm = extractArrayFromJson(recommendedActions, "midTerm");
+                if (midTerm != null) solutions.append(midTerm);
+                
+                return solutions.toString();
+            }
+            return recommendedActions; // JSON이 아니면 그대로 반환
+        } catch (Exception e) {
+            log.warn("recommended_actions 파싱 실패: {}", e.getMessage());
+            return recommendedActions; // 파싱 실패시 원본 반환
+        }
+    }
+    
+    /**
+     * JSON 문자열에서 배열 값들을 추출하여 문자열로 변환
+     */
+    private String extractArrayFromJson(String json, String key) {
+        try {
+            String pattern = "\"" + key + "\":\\[([^\\]]+)\\]";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                String arrayContent = m.group(1);
+                // 따옴표 제거하고 항목들을 줄바꿈으로 구분
+                return arrayContent.replaceAll("\"", "")
+                                 .replaceAll(",", "\n• ")
+                                 .replaceFirst("^", "• ");
+            }
+        } catch (Exception e) {
+            log.debug("JSON 배열 추출 실패: {}", e.getMessage());
+        }
+        return null;
     }
 }
