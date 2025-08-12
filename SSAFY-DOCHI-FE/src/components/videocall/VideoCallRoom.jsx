@@ -663,8 +663,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               id="guestNickname"
               value={guestNickname}
               onChange={(e) => setGuestNickname(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.isComposing) {
                   handleGuestJoin();
                 }
               }}
