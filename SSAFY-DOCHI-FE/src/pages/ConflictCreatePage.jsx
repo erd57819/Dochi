@@ -93,8 +93,13 @@ const ConflictCreatePage = () => {
       sessionStorage.setItem('tempTitle', payload.title);
       sessionStorage.setItem('tempDescription', payload.description);
       sessionStorage.setItem('tempConflictType', payload.conflictType);
+      sessionStorage.setItem('tempIntensity', payload.intensity);
+      sessionStorage.setItem('tempEmotion', payload.initialEmotion);
+      sessionStorage.setItem('tempPriority', payload.priority);
+      sessionStorage.setItem('tempTalkWillingness', payload.talkWillingness);
+      sessionStorage.setItem('tempDesiredOutcome', payload.desiredOutcome);
 
-      console.log("보내는 데이터:", JSON.stringify(payload, null, 2));
+      console.log("📤 갈등 생성 데이터:", JSON.stringify(payload, null, 2));
 
       // 1단계: Redis에 임시 저장
       const tempResponse = await fetch(`${API_BASE_URL}/conflict/temp`, {
@@ -120,52 +125,83 @@ const ConflictCreatePage = () => {
 
       console.log('Generated Conflict ID:', conflictId);
 
-      // 2단계: AI 분석 요청
-      const analysisResponse = await fetch(`${API_BASE_URL}/conflict/analyze/${conflictId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-
-      console.log('Analysis Response Status:', analysisResponse.status);
-
-      if (!analysisResponse.ok) {
-        const analysisError = await analysisResponse.text();
-        console.log('Analysis Error:', analysisError);
-        throw new Error(`AI 분석 실패: ${analysisResponse.status}`);
-      }
-
-      const analysisResult = await analysisResponse.json();
-      console.log('Analysis Result:', analysisResult);
-      const analysisData = analysisResult.data || analysisResult.response?.response || analysisResult;
-
-      // AI 분석 결과 sessionStorage에 저장 (ConflictAnalysisResultPage에서 사용)
-      const aiSummary = analysisData.summary || analysisData.aiSummary || '요약을 생성할 수 없습니다.';
-      const aiSolutions = analysisData.solutions || analysisData.aiSolutions || '해결방안을 생성할 수 없습니다.';
+      // 2단계: 고급 AI 분석 요청 (재시도 로직 포함)
+      let advancedRetryCount = 0;
+      const maxAdvancedRetries = 2; // AI 분석 재시도 횟수 증가
       
-      sessionStorage.setItem('tempAiSummary', aiSummary);
-      sessionStorage.setItem('tempAiSolutions', aiSolutions);
+      let analysisData = null;
+      
+      while (advancedRetryCount <= maxAdvancedRetries && !analysisData) {
+        try {
+          const advancedController = new AbortController();
+          const advancedTimeoutId = setTimeout(() => advancedController.abort(), 30000); // 30초 타임아웃
+          
+          console.log(`AI 분석 시도 ${advancedRetryCount + 1}/${maxAdvancedRetries + 1}...`);
+          
+          const advancedResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/${conflictId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            },
+            signal: advancedController.signal
+          });
+          
+          clearTimeout(advancedTimeoutId);
+          console.log('AI Analysis Response Status:', advancedResponse.status);
 
-      // 고급 AI 분석 요청
-      try {
-        const advancedResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/${conflictId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          if (advancedResponse.ok) {
+            try {
+              const analysisResult = await advancedResponse.json();
+              console.log('✅ AI 분석 완료:', analysisResult);
+              analysisData = analysisResult.data || analysisResult.response?.response || analysisResult;
+              
+              // AI 분석 결과 sessionStorage에 저장
+              const aiSummary = analysisData.summary || analysisData.conflict_analysis || '분석을 생성할 수 없습니다.';
+              const aiSolutions = analysisData.solutions || analysisData.recommended_actions || '해결방안을 생성할 수 없습니다.';
+              
+              sessionStorage.setItem('tempAiSummary', aiSummary);
+              sessionStorage.setItem('tempAiSolutions', aiSolutions);
+              break;
+            } catch (jsonError) {
+              console.log(`⚠️ AI 분석 JSON 파싱 실패 (시도 ${advancedRetryCount + 1}):`, jsonError);
+              advancedRetryCount++;
+              if (advancedRetryCount <= maxAdvancedRetries) {
+                console.log('3초 후 재시도...');
+                await new Promise(resolve => setTimeout(resolve, 3000));
+              }
+            }
+          } else if (advancedResponse.status === 504) {
+            console.log(`⏰ AI 분석 504 타임아웃 (시도 ${advancedRetryCount + 1})`);
+            advancedRetryCount++;
+            if (advancedRetryCount <= maxAdvancedRetries) {
+              console.log('3초 후 재시도...');
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+          } else {
+            const analysisError = await advancedResponse.text();
+            console.log('AI Analysis Error:', analysisError);
+            throw new Error(`AI 분석 실패: ${advancedResponse.status}`);
           }
-        });
-
-        if (advancedResponse.ok) {
-          console.log('고급 AI 분석 완료');
-        } else {
-          console.log(`Advanced analysis failed with status: ${advancedResponse.status}, but continuing...`);
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            console.log(`⏰ AI 분석 타임아웃 (시도 ${advancedRetryCount + 1})`);
+            advancedRetryCount++;
+            if (advancedRetryCount <= maxAdvancedRetries) {
+              console.log('3초 후 재시도...');
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+          } else {
+            throw error;
+          }
         }
-      } catch (error) {
-        console.error('고급 AI 분석 오류:', error);
-        // 고급 분석 실패는 전체 플로우를 중단시키지 않음
+      }
+      
+      // 모든 재시도 실패 시 기본값 설정
+      if (!analysisData) {
+        console.log('⚠️ AI 분석 모든 시도 실패 - 기본값 사용');
+        sessionStorage.setItem('tempAiSummary', '서버 응답 지연으로 인해 분석을 완료할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        sessionStorage.setItem('tempAiSolutions', '서버 응답 지연으로 인해 해결방안을 생성할 수 없습니다. 갈등 상세 페이지에서 다시 확인해주세요.');
       }
 
       // AI 분석 완료 후 ConflictAnalysisResultPage로 이동
@@ -199,6 +235,11 @@ const ConflictCreatePage = () => {
         return {
           title: "내가 원하는 해결 결과",
           description: "갈등이 어떻게 해결되기를 원하는지 알려주세요"
+        };
+      case 4:
+        return {
+          title: "AI 분석 중",
+          description: "갈등 상황을 분석하고 맞춤형 해결방안을 생성하고 있습니다"
         };
       default:
         return {
@@ -237,7 +278,7 @@ const ConflictCreatePage = () => {
         
         {/* Progress Indicator */}
         <div className="text-center mb-6">
-          <ProgressIndicator currentStep={currentStep} totalSteps={3} />
+          <ProgressIndicator currentStep={currentStep} totalSteps={4} />
         </div>
 
         {/* Main Content Area */}
@@ -276,7 +317,52 @@ const ConflictCreatePage = () => {
             />
           )}
 
-          {/* Step 4는 제거됨 - AI 분석 후 바로 ConflictAnalysisResultPage로 이동 */}
+          {/* Step 4: AI 분석 로딩 화면 */}
+          {currentStep === 4 && (
+            <div className="flex flex-col items-center justify-center min-h-[500px] text-center">
+              {/* 고슴도치 챗바퀴 애니메이션 */}
+              <div className="relative mb-8">
+                {/* 외부 챗바퀴 (회전하는 원) */}
+                <div className="w-32 h-32 border-8 border-orange-200 border-t-orange-500 rounded-full animate-spin" 
+                     style={{ animationDuration: '1.5s' }}></div>
+                
+                {/* 내부 챗바퀴 (역방향 회전) */}
+                <div className="absolute inset-2 w-24 h-24 border-4 border-orange-100 border-b-orange-400 rounded-full animate-spin" 
+                     style={{ animationDuration: '2s', animationDirection: 'reverse' }}></div>
+                
+                {/* 고슴도치 이미지 (중앙에 고정) */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <img 
+                    src={hedgehogImg} 
+                    alt="도치" 
+                    className="w-16 h-16 object-contain animate-pulse" 
+                    style={{ animationDuration: '2s' }}
+                  />
+                </div>
+              </div>
+              
+              {/* 로딩 메시지 */}
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
+                  AI가 갈등을 분석하고 있어요
+                </span>
+              </h3>
+              
+              <p className="text-gray-600 mb-2">잠시만 기다려주세요...</p>
+              <p className="text-sm text-gray-500">
+                🔍 갈등 상황 파악 중<br/>
+                🧠 해결방안 생성 중<br/>
+                📊 관계 분석 중
+              </p>
+              
+              {/* 진행 상황 표시 점들 */}
+              <div className="flex space-x-2 mt-6">
+                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

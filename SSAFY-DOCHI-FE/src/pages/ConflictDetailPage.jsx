@@ -347,45 +347,33 @@ const ConflictDetailPage = () => {
     return sentences;
   };
 
-  // 갈등 공유하기 함수
+  // 갈등 공유하기 함수 - AI 분석과 함께
+  // 갈등 공유하기 함수 - CreatePostPage에서 AI 로딩
   const handleShareConflict = () => {
     if (!conflict) return;
 
+    // 갈등 상황 요약 생성
     const summary = generateConflictSummary(conflict);
     const conflictTypeText = getConflictTypeText(conflict.conflictType);
+    const conflictDescription = summary.join('\n');
     
-    // 자동 생성된 제목
-    const autoTitle = `[${conflictTypeText}] 갈등 상황 공유 - 조언 구합니다`;
-    
-    // 자동 생성된 내용 (찬반 투표 형식)
-    const autoContent = `안녕하세요! 갈등 상황을 공유하며 여러분의 의견을 듣고 싶습니다.
+    console.log('🚀 갈등 상세페이지에서 커뮤니티로 이동, AI 분석 데이터:', {
+      conflict: conflict,
+      summary: summary,
+      conflictTypeText: conflictTypeText
+    });
 
-${summary.join('\n')}
-
-📊 **여러분의 의견을 들려주세요:**
-
-**A안) 적극적 해결 방식**
-- 직접 대화를 통해 문제를 해결
-- 감정을 솔직하게 표현하고 소통
-- 빠른 해결을 위한 적극적 접근
-
-**B안) 신중한 접근 방식**  
-- 시간을 두고 상황을 정리한 후 접근
-- 중재자나 제3자의 도움 요청
-- 관계 손상을 최소화하는 방향으로 진행
-
-어떤 방식이 더 좋을지 댓글로 의견 부탁드립니다! 🙏
-
-#갈등해결 #조언구함 #${conflictTypeText}`;
-
-    // CreatePostPage로 이동하면서 데이터 전달
+    // CreatePostPage로 즉시 이동하면서 갈등 데이터 전달
     navigate('/community/create', {
       state: {
-        prefilledData: {
-          title: autoTitle,
-          content: autoContent,
-          category: 'CONFLICT_SHARING'
-        }
+        conflictData: {
+          ...conflict,
+          conflictTypeText: conflictTypeText,
+          summary: summary,
+          description: conflictDescription
+        },
+        targetCategory: 'CONFLICT_SHARING',
+        shouldGenerateAI: true // AI 생성 플래그
       }
     });
   };
@@ -483,21 +471,6 @@ ${summary.join('\n')}
                 </div>
               </div>
 
-              {/* 감정 분석 */}
-              {analysisResult?.emotionAnalysis && (
-                <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-8">
-                  <h4 className="text-xl font-bold text-pink-800 mb-6 flex items-center gap-3">
-                    <span className="text-2xl">💝</span> 감정 분석
-                  </h4>
-                  <div 
-                    className="text-pink-700"
-                    style={{ lineHeight: '1.8' }}
-                    dangerouslySetInnerHTML={{
-                      __html: renderAnalysisData(analysisResult.emotionAnalysis)
-                    }}
-                  />
-                </div>
-              )}
 
               {/* 입장 정리 - 감정/갈등 분석 아래로 */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
@@ -647,7 +620,72 @@ ${summary.join('\n')}
               <div 
                 className="rounded-3xl p-8 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
                 style={{ background: '#f8d6b3', color: '#3d2b1f' }}
-                onClick={() => navigate('/roadmap')}
+                onClick={() => {
+                  // 분석 결과를 sessionStorage에 저장하고 로드맵으로 이동
+                  if (conflict && analysisResult) {
+                    console.log('🚀 ConflictDetailPage에서 로드맵으로 데이터 전달:', analysisResult);
+                    
+                    // recommendedActions 처리 - 다양한 형태 지원
+                    let recommendedActions = analysisResult.recommendedActions || 
+                                           analysisResult.recommended_actions || 
+                                           analysisResult.recommendedAction ||
+                                           analysisResult.recommended_action;
+                    
+                    // 문자열인 경우 JSON 파싱 시도
+                    if (typeof recommendedActions === 'string') {
+                      try {
+                        recommendedActions = JSON.parse(recommendedActions);
+                      } catch (e) {
+                        console.log('recommendedActions 파싱 실패, 문자열 그대로 사용:', recommendedActions);
+                      }
+                    }
+                    
+                    // 배열이 아닌 경우 빈 배열로 설정
+                    if (!Array.isArray(recommendedActions)) {
+                      recommendedActions = [];
+                    }
+                    
+                    console.log('📋 최종 처리된 recommendedActions:', recommendedActions);
+                    
+                    // ConflictAnalysisResultPage와 동일한 데이터 구조로 맞춤
+                    const analysisDataForRoadmap = {
+                      ...conflict,
+                      aiSummary: conflict.aiSummary || analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis || '분석을 생성할 수 없습니다.',
+                      aiSolutions: conflict.aiSolutions || (analysisResult?.recommendedActions ? JSON.stringify(analysisResult.recommendedActions) : '해결방안을 생성할 수 없습니다.'),
+                      conflictAnalysis: analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis || '',
+                      myPosition: analysisResult?.myPosition || analysisResult?.my_position || '내 입장을 AI가 분석해서 정리해드립니다.',
+                      partnerPosition: analysisResult?.partnerPosition || analysisResult?.partner_position || '상대방의 입장을 AI가 추정해서 분석해드립니다.',
+                      relationshipHealthScore: analysisResult?.relationshipHealthScore || analysisResult?.relationship_health_score || 0,
+                      communicationScore: analysisResult?.communicationScore || analysisResult?.communication_score || 0,
+                      trustScore: analysisResult?.trustScore || analysisResult?.trust_score || { score: 0, analysis: '' },
+                      cooperationScore: analysisResult?.cooperationScore || analysisResult?.cooperation_score || { score: 0, improvement_suggestions: [] },
+                      priorityRecommendation: analysisResult?.priorityRecommendation || analysisResult?.priority_recommendation || '',
+                      recommendedActions: recommendedActions
+                    };
+                    
+                    console.log('💾 sessionStorage에 저장할 데이터:', analysisDataForRoadmap);
+                    sessionStorage.setItem('conflictAnalysisData', JSON.stringify(analysisDataForRoadmap));
+                  } else {
+                    console.log('⚠️ 분석 데이터가 없어서 기본 로드맵 사용');
+                    // 분석 데이터가 없어도 기본 갈등 데이터는 전달
+                    const basicDataForRoadmap = {
+                      ...conflict,
+                      aiSummary: conflict.aiSummary || '분석을 생성할 수 없습니다.',
+                      aiSolutions: conflict.aiSolutions || '해결방안을 생성할 수 없습니다.',
+                      conflictAnalysis: '',
+                      myPosition: '내 입장을 AI가 분석해서 정리해드립니다.',
+                      partnerPosition: '상대방의 입장을 AI가 추정해서 분석해드립니다.',
+                      relationshipHealthScore: 0,
+                      communicationScore: 0,
+                      trustScore: { score: 0, analysis: '' },
+                      cooperationScore: { score: 0, improvement_suggestions: [] },
+                      priorityRecommendation: '',
+                      recommendedActions: []
+                    };
+                    sessionStorage.setItem('conflictAnalysisData', JSON.stringify(basicDataForRoadmap));
+                  }
+                  navigate('/roadmap');
+                }}
               >
                 <div className="absolute top-3 right-3">
                   <span className="bg-orange-400 text-white text-xs font-bold px-2 py-1 rounded-full">

@@ -73,22 +73,8 @@ const KakaoCallbackPage = () => {
           role: role || 'USER'
         }, accessToken);
 
-        alert('로그인 확인');
-        
-        // ▼▼▼ 디버깅용 로그 추가 ▼▼▼
-        console.log('전체 loginData:', loginData);
-        console.log(`비교 시작: nickname='${nickname}', name='${name}'`);
-        console.log('타입 비교: typeof nickname=', typeof nickname, ', typeof name=', typeof name);
-        console.log('비교 결과 (nickname === name):', nickname === name);
-        // ▲▲▲ 디버깅용 로그 추가 ▲▲▲
-        
-        // nickname과 name 비교
-        if (nickname === name) {
-          alert('nickname과 name이 같습니다');
-          navigate('/mypage/profile');
-        } else {
-          navigate('/', { replace: true });
-        }
+        // 메인 페이지로 이동
+        navigate('/', { replace: true });
       } catch (err) {
         console.error('Kakao login error:', err);
         setError(err.message || '카카오 로그인 처리 중 오류가 발생했습니다.');
