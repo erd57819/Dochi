@@ -346,6 +346,29 @@ export const MainPage = () => {
     window.addEventListener('scroll', handleScroll);
     
     setTimeout(() => {
+      // 초기 로딩 시 Section 0 애니메이션 시작
+      const shakeEl = document.querySelector('.shake-text');
+      if (shakeEl) shakeEl.classList.add('animate');
+      
+      // Section 0 타이핑 시작
+      if (typewriterRef.current) {
+        const typed = new Typed(typewriterRef.current, {
+          strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
+          typeSpeed: 80,
+          backSpeed: 50,
+          backDelay: 2000,
+          loop: true,
+          showCursor: true,
+          cursorChar: '|',
+          cursorClass: 'typed-cursor'
+        });
+        typedInstances.current.push(typed);
+      }
+      
+      setTimeout(() => {
+        if (shakeEl) shakeEl.classList.add('finished');
+      }, 2500);
+      
       setAnimatedSections(new Set([0]));
     }, 100);
     
