@@ -63,24 +63,16 @@ async def get_conflict_report(room_id: str):
         }
         print("[감정 데이터] 프론트엔드 처리로 설정")
         
-        # 3. 통합 GPT 분석 (1회 호출로 모든 분석 완료)
+        # 3. 통합 GPT 분석
         if full_script:
-            print("[GPT 분석 조건] full_script가 존재함")
             # 전체 스크립트가 너무 길면 요약본 사용
             if len(full_script) > 50:  # 50줄 이상이면 중요한 부분만 추출
-                print(f"[스크립트 압축] {len(full_script)}줄 → 중요한 부분만 추출")
                 important_lines = extract_important_lines(full_script)
                 analysis_text = "\n".join(important_lines)
             else:
-                print(f"[스크립트 사용] {len(full_script)}줄 전체 사용")
                 analysis_text = "\n".join(full_script)
             
-            print(f"[GPT 분석 시작] 텍스트 길이: {len(analysis_text)} 문자")
-            print(f"[GPT 입력 샘플] {analysis_text[:200]}...")
-            
             integrated_analysis = await analyze_conflict_integrated(analysis_text)
-            print(f"[GPT 분석 결과] 타입: {type(integrated_analysis)}")
-            print(f"[GPT 결과 키] {list(integrated_analysis.keys()) if integrated_analysis else 'None'}")
             
             # GPT 결과를 섹션별로 분리
             report["sections"]["responsibility_analysis"] = {
@@ -98,7 +90,6 @@ async def get_conflict_report(room_id: str):
                 "data": integrated_analysis.get("action_plans", {})
             }
             
-            print("[GPT 분석 완료]")
         else:
             # 스크립트가 없을 때 기본값
             report["sections"]["responsibility_analysis"] = {
@@ -116,7 +107,6 @@ async def get_conflict_report(room_id: str):
         
         # 캐시에 저장 (24시간)
         r.set(cache_key, json.dumps(report), ex=86400)
-        print(f"[레포트 생성 완료] {room_id}")
         
         return report
         
@@ -134,31 +124,6 @@ async def get_conflict_report(room_id: str):
                 "action_plans": {"title": "맞춤형 액션 플랜", "data": {"error": "플랜 생성 실패"}}
             }
         }
-
-
-def extract_important_lines(full_script, max_lines=30):
-    """
-    긴 스크립트에서 갈등 관련 중요한 줄만 추출
-    """
-    if len(full_script) <= max_lines:
-        return full_script
-    
-    important_lines = []
-    conflict_keywords = ['화나', '싫어', '미워', '짜증', '답답', '그만', '왜', '잘못', '문제', '갈등']
-    
-    # 1. 갈등 키워드가 포함된 줄 우선 선택
-    for line in full_script:
-        if any(keyword in line for keyword in conflict_keywords):
-            important_lines.append(line)
-    
-    # 2. 부족하면 앞뒤 균등하게 추가
-    remaining = max_lines - len(important_lines)
-    if remaining > 0:
-        start_lines = full_script[:remaining//2]
-        end_lines = full_script[-(remaining - remaining//2):]
-        important_lines = start_lines + important_lines + end_lines
-    
-    return important_lines[:max_lines]
 
 
 async def analyze_conflict_integrated(analysis_text):
@@ -202,10 +167,11 @@ async def analyze_conflict_integrated(analysis_text):
 다음 형식으로 정확히 분석해주세요:
 
 ===== 1. 책임 비율 분석 =====
-각 참가자의 갈등 책임 비율을 %로 표시하고 이유를 설명하세요. 
+각 참가자의 갈등 책임 비율을 %로 표시하고 아래와 같은 형식으로 이유를 설명하세요. 
 예시:                                                       
  - 화자1: 60% - 상대방 의견을 무시하고 일방적으로 주장함      
  - 화자2: 40% - 감정적으로 대응하여 갈등을 증폭시킴 
+
 
 ===== 2. 갈등 상황 요약 =====
 - 핵심 쟁점 3가지
@@ -216,11 +182,13 @@ async def analyze_conflict_integrated(analysis_text):
 우선순위별 행동계획:                                     
  즉시 실행: 구체적 행동 1                                   
 - 1주일 내: 구체적 행동 2                                   
-- 1개월 내: 구체적 행동 3   
+- 1개월 내: 구체적 행동 3
+
 소통 개선 팁:                                            
 - 팁 1                                                      
 - 팁 2                                                       
-- 팁 3                                                      
+- 팁 3
+
 장기적 제안:                                            
  - 제안 1                                                    
 - 제안 2    
@@ -229,10 +197,7 @@ async def analyze_conflict_integrated(analysis_text):
 """
 
         # GPT API 호출 (비동기)
-        print("[GPT API 호출 시작]")
         gpt_response = await asyncio.to_thread(ask_gpt, prompt, model="gpt-4.1", temperature=0.7)
-        print(f"[GPT 응답 완료] 응답 길이: {len(gpt_response)} 문자")
-        print(f"[GPT 응답 샘플] {gpt_response[:300]}...")
         
         # GPT 응답을 파싱하여 구조화된 데이터로 변환
         print("[GPT 응답 파싱 시작]")
