@@ -130,12 +130,17 @@ const useComfortStore = create(
             messages: newSession.messages,
             selectedMode: 'NORMAL',
             showTimeline: false,
-            showManhwa: false
+            showManhwa: false,
+            error: null // 에러 초기화
             // 캐시는 유지하여 기존 데이터 보존
           }));
+          
+          console.log('새 세션 생성 완료:', { sessionId, chatRoomId, title });
+          return { sessionId, chatRoomId }; // 성공 시 정보 반환
         } catch (error) {
           console.error('Failed to create new session with title:', error);
           set({ error: '새 대화를 생성하는데 실패했습니다.' });
+          throw error; // 에러를 다시 던져서 UI에서 처리할 수 있도록
         }
       },
 
