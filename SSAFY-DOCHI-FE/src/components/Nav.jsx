@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore.js';
-import img16 from "@/assets/image-16.png";
+import image65 from "@/assets/image-65.png";
 import gameIcon from "@/assets/game.png";
 
 
@@ -29,13 +29,13 @@ export const Nav = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 lg:h-20">
           {/* 로고 영역 */}
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <Link to="/" className="flex items-center gap-0.5 hover:opacity-75 transition-opacity">
             <img
-              className="w-8 h-8 lg:w-9 lg:h-9 object-cover"
+              className="w-10 h-10 lg:w-14 lg:h-14 object-cover"
               alt="참견도치 로고"
-              src={img16}
+              src={image65}
             />
-            <div className="font-semibold text-xl lg:text-2xl text-black">
+            <div className="font-semibold text-xl lg:text-2xl" style={{ fontFamily: 'Wanted Sans Variable, Helvetica' }}>
               참견도치
             </div>
           </Link>
@@ -49,6 +49,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] scale-105' 
                   : 'text-[#777777] hover:text-[#ff6b35]'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               갈등해결
             </Link>
@@ -60,6 +61,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] scale-105' 
                   : 'text-[#777777] hover:text-[#ff6b35]'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               토닥토닥
             </Link>
@@ -71,6 +73,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] scale-105' 
                   : 'text-[#777777] hover:text-[#ff6b35]'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               커뮤니티
             </Link>
@@ -82,6 +85,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] scale-105' 
                   : 'text-[#777777] hover:text-[#ff6b35]'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               공지사항
             </Link>
@@ -98,15 +102,17 @@ export const Nav = () => {
                       ? 'text-[#ff6b35]' 
                       : 'text-[#4a4a4a] hover:text-[#ff6b35]'
                   }`}
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   마이페이지
                 </Link>
-                <span className="text-[#4a4a4a] text-sm font-medium">
-                  <span className="font-semibold text-[#ff6b35]">{user?.nickname || user?.name}</span>도치님
+                <span className="text-[#4a4a4a] text-sm font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>
+                  <span className="font-semibold text-[#ff6b35]" style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}>{user?.nickname || user?.name}</span>도치님
                 </span>
                 <button
                   onClick={handleLogout}
                   className="text-white text-sm font-semibold bg-gray-500 px-3 py-2 rounded-full hover:bg-gray-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   로그아웃
                 </button>
@@ -116,6 +122,7 @@ export const Nav = () => {
                 <Link 
                   to="/login" 
                   className="text-[#4a4a4a] text-base font-semibold hover:text-[#ff6b35] transition-all duration-200 hover:scale-105"
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   로그인
                 </Link>
@@ -123,6 +130,7 @@ export const Nav = () => {
                 <Link 
                   to="/signup" 
                   className="text-white text-sm font-semibold bg-[#ff6b35] px-3 py-2 rounded-full hover:bg-[#e55a2b] hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   회원가입
                 </Link>
@@ -185,6 +193,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] bg-orange-50' 
                   : 'text-[#777777] hover:text-[#ff6b35] hover:bg-gray-50'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               갈등해결
             </Link>
@@ -197,6 +206,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] bg-orange-50' 
                   : 'text-[#777777] hover:text-[#ff6b35] hover:bg-gray-50'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               토닥토닥
             </Link>
@@ -209,6 +219,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] bg-orange-50' 
                   : 'text-[#777777] hover:text-[#ff6b35] hover:bg-gray-50'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               커뮤니티
             </Link>
@@ -221,6 +232,7 @@ export const Nav = () => {
                   ? 'text-[#ff6b35] bg-orange-50' 
                   : 'text-[#777777] hover:text-[#ff6b35] hover:bg-gray-50'
               }`}
+              style={{ fontFamily: 'Pretendard-Bold, Helvetica' }}
             >
               공지사항
             </Link>
@@ -232,8 +244,8 @@ export const Nav = () => {
             {isLoggedIn ? (
               <>
                 <div className="px-3 py-2">
-                  <span className="text-[#4a4a4a] text-sm font-medium">
-                    <span className="font-semibold text-[#ff6b35]">{user?.nickname || user?.name}</span>도치님
+                  <span className="text-[#4a4a4a] text-sm font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>
+                    <span className="font-semibold text-[#ff6b35]" style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}>{user?.nickname || user?.name}</span>도치님
                   </span>
                 </div>
                 <Link 
@@ -244,6 +256,7 @@ export const Nav = () => {
                       ? 'text-[#ff6b35] bg-orange-50' 
                       : 'text-[#4a4a4a] hover:text-[#ff6b35] hover:bg-gray-50'
                   }`}
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   마이페이지
                 </Link>
@@ -253,6 +266,7 @@ export const Nav = () => {
                     setIsMobileMenuOpen(false);
                   }}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   로그아웃
                 </button>
@@ -263,6 +277,7 @@ export const Nav = () => {
                   to="/login"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-semibold text-[#4a4a4a] hover:text-[#ff6b35] hover:bg-gray-50 transition-colors"
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   로그인
                 </Link>
@@ -271,6 +286,7 @@ export const Nav = () => {
                   to="/signup"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-semibold text-white bg-[#ff6b35] hover:bg-[#e55a2b] transition-colors text-center"
+                  style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
                 >
                   회원가입
                 </Link>
