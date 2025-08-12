@@ -29,7 +29,7 @@ export const useSTT = (roomName, participantName) => {
   const initWebSocket = () => {
     try {
       const wsUrl = window.location.hostname === 'localhost' 
-        ? `ws://localhost:5173/ai/ws/speech-analysis/${roomName}/${participantName}`
+        ? `ws://localhost:8002/ws/speech-analysis/${roomName}/${participantName}`
         : `wss://i13c209.p.ssafy.io/ai/ws/speech-analysis/${roomName}/${participantName}`;
       
       console.log('[WebSocket STT] 연결 시도:', wsUrl);
