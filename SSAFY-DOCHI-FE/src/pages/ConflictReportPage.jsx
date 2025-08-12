@@ -250,10 +250,10 @@ const ConflictReportPage = () => {
       {/* 액션 버튼 섹션 */}
       <section className="bg-[#C2B596] py-24">
         <div className="container mx-auto px-12 max-w-4xl text-center">
-          <h3 className="text-4xl font-light mb-16 text-[#2A2A2A] tracking-tight">
+          <h3 className="text-4xl font-light mb-8 text-[#2A2A2A] tracking-tight">
             레포트 활용하기
           </h3>
-           <p className="text-[#4A4A4A] text-xl font-light">갈등 레포트는 따로 저장되지 않습니다. 저장을 원하시면 레포트 인쇄 버튼을 눌러 pdf로 저장하세요.</p>
+           <p className="text-[#4A4A4A] text-xl font-light mb-12">갈등 레포트는 따로 저장되지 않습니다. 저장을 원하시면 레포트 인쇄 버튼을 눌러 pdf로 저장하세요.</p>
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
             <button
               onClick={() => navigate('/mypage')}
