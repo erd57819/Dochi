@@ -201,18 +201,18 @@ async def analyze_conflict_integrated(analysis_text):
 
 다음 형식으로 정확히 분석해주세요:
 
-1. 책임 비율 분석:
+===== 1. 책임 비율 분석 =====
 각 참가자의 갈등 책임 비율을 %로 표시하고 이유를 설명하세요. 
 예시:                                                       
  - 화자1: 60% - 상대방 의견을 무시하고 일방적으로 주장함      
  - 화자2: 40% - 감정적으로 대응하여 갈등을 증폭시킴 
 
-2. 갈등 상황 요약:
+===== 2. 갈등 상황 요약 =====
 - 핵심 쟁점 3가지
 - 즉시 실행할 행동 3가지
 - 전문가 도움 필요 여부: true/false
 
-3. 구체적 액션 플랜:
+===== 3. 구체적 액션 플랜 =====
 우선순위별 행동계획:                                     
  즉시 실행: 구체적 행동 1                                   
 - 1주일 내: 구체적 행동 2                                   
@@ -378,8 +378,9 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
             if not line:
                 continue
                 
-            # 섹션 구분
-            if ("1. 책임 비율" in line or "책임 비율" in line or 
+            # 섹션 구분 - 구분자 패턴 우선 인식
+            if ("===== 1. 책임 비율 분석 =====" in line or 
+                "1. 책임 비율" in line or "책임 비율" in line or 
                 "책임 분석" in line or "responsibility" in line.lower()):
                 current_section = "responsibility"
                 collecting_key_issues = False
@@ -388,14 +389,17 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 collecting_communication_tips = False
                 collecting_long_term_suggestions = False
                 print(f"[파싱] 책임 분석 섹션 시작: {line}")
-            elif "2. 갈등 상황" in line or "상황 요약" in line:
+            elif ("===== 2. 갈등 상황 요약 =====" in line or
+                  "2. 갈등 상황" in line or "상황 요약" in line):
                 current_section = "summary"
                 collecting_key_issues = False  
                 collecting_immediate_actions = False
                 collecting_priority_actions = False
                 collecting_communication_tips = False
                 collecting_long_term_suggestions = False
-            elif ("3. 구체적 액션" in line or "액션 플랜" in line or 
+                print(f"[파싱] 갈등 상황 요약 섹션 시작: {line}")
+            elif ("===== 3. 구체적 액션 플랜 =====" in line or
+                  "3. 구체적 액션" in line or "액션 플랜" in line or 
                   "구체적 액션" in line or "action" in line.lower()):
                 current_section = "action_plans"
                 collecting_key_issues = False

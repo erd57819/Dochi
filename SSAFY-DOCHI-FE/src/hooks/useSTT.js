@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import apiClient from '../config/axios';
 
-export const useSTT = (roomName, participantName) => {
+export const useSTT = (roomName, participantName, livekitRoom = null) => {
   // STT 관련 상태
   const [sttEnabled, setSttEnabled] = useState(false);
   const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
@@ -9,15 +9,16 @@ export const useSTT = (roomName, participantName) => {
   const [conversations, setConversations] = useState([]);
   const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
   
-  // WebSocket 관련 상태
-  const [wsConnected, setWsConnected] = useState(false);
-  const wsRef = useRef(null);
+  // LiveKit 연결 상태
+  const [livekitConnected, setLivekitConnected] = useState(false);
 
   // STT 관련 참조
   const recognitionRef = useRef(null);
   const speechTimeoutRef = useRef(null);
   const conversationLogRef = useRef([]);
   const lastSentTextRef = useRef(''); // 마지막 전송된 텍스트 저장
+  const lastSentTimeRef = useRef(0); // 마지막 전송 시간
+  const processingRef = useRef(false); // 처리 중 플래그
   const coachingTimeoutRef = useRef(null);
   const lastCoachingTimeRef = useRef(0);
   const lastSpeechTimeRef = useRef(Date.now()); // 마지막 발언 시간
@@ -25,26 +26,31 @@ export const useSTT = (roomName, participantName) => {
   const uiDisplayTimeoutRef = useRef(null); // UI 표시용 타이머
   const apiSendTimeoutRef = useRef(null); // API 전송용 타이머
 
-  // WebSocket 연결 설정
-  const initWebSocket = () => {
-    try {
-      const wsUrl = window.location.hostname === 'localhost' 
-        ? `ws://localhost:8002/ws/speech-analysis/${roomName}/${participantName}`
-        : `wss://i13c209.p.ssafy.io/ai/ws/speech-analysis/${roomName}/${participantName}`;
-      
-      console.log('[WebSocket STT] 연결 시도:', wsUrl);
-      
-      wsRef.current = new WebSocket(wsUrl);
-      
-      wsRef.current.onopen = () => {
-        console.log('[WebSocket STT] 연결 성공');
-        setWsConnected(true);
-      };
+  // LiveKit Room 변경 시 Data Channel 초기화
+  useEffect(() => {
+    if (livekitRoom && sttEnabled) {
+      initLivekitDataChannel();
+    }
+  }, [livekitRoom, sttEnabled]);
 
-      wsRef.current.onmessage = (event) => {
+  // LiveKit Data Channel 설정
+  const initLivekitDataChannel = () => {
+    if (!livekitRoom) {
+      console.log('[LiveKit STT] Room 객체가 없습니다');
+      return false;
+    }
+
+    try {
+      console.log('[LiveKit STT] Data Channel 초기화');
+      
+      // LiveKit Room의 Data 이벤트 리스너 등록
+      livekitRoom.on('dataReceived', (payload, participant) => {
         try {
-          const data = JSON.parse(event.data);
-          console.log('[WebSocket STT] 메시지 수신:', data);
+          const decoder = new TextDecoder();
+          const dataString = decoder.decode(payload);
+          const data = JSON.parse(dataString);
+          
+          console.log('[LiveKit STT] 데이터 수신:', data, 'from:', participant?.identity);
           
           // 상대방의 STT 결과를 받아서 화면에 추가
           if (data.type === 'stt_result' && data.speaker !== participantName) {
@@ -62,31 +68,30 @@ export const useSTT = (roomName, participantName) => {
             
             setConversations(prev => [...prev, remoteConversation]);
             conversationLogRef.current.push(remoteConversation);
-            console.log('[WebSocket STT] 상대방 발언 추가:', remoteConversation);
+            console.log('[LiveKit STT] 상대방 발언 추가:', remoteConversation);
           }
         } catch (error) {
-          console.error('[WebSocket STT] 메시지 파싱 오류:', error);
+          console.error('[LiveKit STT] 데이터 파싱 오류:', error);
         }
-      };
+      });
 
-      wsRef.current.onclose = () => {
-        console.log('[WebSocket STT] 연결 종료');
-        setWsConnected(false);
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('[WebSocket STT] 연결 오류:', error);
-        setWsConnected(false);
-      };
-
+      setLivekitConnected(true);
+      console.log('[LiveKit STT] Data Channel 초기화 완료');
+      return true;
     } catch (error) {
-      console.error('[WebSocket STT] 초기화 실패:', error);
+      console.error('[LiveKit STT] Data Channel 초기화 실패:', error);
+      return false;
     }
   };
 
-  // WebSocket으로 STT 결과 전송
-  const sendSTTToWebSocket = (speaker, text) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+  // LiveKit Data Channel로 STT 결과 전송
+  const sendSTTToLiveKit = (speaker, text) => {
+    if (!livekitRoom || !livekitConnected) {
+      console.log('[LiveKit STT] Room이 연결되지 않음');
+      return false;
+    }
+
+    try {
       const message = {
         type: 'stt_result',
         speaker: speaker,
@@ -95,11 +100,16 @@ export const useSTT = (roomName, participantName) => {
         timestamp: new Date().toISOString()
       };
       
-      wsRef.current.send(JSON.stringify(message));
-      console.log('[WebSocket STT] 전송:', message);
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify(message));
+      
+      livekitRoom.localParticipant.publishData(data, { reliable: true });
+      console.log('[LiveKit STT] 전송:', message);
       return true;
+    } catch (error) {
+      console.error('[LiveKit STT] 전송 실패:', error);
+      return false;
     }
-    return false;
   };
 
   // STT 데이터를 FastAPI로 전송
@@ -135,57 +145,75 @@ export const useSTT = (roomName, participantName) => {
 
   // 음성 인식 결과 처리
   const handleSpeechResult = async (speaker, text) => {
-    // 중복 전송 방지: 마지막에 전송한 텍스트와 동일하면 스킵
-    if (lastSentTextRef.current === text.trim()) {
-      console.log('[STT] 중복 텍스트 감지, 전송 스킵:', text.trim());
+    const currentTime = Date.now();
+    const trimmedText = text.trim();
+    
+    // 처리 중이면 스킵
+    if (processingRef.current) {
+      console.log('[STT] 이미 처리 중, 전송 스킵:', trimmedText);
+      return;
+    }
+
+    // 중복 전송 방지: 마지막에 전송한 텍스트와 동일하거나 2초 내 재전송이면 스킵
+    if (lastSentTextRef.current === trimmedText || 
+        (currentTime - lastSentTimeRef.current < 2000 && lastSentTextRef.current.includes(trimmedText))) {
+      console.log('[STT] 중복 텍스트 감지, 전송 스킵:', trimmedText);
       return;
     }
 
     // 너무 짧은 텍스트는 무시 (노이즈 방지)
-    if (text.trim().length < 2) {
-      console.log('[STT] 텍스트가 너무 짧음, 전송 스킵:', text.trim());
+    if (trimmedText.length < 2) {
+      console.log('[STT] 텍스트가 너무 짧음, 전송 스킵:', trimmedText);
       return;
     }
 
-    lastSentTextRef.current = text.trim();
+    // 처리 시작
+    processingRef.current = true;
+    lastSentTextRef.current = trimmedText;
+    lastSentTimeRef.current = currentTime;
     
-    const timestamp = new Date().toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const timestamp = new Date().toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
-    const newConversation = {
-      id: Date.now(),
-      speaker,
-      text,
-      timestamp,
-      aiSuggestion: null
-    };
+      const newConversation = {
+        id: Date.now(),
+        speaker,
+        text: trimmedText,
+        timestamp,
+        aiSuggestion: null
+      };
 
-    setConversations(prev => [...prev, newConversation]);
-    conversationLogRef.current.push(newConversation);
+      setConversations(prev => [...prev, newConversation]);
+      conversationLogRef.current.push(newConversation);
 
-    // 발언 시간 업데이트 (침묵 추적용)
-    lastSpeechTimeRef.current = Date.now();
-    
-    // 기존 침묵 체크 타이머 초기화
-    if (silenceCheckTimeoutRef.current) {
-      clearTimeout(silenceCheckTimeoutRef.current);
+      // 발언 시간 업데이트 (침묵 추적용)
+      lastSpeechTimeRef.current = currentTime;
+      
+      // 기존 침묵 체크 타이머 초기화
+      if (silenceCheckTimeoutRef.current) {
+        clearTimeout(silenceCheckTimeoutRef.current);
+      }
+      
+      // 새로운 침묵 체크 타이머 시작
+      if (coachingEnabled) {
+        startSilenceMonitoring();
+      }
+
+      // LiveKit Data Channel로 실시간 전송 (상대방 화면에 즉시 표시)
+      sendSTTToLiveKit(speaker, trimmedText);
+
+      // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
+      await sendSTTToFastAPI(speaker, trimmedText);
+
+      // 코칭 분석 수행 (항상 실행)
+      await checkCoachingNeeded();
+    } finally {
+      // 처리 완료
+      processingRef.current = false;
     }
-    
-    // 새로운 침묵 체크 타이머 시작
-    if (coachingEnabled) {
-      startSilenceMonitoring();
-    }
-
-    // WebSocket으로 실시간 전송 (상대방 화면에 즉시 표시)
-    sendSTTToWebSocket(speaker, text);
-
-    // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
-    await sendSTTToFastAPI(speaker, text);
-
-    // 코칭 분석 수행 (항상 실행)
-    await checkCoachingNeeded();
 
     // 프론트엔드 갈등 감지 및 AI 중재 기능 제거 (Google API만 사용)
     // const shouldMediate = await analyzeConflictAndTiming(text, speaker);
@@ -434,14 +462,75 @@ export const useSTT = (roomName, participantName) => {
     let uiDisplayTimeout = null; // UI 표시용 타이머
     let apiSendTimeout = null; // API 전송용 타이머
 
+    let lastSpeechTime = Date.now();
+    let silenceTimer = null;
+
+    // 한국어 문장 끝 패턴
+    const koreanSentenceEnders = {
+      // 강한 종결: 즉시 처리 (0.3초)
+      strong: /[.!?]$|요\s*$|다\s*$|까\s*$|죠\s*$|해\s*$/,
+      // 약한 종결: 짧은 대기 (0.5초)  
+      weak: /네\s*$|예\s*$|그래\s*$|아니\s*$|맞아\s*$|좋아\s*$|알겠어\s*$/,
+      // 중간 쉼: 보통 대기 (0.8초)
+      pause: /그런데\s*$|그리고\s*$|그래서\s*$|근데\s*$|그냥\s*$/
+    };
+
+    const processSentence = async (text) => {
+      const trimmedText = text.trim();
+      
+      if (trimmedText && !isProcessing && !processingRef.current) {
+        // 중복 체크 - 같은 텍스트가 이미 처리 중이면 스킵
+        if (lastSentTextRef.current === trimmedText) {
+          console.log('[processSentence] 중복 텍스트 스킵:', trimmedText);
+          return;
+        }
+        
+        isProcessing = true;
+        currentSpeaker = activeSpeaker || participantName;
+        
+        // 기존 타이머들 정리
+        if (uiDisplayTimeoutRef.current) clearTimeout(uiDisplayTimeoutRef.current);
+        if (apiSendTimeoutRef.current) clearTimeout(apiSendTimeoutRef.current);
+        
+        // API 전송만 수행 (UI 표시는 handleSpeechResult에서 처리)
+        await handleSpeechResult(currentSpeaker, trimmedText);
+        speakerQueue.push(currentSpeaker);
+        if (speakerQueue.length > 3) speakerQueue.shift();
+        lastProcessTime = Date.now();
+        
+        finalTranscript = '';
+        setCurrentSpeech({ speaker: null, text: '' });
+        isProcessing = false;
+      }
+    };
+
     recognition.onresult = (event) => {
       let interimTranscript = '';
+      lastSpeechTime = Date.now();
+      
+      // 기존 침묵 타이머 클리어
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         
         if (event.results[i].isFinal) {
           finalTranscript += transcript + ' ';
+          
+          // 즉시 문장 끝 패턴 확인
+          const fullText = finalTranscript.trim();
+          if (koreanSentenceEnders.strong.test(fullText)) {
+            // 강한 종결어: 0.3초 후 처리
+            setTimeout(() => processSentence(finalTranscript), 300);
+            return;
+          } else if (koreanSentenceEnders.weak.test(fullText)) {
+            // 약한 종결어: 0.5초 후 처리  
+            setTimeout(() => processSentence(finalTranscript), 500);
+            return;
+          }
         } else {
           interimTranscript += transcript;
         }
@@ -455,60 +544,27 @@ export const useSTT = (roomName, participantName) => {
           text: fullText.trim()
         });
 
-        // 이중 처리: UI 표시(1초) + API 전송(2.5초)
-        if (uiDisplayTimeoutRef.current) {
-          clearTimeout(uiDisplayTimeoutRef.current);
+        // 침묵 감지 타이머 설정
+        const currentText = fullText.trim();
+        let silenceDelay;
+        
+        if (koreanSentenceEnders.pause.test(currentText)) {
+          // 중간 쉼 패턴: 0.8초
+          silenceDelay = 800;
+        } else if (currentText.length < 5) {
+          // 짧은 발언: 0.6초 (예: "네", "아니")
+          silenceDelay = 600;
+        } else {
+          // 일반 발언: 1초
+          silenceDelay = 1000;
         }
-        if (apiSendTimeoutRef.current) {
-          clearTimeout(apiSendTimeoutRef.current);
-        }
 
-        // 1단계: 1초 후 UI에 빠르게 표시
-        uiDisplayTimeoutRef.current = setTimeout(() => {
-          if (finalTranscript.trim()) {
-            const displaySpeaker = activeSpeaker || participantName;
-            
-            const timestamp = new Date().toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-
-            const newConversation = {
-              id: Date.now(),
-              speaker: displaySpeaker,
-              text: finalTranscript.trim(),
-              timestamp,
-              aiSuggestion: null,
-              isTemporary: true // 임시 표시 마크
-            };
-
-            setConversations(prev => [...prev, newConversation]);
+        silenceTimer = setTimeout(() => {
+          const silenceDuration = Date.now() - lastSpeechTime;
+          if (silenceDuration >= silenceDelay && finalTranscript.trim()) {
+            processSentence(finalTranscript);
           }
-        }, 1000);
-
-        // 2단계: 2.5초 후 완전한 문장으로 API 전송
-        apiSendTimeoutRef.current = setTimeout(async () => {
-          if (finalTranscript.trim() && !isProcessing) {
-            isProcessing = true;
-            
-            // WebRTC speaking 감지로 화자 결정
-            currentSpeaker = activeSpeaker || participantName;
-            
-            // 임시 표시된 대화를 실제 데이터로 교체
-            setConversations(prev => 
-              prev.filter(conv => !conv.isTemporary)
-            );
-            
-            await handleSpeechResult(currentSpeaker, finalTranscript.trim());
-            speakerQueue.push(currentSpeaker);
-            if (speakerQueue.length > 3) speakerQueue.shift(); // 최근 3개만 유지
-            lastProcessTime = Date.now();
-            
-            finalTranscript = '';
-            setCurrentSpeech({ speaker: null, text: '' });
-            isProcessing = false;
-          }
-        }, 2500);
+        }, silenceDelay);
       }
     };
 
@@ -565,19 +621,21 @@ export const useSTT = (roomName, participantName) => {
       setSttEnabled(true);
       console.log('음성 인식 시작');
       
-      // WebSocket 연결 시작
-      initWebSocket();
+      // LiveKit Data Channel 초기화
+      initLivekitDataChannel();
       
-      // STT 재시작 시 마지막 전송 텍스트 초기화
+      // STT 재시작 시 참조 변수들 초기화
       lastSentTextRef.current = '';
+      lastSentTimeRef.current = 0;
+      processingRef.current = false;
     } catch (error) {
       console.error('음성 인식 시작 실패:', error);
       // 이미 시작된 상태라면 에러를 무시
       if (error.message && error.message.includes('already started')) {
         console.log('[STT] 이미 시작된 상태입니다.');
         setSttEnabled(true);
-        // WebSocket 연결 시작
-        initWebSocket();
+        // LiveKit Data Channel 초기화
+        initLivekitDataChannel();
       }
     }
   };
@@ -603,12 +661,8 @@ export const useSTT = (roomName, participantName) => {
       clearTimeout(apiSendTimeoutRef.current);
     }
     
-    // WebSocket 연결 해제
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    setWsConnected(false);
+    // LiveKit Data Channel 연결 해제
+    setLivekitConnected(false);
 
     // speaking 이벤트 리스너 제거
     const handleSpeakerChange = (event) => {
@@ -688,7 +742,7 @@ export const useSTT = (roomName, participantName) => {
     coachingEnabled,
     conversations,
     currentSpeech,
-    wsConnected,
+    livekitConnected,
 
     // 참조 (필요한 경우 외부에서 접근)
     recognitionRef,
@@ -703,6 +757,7 @@ export const useSTT = (roomName, participantName) => {
     startSTT,
     handleSpeechResult,
     sendSTTToFastAPI,
+    sendSTTToLiveKit,
     checkCoachingNeeded
   };
 };
