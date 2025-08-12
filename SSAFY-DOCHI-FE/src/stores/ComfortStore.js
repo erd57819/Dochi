@@ -24,35 +24,10 @@ const useComfortStore = create(
       manhwaCache: {},
 
       // 액션들
+      // 이 함수는 이제 createNewSessionWithTitle을 호출하는 방식으로 단순화합니다.
       createNewSession: async () => {
         try {
-          const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-          const response = await comfortService.createChatRoom('새로운 대화');
-          const chatRoomId = response.data;
-          
-          const newSession = {
-            id: chatRoomId,
-            sessionId: sessionId,
-            title: '새로운 대화',
-            messages: [{
-              id: 1,
-              sender: 'bot',
-              content: '안녕하세요! 오늘 하루는 어떠셨나요? 편하게 이야기해주세요. 🤗',
-              timestamp: new Date()
-            }],
-            createdAt: new Date()
-          };
-          
-          set((state) => ({
-            sessions: [newSession, ...state.sessions], // 새 대화방을 맨 위로
-            currentSessionId: sessionId,
-            currentChatRoomId: chatRoomId,
-            messages: newSession.messages,
-            selectedMode:'NORMAL',
-            showTimeline: false,
-            showManhwa: false
-            // 캐시는 유지하여 기존 데이터 보존
-          }));
+          await get().createNewSessionWithTitle('새로운 대화');
         } catch (error) {
           console.error('Failed to create new session:', error);
           set({ error: '새 대화를 생성하는데 실패했습니다.' });
@@ -62,85 +37,84 @@ const useComfortStore = create(
       // 첫 메시지로 새 세션 생성 (클로드 스타일)
       createNewSessionWithFirstMessage: async (firstMessage) => {
         try {
-          const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-          // 첫 메시지를 제목으로 사용 (최대 30자)
+          // [수정] sessionId를 여기서 만들지 않습니다.
           const title = firstMessage.length > 30 ? firstMessage.slice(0, 30) + '...' : firstMessage;
+          
+          // 1. 백엔드에 채팅방 생성을 요청합니다.
           const response = await comfortService.createChatRoom(title);
           const chatRoomId = response.data;
           
-          const newSession = {
-            id: chatRoomId,
-            sessionId: sessionId,
-            title: title,
-            messages: [{
-              id: 1,
-              sender: 'bot',
-              content: '안녕하세요! 말씀해주신 상황에 대해 자세히 이야기해보세요. 제가 도움을 드릴게요. 🤗',
-              timestamp: new Date()
-            }],
-            createdAt: new Date()
-          };
+          // 2. 채팅방 목록을 다시 로드하여, 방금 만든 방의 정확한 정보(sessionId 포함)를 서버로부터 가져옵니다.
+          await get().loadChatRooms();
           
-          set((state) => ({
-            sessions: [newSession, ...state.sessions],
-            currentSessionId: sessionId,
-            currentChatRoomId: chatRoomId,
-            messages: newSession.messages,
-            selectedMode: 'NORMAL',
-            showTimeline: false,
-            showManhwa: false
-          }));
+          // 3. 방금 만든 세션을 찾습니다.
+          const newSession = get().sessions.find(s => s.id === chatRoomId);
 
-          // 첫 메시지 자동 전송
-          setTimeout(async () => {
-            const { sendMessage } = get();
-            await sendMessage(firstMessage);
-          }, 100);
-          
+          if (newSession) {
+            // 4. 서버가 생성한 정확한 sessionId로 상태를 설정합니다.
+            set({
+              currentSessionId: newSession.sessionId,
+              currentChatRoomId: newSession.id,
+              messages: [{
+                id: 1,
+                sender: 'bot',
+                content: '안녕하세요! 말씀해주신 상황에 대해 자세히 이야기해보세요. 제가 도움을 드릴게요. 🤗',
+                timestamp: new Date()
+              }],
+              selectedMode: 'NORMAL',
+              showTimeline: false,
+              showManhwa: false
+            });
+
+            // 5. 첫 메시지를 자동으로 전송합니다.
+            setTimeout(async () => {
+              await get().sendMessage(firstMessage);
+            }, 100);
+          }
         } catch (error) {
           console.error('Failed to create new session with first message:', error);
           set({ error: '새 대화를 생성하는데 실패했습니다.' });
         }
       },
 
-      // 제목으로 새 세션 생성
       createNewSessionWithTitle: async (title) => {
         try {
-          const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+          // [수정] sessionId를 여기서 만들지 않습니다.
+          
+          // 1. 백엔드에 채팅방 생성을 요청합니다.
           const response = await comfortService.createChatRoom(title);
           const chatRoomId = response.data;
           
-          const newSession = {
-            id: chatRoomId,
-            sessionId: sessionId,
-            title: title,
-            messages: [{
-              id: 1,
-              sender: 'bot',
-              content: `${title}에 대해 이야기해주세요. 제가 어떻게 도움을 드릴 수 있을까요? 🤗`,
-              timestamp: new Date()
-            }],
-            createdAt: new Date()
-          };
+          // 2. 채팅방 목록을 다시 로드하여 서버가 생성한 sessionId를 포함한 최신 정보를 가져옵니다.
+          await get().loadChatRooms();
           
-          set((state) => ({
-            sessions: [newSession, ...state.sessions], // 새 대화방을 맨 위로
-            currentSessionId: sessionId,
-            currentChatRoomId: chatRoomId,
-            messages: newSession.messages,
-            selectedMode: 'NORMAL',
-            showTimeline: false,
-            showManhwa: false,
-            error: null // 에러 초기화
-            // 캐시는 유지하여 기존 데이터 보존
-          }));
+          // 3. 방금 만든 채팅방을 찾습니다.
+          const newSession = get().sessions.find(s => s.id === chatRoomId);
           
-          console.log('새 세션 생성 완료:', { sessionId, chatRoomId, title });
-          return { sessionId, chatRoomId }; // 성공 시 정보 반환
+          if (newSession) {
+            // 4. 서버가 준 정확한 sessionId로 상태를 설정합니다.
+            set({
+              currentSessionId: newSession.sessionId,
+              currentChatRoomId: chatRoomId,
+              messages: [{
+                id: 1,
+                sender: 'bot',
+                content: `${title}에 대해 이야기해주세요. 제가 어떻게 도움을 드릴 수 있을까요? 🤗`,
+                timestamp: new Date()
+              }],
+              selectedMode: 'NORMAL',
+              showTimeline: false,
+              showManhwa: false,
+              error: null
+            });
+          }
+          
+          console.log('새 세션 생성 완료:', { sessionId: newSession?.sessionId, chatRoomId, title });
+          return { sessionId: newSession?.sessionId, chatRoomId };
         } catch (error) {
           console.error('Failed to create new session with title:', error);
           set({ error: '새 대화를 생성하는데 실패했습니다.' });
-          throw error; // 에러를 다시 던져서 UI에서 처리할 수 있도록
+          throw error;
         }
       },
 
@@ -149,8 +123,8 @@ const useComfortStore = create(
           const { sessions } = get();
           const session = sessions.find(s => s.id === chatRoomId);
           if (session) {
-            // 서버에서 메시지 데이터 가져오기
-            const response = await comfortService.getMessages(chatRoomId);
+            // 서버에서 메시지 데이터 가져오기 (sessionId도 함께 전달)
+            const response = await comfortService.getMessages(chatRoomId, session.sessionId);
             const serverMessages = response.data.map(msg => {
               // 배열 형태의 timestamp를 Date 객체로 변환
               let timestamp;
@@ -396,7 +370,7 @@ const useComfortStore = create(
               
               return {
                 id: room.id,
-                sessionId: `session_${room.id}`,
+                sessionId: room.sessionId, // 서버에서 받은 sessionId 사용 (조립 안 함)
                 title: room.title,
                 messages: [],
                 createdAt: createdAt

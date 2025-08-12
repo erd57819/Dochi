@@ -55,8 +55,10 @@ public class ChatController {
     }
 
     @GetMapping("/rooms/{chatRoomId}/messages")
-    public ApiResponse<?> getMessages(@PathVariable Long chatRoomId) {
-        List<Chat> messages = chatService.getMessages(chatRoomId);
+    public ApiResponse<?> getMessages(@PathVariable Long chatRoomId,
+                                      @RequestParam(required = false)
+                                      String sessionId) {
+        List<Chat> messages = chatService.getMessages(chatRoomId, sessionId);
         return ApiResponseGenerator.success(messages, HttpStatus.OK);
     }
 
