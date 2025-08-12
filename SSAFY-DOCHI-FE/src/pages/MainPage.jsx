@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import Nav from '../components/Nav';
 
 import image9 from "@/assets/image 9.png";
 import image10 from "@/assets/image 10.png";
@@ -346,9 +345,6 @@ export const MainPage = () => {
     <div className="bg-white overflow-x-hidden" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
       <style>{typewriterStyle}</style>
       
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <Nav />
-      </div>
       
       <div className="fixed right-4 sm:right-6 lg:right-8 xl:right-12 top-1/2 transform -translate-y-1/2 z-40 flex flex-col space-y-3 sm:space-y-4">
         {[0, 1, 2, 3, 4].map((index) => (
@@ -367,7 +363,7 @@ export const MainPage = () => {
       <div className="bg-white w-full mx-auto relative">
         
         {/* Section 0: 좁혀지지 않는 갈등 */}
-        <section id="section-0" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-0" className="relative w-full h-screen bg-white flex items-center justify-center pt-4 lg:pt-6" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
             <div className="absolute top-[6vh] sm:top-[8vh] lg:top-[10vh] xl:top-[8vh] 2xl:top-[6vh] right-8 sm:right-16 lg:right-32">
               <div className="text-right">
@@ -405,7 +401,7 @@ export const MainPage = () => {
         </section>
 
         {/* Section 1: 고민이 있다면? */}
-        <section id="section-1" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-1" className="relative w-full h-screen bg-white flex items-center justify-center pt-4 lg:pt-6" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
             <header 
               className="absolute top-[6vh] sm:top-[8vh] lg:top-[10vh] xl:top-[8vh] 2xl:top-[6vh] left-8 sm:left-16 lg:left-32 text-black max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight pulse-text"
@@ -444,7 +440,7 @@ export const MainPage = () => {
         </section>
 
         {/* Section 2: 나만의 고민해결 플랫폼 */}
-        <section id="section-2" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-2" className="relative w-full h-screen bg-white flex items-center justify-center pt-4 lg:pt-6" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
             <div className="absolute top-[10vh] sm:top-[12vh] lg:top-[15vh] xl:top-[12vh] 2xl:top-[10vh] left-8 sm:left-16 lg:left-32 fade-in-title max-w-4xl">
               <div 
@@ -496,7 +492,7 @@ export const MainPage = () => {
         </section>
 
         {/* Section 3: 서비스 이용해보기 */}
-        <section id="section-3" className="relative w-full min-h-screen bg-white flex items-start justify-center pt-8 sm:pt-12 lg:pt-16 xl:pt-12 2xl:pt-8 pb-12 px-4 sm:px-8 lg:px-20 scale-90" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-3" className="relative w-full min-h-screen bg-white flex items-start justify-center pt-12 lg:pt-16 pb-12 px-4 sm:px-8 lg:px-20 scale-90" style={{scrollSnapAlign: 'start'}}>
           <div>
             <div className="text-center mb-6 sm:mb-8 lg:mb-12 xl:mb-10 2xl:mb-8">
               <h2 
@@ -551,7 +547,7 @@ export const MainPage = () => {
         
       <div className="relative w-full" style={{background: 'linear-gradient(to top, #f0f4ff 0%, #ffffff 100%)'}}>
         {/* Section 4: Detailed Services Section */}
-        <section id="section-4" className="w-full flex flex-col items-center justify-center px-4 sm:px-8 lg:px-20 py-16" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
+        <section id="section-4" className="w-full flex flex-col items-center justify-center px-4 sm:px-8 lg:px-20 pt-20 lg:pt-24 pb-16" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
             {/* 전체 제목 */}
             <div className="text-center mb-16">
                 <h2
