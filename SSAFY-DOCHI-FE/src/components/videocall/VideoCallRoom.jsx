@@ -645,53 +645,62 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   };
 
   // 게스트 모달 컴포넌트
-  const GuestModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#FEFCF8] rounded-lg p-6 max-w-md w-full border border-[#5C351A]">
-        <h2 className="text-2xl font-bold mb-4 text-[#2A2A2A]">화상채팅 참여</h2>
-        <p className="text-[#4A4A4A] mb-6">
-          게스트로 참여하거나 로그인하여 참여할 수 있습니다.
-        </p>
+  const GuestModal = () => {
+    const [isComposing, setIsComposing] = useState(false);
 
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="guestNickname" className="block text-sm font-medium text-[#2A2A2A] mb-2">
-              닉네임
-            </label>
-            <input
-              type="text"
-              id="guestNickname"
-              value={guestNickname}
-              onChange={(e) => setGuestNickname(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.isComposing) {
-                  handleGuestJoin();
-                }
-              }}
-              placeholder="닉네임을 입력하세요"
-              className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
-              autoFocus
-            />
-          </div>
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' && !isComposing) {
+        e.preventDefault();
+        handleGuestJoin();
+      }
+    };
 
-          <div className="flex space-x-3">
-            <button
-              onClick={handleGuestJoin}
-              className="flex-1 bg-[#5C351A] hover:bg-[#4D280E] text-white py-2 px-4 rounded-lg transition-colors"
-            >
-              게스트로 참여
-            </button>
-            <button
-              onClick={handleLogin}
-              className="flex-1 bg-[#4D280E] hover:bg-[#3E1F0A] text-white py-2 px-4 rounded-lg transition-colors"
-            >
-              로그인
-            </button>
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-[#FEFCF8] rounded-lg p-6 max-w-md w-full border border-[#5C351A]">
+          <h2 className="text-2xl font-bold mb-4 text-[#2A2A2A]">화상채팅 참여</h2>
+          <p className="text-[#4A4A4A] mb-6">
+            게스트로 참여하거나 로그인하여 참여할 수 있습니다.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="guestNickname" className="block text-sm font-medium text-[#2A2A2A] mb-2">
+                닉네임
+              </label>
+              <input
+                type="text"
+                id="guestNickname"
+                value={guestNickname}
+                onChange={(e) => setGuestNickname(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={() => setIsComposing(true)}
+                onCompositionEnd={() => setIsComposing(false)}
+                placeholder="닉네임을 입력하세요"
+                className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleGuestJoin}
+                className="flex-1 bg-[#5C351A] hover:bg-[#4D280E] text-white py-2 px-4 rounded-lg transition-colors"
+              >
+                게스트로 참여
+              </button>
+              <button
+                onClick={handleLogin}
+                className="flex-1 bg-[#4D280E] hover:bg-[#3E1F0A] text-white py-2 px-4 rounded-lg transition-colors"
+              >
+                로그인
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // 로딩 및 에러 처리
   if (showGuestModal) {
