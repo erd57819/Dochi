@@ -95,22 +95,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
       
       if (isGuestMode || !isLoggedIn) {
-        const response = await fetch(`${API_BASE_URL}/api/video-call/guest-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            room: roomName,
-            identity: identity,
-            name: identity
-          }),
+        const response = await apiClient.post('/video-call/guest-token', {
+          room: roomName,
+          identity: identity,
+          name: identity
         });
-
-        if (!response.ok) {
-          throw new Error('토큰 생성에 실패했습니다');
-        }
-
-        const data = await response.json();
-        accessToken = data.data.token;
+        accessToken = response.data.data.token;
       } else {
         const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
         accessToken = response.data.data.token;
@@ -455,6 +445,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           localVideoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
         }
       };
+    } else if (!localVideoTrack && localVideoRef.current) {
+      // 비디오 트랙이 없을 때 비디오 엘리먼트 정리
+      localVideoRef.current.srcObject = null;
+      console.log('로컬 비디오 트랙 정리됨');
     }
   }, [localVideoTrack]);
 
@@ -591,17 +585,23 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       if (isCameraOn) {
         // 카메라 끄기
         await room.localParticipant.setCameraEnabled(false);
+        setLocalVideoTrack(null); // 트랙 제거
         console.log('카메라 비활성화');
       } else {
         // 카메라 켜기 (첫 번째 활성화 시 미디어 권한 요청)
         await room.localParticipant.setCameraEnabled(true);
         console.log('카메라 활성화');
         
-        // 비디오 트랙 참조 저장
-        const videoPublication = Array.from(room.localParticipant.videoTrackPublications.values())[0];
-        if (videoPublication?.track) {
-          setLocalVideoTrack(videoPublication.track);
-        }
+        // 짧은 지연 후 비디오 트랙 참조 저장 (트랙 생성 대기)
+        setTimeout(() => {
+          const videoPublication = Array.from(room.localParticipant.videoTrackPublications.values())[0];
+          if (videoPublication?.track) {
+            setLocalVideoTrack(videoPublication.track);
+            console.log('비디오 트랙 연결됨:', videoPublication.track);
+          } else {
+            console.log('비디오 트랙을 찾을 수 없음');
+          }
+        }, 100);
       }
       setIsCameraOn(!isCameraOn);
     } catch (error) {
