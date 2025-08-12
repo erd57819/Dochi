@@ -34,7 +34,7 @@ export const MainPage = () => {
     }
     
     .typewriter.animate {
-      animation: typing 1.5s steps(9, end) 0.3s forwards, blink-caret 0.75s step-end infinite 0.3s;
+      animation: typing 1.5s steps(9, end) 0.3s forwards;
       animation-fill-mode: both;
     }
     
@@ -42,17 +42,6 @@ export const MainPage = () => {
       border-right: none;
     }
     
-    .custom-cursor {
-      animation: blink 1s infinite;
-      font-size: inherit;
-      line-height: inherit;
-      color: #000;
-    }
-    
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0; }
-    }
     
     .typewriter-line1 {
       overflow: hidden;
@@ -62,7 +51,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line1.animate {
-      animation: typing-line1 1.0s steps(6, end) 0.7s forwards, blink-caret 0.75s step-end infinite 0.7s;
+      animation: typing-line1 1.0s steps(6, end) 0.7s forwards;
       animation-fill-mode: both;
     }
     
@@ -79,7 +68,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line2.animate {
-      animation: fade-in 0.1s ease-in 1.8s forwards, typing-line2 1.5s steps(10, end) 1.8s forwards, blink-caret 0.75s step-end infinite 1.8s;
+      animation: fade-in 0.1s ease-in 1.8s forwards, typing-line2 1.5s steps(10, end) 1.8s forwards;
     }
     
     .typewriter-line2.animate.finished {
@@ -173,10 +162,6 @@ export const MainPage = () => {
       100% { width: 16ch; }
     }
     
-    @keyframes blink-caret {
-      from, to { border-color: transparent }
-      50% { border-color: #000 }
-    }
     
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
@@ -194,6 +179,8 @@ export const MainPage = () => {
   useEffect(() => {
     let isScrolling = false;
     let scrollTimeout;
+    let scrollAccumulator = 0;
+
 
     const handleWheel = (e) => {
       const currentScrollTop = window.scrollY;
@@ -207,8 +194,19 @@ export const MainPage = () => {
       
       if (isScrolling) return;
       
+      // 트랙패드의 미세한 스크롤을 누적하여 처리
+      scrollAccumulator += e.deltaY;
+      
+      // 임계값을 설정하여 충분한 스크롤이 감지되면 섹션 이동
+      const scrollThreshold = 50;
+      
+      if (Math.abs(scrollAccumulator) < scrollThreshold) {
+        return;
+      }
+      
       isScrolling = true;
-      const delta = e.deltaY;
+      const delta = scrollAccumulator;
+      scrollAccumulator = 0; // 누적값 리셋
       
       let targetScroll;
       
@@ -244,7 +242,8 @@ export const MainPage = () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
         isScrolling = false;
-      }, 600);
+        scrollAccumulator = 0; // 타임아웃 후 누적값도 리셋
+      }, 800);
     };
 
     const handleScroll = () => {
@@ -265,6 +264,29 @@ export const MainPage = () => {
       }
       
       if (currentSection !== newSection) {
+        // 즉시 모든 typed 인스턴스 정리 (섹션 변경 전에)
+        typedInstances.current.forEach(typed => {
+          if (typed) {
+            typed.destroy();
+          }
+        });
+        typedInstances.current = [];
+        
+        // 즉시 모든 커서 제거
+        document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+        document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
+        
+        // 즉시 모든 ref 내용 초기화
+        if (typewriterRef.current) {
+          typewriterRef.current.innerHTML = '';
+        }
+        if (typewriterLine1Ref.current) {
+          typewriterLine1Ref.current.innerHTML = '';
+        }
+        if (typewriterLine2Ref.current) {
+          typewriterLine2Ref.current.innerHTML = '';
+        }
+        
         setCurrentSection(newSection);
         
         const typewriterEl = document.querySelector('.typewriter');
@@ -287,30 +309,41 @@ export const MainPage = () => {
         fadeElements.forEach(el => el.classList.remove('animate'));
         
         setTimeout(() => {
-          // Clear previous typed instances
-          typedInstances.current.forEach(typed => {
-            if (typed) typed.destroy();
-          });
-          typedInstances.current = [];
+          // 추가로 한 번 더 정리
+          document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+          document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
           
           if (newSection === 0) {
             const shakeEl = document.querySelector('.shake-text');
             if (shakeEl) shakeEl.classList.add('animate');
             
-            // Typed.js for .typewriter
-            if (typewriterRef.current) {
-              const typed = new Typed(typewriterRef.current, {
-                strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
-                typeSpeed: 80,
-                backSpeed: 50,
-                backDelay: 2000,
-                loop: true,
-                showCursor: true,
-                cursorChar: '|',
-                cursorClass: 'typed-cursor'
-              });
-              typedInstances.current.push(typed);
-            }
+            // 완전한 딜레이 후 새로운 인스턴스 생성
+            setTimeout(() => {
+              // 생성 직전에 한 번 더 강제 정리
+              document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+              document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
+              
+              if (typewriterRef.current) {
+                // DOM 요소를 완전히 새로 생성
+                typewriterRef.current.innerHTML = '';
+                
+                // 새로운 span 요소를 만들어서 typed.js가 깨끗한 상태에서 시작하도록
+                const newSpan = document.createElement('span');
+                typewriterRef.current.appendChild(newSpan);
+                
+                const typed = new Typed(newSpan, {
+                  strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
+                  typeSpeed: 80,
+                  backSpeed: 50,
+                  backDelay: 2000,
+                  loop: true,
+                  showCursor: true,
+                  cursorChar: '|',
+                  cursorClass: 'typed-cursor'
+                });
+                typedInstances.current.push(typed);
+              }
+            }, 300);
             
             setTimeout(() => {
               if (shakeEl) shakeEl.classList.add('finished');
@@ -321,15 +354,16 @@ export const MainPage = () => {
             const pulseEl = document.querySelector('.pulse-text');
             if (pulseEl) pulseEl.classList.add('animate');
             
-            // Typed.js for .typewriter-line1
-            if (typewriterLine1Ref.current) {
-              const typed1 = new Typed(typewriterLine1Ref.current, {
-                strings: ['<div><span class="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">비밀보장</span><span class="text-black">되는</span></div><div><span class="text-[#030303]">참견도치</span><span class="text-black">가 들어줄게요</span><span class="custom-cursor">|</span></div>'],
-                typeSpeed: 70,
-                showCursor: false,
-              });
-              typedInstances.current.push(typed1);
-            }
+            setTimeout(() => {
+              if (typewriterLine1Ref.current) {
+                const typed1 = new Typed(typewriterLine1Ref.current, {
+                  strings: ['<div><span class="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">비밀보장</span><span class="text-black">되는</span></div><div><span class="text-[#030303]">참견도치</span><span class="text-black">가 들어줄게요</span></div>'],
+                  typeSpeed: 70,
+                  showCursor: false,
+                });
+                typedInstances.current.push(typed1);
+              }
+            }, 200);
           }
           
           if (newSection === 2) {
@@ -346,24 +380,36 @@ export const MainPage = () => {
     window.addEventListener('scroll', handleScroll);
     
     setTimeout(() => {
+      // 초기 모든 typed 관련 요소 정리
+      document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+      document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
+      
       // 초기 로딩 시 Section 0 애니메이션 시작
       const shakeEl = document.querySelector('.shake-text');
       if (shakeEl) shakeEl.classList.add('animate');
       
       // Section 0 타이핑 시작
-      if (typewriterRef.current) {
-        const typed = new Typed(typewriterRef.current, {
-          strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
-          typeSpeed: 80,
-          backSpeed: 50,
-          backDelay: 2000,
-          loop: true,
-          showCursor: true,
-          cursorChar: '|',
-          cursorClass: 'typed-cursor'
-        });
-        typedInstances.current.push(typed);
-      }
+      setTimeout(() => {
+        if (typewriterRef.current) {
+          typewriterRef.current.innerHTML = '';
+          
+          // 새로운 span 요소를 만들어서 typed.js가 깨끗한 상태에서 시작하도록
+          const newSpan = document.createElement('span');
+          typewriterRef.current.appendChild(newSpan);
+          
+          const typed = new Typed(newSpan, {
+            strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
+            typeSpeed: 80,
+            backSpeed: 50,
+            backDelay: 2000,
+            loop: true,
+            showCursor: true,
+            cursorChar: '|',
+            cursorClass: 'typed-cursor'
+          });
+          typedInstances.current.push(typed);
+        }
+      }, 200);
       
       setTimeout(() => {
         if (shakeEl) shakeEl.classList.add('finished');
