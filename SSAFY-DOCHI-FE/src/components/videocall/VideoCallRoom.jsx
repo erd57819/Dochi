@@ -943,33 +943,59 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               )}
 
               {/* 대화 기록 */}
-              {conversations.slice().reverse().map((conv) => (
-                <div key={conv.id} className="bg-[#FEFCF8] bg-opacity-80 p-3 rounded-lg shadow border border-[#5C351A]">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[#5C351A] text-sm font-semibold">
-                      👤 {conv.speaker}
-                    </span>
-                    <span className="text-[#4A4A4A] text-xs">
-                      {conv.timestamp}
-                    </span>
-                  </div>
-                  <p className="text-[#2A2A2A] text-sm">{conv.text}</p>
-                  {conv.aiSuggestion && (
-                    <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
-                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs">✨</span>
-                      </div>
-                      <p className="text-white text-xs font-bold flex items-center mb-1">
-                        <span className="mr-1">🤖</span> AI 대화코치 조언
-                      </p>
-                      <p className="text-white text-sm font-medium leading-relaxed">{conv.aiSuggestion}</p>
-                      <div className="mt-2 text-right">
-                        <span className="text-[#F8F5F0] text-xs opacity-80">powered by AI</span>
-                      </div>
+              {conversations.slice().reverse().map((conv) => {
+                // AI 코칭 메시지인지 확인
+                const isCoachingMessage = conv.isCoachingMessage || conv.speaker === 'AI 코치';
+                
+                return (
+                  <div key={conv.id} className={`p-3 rounded-lg shadow border mb-3 ${
+                    isCoachingMessage 
+                      ? 'bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] border-[#5C351A] border-2 shadow-lg'
+                      : 'bg-[#FEFCF8] bg-opacity-80 border-[#5C351A]'
+                  }`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className={`text-sm font-semibold flex items-center ${
+                        isCoachingMessage ? 'text-[#4D280E]' : 'text-[#5C351A]'
+                      }`}>
+                        {isCoachingMessage ? (
+                          <>
+                            <span className="mr-2">🤖</span>
+                            <span className="bg-[#5C351A] text-white px-2 py-1 rounded-full text-xs mr-2">AI 코칭</span>
+                            {conv.speaker}
+                          </>
+                        ) : (
+                          <>
+                            <span className="mr-2">👤</span>
+                            {conv.speaker}
+                          </>
+                        )}
+                      </span>
+                      <span className="text-[#4A4A4A] text-xs">
+                        {conv.timestamp}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    <p className={`text-sm ${
+                      isCoachingMessage ? 'text-[#3E1F0A] font-medium' : 'text-[#2A2A2A]'
+                    }`}>
+                      {conv.text}
+                    </p>
+                    {conv.aiSuggestion && (
+                      <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
+                        <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✨</span>
+                        </div>
+                        <p className="text-white text-xs font-bold flex items-center mb-1">
+                          <span className="mr-1">🤖</span> AI 대화코치 조언
+                        </p>
+                        <p className="text-white text-sm font-medium leading-relaxed">{conv.aiSuggestion}</p>
+                        <div className="mt-2 text-right">
+                          <span className="text-[#F8F5F0] text-xs opacity-80">powered by AI</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
