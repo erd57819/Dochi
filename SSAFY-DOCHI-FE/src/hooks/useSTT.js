@@ -617,16 +617,22 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         interimResults: recognition.interimResults
       });
       
-      if (sttEnabled) {
+      // recognitionRef.current가 존재하고 STT가 활성화된 상태에서만 재시작
+      if (recognitionRef.current && sttEnabled) {
         console.log('1초 후 재시작 시도...');
         setTimeout(() => {
           try {
-            console.log('재시작 시도 전 상태:', {
-              sttEnabled,
-              readyState: recognition.readyState
-            });
-            recognition.start();
-            console.log('음성 인식을 다시 시작합니다.');
+            // 재시작 전에 현재 STT 상태를 다시 확인
+            if (recognitionRef.current && sttEnabled) {
+              console.log('재시작 시도 전 상태:', {
+                sttEnabled,
+                readyState: recognition.readyState
+              });
+              recognition.start();
+              console.log('음성 인식을 다시 시작합니다.');
+            } else {
+              console.log('재시작 조건이 맞지 않음 - STT 비활성화됨');
+            }
           } catch (error) {
             console.error('음성 인식 재시작 실패:', error);
             console.error('에러 상세:', {
@@ -634,6 +640,19 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
               message: error.message,
               code: error.code
             });
+            
+            // InvalidStateError가 발생한 경우 완전 재초기화
+            if (error.name === 'InvalidStateError') {
+              console.log('STT 완전 재초기화 시도...');
+              setTimeout(() => {
+                if (sttEnabled) {
+                  stopSTT();
+                  setTimeout(() => {
+                    startSTT();
+                  }, 500);
+                }
+              }, 1000);
+            }
           }
         }, 1000);
       } else {
