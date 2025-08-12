@@ -332,8 +332,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           const audioRef = remoteAudioRefs.current.get(participantSid);
           if (audioRef?.current) {
             pendingAudioTrack.attach(audioRef.current);
+            console.log('[오디오 연결] pending 오디오 트랙 연결 완료:', participantSid);
+            // 오디오 엘리먼트 설정 확인
+            if (audioRef.current.muted) {
+              audioRef.current.muted = false;
+              console.log('[오디오 연결] muted 해제:', participantSid);
+            }
+            audioRef.current.play().catch(e => console.log('[오디오 연결] 자동재생 실패 (정상):', e));
           }
-        }, 100);
+        }, 500); // 더 긴 지연시간으로 변경
         pendingAudioTracks.current.delete(participantSid);
       }
     }
