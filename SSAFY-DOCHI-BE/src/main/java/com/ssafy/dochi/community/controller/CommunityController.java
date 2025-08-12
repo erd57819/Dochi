@@ -4,7 +4,9 @@ import com.ssafy.dochi.common.security.CustomUserDetails;
 import com.ssafy.dochi.common.template.ApiResponse;
 import com.ssafy.dochi.common.template.ApiResponseGenerator;
 import com.ssafy.dochi.community.dto.request.CommunitySaveReqDto;
+import com.ssafy.dochi.community.dto.request.CommunityContentGenerateReqDto;
 import com.ssafy.dochi.community.dto.request.CommunityUpdateReqDto;
+import com.ssafy.dochi.community.dto.response.CommunityContentGenerateResDto;
 import com.ssafy.dochi.community.dto.response.CommunityPageResDto;
 import com.ssafy.dochi.community.dto.response.CommunityResDto;
 import com.ssafy.dochi.community.service.CommunityService;
@@ -108,5 +110,24 @@ public class CommunityController {
         Long userId = (userDetails != null) ? userDetails.getId() : 2L;
         communityService.deletePost(communityId, userId);
         return ApiResponseGenerator.success(HttpStatus.OK);
+    }
+
+    /**
+     * 메서드 설명: 카테고리별 AI 컨텐츠를 생성합니다.
+     * @param request 컨텐츠 생성 요청 DTO
+     * @return 생성된 제목과 내용
+     */
+    @PostMapping("/generate-content")
+    public ApiResponse<ApiResponse.SuccessCustomBody<CommunityContentGenerateResDto>> generateContent(
+            @RequestBody CommunityContentGenerateReqDto request) {
+        
+        try {
+            CommunityContentGenerateResDto result = communityService.generateContent(request);
+            return ApiResponseGenerator.success(result, HttpStatus.OK);
+        } catch (Exception e) {
+            System.err.println("AI 컨텐츠 생성 실패: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

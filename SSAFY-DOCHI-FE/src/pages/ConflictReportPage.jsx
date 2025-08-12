@@ -74,12 +74,6 @@ const ConflictReportPage = () => {
       }
       
       setReportData(data);
-      
-      // 첫 번째 화자 선택
-      const speakers = Object.keys(data?.sections?.emotion_analysis?.data || {});
-      if (speakers.length > 0) {
-        setSelectedSpeaker(speakers[0]);
-      }
     } catch (err) {
       console.error('레포트 로딩 실패:', err);
       setError('레포트를 불러오는데 실패했습니다.');
@@ -121,7 +115,6 @@ const ConflictReportPage = () => {
 
   const tabs = [
     { id: 'summary', label: '종합 요약' },
-    { id: 'emotion', label: '감정 분석' },
     { id: 'responsibility', label: '책임 분석' },
     { id: 'action', label: '액션 플랜' },
     { id: 'transcript', label: '대화 내용' },

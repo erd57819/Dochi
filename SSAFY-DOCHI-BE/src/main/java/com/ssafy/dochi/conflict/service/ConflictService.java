@@ -35,16 +35,9 @@ public class ConflictService {
         return conflictRedisService.saveTempConflict(userId, reqDto);
     }
     
-    /**
-     * 2단계: Redis에서 갈등 데이터 조회 및 AI 분석
-     */
-    public AiAnalysisResDto analyzeConflict(String tempConflictId) {
-        ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
-        return aiSummaryService.generateAnalysis(conflictData.getDescription(), conflictData.getConflictType());
-    }
     
     /**
-     * 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - Redis에 결과 저장
+     * 2단계: AI 분석 (감정, 관계, 소통 등) - Redis에 결과 저장
      */
     public Map<String, Object> analyzeConflictAdvanced(String tempConflictId) {
         // Redis에서 기존 분석 결과 조회 (캐싱)
@@ -66,7 +59,7 @@ public class ConflictService {
     }
     
     /**
-     * 2-2단계: 고급 AI 분석 후 갈등 저장 및 분석 결과 MySQL 저장
+     * 3단계: AI 분석 후 갈등 저장 및 분석 결과 MySQL 저장
      */
     public ConflictResDto analyzeAndSaveConflictAdvanced(Long userId, String tempConflictId) {
         // Redis에서 갈등 데이터 조회
@@ -144,40 +137,6 @@ public class ConflictService {
         return ConflictResDto.from(conflict);
     }
     
-    /**
-     * 3단계: AI 분석 완료 후 최종 SQL 저장
-     */
-    public ConflictResDto finalizeConflict(Long userId, String tempConflictId, String aiSummary, String aiSolutions) {
-        // Redis에서 갈등 데이터 조회
-        ConflictCreateReqDto reqDto = conflictRedisService.getTempConflict(tempConflictId);
-        
-        // UserConflict 객체 생성 (AI 분석 결과 포함)
-        UserConflict conflict = new UserConflict(
-            userId,
-            reqDto.getTitle(),
-            reqDto.getDescription(),
-            reqDto.getConflictType(),
-            reqDto.getConflictWhen(),
-            reqDto.getConflictFrequency(),
-            reqDto.getParticipants(),
-            reqDto.getDesiredOutcome(),
-            reqDto.getPriority(),
-            reqDto.getTalkWillingness(),
-            reqDto.getInitialEmotion(),
-            reqDto.getIntensity(),
-            aiSummary + "\n\n[해결방안]\n" + aiSolutions // AI 요약과 해결방안을 합쳐서 저장
-        );
-        
-        // SQL에 최종 저장
-        conflictDao.save(conflict);
-        
-        // Redis에서 임시 데이터 삭제
-        conflictRedisService.deleteTempConflict(tempConflictId);
-        // 분석 결과도 삭제
-        conflictRedisService.deleteAnalysisResult(tempConflictId);
-        
-        return ConflictResDto.from(conflict);
-    }
     
     /**
      * 기존 방식 유지 (호환성을 위해)
@@ -203,10 +162,6 @@ public class ConflictService {
         return ConflictResDto.from(conflict);
     }
     
-    // AI 요약 생성
-    public String generateAiSummary(ConflictSummaryReqDto reqDto) {
-        return aiSummaryService.generateSummary(reqDto.getDescription(), reqDto.getConflictType());
-    }
     
     // 갈등 조회
     @Transactional(readOnly = true)

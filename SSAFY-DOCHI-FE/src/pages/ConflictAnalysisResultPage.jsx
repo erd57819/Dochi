@@ -33,20 +33,6 @@ const ConflictAnalysisResultPage = () => {
     return false;
   };
 
-  // 간단한 폴백 분석 (AI 백엔드 실패 시에만 사용)
-  const generateSimpleFallback = (basicData) => {
-    return {
-      conflict_analysis: '의사소통 부족과 서로 다른 관점이 주요 원인으로 보입니다.',
-      my_position: '갈등 해결을 위해 노력하고 있으며, 상대방과의 소통을 원하고 있습니다.',
-      partner_position: '상대방도 나름의 입장과 이유가 있을 것으로 추정됩니다.',
-      relationship_health_score: Math.max(30, 80 - (basicData.intensity * 5)),
-      communication_score: Math.max(20, 70 - (basicData.intensity * 4)),
-      trust_score: { score: Math.max(25, 65 - (basicData.intensity * 3)), analysis: '신뢰 회복이 필요합니다.' },
-      cooperation_score: { score: Math.max(30, 70 - (basicData.intensity * 3)), improvement_suggestions: ['대화하기', '이해하기'] },
-      priority_recommendation: basicData.intensity >= 7 ? 'HIGH' : 'MEDIUM',
-      recommended_actions: ['대화 시간 갖기', '상호 이해하기']
-    };
-  };
 
 
   // 토닥토닥 서비스로 이동
@@ -77,12 +63,9 @@ const ConflictAnalysisResultPage = () => {
   
   // 로드맵 페이지로 이동
   const handleRoadmap = () => {
-    if (tempId) {
-      sessionStorage.setItem('currentTempId', tempId);
-      navigate(`/roadmap?tempId=${tempId}`);
-    } else {
-      navigate('/roadmap');
-    }
+    // 이미 sessionStorage에 분석 데이터가 저장되어 있으므로 바로 이동
+    // (fetchTempConflictData에서 이미 conflictAnalysisData를 저장함)
+    navigate('/roadmap');
   };
   
   useEffect(() => {
@@ -138,8 +121,7 @@ const ConflictAnalysisResultPage = () => {
           
           console.log('✅ Redis 캐시 데이터 사용 - 빠른 로딩 완료');
           
-          // 데이터 먼저 설정한 후 로딩 상태 해제
-          setConflictData({
+          const conflictDataWithAI = {
             ...basicData,
             aiSummary: basicAi.summary || '기본 요약',
             aiSolutions: basicAi.solutions || '기본 해결방안',
@@ -152,7 +134,13 @@ const ConflictAnalysisResultPage = () => {
             cooperationScore: adv.cooperation_score ?? adv.cooperationScore ?? { score: 0, improvement_suggestions: [] },
             priorityRecommendation: adv.priority_recommendation ?? adv.priorityRecommendation ?? '',
             recommendedActions: adv.recommended_actions ?? adv.recommendedActions ?? []
-          });
+          };
+          
+          // 데이터 먼저 설정한 후 로딩 상태 해제
+          setConflictData(conflictDataWithAI);
+          
+          // RoadmapPage에서 사용할 수 있도록 sessionStorage에 분석 데이터 저장
+          sessionStorage.setItem('conflictAnalysisData', JSON.stringify(conflictDataWithAI));
           
           // 데이터 설정 후 로딩 상태 해제
           setIsLoading(false);
@@ -160,39 +148,89 @@ const ConflictAnalysisResultPage = () => {
         }
       }
 
-      // 3) 캐시된 결과가 없는 경우, 새로 분석 수행
-      // 4) 기본 AI 요약/해결방안 호출
-      const basicRes = await fetch(
-        `${API_BASE_URL}/conflict/analyze/${tempId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-            'Content-Type':  'application/json'
+      // 3) 캐시된 결과가 없는 경우, 고급 AI 분석 수행
+      let adv = null;
+      let advRetryCount = 0;
+      const maxAdvRetries = 2;
+      
+      while (advRetryCount <= maxAdvRetries && !adv) {
+        try {
+          const advController = new AbortController();
+          const advTimeoutId = setTimeout(() => advController.abort(), 25000);
+          
+          console.log(`고급 AI 분석 시도 ${advRetryCount + 1}/${maxAdvRetries + 1}...`);
+          
+          const advRes = await fetch(
+            `${API_BASE_URL}/conflict/analyze/advanced/${tempId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                'Content-Type':  'application/json'
+              },
+              signal: advController.signal
+            }
+          );
+          
+          clearTimeout(advTimeoutId);
+          
+          if (advRes.ok) {
+            try {
+              const advJson = await advRes.json();
+              console.log('고급 분석 응답 전체:', JSON.stringify(advJson, null, 2));
+              adv = advJson.data;
+              break;
+            } catch (jsonError) {
+              console.log(`⚠️ JSON 파싱 실패 (시도 ${advRetryCount + 1}):`, jsonError);
+              advRetryCount++;
+              if (advRetryCount <= maxAdvRetries) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+            }
+          } else if (advRes.status === 504) {
+            console.log(`⏰ 고급 분석 504 타임아웃 (시도 ${advRetryCount + 1})`);
+            advRetryCount++;
+            if (advRetryCount <= maxAdvRetries) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } else {
+            console.log(`⚠️ 고급 분석 HTTP 오류 ${advRes.status} (시도 ${advRetryCount + 1})`);
+            advRetryCount++;
+            if (advRetryCount <= maxAdvRetries) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            console.log(`⏰ 고급 분석 타임아웃 (시도 ${advRetryCount + 1})`);
+            advRetryCount++;
+            if (advRetryCount <= maxAdvRetries) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } else {
+            console.log(`⚠️ 고급 분석 네트워크 오류 (시도 ${advRetryCount + 1}):`, error);
+            advRetryCount++;
+            if (advRetryCount <= maxAdvRetries) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
           }
         }
-      );
-      if (!basicRes.ok) throw new Error('기본 AI 분석 실패');
-      const basicJson = await basicRes.json();
-      const basicAi   = basicJson.data; // { summary, solutions }
-
-      // 5) 고급 AI 분석 호출
-      const advRes = await fetch(
-        `${API_BASE_URL}/conflict/analyze/advanced/${tempId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-            'Content-Type':  'application/json'
-          }
-        }
-      );
-      if (!advRes.ok) throw new Error('고급 AI 분석 실패');
-      const advJson = await advRes.json();
+      }
       
-      console.log('고급 분석 응답 전체:', JSON.stringify(advJson, null, 2));
-      
-      const adv = advJson.data;
+      if (!adv) {
+        // 고급 분석 실패 시 기본값 설정
+        adv = {
+          conflict_analysis: '서버 응답 지연으로 갈등 분석을 완료할 수 없습니다.',
+          my_position: '서버 응답 지연으로 내 입장 분석을 완료할 수 없습니다.',
+          partner_position: '서버 응답 지연으로 상대방 입장 분석을 완료할 수 없습니다.',
+          relationship_health_score: 0,
+          communication_score: 0,
+          trust_score: { score: 0, analysis: '분석 불가' },
+          cooperation_score: { score: 0, improvement_suggestions: [] },
+          priority_recommendation: '서버 응답 지연으로 우선순위 추천을 완료할 수 없습니다.',
+          recommended_actions: []
+        };
+      }
       
       // 6) 고급 분석 데이터 추출
       const conflictAnalysis        = adv.conflict_analysis        ?? adv.conflictAnalysis        ?? '';
@@ -236,10 +274,10 @@ const ConflictAnalysisResultPage = () => {
         : [];
 
       // 8) 상태 업데이트
-      setConflictData({
+      const conflictDataWithAI = {
         ...basicData,
-        aiSummary:                basicAi.summary,
-        aiSolutions:              basicAi.solutions,
+        aiSummary:                adv?.summary || conflictAnalysis || '분석을 생성할 수 없습니다.',
+        aiSolutions:              adv?.solutions || (recommendedActionsRaw ? JSON.stringify(recommendedActionsRaw) : '해결방안을 생성할 수 없습니다.'),
         conflictAnalysis:         conflictAnalysis,
         myPosition:               myPosition || '내 입장을 AI가 분석해서 정리해드립니다.',
         partnerPosition:          partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.',
@@ -249,28 +287,16 @@ const ConflictAnalysisResultPage = () => {
         cooperationScore:         cooperationScore,
         priorityRecommendation:   priorityRecommendation,
         recommendedActions:       recommendedActions
-      });
-    } catch (err) {
-      console.error('AI 백엔드 연결 오류:', err);
-      console.log('백엔드 AI 실패 - 간단한 폴백 분석 사용');
-
-      // 간단한 폴백 분석 사용
-      const fallbackAnalysis = generateSimpleFallback(basicData);
+      };
       
-      setConflictData({
-        ...basicData,
-        aiSummary:                basicData.aiSummary,
-        aiSolutions:              basicData.aiSolutions,
-        conflictAnalysis:         fallbackAnalysis.conflict_analysis,
-        myPosition:               fallbackAnalysis.my_position,
-        partnerPosition:          fallbackAnalysis.partner_position,
-        relationshipHealthScore:  fallbackAnalysis.relationship_health_score,
-        communicationScore:       fallbackAnalysis.communication_score,
-        trustScore:               fallbackAnalysis.trust_score,
-        cooperationScore:         fallbackAnalysis.cooperation_score,
-        priorityRecommendation:   fallbackAnalysis.priority_recommendation,
-        recommendedActions:       fallbackAnalysis.recommended_actions
-      });
+      setConflictData(conflictDataWithAI);
+      
+      // RoadmapPage에서 사용할 수 있도록 sessionStorage에 분석 데이터 저장
+      sessionStorage.setItem('conflictAnalysisData', JSON.stringify(conflictDataWithAI));
+    } catch (err) {
+      console.error('❌ AI 분석 실패:', err);
+      alert('AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      navigate('/conflicts/create');
     } finally {
       setIsLoading(false);
     }
@@ -423,45 +449,29 @@ const ConflictAnalysisResultPage = () => {
   };
 
   // 갈등 공유하기 함수 (ConflictDetailPage에서 가져온 함수)
+  // 갈등 공유하기 함수 - CreatePostPage에서 AI 로딩
   const handleShareConflict = () => {
     if (!conflictData) return;
 
     const conflictTypeText = getConflictTypeText(conflictData.conflictType);
+    const conflictDescription = `상황: ${conflictData.description}, 강도: ${conflictData.intensity}/10, 목표: ${conflictData.desiredOutcome || '해결 방안 찾기'}`;
     
-    // 자동 생성된 제목
-    const autoTitle = `[${conflictTypeText}] 갈등 상황 공유 - 조언 구합니다`;
-    
-    // 자동 생성된 내용 (찬반 투표 형식)
-    const autoContent = `안녕하세요! 갈등 상황을 공유하며 여러분의 의견을 듣고 싶습니다.
+    console.log('🚀 갈등 분석 결과에서 커뮤니티로 이동, AI 분석 데이터:', {
+      conflictData: conflictData,
+      conflictTypeText: conflictTypeText,
+      conflictDescription: conflictDescription
+    });
 
-📌 상황: ${conflictData.description}
-💢 갈등 강도: ${conflictData.intensity}/10
-🎯 목표: ${conflictData.desiredOutcome || '해결 방안을 찾고 싶어요'}
-
-📊 **여러분의 의견을 들려주세요:**
-
-**A안) 적극적 해결 방식**
-- 직접 대화를 통해 문제를 해결
-- 감정을 솔직하게 표현하고 소통
-- 빠른 해결을 위한 적극적 접근
-
-**B안) 신중한 접근 방식**  
-- 시간을 두고 상황을 정리한 후 접근
-- 중재자나 제3자의 도움 요청
-- 관계 손상을 최소화하는 방향으로 진행
-
-어떤 방식이 더 좋을지 댓글로 의견 부탁드립니다! 🙏
-
-#갈등해결 #조언구함 #${conflictTypeText}`;
-
-    // CreatePostPage로 이동하면서 데이터 전달
+    // CreatePostPage로 즉시 이동하면서 갈등 데이터 전달
     navigate('/community/create', {
       state: {
-        prefilledData: {
-          title: autoTitle,
-          content: autoContent,
-          category: 'CONFLICT_SHARING'
-        }
+        conflictData: {
+          ...conflictData,
+          conflictTypeText: conflictTypeText,
+          description: conflictDescription
+        },
+        targetCategory: 'CONFLICT_SHARING',
+        shouldGenerateAI: true // AI 생성 플래그
       }
     });
   };

@@ -14,7 +14,13 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
             </div>
           </div>
           <h3 className="mt-4 text-xl font-semibold text-gray-800">AI가 분석 중입니다...</h3>
-          <p className="mt-2 text-gray-600">잠시만 기다려주세요</p>
+          <p className="mt-2 text-gray-600">갈등 상황을 분석하고 맞춤형 해결책을 생성하고 있어요</p>
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 max-w-md">
+            <div className="flex items-center gap-2 text-amber-800 text-sm">
+              <span className="animate-pulse">⚡</span>
+              <span>서버 응답이 지연될 수 있습니다. 잠시만 기다려주세요...</span>
+            </div>
+          </div>
         </div>
         
         <style jsx>{`
@@ -27,6 +33,15 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
           .animate-spin {
             animation: spin 2s linear infinite;
             border-top-color: #8B4513;
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+          }
+          
+          .animate-pulse {
+            animation: pulse 1.5s ease-in-out infinite;
           }
         `}</style>
       </div>

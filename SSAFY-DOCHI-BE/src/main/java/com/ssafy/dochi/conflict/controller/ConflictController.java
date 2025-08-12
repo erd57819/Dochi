@@ -39,16 +39,8 @@ public class ConflictController {
         return ApiResponseGenerator.success(tempConflictId, HttpStatus.CREATED);
     }
     
-    // 2단계: 임시 저장된 갈등 데이터를 AI 분석
-    @PostMapping("/analyze/{tempConflictId}")
-    public ApiResponse<ApiResponse.SuccessCustomBody<AiAnalysisResDto>> analyzeConflict(
-            @PathVariable String tempConflictId) {
-        
-        AiAnalysisResDto response = conflictService.analyzeConflict(tempConflictId);
-        return ApiResponseGenerator.success(response, HttpStatus.OK);
-    }
     
-    // 2-1단계: 고급 AI 분석 (감정, 관계, 소통 등) - Redis에 결과 저장
+    // 2단계: AI 분석 (감정, 관계, 소통 등) - Redis에 결과 저장
     @PostMapping("/analyze/advanced/{tempConflictId}")
     public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> analyzeConflictAdvanced(
             @PathVariable String tempConflictId) {
@@ -70,7 +62,7 @@ public class ConflictController {
         }
     }
     
-    // 2-2단계: 고급 AI 분석 후 갈등 저장 및 분석 결과 MySQL 저장
+    // 3단계: AI 분석 후 갈등 저장 및 분석 결과 MySQL 저장
     @PostMapping("/analyze/advanced/save/{tempConflictId}")
     public ApiResponse<ApiResponse.SuccessCustomBody<ConflictResDto>> analyzeAndSaveConflictAdvanced(
             @AuthenticationPrincipal CustomUserDetails user,
@@ -82,23 +74,6 @@ public class ConflictController {
         return ApiResponseGenerator.success(response, HttpStatus.CREATED);
     }
     
-    // 3단계: AI 분석 완료 후 최종 SQL 저장
-    @PostMapping("/finalize/{tempConflictId}")
-    public ApiResponse<ApiResponse.SuccessCustomBody<ConflictResDto>> finalizeConflict(
-            @AuthenticationPrincipal CustomUserDetails user,
-            @PathVariable String tempConflictId,
-            @RequestBody FinalizeConflictReqDto reqDto) {
-        
-        // 테스트용: 인증 없을 때 기본 사용자 ID 사용
-        Long userId = (user != null) ? user.getId() : 2L;
-        ConflictResDto response = conflictService.finalizeConflict(
-            userId, 
-            tempConflictId, 
-            reqDto.getAiSummary(), 
-            reqDto.getAiSolutions()
-        );
-        return ApiResponseGenerator.success(response, HttpStatus.CREATED);
-    }
     
     // 기존 방식 유지 (호환성)
     @PostMapping("/create")
@@ -112,14 +87,6 @@ public class ConflictController {
         return ApiResponseGenerator.success(response, HttpStatus.CREATED);
     }
     
-    // AI 요약 생성
-    @PostMapping("/summarize")
-    public ApiResponse<ApiResponse.SuccessCustomBody<String>> summarizeConflict(
-            @RequestBody ConflictSummaryReqDto reqDto) {
-        
-        String summary = conflictService.generateAiSummary(reqDto);
-        return ApiResponseGenerator.success(summary, HttpStatus.OK);
-    }
     
     // 갈등 상세 조회
     @GetMapping("/{conflictId}")
