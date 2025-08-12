@@ -6,7 +6,6 @@ import ProgressIndicator from '../components/conflict/ProgressIndicator';
 import Step1ConflictType from '../components/conflict/Step1ConflictType';
 import Step2ConflictDetail from '../components/conflict/Step2ConflictDetail';
 import Step4EmotionState from '../components/conflict/Step4EmotionState';
-import Step5AIAnalysis from '../components/conflict/Step5AIAnalysis';
 import hedgehogImg from '../assets/conflict.png';
 
 const ConflictCreatePage = () => {
@@ -29,9 +28,6 @@ const ConflictCreatePage = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [aiSummary, setAiSummary] = useState('');
-  const [aiSolutions, setAiSolutions] = useState('');
-  const [advancedAnalysis, setAdvancedAnalysis] = useState(null);
   const [tempConflictId, setTempConflictId] = useState(null);
 
   // 비로그인 시 접근 차단
@@ -145,13 +141,10 @@ const ConflictCreatePage = () => {
       console.log('Analysis Result:', analysisResult);
       const analysisData = analysisResult.data || analysisResult.response?.response || analysisResult;
 
+      // AI 분석 결과 sessionStorage에 저장 (ConflictAnalysisResultPage에서 사용)
       const aiSummary = analysisData.summary || analysisData.aiSummary || '요약을 생성할 수 없습니다.';
       const aiSolutions = analysisData.solutions || analysisData.aiSolutions || '해결방안을 생성할 수 없습니다.';
-
-      setAiSummary(aiSummary);
-      setAiSolutions(aiSolutions);
-
-      // AI 분석 결과 sessionStorage에 저장
+      
       sessionStorage.setItem('tempAiSummary', aiSummary);
       sessionStorage.setItem('tempAiSolutions', aiSolutions);
 
@@ -166,18 +159,7 @@ const ConflictCreatePage = () => {
         });
 
         if (advancedResponse.ok) {
-          const responseText = await advancedResponse.text();
-          if (responseText.trim()) {
-            try {
-              const advancedResult = JSON.parse(responseText);
-              const advancedData = advancedResult.data || advancedResult.response?.response || advancedResult;
-              setAdvancedAnalysis(advancedData);
-            } catch (parseError) {
-              console.error('고급 AI 분석 결과 JSON 파싱 오류:', parseError);
-            }
-          } else {
-            console.log('고급 AI 분석 응답이 비어있습니다.');
-          }
+          console.log('고급 AI 분석 완료');
         } else {
           console.log(`Advanced analysis failed with status: ${advancedResponse.status}, but continuing...`);
         }
@@ -186,8 +168,8 @@ const ConflictCreatePage = () => {
         // 고급 분석 실패는 전체 플로우를 중단시키지 않음
       }
 
-      // AI 분석 완료 후 4단계(분석 결과 확인)로 이동
-      setCurrentStep(4);
+      // AI 분석 완료 후 ConflictAnalysisResultPage로 이동
+      navigate(`/conflicts/analysis/${conflictId}`);
 
     } catch (error) {
       console.error('갈등 분석 오류:', error);
@@ -199,53 +181,6 @@ const ConflictCreatePage = () => {
   };
 
 
-  // 최종 저장 - 고급 AI 분석 결과를 포함하여 저장
-  const handleFinalSave = async () => {
-    if (!tempConflictId) {
-      alert('임시 저장된 갈등 데이터가 없습니다.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      console.log('Final save - tempConflictId:', tempConflictId);
-      console.log('Final save - advancedAnalysis:', advancedAnalysis);
-      
-      // 고급 AI 분석 결과와 함께 갈등 저장
-      const response = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${tempConflictId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-
-      console.log('Final save response status:', response.status);
-      const responseText = await response.text();
-      console.log('Final save response:', responseText);
-
-      if (response.ok) {
-        const result = JSON.parse(responseText);
-        const savedConflict = result.data || result.response?.response;
-        
-        alert('갈등 카드가 성공적으로 생성되었습니다! 🦔');
-        
-        // 저장된 갈등의 상세보기로 이동하여 결과 확인
-        if (savedConflict && savedConflict.id) {
-          navigate(`/conflict/${savedConflict.id}`);
-        } else {
-          navigate('/mypage');
-        }
-      } else {
-        throw new Error(`갈등 카드 생성에 실패했습니다: ${response.status} - ${responseText}`);
-      }
-    } catch (error) {
-      console.error('Final save error:', error);
-      alert(error.message || '갈등 카드 생성 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // 단계별 제목과 설명 설정
   const getStepInfo = (step) => {
@@ -264,11 +199,6 @@ const ConflictCreatePage = () => {
         return {
           title: "내가 원하는 해결 결과",
           description: "갈등이 어떻게 해결되기를 원하는지 알려주세요"
-        };
-      case 4:
-        return {
-          title: "AI 분석 결과",
-          description: "AI가 분석한 갈등 상황과 해결 방안입니다"
         };
       default:
         return {
@@ -307,7 +237,7 @@ const ConflictCreatePage = () => {
         
         {/* Progress Indicator */}
         <div className="text-center mb-6">
-          <ProgressIndicator currentStep={currentStep} totalSteps={4} />
+          <ProgressIndicator currentStep={currentStep} totalSteps={3} />
         </div>
 
         {/* Main Content Area */}
@@ -346,19 +276,7 @@ const ConflictCreatePage = () => {
             />
           )}
 
-          {/* Step 4: AI 분석 */}
-          {currentStep === 4 && (
-            <Step5AIAnalysis
-              formData={formData}
-              aiSummary={aiSummary}
-              aiSolutions={aiSolutions}
-              advancedAnalysis={advancedAnalysis}
-              isLoading={isLoading}
-              onSave={handleFinalSave}
-              onPrev={() => setCurrentStep(1)}
-              tempConflictId={tempConflictId}
-            />
-          )}
+          {/* Step 4는 제거됨 - AI 분석 후 바로 ConflictAnalysisResultPage로 이동 */}
         </div>
       </div>
     </div>
