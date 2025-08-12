@@ -348,7 +348,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   };
 
   // STT 훅 사용 (실제 방 ID 사용)
-  const sttHook = useSTT(actualRoomId, participantName);
+  const sttHook = useSTT(actualRoomId, participantName, room);
   const {
     sttEnabled, aiMediationEnabled, conversations, currentSpeech,
     recognitionRef, speechTimeoutRef, conversationLogRef,

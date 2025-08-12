@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import apiClient from '../config/axios';
 
-export const useSTT = (roomName, participantName) => {
+export const useSTT = (roomName, participantName, livekitRoom = null) => {
   // STT 관련 상태
   const [sttEnabled, setSttEnabled] = useState(false);
   const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
@@ -9,9 +9,8 @@ export const useSTT = (roomName, participantName) => {
   const [conversations, setConversations] = useState([]);
   const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
   
-  // WebSocket 관련 상태
-  const [wsConnected, setWsConnected] = useState(false);
-  const wsRef = useRef(null);
+  // LiveKit 연결 상태
+  const [livekitConnected, setLivekitConnected] = useState(false);
 
   // STT 관련 참조
   const recognitionRef = useRef(null);
@@ -27,26 +26,31 @@ export const useSTT = (roomName, participantName) => {
   const uiDisplayTimeoutRef = useRef(null); // UI 표시용 타이머
   const apiSendTimeoutRef = useRef(null); // API 전송용 타이머
 
-  // WebSocket 연결 설정
-  const initWebSocket = () => {
-    try {
-      const wsUrl = window.location.hostname === 'localhost' 
-        ? `ws://localhost:8002/ws/speech-analysis/${roomName}/${participantName}`
-        : `wss://i13c209.p.ssafy.io/ai/ws/speech-analysis/${roomName}/${participantName}`;
-      
-      console.log('[WebSocket STT] 연결 시도:', wsUrl);
-      
-      wsRef.current = new WebSocket(wsUrl);
-      
-      wsRef.current.onopen = () => {
-        console.log('[WebSocket STT] 연결 성공');
-        setWsConnected(true);
-      };
+  // LiveKit Room 변경 시 Data Channel 초기화
+  useEffect(() => {
+    if (livekitRoom && sttEnabled) {
+      initLivekitDataChannel();
+    }
+  }, [livekitRoom, sttEnabled]);
 
-      wsRef.current.onmessage = (event) => {
+  // LiveKit Data Channel 설정
+  const initLivekitDataChannel = () => {
+    if (!livekitRoom) {
+      console.log('[LiveKit STT] Room 객체가 없습니다');
+      return false;
+    }
+
+    try {
+      console.log('[LiveKit STT] Data Channel 초기화');
+      
+      // LiveKit Room의 Data 이벤트 리스너 등록
+      livekitRoom.on('dataReceived', (payload, participant) => {
         try {
-          const data = JSON.parse(event.data);
-          console.log('[WebSocket STT] 메시지 수신:', data);
+          const decoder = new TextDecoder();
+          const dataString = decoder.decode(payload);
+          const data = JSON.parse(dataString);
+          
+          console.log('[LiveKit STT] 데이터 수신:', data, 'from:', participant?.identity);
           
           // 상대방의 STT 결과를 받아서 화면에 추가
           if (data.type === 'stt_result' && data.speaker !== participantName) {
@@ -64,31 +68,37 @@ export const useSTT = (roomName, participantName) => {
             
             setConversations(prev => [...prev, remoteConversation]);
             conversationLogRef.current.push(remoteConversation);
-            console.log('[WebSocket STT] 상대방 발언 추가:', remoteConversation);
+            console.log('[LiveKit STT] 상대방 발언 추가:', remoteConversation);
           }
         } catch (error) {
-          console.error('[WebSocket STT] 메시지 파싱 오류:', error);
+          console.error('[LiveKit STT] 데이터 파싱 오류:', error);
         }
-      };
+      });
 
-      wsRef.current.onclose = () => {
-        console.log('[WebSocket STT] 연결 종료');
-        setWsConnected(false);
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('[WebSocket STT] 연결 오류:', error);
-        setWsConnected(false);
-      };
-
+      setLivekitConnected(true);
+      console.log('[LiveKit STT] Data Channel 초기화 완료');
+      return true;
     } catch (error) {
-      console.error('[WebSocket STT] 초기화 실패:', error);
+      console.error('[LiveKit STT] Data Channel 초기화 실패:', error);
+      return false;
     }
   };
 
-  // WebSocket으로 STT 결과 전송
-  const sendSTTToWebSocket = (speaker, text) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+  // LiveKit Data Channel로 STT 결과 전송
+  const sendSTTToLiveKit = (speaker, text) => {
+    console.log('[LiveKit STT] 전송 시도:', {
+      hasRoom: !!livekitRoom,
+      isConnected: livekitConnected,
+      roomName: livekitRoom?.name,
+      roomState: livekitRoom?.state
+    });
+    
+    if (!livekitRoom || !livekitConnected) {
+      console.log('[LiveKit STT] Room이 연결되지 않음');
+      return false;
+    }
+
+    try {
       const message = {
         type: 'stt_result',
         speaker: speaker,
@@ -97,11 +107,16 @@ export const useSTT = (roomName, participantName) => {
         timestamp: new Date().toISOString()
       };
       
-      wsRef.current.send(JSON.stringify(message));
-      console.log('[WebSocket STT] 전송:', message);
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify(message));
+      
+      livekitRoom.localParticipant.publishData(data, { reliable: true });
+      console.log('[LiveKit STT] 전송:', message);
       return true;
+    } catch (error) {
+      console.error('[LiveKit STT] 전송 실패:', error);
+      return false;
     }
-    return false;
   };
 
   // STT 데이터를 FastAPI로 전송
@@ -194,8 +209,8 @@ export const useSTT = (roomName, participantName) => {
         startSilenceMonitoring();
       }
 
-      // WebSocket으로 실시간 전송 (상대방 화면에 즉시 표시)
-      sendSTTToWebSocket(speaker, trimmedText);
+      // LiveKit Data Channel로 실시간 전송 (상대방 화면에 즉시 표시)
+      sendSTTToLiveKit(speaker, trimmedText);
 
       // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
       await sendSTTToFastAPI(speaker, trimmedText);
@@ -562,22 +577,67 @@ export const useSTT = (roomName, participantName) => {
 
     recognition.onerror = (event) => {
       console.error('음성 인식 오류:', event.error);
+      console.error('오류 상세:', {
+        error: event.error,
+        message: event.message,
+        timeStamp: event.timeStamp,
+        type: event.type
+      });
+      
       if (event.error === 'no-speech') {
         console.log('음성이 감지되지 않았습니다.');
+      } else if (event.error === 'audio-capture') {
+        console.error('오디오 캡처 실패 - 마이크 접근 문제일 수 있습니다.');
+      } else if (event.error === 'not-allowed') {
+        console.error('마이크 권한이 거부되었습니다.');
+      } else if (event.error === 'aborted') {
+        console.error('음성 인식이 중단되었습니다.');
+      } else if (event.error === 'network') {
+        console.error('네트워크 오류 - 구글 음성 인식 서비스 연결 실패');
+        console.log('5초 후 STT 재초기화 시도...');
+        // 네트워크 오류 시 STT 완전 재초기화
+        setTimeout(() => {
+          if (sttEnabled) {
+            console.log('STT 재초기화 시도');
+            stopSTT();
+            setTimeout(() => {
+              startSTT();
+            }, 1000);
+          }
+        }, 5000);
       }
     };
 
     recognition.onend = () => {
       console.log('음성 인식이 중단되었습니다.');
+      console.log('STT 상태:', {
+        sttEnabled,
+        readyState: recognition.readyState,
+        continuous: recognition.continuous,
+        interimResults: recognition.interimResults
+      });
+      
       if (sttEnabled) {
+        console.log('1초 후 재시작 시도...');
         setTimeout(() => {
           try {
+            console.log('재시작 시도 전 상태:', {
+              sttEnabled,
+              readyState: recognition.readyState
+            });
             recognition.start();
             console.log('음성 인식을 다시 시작합니다.');
           } catch (error) {
             console.error('음성 인식 재시작 실패:', error);
+            console.error('에러 상세:', {
+              name: error.name,
+              message: error.message,
+              code: error.code
+            });
           }
         }, 1000);
+      } else {
+        console.log('STT가 비활성화되어 재시작하지 않습니다.');
       }
     };
 
@@ -609,12 +669,17 @@ export const useSTT = (roomName, participantName) => {
     }
 
     try {
+      console.log('STT 시작 시도...', {
+        continuous: recognitionRef.current.continuous,
+        interimResults: recognitionRef.current.interimResults,
+        lang: recognitionRef.current.lang
+      });
       recognitionRef.current.start();
       setSttEnabled(true);
-      console.log('음성 인식 시작');
+      console.log('음성 인식 시작 성공');
       
-      // WebSocket 연결 시작
-      initWebSocket();
+      // LiveKit Data Channel 초기화
+      initLivekitDataChannel();
       
       // STT 재시작 시 참조 변수들 초기화
       lastSentTextRef.current = '';
@@ -626,8 +691,8 @@ export const useSTT = (roomName, participantName) => {
       if (error.message && error.message.includes('already started')) {
         console.log('[STT] 이미 시작된 상태입니다.');
         setSttEnabled(true);
-        // WebSocket 연결 시작
-        initWebSocket();
+        // LiveKit Data Channel 초기화
+        initLivekitDataChannel();
       }
     }
   };
@@ -653,12 +718,8 @@ export const useSTT = (roomName, participantName) => {
       clearTimeout(apiSendTimeoutRef.current);
     }
     
-    // WebSocket 연결 해제
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    setWsConnected(false);
+    // LiveKit Data Channel 연결 해제
+    setLivekitConnected(false);
 
     // speaking 이벤트 리스너 제거
     const handleSpeakerChange = (event) => {
@@ -738,7 +799,7 @@ export const useSTT = (roomName, participantName) => {
     coachingEnabled,
     conversations,
     currentSpeech,
-    wsConnected,
+    livekitConnected,
 
     // 참조 (필요한 경우 외부에서 접근)
     recognitionRef,
@@ -753,6 +814,7 @@ export const useSTT = (roomName, participantName) => {
     startSTT,
     handleSpeechResult,
     sendSTTToFastAPI,
+    sendSTTToLiveKit,
     checkCoachingNeeded
   };
 };

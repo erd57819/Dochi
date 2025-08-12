@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore.js';
 import { API_BASE_URL } from '../config/api.js';
 import KakaoLoginButton from '../components/auth/KakaoLoginButton';
+import hedgehogImg from '../assets/image-65.png';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -79,73 +80,140 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 w-full max-w-md">
-        {/* 로고 */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-3">
-            <span className="text-2xl">🦔</span>
-          </div>
-          <h1 className="text-xl font-bold text-gray-800 mb-2">참견도치</h1>
-          <h2 className="text-lg font-semibold text-gray-700">로그인</h2>
-        </div>
-
-        {/* 로그인 폼 */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="text"
-              name="userId"
-              placeholder="아이디를 입력하세요"
-              value={formData.userId}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
-              required
-            />
-          </div>
-          
-          <div>
-            <input
-              type="password"
-              name="password"
-              placeholder="비밀번호를 입력하세요"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-          >
-            로그인
-          </button>
-        </form>
-
-        {/* 소셜 로그인 */}
-        <div className="mt-6">
-          <div className="flex items-center gap-4 justify-center">
-            {/* <button className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-              G
-            </button> */}
-            <KakaoLoginButton/>
-            <Link 
-              to="/signup"
-              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
-            >
-              회원가입
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
-            ← 메인으로 돌아가기
-          </Link>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ zoom: '0.85' }}>
+      {/* 전체 배경 컨테이너 */}
+      <div className="absolute inset-0">
+        <div 
+          className="absolute top-0 left-0 w-full" 
+          style={{ 
+            height: '100%',
+            opacity: 0.14
+          }}
+        ></div>
       </div>
+      
+      {/* 메인 컨텐츠 */}
+      <main className="max-w-5xl mx-auto px-3 py-4 relative z-10 flex items-center min-h-screen">
+        <div className="flex justify-center w-full">
+          <div className="w-full max-w-4xl">
+            <div className="bg-white rounded-xl p-12">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                
+                {/* 왼쪽: 로고 및 서비스 소개 */}
+                <div className="flex flex-col items-center">
+                  <div className="text-center mb-8 w-full">
+                    <div className="flex justify-center mb-6">
+                      <div className="relative">
+                        <img 
+                          src={hedgehogImg} 
+                          alt="참견도치" 
+                          className="w-50 h-50 object-contain"
+                        />
+                      </div>
+                    </div>
+                    <h2 className="text-3xl font-bold text-black mb-2">참견도치</h2>
+                    <p className="text-lg text-[#666] mb-2">AI 기반 갈등 해결 서비스</p>
+                  </div>
+                </div>
+
+                {/* 오른쪽: 로그인 폼 */}
+                <div className="flex flex-col">
+                  <form onSubmit={handleSubmit} className="space-y-6 flex-1 mt-8">
+                    {/* 아이디 */}
+                    <div>
+                      <label className="block text-center text-[#333] font-medium mb-2 text-lg">
+                        아이디
+                      </label>
+                      <div className="flex justify-center">
+                        <input
+                          type="text"
+                          name="userId"
+                          value={formData.userId}
+                          onChange={handleInputChange}
+                          className="w-full max-w-sm px-0 py-4 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-base transition-colors text-center"
+                          placeholder="아이디를 입력해주세요"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* 비밀번호 */}
+                    <div>
+                      <label className="block text-center text-[#333] font-medium mb-2 text-lg">
+                        비밀번호
+                      </label>
+                      <div className="flex justify-center">
+                        <input
+                          type="password"
+                          name="password"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          className="w-full max-w-sm px-0 py-4 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-base transition-colors text-center"
+                          placeholder="비밀번호를 입력해주세요"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              
+              {/* 로그인 버튼 및 소셜 로그인 - 전체 페이지 폭 기준 */}
+              <div className="mt-10 relative w-full">
+                {/* 로그인 버튼 - 전체 페이지 가운데 */}
+                <div className="flex justify-center mb-8">
+                  <button
+                    onClick={handleSubmit}
+                    className="px-6 py-2 rounded-lg font-medium transition-colors text-sm"
+                    style={{ 
+                      backgroundColor: '#bf7d2c', 
+                      color: 'white',
+                      border: 'none'
+                    }}
+                    onMouseEnter={(e) => (e.target.style.backgroundColor = '#D2691E')}
+                    onMouseLeave={(e) => (e.target.style.backgroundColor = '#bf7d2c')}
+                  >
+                    로그인
+                  </button>
+                </div>
+                
+                {/* 구분선 */}
+                <div className="flex items-center mb-6">
+                  <div className="flex-1 border-t border-dashed border-gray-300"></div>
+                  <span className="px-4 text-sm text-gray-400">또는</span>
+                  <div className="flex-1 border-t border-dashed border-gray-300"></div>
+                </div>
+
+                {/* 소셜 로그인 */}
+                <div className="flex justify-center mb-8">
+                  <KakaoLoginButton/>
+                </div>
+
+                {/* 회원가입 안내 */}
+                <div className="text-center mb-8">
+                  <span className="text-sm text-black">아직 계정이 없다면? </span>
+                  <Link 
+                    to="/signup"
+                    className="text-sm font-medium hover:underline transition-colors"
+                    style={{ color: '#bf7d2c' }}
+                    onMouseEnter={(e) => (e.target.style.color = '#D2691E')}
+                    onMouseLeave={(e) => (e.target.style.color = '#bf7d2c')}
+                  >
+                    회원가입 하러 가기
+                  </Link>
+                </div>
+
+                {/* 메인으로 돌아가기 */}
+                <div className="text-left">
+                  <Link to="/" className="text-sm text-[#666] hover:text-[#bf7d2c] transition-colors">
+                    ← 메인으로 돌아가기
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
