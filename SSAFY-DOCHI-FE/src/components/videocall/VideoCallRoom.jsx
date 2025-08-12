@@ -95,22 +95,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
       
       if (isGuestMode || !isLoggedIn) {
-        const response = await fetch(`${API_BASE_URL}/api/video-call/guest-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            room: roomName,
-            identity: identity,
-            name: identity
-          }),
+        const response = await apiClient.post('/video-call/guest-token', {
+          room: roomName,
+          identity: identity,
+          name: identity
         });
-
-        if (!response.ok) {
-          throw new Error('토큰 생성에 실패했습니다');
-        }
-
-        const data = await response.json();
-        accessToken = data.data.token;
+        accessToken = response.data.data.token;
       } else {
         const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
         accessToken = response.data.data.token;
