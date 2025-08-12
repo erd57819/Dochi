@@ -25,6 +25,7 @@
     "sockjs-client": "^1.6.1",
     "swiper": "^11.2.10",
     "three": "^0.179.1",
+    "typed.js": "^2.1.0",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
