@@ -29,7 +29,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }, [window.location.pathname]);
   
   const roomName = roomCodeFromUrl || extractedFromUrl;
-  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl });
   // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
   const getUserIdentifier = () => {
     if (!isLoggedIn || !user) return '게스트';
