@@ -434,14 +434,83 @@ export const useSTT = (roomName, participantName) => {
     let uiDisplayTimeout = null; // UI 표시용 타이머
     let apiSendTimeout = null; // API 전송용 타이머
 
+    let lastSpeechTime = Date.now();
+    let silenceTimer = null;
+
+    // 한국어 문장 끝 패턴
+    const koreanSentenceEnders = {
+      // 강한 종결: 즉시 처리 (0.3초)
+      strong: /[.!?]$|요\s*$|다\s*$|까\s*$|죠\s*$|해\s*$/,
+      // 약한 종결: 짧은 대기 (0.5초)  
+      weak: /네\s*$|예\s*$|그래\s*$|아니\s*$|맞아\s*$|좋아\s*$|알겠어\s*$/,
+      // 중간 쉼: 보통 대기 (0.8초)
+      pause: /그런데\s*$|그리고\s*$|그래서\s*$|근데\s*$|그냥\s*$/
+    };
+
+    const processSentence = async (text) => {
+      if (text.trim() && !isProcessing) {
+        isProcessing = true;
+        currentSpeaker = activeSpeaker || participantName;
+        
+        // 기존 타이머들 정리
+        if (uiDisplayTimeoutRef.current) clearTimeout(uiDisplayTimeoutRef.current);
+        if (apiSendTimeoutRef.current) clearTimeout(apiSendTimeoutRef.current);
+        
+        // 즉시 UI에 표시
+        const timestamp = new Date().toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const newConversation = {
+          id: Date.now(),
+          speaker: currentSpeaker,
+          text: text.trim(),
+          timestamp,
+          aiSuggestion: null
+        };
+
+        setConversations(prev => [...prev, newConversation]);
+        
+        // API 전송
+        await handleSpeechResult(currentSpeaker, text.trim());
+        speakerQueue.push(currentSpeaker);
+        if (speakerQueue.length > 3) speakerQueue.shift();
+        lastProcessTime = Date.now();
+        
+        finalTranscript = '';
+        setCurrentSpeech({ speaker: null, text: '' });
+        isProcessing = false;
+      }
+    };
+
     recognition.onresult = (event) => {
       let interimTranscript = '';
+      lastSpeechTime = Date.now();
+      
+      // 기존 침묵 타이머 클리어
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         
         if (event.results[i].isFinal) {
           finalTranscript += transcript + ' ';
+          
+          // 즉시 문장 끝 패턴 확인
+          const fullText = finalTranscript.trim();
+          if (koreanSentenceEnders.strong.test(fullText)) {
+            // 강한 종결어: 0.3초 후 처리
+            setTimeout(() => processSentence(finalTranscript), 300);
+            return;
+          } else if (koreanSentenceEnders.weak.test(fullText)) {
+            // 약한 종결어: 0.5초 후 처리  
+            setTimeout(() => processSentence(finalTranscript), 500);
+            return;
+          }
         } else {
           interimTranscript += transcript;
         }
@@ -455,60 +524,27 @@ export const useSTT = (roomName, participantName) => {
           text: fullText.trim()
         });
 
-        // 이중 처리: UI 표시(1초) + API 전송(2.5초)
-        if (uiDisplayTimeoutRef.current) {
-          clearTimeout(uiDisplayTimeoutRef.current);
+        // 침묵 감지 타이머 설정
+        const currentText = fullText.trim();
+        let silenceDelay;
+        
+        if (koreanSentenceEnders.pause.test(currentText)) {
+          // 중간 쉼 패턴: 0.8초
+          silenceDelay = 800;
+        } else if (currentText.length < 5) {
+          // 짧은 발언: 0.6초 (예: "네", "아니")
+          silenceDelay = 600;
+        } else {
+          // 일반 발언: 1초
+          silenceDelay = 1000;
         }
-        if (apiSendTimeoutRef.current) {
-          clearTimeout(apiSendTimeoutRef.current);
-        }
 
-        // 1단계: 1초 후 UI에 빠르게 표시
-        uiDisplayTimeoutRef.current = setTimeout(() => {
-          if (finalTranscript.trim()) {
-            const displaySpeaker = activeSpeaker || participantName;
-            
-            const timestamp = new Date().toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-
-            const newConversation = {
-              id: Date.now(),
-              speaker: displaySpeaker,
-              text: finalTranscript.trim(),
-              timestamp,
-              aiSuggestion: null,
-              isTemporary: true // 임시 표시 마크
-            };
-
-            setConversations(prev => [...prev, newConversation]);
+        silenceTimer = setTimeout(() => {
+          const silenceDuration = Date.now() - lastSpeechTime;
+          if (silenceDuration >= silenceDelay && finalTranscript.trim()) {
+            processSentence(finalTranscript);
           }
-        }, 1000);
-
-        // 2단계: 2.5초 후 완전한 문장으로 API 전송
-        apiSendTimeoutRef.current = setTimeout(async () => {
-          if (finalTranscript.trim() && !isProcessing) {
-            isProcessing = true;
-            
-            // WebRTC speaking 감지로 화자 결정
-            currentSpeaker = activeSpeaker || participantName;
-            
-            // 임시 표시된 대화를 실제 데이터로 교체
-            setConversations(prev => 
-              prev.filter(conv => !conv.isTemporary)
-            );
-            
-            await handleSpeechResult(currentSpeaker, finalTranscript.trim());
-            speakerQueue.push(currentSpeaker);
-            if (speakerQueue.length > 3) speakerQueue.shift(); // 최근 3개만 유지
-            lastProcessTime = Date.now();
-            
-            finalTranscript = '';
-            setCurrentSpeech({ speaker: null, text: '' });
-            isProcessing = false;
-          }
-        }, 2500);
+        }, silenceDelay);
       }
     };
 
