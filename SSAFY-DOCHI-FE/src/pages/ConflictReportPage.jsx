@@ -254,6 +254,7 @@ const ConflictReportPage = () => {
             레포트 활용하기
           </h3>
            <p className="text-[#4A4A4A] text-xl font-light">갈등 레포트는 따로 저장되지 않습니다. 저장을 원하시면 레포트 인쇄 버튼을 눌러 pdf로 저장하세요.</p>
+           
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
             <button
               onClick={() => navigate('/mypage')}

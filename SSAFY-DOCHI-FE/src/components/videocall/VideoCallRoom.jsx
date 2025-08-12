@@ -647,15 +647,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 게스트 모달 컴포넌트
   const GuestModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-4">화상채팅 참여</h2>
-        <p className="text-gray-600 mb-6">
+      <div className="bg-[#FEFCF8] rounded-lg p-6 max-w-md w-full border border-[#5C351A]">
+        <h2 className="text-2xl font-bold mb-4 text-[#2A2A2A]">화상채팅 참여</h2>
+        <p className="text-[#4A4A4A] mb-6">
           게스트로 참여하거나 로그인하여 참여할 수 있습니다.
         </p>
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="guestNickname" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="guestNickname" className="block text-sm font-medium text-[#2A2A2A] mb-2">
               닉네임
             </label>
             <input
@@ -669,7 +669,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 }
               }}
               placeholder="닉네임을 입력하세요"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
               autoFocus
             />
           </div>
@@ -677,13 +677,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <div className="flex space-x-3">
             <button
               onClick={handleGuestJoin}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-[#5C351A] hover:bg-[#4D280E] text-white py-2 px-4 rounded-lg transition-colors"
             >
               게스트로 참여
             </button>
             <button
               onClick={handleLogin}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-[#4D280E] hover:bg-[#3E1F0A] text-white py-2 px-4 rounded-lg transition-colors"
             >
               로그인
             </button>
@@ -700,13 +700,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">연결 오류</h2>
-          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-[#4A4A4A] mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 shadow-lg border border-amber-400"
+            className="px-6 py-3 bg-[#5C351A] text-white rounded-lg hover:bg-[#4D280E] shadow-lg border border-[#3E1F0A]"
           >
             다시 시도
           </button>
@@ -718,25 +718,25 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 연결 버튼 표시 조건
   if (showConnectButton && !isConnected && !isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-amber-300">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">화상 회의 준비</h2>
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
+        <div className="bg-[#FEFCF8] p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-[#5C351A]">
+          <h2 className="text-2xl font-bold text-[#2A2A2A] mb-4">화상 회의 준비</h2>
           <div className="mb-6">
-            <p className="text-gray-600 mb-2">룸: <span className="font-semibold text-amber-800">{roomName}</span></p>
-            <p className="text-gray-600">
-              참가자: <span className="font-semibold text-amber-800">{isGuestMode ? `게스트 ${participantName}` : participantName}</span>
+            <p className="text-[#4A4A4A] mb-2">룸: <span className="font-semibold text-[#5C351A]">{roomName}</span></p>
+            <p className="text-[#4A4A4A]">
+              참가자: <span className="font-semibold text-[#5C351A]">{isGuestMode ? `게스트 ${participantName}` : participantName}</span>
             </p>
           </div>
           <div className="space-y-3">
             <button
               onClick={handleStartConnection}
-              className="w-full px-6 py-3 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 transition-colors shadow-lg border-2 border-amber-500"
+              className="w-full px-6 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
             >
               🎥 연결 시작하기
             </button>
             <button
               onClick={() => window.location.href = '/'}
-              className="w-full px-6 py-3 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors shadow border border-gray-300"
+              className="w-full px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors shadow border border-[#C2B596]"
             >
               나가기
             </button>
@@ -748,23 +748,23 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
-          <p className="text-gray-800 text-xl font-medium">연결 중...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#5C351A] mx-auto mb-4"></div>
+          <p className="text-[#2A2A2A] text-xl font-medium">연결 중...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex flex-col overflow-hidden">
       {/* 헤더 */}
-      <div className="bg-white shadow-lg p-4 flex-shrink-0 border-b border-amber-200">
+      <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-b border-[#5C351A]"> 
         <div className="flex justify-between items-center">
           <div className="flex-1">
-            <h1 className="text-gray-800 text-xl font-bold">화상 회의</h1>
-            <p className="text-sm text-gray-600">
+            <h1 className="text-[#2A2A2A] text-xl font-bold">화상 회의</h1>
+            <p className="text-sm text-[#4A4A4A]">
               룸: {roomName} | {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
             </p>
           </div>
@@ -772,13 +772,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           {/* 타이머 표시 */}
           {isConnected && (
             <div className="text-center px-4">
-              <div className="text-2xl font-bold text-amber-800">
+              <div className="text-2xl font-bold text-[#5C351A]">
                 {formatTime(elapsedTime).elapsed}
               </div>
               <div className={`text-sm ${
                 elapsedTime >= 25 * 60 * 1000 ? 'text-red-500 animate-pulse' : 
-                elapsedTime >= 20 * 60 * 1000 ? 'text-amber-600' : 
-                'text-gray-600'
+                elapsedTime >= 20 * 60 * 1000 ? 'text-[#5C351A]' : 
+                'text-[#4A4A4A]'
               }`}>
                 {formatTime(elapsedTime).remaining}
               </div>
@@ -787,7 +787,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           
           <div className="flex-1 text-right">
             <span className={`text-sm px-2 py-1 rounded ${
-              isConnected ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-100 text-gray-500 border border-gray-300'
+              isConnected ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-[#F2EDE2] text-[#4A4A4A] border border-[#5C351A]'
             }`}>
               {isConnected ? '● 연결됨' : '○ 연결 중...'}
             </span>
@@ -804,7 +804,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           }`}>
             
             {/* 로컬 비디오 */}
-            <div className="relative bg-gray-100 rounded-lg overflow-hidden border border-amber-300 shadow-lg">
+            <div className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] shadow-lg">
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -812,14 +812,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 playsInline
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-2 left-2 bg-white bg-opacity-90 text-gray-800 px-2 py-1 rounded text-sm shadow-lg border border-amber-300">
+              <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
                 나 {isMicOn ? '🎤' : '🔇'} {isCameraOn ? '📹' : '📷'}
                 {isLocalSpeaking && ' 🗣️'}
               </div>
               
               {/* 감정 표시 */}
               {emotionScores[participantName] && (
-                <div className="absolute top-2 right-2 bg-amber-100 bg-opacity-90 text-amber-800 px-2 py-1 rounded text-xs shadow-lg border border-amber-400">
+                <div className="absolute top-2 right-2 bg-[#F8F5F0] bg-opacity-90 text-[#5C351A] px-2 py-1 rounded text-xs shadow-lg border border-[#5C351A]">
                   {Object.entries(emotionScores[participantName])
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, 1)
@@ -834,7 +834,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
             {/* 원격 참가자 비디오 */}
             {participants.map((participant) => (
-              <div key={participant.sid} className="relative bg-gray-100 rounded-lg overflow-hidden border border-amber-300 shadow-lg">
+              <div key={participant.sid} className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] shadow-lg">
                 <video
                   ref={createParticipantVideoRef(participant.sid)}
                   autoPlay
@@ -845,7 +845,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                   ref={createParticipantAudioRef(participant.sid)}
                   autoPlay
                 />
-                <div className="absolute bottom-2 left-2 bg-white bg-opacity-90 text-gray-800 px-2 py-1 rounded text-sm shadow-lg border border-amber-300">
+                <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
                   {participant.name} 
                   {participant.isAudioEnabled ? '🎤' : '🔇'} 
                   {participant.isVideoEnabled ? '📹' : '📷'}
@@ -857,18 +857,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         </div>
 
         {/* 사이드바 - AI 대화코치 */}
-        <div className="w-80 bg-gradient-to-b from-amber-100 to-yellow-100 flex flex-col h-full overflow-hidden border-l-4 border-amber-600 shadow-xl">
+        <div className="w-80 bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
           {/* 감정 및 갈등 레벨 표시 */}
-          <div className="p-4 border-b border-amber-300 flex-shrink-0 max-h-64 overflow-y-auto bg-white bg-opacity-50 rounded-lg m-2 shadow-sm">
-            <h3 className="text-amber-900 font-bold mb-2 flex items-center">
+          <div className="p-4 border-b border-[#5C351A] flex-shrink-0 max-h-64 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+            <h3 className="text-[#2A2A2A] font-bold mb-2 flex items-center">
               <span className="mr-2">🤖</span>AI 감정 분석
             </h3>
             <div className="mb-2">
-              <div className="flex justify-between text-sm text-amber-800 font-medium">
+              <div className="flex justify-between text-sm text-[#5C351A] font-medium">
                 <span>갈등 레벨</span>
                 <span>{Math.round(conflictLevel)}%</span>
               </div>
-              <div className="w-full bg-amber-300 rounded-full h-2 shadow-inner">
+              <div className="w-full bg-[#D6CDB8] rounded-full h-2 shadow-inner">
                 <div
                   className={`h-2 rounded-full transition-all duration-300 ${
                     conflictLevel > 70 ? 'bg-red-500' :
@@ -880,12 +880,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             </div>
             
             {Object.entries(emotionScores).map(([name, scores]) => (
-              <div key={name} className="mb-2 bg-white bg-opacity-70 p-2 rounded shadow-sm">
-                <p className="text-xs text-amber-800 font-semibold">{name}</p>
+              <div key={name} className="mb-2 bg-[#FEFCF8] bg-opacity-70 p-2 rounded shadow-sm">
+                <p className="text-xs text-[#5C351A] font-semibold">{name}</p>
                 <div className="grid grid-cols-3 gap-1 text-xs mt-1">
                   {Object.entries(scores).map(([emotion, score]) => (
                     <div key={emotion} className="text-center">
-                      <div className={`${score > 50 ? 'text-red-600 font-semibold' : 'text-gray-600'} text-xs`}>
+                      <div className={`${score > 50 ? 'text-red-600 font-semibold' : 'text-[#4A4A4A]'} text-xs`}>
                         {emotion}: {score}%
                       </div>
                     </div>
@@ -897,15 +897,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
           {/* 대화 내용 */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-amber-300 flex-shrink-0 bg-white bg-opacity-50 rounded-lg m-2 shadow-sm">
-              <h3 className="text-amber-900 font-bold flex items-center">
+            <div className="p-4 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+              <h3 className="text-[#2A2A2A] font-bold flex items-center">
                 <span className="mr-2">💬</span>AI 대화코치
               </h3>
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={toggleSTT}
                   className={`px-3 py-1 rounded text-sm font-medium ${
-                    sttEnabled ? 'bg-green-500 text-white shadow-lg' : 'bg-gray-300 text-gray-600 shadow'
+                    sttEnabled ? 'bg-green-500 text-white shadow-lg' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
                   }`}
                 >
                   STT {sttEnabled ? 'ON' : 'OFF'}
@@ -913,7 +913,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 <button
                   onClick={toggleAIMediation}
                   className={`px-3 py-1 rounded text-sm font-medium ${
-                    aiMediationEnabled ? 'bg-amber-700 text-white shadow-lg border-2 border-amber-800' : 'bg-gray-300 text-gray-600 shadow'
+                    aiMediationEnabled ? 'bg-[#5C351A] text-white shadow-lg border-2 border-[#4D280E]' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
                   }`}
                 >
                   AI 중재 {aiMediationEnabled ? 'ON' : 'OFF'}
@@ -924,30 +924,30 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {/* 현재 음성 */}
               {currentSpeech.text && (
-                <div className="bg-gradient-to-r from-blue-100 to-blue-200 p-3 rounded-lg shadow-lg border-l-4 border-blue-400 animate-pulse">
-                  <p className="text-blue-800 text-sm font-bold flex items-center">
+                <div className="bg-gradient-to-r from-[#F8F5F0] to-[#F2EDE2] p-3 rounded-lg shadow-lg border-l-4 border-[#5C351A] animate-pulse">
+                  <p className="text-[#5C351A] text-sm font-bold flex items-center">
                     <span className="mr-2">🎙️</span>{currentSpeech.speaker} 
-                    <span className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-full">실시간</span>
+                    <span className="ml-2 px-2 py-1 bg-[#5C351A] text-white text-xs rounded-full">실시간</span>
                   </p>
-                  <p className="text-gray-800 font-medium mt-1">{currentSpeech.text}</p>
+                  <p className="text-[#2A2A2A] font-medium mt-1">{currentSpeech.text}</p>
                 </div>
               )}
 
               {/* 대화 기록 */}
               {conversations.slice().reverse().map((conv) => (
-                <div key={conv.id} className="bg-white bg-opacity-80 p-3 rounded-lg shadow border border-amber-200">
+                <div key={conv.id} className="bg-[#FEFCF8] bg-opacity-80 p-3 rounded-lg shadow border border-[#5C351A]">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-amber-800 text-sm font-semibold">
+                    <span className="text-[#5C351A] text-sm font-semibold">
                       👤 {conv.speaker}
                     </span>
-                    <span className="text-gray-500 text-xs">
+                    <span className="text-[#4A4A4A] text-xs">
                       {conv.timestamp}
                     </span>
                   </div>
-                  <p className="text-gray-800 text-sm">{conv.text}</p>
+                  <p className="text-[#2A2A2A] text-sm">{conv.text}</p>
                   {conv.aiSuggestion && (
-                    <div className="mt-3 p-3 bg-gradient-to-br from-amber-700 via-amber-600 to-yellow-600 rounded-lg shadow-xl border-2 border-amber-800 relative">
-                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-amber-800 rounded-full flex items-center justify-center">
+                    <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
+                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
                         <span className="text-white text-xs">✨</span>
                       </div>
                       <p className="text-white text-xs font-bold flex items-center mb-1">
@@ -955,7 +955,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                       </p>
                       <p className="text-white text-sm font-medium leading-relaxed">{conv.aiSuggestion}</p>
                       <div className="mt-2 text-right">
-                        <span className="text-amber-200 text-xs opacity-80">powered by AI</span>
+                        <span className="text-[#F8F5F0] text-xs opacity-80">powered by AI</span>
                       </div>
                     </div>
                   )}
@@ -967,13 +967,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       </div>
 
       {/* 하단 컨트롤 바 */}
-      <div className="bg-white shadow-lg p-4 flex-shrink-0 border-t border-amber-200">
+      <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-t border-[#5C351A]">
         <div className="flex justify-center items-center space-x-4">
           {/* 마이크 토글 */}
           <button
             onClick={toggleMicrophone}
             className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isMicOn ? 'bg-amber-600 hover:bg-amber-700 border-2 border-amber-400' : 'bg-amber-300 hover:bg-amber-400 border-2 border-amber-200'
+              isMicOn ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
             }`}
             title={isMicOn ? '마이크 끄기' : '마이크 켜기'}
           >
@@ -984,7 +984,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <button
             onClick={toggleVideo}
             className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isCameraOn ? 'bg-amber-700 hover:bg-amber-800 border-2 border-amber-500' : 'bg-amber-300 hover:bg-amber-400 border-2 border-amber-200'
+              isCameraOn ? 'bg-[#4D280E] hover:bg-[#3E1F0A] border-2 border-[#2A2A2A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
             }`}
             title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
           >
@@ -995,7 +995,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <button
             onClick={toggleRecording}
             className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isRecording ? 'bg-amber-800 hover:bg-amber-900 border-2 border-amber-600' : 'bg-amber-200 hover:bg-amber-300 border-2 border-amber-100 text-amber-800'
+              isRecording ? 'bg-[#3E1F0A] hover:bg-[#2A2A2A] border-2 border-[#4D280E]' : 'bg-[#F2EDE2] hover:bg-[#E8DCC0] border-2 border-[#D6CDB8] text-[#5C351A]'
             }`}
             title={isRecording ? '녹화 중지' : '녹화 시작'}
           >
@@ -1007,8 +1007,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             onClick={toggleNoiseSuppression}
             className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
               noiseSuppressionEnabled
-                ? 'bg-amber-600 hover:bg-amber-700 border-2 border-amber-400 text-white'
-                : 'bg-amber-100 hover:bg-amber-200 border-2 border-amber-200 text-amber-700'
+                ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A] text-white'
+                : 'bg-[#F8F5F0] hover:bg-[#F2EDE2] border-2 border-[#E8DCC0] text-[#5C351A]'
             }`}
             title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
           >
@@ -1018,14 +1018,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           {/* 나가기 버튼 */}
           <button
             onClick={() => handleLeaveRoom(true)}
-            className="w-12 h-12 rounded-full bg-amber-600 hover:bg-amber-700 flex items-center justify-center text-white transition-colors shadow-lg border-2 border-amber-500"
+            className="w-12 h-12 rounded-full bg-[#5C351A] hover:bg-[#4D280E] flex items-center justify-center text-white transition-colors shadow-lg border-2 border-[#3E1F0A]"
           >
             📞
           </button>
         </div>
 
         {/* 상태 표시 */}
-        <div className="flex justify-center mt-2 text-sm text-gray-600 font-medium">
+        <div className="flex justify-center mt-2 text-sm text-[#4A4A4A] font-medium">
           <span>마이크: {isMicOn ? 'ON' : 'OFF'}</span>
           <span className="mx-2">|</span>
           <span>카메라: {isCameraOn ? 'ON' : 'OFF'}</span>

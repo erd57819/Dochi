@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Nav from './components/Nav';
+import ScrollToTop from './components/ScrollToTop';
 import PrePage from './pages/PrePage';
 import MainPage from './pages/MainPage';
 import LoginPage from './pages/LoginPage';
@@ -33,9 +34,12 @@ import VideoCallRoom from './components/videocall/VideoCallRoom';
 const App = () => {
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen bg-gray-50">
-        <Nav />
-        <main>
+        <div className="fixed top-0 left-0 right-0 z-50">
+          <Nav />
+        </div>
+        <main className="pt-16 lg:pt-20">
           <Routes>
             {/* three.js 완성되면주석 해제 예정 */}
             {/* <Route path="/" element={<PrePage />} />

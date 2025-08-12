@@ -239,24 +239,7 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
         </div>
       )}
       
-      {/* 화자 선택 버튼 */}
-      {speakers.length > 0 && (
-        <div className="flex space-x-4 mb-6">
-          {speakers.map(speaker => (
-            <button
-              key={speaker}
-              onClick={() => setSelectedSpeaker(speaker)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedSpeaker === speaker
-                  ? 'bg-[#bf7d2c] text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {speaker}
-            </button>
-          ))}
-        </div>
-      )}
+      
 
       {/* 감정 그래프 - 라인 차트와 파이 차트 */}
       {selectedSpeaker && getChartData() && (
