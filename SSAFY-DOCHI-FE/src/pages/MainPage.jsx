@@ -300,8 +300,11 @@ export const MainPage = () => {
             // Typed.js for .typewriter
             if (typewriterRef.current) {
               const typed = new Typed(typewriterRef.current, {
-                strings: ['좁혀지지 않는 갈등'],
+                strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
                 typeSpeed: 80,
+                backSpeed: 50,
+                backDelay: 2000,
+                loop: true,
                 showCursor: true,
                 cursorChar: '|',
                 cursorClass: 'typed-cursor'
