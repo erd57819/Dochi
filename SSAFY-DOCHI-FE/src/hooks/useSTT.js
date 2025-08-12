@@ -86,6 +86,13 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
 
   // LiveKit Data Channel로 STT 결과 전송
   const sendSTTToLiveKit = (speaker, text) => {
+    console.log('[LiveKit STT] 전송 시도:', {
+      hasRoom: !!livekitRoom,
+      isConnected: livekitConnected,
+      roomName: livekitRoom?.name,
+      roomState: livekitRoom?.state
+    });
+    
     if (!livekitRoom || !livekitConnected) {
       console.log('[LiveKit STT] Room이 연결되지 않음');
       return false;
@@ -585,6 +592,19 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         console.error('마이크 권한이 거부되었습니다.');
       } else if (event.error === 'aborted') {
         console.error('음성 인식이 중단되었습니다.');
+      } else if (event.error === 'network') {
+        console.error('네트워크 오류 - 구글 음성 인식 서비스 연결 실패');
+        console.log('5초 후 STT 재초기화 시도...');
+        // 네트워크 오류 시 STT 완전 재초기화
+        setTimeout(() => {
+          if (sttEnabled) {
+            console.log('STT 재초기화 시도');
+            stopSTT();
+            setTimeout(() => {
+              startSTT();
+            }, 1000);
+          }
+        }, 5000);
       }
     };
 
