@@ -62,7 +62,7 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
         {/* 갈등 해결 방향 */}
         <div>
           <label className="block text-xl font-semibold text-gray-700 mb-4">
-            갈등 해결 방향
+            갈등 해결 방향 <span className="text-sm font-normal text-gray-500">(복수 선택 가능)</span>
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
@@ -72,25 +72,52 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
               { value: 'INNER_PEACE', label: '내 마음의 평화가 중요', emoji: '🧘' },
               { value: 'PREVENTION', label: '재발 방지가 중요', emoji: '🛡️' },
               { value: 'COMMUNICATION', label: '소통 개선이 중요', emoji: '💬' }
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onChange({ desiredOutcome: option.value })}
-                className={`
-                  p-4 rounded-xl border-2 transition-all duration-200 text-left
-                  ${formData.desiredOutcome === option.value
-                    ? 'border-amber-700 bg-amber-50 transform scale-105'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                  }
-                `}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{option.emoji}</span>
-                  <span className="font-medium text-base">{option.label}</span>
-                </div>
-              </button>
-            ))}
+            ].map((option) => {
+              const isSelected = Array.isArray(formData.desiredOutcome) 
+                ? formData.desiredOutcome.includes(option.value)
+                : formData.desiredOutcome === option.value;
+              
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    const currentOutcomes = Array.isArray(formData.desiredOutcome) 
+                      ? formData.desiredOutcome 
+                      : formData.desiredOutcome ? [formData.desiredOutcome] : [];
+                    
+                    let newOutcomes;
+                    if (option.value === 'NONE') {
+                      // "상관없음"을 선택하면 다른 모든 선택 해제
+                      newOutcomes = isSelected ? [] : ['NONE'];
+                    } else {
+                      // 다른 옵션을 선택하면 "상관없음" 자동 해제
+                      const filteredOutcomes = currentOutcomes.filter(item => item !== 'NONE');
+                      if (isSelected) {
+                        newOutcomes = filteredOutcomes.filter(item => item !== option.value);
+                      } else {
+                        newOutcomes = [...filteredOutcomes, option.value];
+                      }
+                    }
+                    
+                    onChange({ desiredOutcome: newOutcomes });
+                  }}
+                  className={`
+                    p-4 rounded-xl border-2 transition-all duration-200 text-left
+                    ${isSelected
+                      ? 'border-amber-700 bg-amber-50 transform scale-105'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{option.emoji}</span>
+                    <span className="font-medium text-base">{option.label}</span>
+                    {isSelected && <span className="text-amber-700 ml-auto">✓</span>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 

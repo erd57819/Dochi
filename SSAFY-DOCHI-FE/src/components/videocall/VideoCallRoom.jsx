@@ -29,7 +29,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }, [window.location.pathname]);
   
   const roomName = roomCodeFromUrl || extractedFromUrl;
-  console.log('최종 사용할 roomName:', roomName, { roomCodeFromUrl, extractedFromUrl });
   // 실제 사용자 정보 사용: 로그인된 경우 사용자 ID, 게스트인 경우 닉네임
   const getUserIdentifier = () => {
     if (!isLoggedIn || !user) return '게스트';
@@ -332,8 +331,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           const audioRef = remoteAudioRefs.current.get(participantSid);
           if (audioRef?.current) {
             pendingAudioTrack.attach(audioRef.current);
+            console.log('[오디오 연결] pending 오디오 트랙 연결 완료:', participantSid);
+            // 오디오 엘리먼트 설정 확인
+            if (audioRef.current.muted) {
+              audioRef.current.muted = false;
+              console.log('[오디오 연결] muted 해제:', participantSid);
+            }
+            audioRef.current.play().catch(e => console.log('[오디오 연결] 자동재생 실패 (정상):', e));
           }
-        }, 100);
+        }, 500); // 더 긴 지연시간으로 변경
         pendingAudioTracks.current.delete(participantSid);
       }
     }
@@ -752,7 +758,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col overflow-hidden">
       {/* 헤더 */}
       <div className="bg-white shadow-lg p-4 flex-shrink-0 border-b border-amber-200">
         <div className="flex justify-between items-center">

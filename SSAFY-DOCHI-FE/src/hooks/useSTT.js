@@ -752,7 +752,6 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
     setSttEnabled(false);
     setAiMediationEnabled(false);
     setCoachingEnabled(false);
-    setConversations([]);
     setCurrentSpeech({ speaker: null, text: '' });
     lastCoachingTimeRef.current = 0;
     lastSpeechTimeRef.current = Date.now();

@@ -18,10 +18,10 @@ public class UserConflict {
     private Integer conflictWhen;
     private Integer conflictFrequency;
     private String participants; // JSON 형태로 저장
-    private String desiredOutcome;
+    private String desiredOutcome;  // 복수 선택 가능 (콤마로 구분)
     private Priority priority;
     private TalkWillingness talkWillingness;
-    private InitialEmotion initialEmotion;
+    private String initialEmotion;  // 복수 선택 가능 (콤마로 구분) - String으로 변경
     private Integer intensity;
     private String aiSummary; // AI 요약 결과
     private LocalDateTime createdAt;
@@ -31,7 +31,7 @@ public class UserConflict {
     public UserConflict(Long userId, String title, String description, ConflictType conflictType,
                        Integer conflictWhen, Integer conflictFrequency, String participants,
                        String desiredOutcome, Priority priority, TalkWillingness talkWillingness,
-                       InitialEmotion initialEmotion, Integer intensity, String aiSummary) {
+                       String initialEmotion, Integer intensity, String aiSummary) {
         this.userId = userId;
         this.title = title;
         this.description = description;

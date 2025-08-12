@@ -11,6 +11,8 @@
         <result property="userId" column="user_id"/>
         <result property="emotionAnalysis" column="emotion_analysis"/>
         <result property="conflictAnalysis" column="conflict_analysis"/>
+        <result property="myPosition" column="my_position"/>
+        <result property="partnerPosition" column="partner_position"/>
         <result property="relationshipHealthScore" column="relationship_health_score"/>
         <result property="trustScore" column="trust_score"/>
         <result property="communicationScore" column="communication_score"/>
@@ -23,12 +25,14 @@
 
     <insert id="save" parameterType="com.ssafy.dochi.conflict.domain.AiAnalysisResult" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO ai_analysis_results (
-            conflict_id, user_id, emotion_analysis, conflict_analysis, relationship_health_score,
-            trust_score, communication_score, cooperation_score, priority_recommendation, recommended_actions
+            conflict_id, user_id, emotion_analysis, conflict_analysis, my_position, partner_position,
+            relationship_health_score, trust_score, communication_score, cooperation_score, 
+            priority_recommendation, recommended_actions
         )
         VALUES (
-            #{conflictId}, #{userId}, #{emotionAnalysis}, #{conflictAnalysis}, #{relationshipHealthScore},
-            #{trustScore}, #{communicationScore}, #{cooperationScore}, #{priorityRecommendation}, #{recommendedActions}
+            #{conflictId}, #{userId}, #{emotionAnalysis}, #{conflictAnalysis}, #{myPosition}, #{partnerPosition},
+            #{relationshipHealthScore}, #{trustScore}, #{communicationScore}, #{cooperationScore}, 
+            #{priorityRecommendation}, #{recommendedActions}
         )
     </insert>
 
@@ -50,6 +54,8 @@
         UPDATE ai_analysis_results
         SET emotion_analysis = #{emotionAnalysis},
             conflict_analysis = #{conflictAnalysis},
+            my_position = #{myPosition},
+            partner_position = #{partnerPosition},
             relationship_health_score = #{relationshipHealthScore},
             trust_score = #{trustScore},
             communication_score = #{communicationScore},
