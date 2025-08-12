@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { conflictReportApi } from '../services/conflictReportApi';
+import consultantDochiImg from '../assets/consultantdochi.png';
 
 // Chart.js 설정
 import {
@@ -134,17 +135,29 @@ const ConflictReportPage = () => {
         
         <div className="container mx-auto px-12 py-24 max-w-6xl relative z-10">
           {/* 헤더 */}
-          <div className="text-center mb-20">
-            <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
-              갈등 분석 레포트
-            </h1>
-            <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
-            <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
-              AI가 분석한 갈등의 깊이와 해결책을 만나보세요
-            </p>
-            <p className="text-[#8B7B7B] text-sm mt-4 font-light">
-              생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
-            </p>
+          <div className="relative mb-20">
+            {/* 오른쪽 상단에 도치 이미지 */}
+            <div className="absolute right-0 top-0 z-20">
+              <img 
+                src={consultantDochiImg} 
+                alt="컨설턴트 도치" 
+                className="w-56 h-56 object-contain drop-shadow-lg opacity-90 hover:opacity-100 transition-opacity duration-300"
+              />
+            </div>
+            
+            {/* 중앙 정렬된 헤더 텍스트 */}
+            <div className="text-center">
+              <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
+                갈등 분석 레포트
+              </h1>
+              <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
+              <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
+                AI가 분석한 갈등의 깊이와 해결책을 만나보세요
+              </p>
+              <p className="text-[#8B7B7B] text-sm mt-4 font-light">
+                생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
+              </p>
+            </div>
           </div>
 
           {/* 종합 요약 */}
@@ -243,10 +256,10 @@ const ConflictReportPage = () => {
       {/* 액션 버튼 섹션 */}
       <section className="bg-[#C2B596] py-24">
         <div className="container mx-auto px-12 max-w-4xl text-center">
-          <h3 className="text-4xl font-light mb-16 text-[#2A2A2A] tracking-tight">
+          <h3 className="text-4xl font-light mb-6 text-[#2A2A2A] tracking-tight">
             레포트 활용하기
           </h3>
-           <p className="text-[#4A4A4A] text-xl font-light">갈등 레포트는 따로 저장되지 않습니다. 저장을 원하시면 레포트 인쇄 버튼을 눌러 pdf로 저장하세요.</p>
+          <p className="text-[#4A4A4A] text-xl font-light mb-8">갈등 레포트는 따로 저장되지 않습니다. 저장을 원하시면 레포트 인쇄 버튼을 눌러 pdf로 저장하세요.</p>
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
             <button
               onClick={() => navigate('/mypage')}

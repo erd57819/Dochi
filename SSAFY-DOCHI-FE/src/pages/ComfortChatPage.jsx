@@ -209,13 +209,7 @@ const ComfortChatPage = () => {
   };
 
   const handleManhwaButtonClick = () => {
-    const { currentChatRoomId, manhwaCache } = useComfortStore.getState();
-    
-    if (manhwaCache[currentChatRoomId] && manhwaCache[currentChatRoomId].length > 0) {
-      setShowManhwa(true);
-    } else {
-      generateManhwa();
-    }
+    setShowManhwa(true);
   };
 
   const generateManhwa = async () => {
@@ -303,10 +297,10 @@ const ComfortChatPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="relative h-screen bg-gray-50" style={{ height: 'calc(100vh - 8vh)' }}>
       {/* 사이드바 */}
-      <div className={`fixed left-0 top-0 h-full bg-orange-100 shadow-lg transition-all duration-300 z-40 ${
-        isSidebarOpen ? 'w-[280px]' : 'w-[60px]'
+      <div className={`absolute left-0 top-0 h-full bg-orange-100 shadow-lg transition-all duration-300 z-40 ${
+        isSidebarOpen ? 'w-[280px] md:w-[280px]' : 'w-[60px] md:w-[60px]'
       }`}>
         {/* 사이드바 토글 버튼 */}
         <div className="p-4 border-b border-orange-200">
@@ -321,7 +315,7 @@ const ComfortChatPage = () => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                 </svg>
-                
+
               </>
             ) : (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,7 +324,7 @@ const ComfortChatPage = () => {
             )}
           </button>
         </div>
-        
+
         {/* 새 대화 버튼 */}
         {isSidebarOpen && (
           <div className="p-4 border-b border-orange-200">
@@ -345,7 +339,7 @@ const ComfortChatPage = () => {
             </button>
           </div>
         )}
-        
+
         {/* 세션 목록 */}
         <div className="overflow-y-auto" style={{ height: isSidebarOpen ? 'calc(100% - 176px)' : 'calc(100% - 88px)' }}>
           {isSidebarOpen ? (
@@ -449,11 +443,11 @@ const ComfortChatPage = () => {
       </div>
 
       {/* 메인 채팅 영역 */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
-        isSidebarOpen ? 'ml-[280px]' : 'ml-[60px]'
+      <div className={`h-full flex flex-col transition-all duration-300 ${
+        isSidebarOpen ? 'ml-[280px] md:ml-[280px]' : 'ml-[60px] md:ml-[60px]'
       }`}>
         {/* 채팅 도구바 */}
-        <div className="bg-orange-50 border-b border-orange-200 px-6 py-4 flex justify-between items-center">
+        <div className="bg-orange-50 border-b border-orange-200 px-3 md:px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0">
           {/* 드롭다운 (왼쪽으로 이동) */}
           <select
             value={selectedMode}
@@ -463,8 +457,8 @@ const ComfortChatPage = () => {
             <option value="NORMAL">입장정리</option>
             <option value="COMFORT_ONLY">내편들기</option>
           </select>
-          
-          <div className="flex items-center gap-4">
+
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap">
             {/* 네컷만화 버튼 */}
             <button
               onClick={handleManhwaButtonClick}
@@ -525,11 +519,11 @@ const ComfortChatPage = () => {
         </div>
 
         {/* 메시지 영역 */}
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 bg-gray-50">
           {error && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
-              <button 
+              <button
                 onClick={() => setError(null)}
                 className="ml-2 text-red-500 hover:text-red-700"
               >
@@ -537,7 +531,7 @@ const ComfortChatPage = () => {
               </button>
             </div>
           )}
-          
+
           {messages.map((message) => (
             <div
               key={message.id}
@@ -574,7 +568,7 @@ const ComfortChatPage = () => {
               </div>
             </div>
           ))}
-          
+
           {isLoading && (
             <div className="flex justify-start mb-4">
               <div className="bg-white rounded-lg px-4 py-2 shadow-sm border">
@@ -598,7 +592,7 @@ const ComfortChatPage = () => {
         </div>
 
         {/* 입력 영역 */}
-        <div className="bg-white border-t p-4">
+        <div className="bg-white border-t p-3 md:p-4">
           <div className="flex gap-2">
             <textarea
               value={inputValue}
@@ -627,7 +621,7 @@ const ComfortChatPage = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">갈등 타임라인</h3>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={generateTimeline}
                   className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
                 >
@@ -640,11 +634,18 @@ const ComfortChatPage = () => {
                 </button>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {(timelineCache[currentChatRoomId] || []).map((item, index) => (
-                <div key={index} className={`border-l-4 border-${item.color}-500 pl-4`}>
-                  <h4 className="font-medium">{item.time}</h4>
-                  <p className="text-gray-600 text-sm mt-1">{item.content}</p>
+                <div key={index} className="bg-white border rounded-lg p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-800 mb-1">{item.time}</h4>
+                      <p className="text-gray-600 text-sm leading-relaxed">{item.content}</p>
+                    </div>
+                  </div>
                 </div>
               ))}
               {(!timelineCache[currentChatRoomId] || timelineCache[currentChatRoomId].length === 0) && (
@@ -660,63 +661,81 @@ const ComfortChatPage = () => {
       {/* 네컷만화 모달 */}
       {showManhwa && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">오늘의 네컷만화</h3>
-              <div className="flex gap-2">
-                <button 
-                  onClick={generateManhwa}
-                  className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
-                >
-                  새로고침
-                </button>
-                <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+              <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {(manhwaCache[currentChatRoomId] || []).map((panel, index) => {
-                if (panel.type === 'image') {
+            {manhwaCache[currentChatRoomId] && manhwaCache[currentChatRoomId].length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {manhwaCache[currentChatRoomId].map((panel, index) => {
+                  if (panel.type === 'image') {
+                    return (
+                      <div key={index} className="col-span-2">
+                        <h4 className="text-center font-medium mb-2">{panel.title}</h4>
+                        <img
+                          src={panel.url}
+                          alt="AI 생성 네컷만화"
+                          className="w-full rounded-lg"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                          }}
+                        />
+                        <p className="text-center text-gray-500 text-sm mt-2" style={{ display: 'none' }}>
+                          이미지를 불러올 수 없습니다
+                        </p>
+                      </div>
+                    );
+                  }
                   return (
-                    <div key={index} className="col-span-2">
-                      <h4 className="text-center font-medium mb-2">{panel.title}</h4>
-                      <img 
-                        src={panel.url} 
-                        alt="AI 생성 네컷만화" 
-                        className="w-full rounded-lg" 
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'block';
-                        }}
-                      />
-                      <p className="text-center text-gray-500 text-sm mt-2" style={{ display: 'none' }}>
-                        이미지를 불러올 수 없습니다
-                      </p>
+                    <div key={index} className={`${panel.bg} p-4 rounded-lg aspect-square flex items-center justify-center`}>
+                      <div className="text-center">
+                        <div className="text-4xl mb-2">{panel.emoji}</div>
+                        <p className="text-sm">{panel.text}</p>
+                      </div>
                     </div>
                   );
-                }
-                return (
-                  <div key={index} className={`${panel.bg} p-4 rounded-lg aspect-square flex items-center justify-center`}>
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">{panel.emoji}</div>
-                      <p className="text-sm">{panel.text}</p>
-                    </div>
-                  </div>
-                );
-              })}
-              {(!manhwaCache[currentChatRoomId] || manhwaCache[currentChatRoomId].length === 0) && (
-                <div className="col-span-2 text-center text-gray-500 py-8">
-                  만화를 생성하고 있습니다...
+                })}
+                <div className="col-span-2 flex justify-center mt-4">
+                  <button
+                    onClick={generateManhwa}
+                    disabled={isLoading}
+                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+                  >
+                    {isLoading ? '생성중...' : '다시 생성하기'}
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🎨</div>
+                <h4 className="text-lg font-medium mb-2">네컷만화 생성</h4>
+                <p className="text-gray-600 mb-6">대화 내용을 바탕으로 재미있는 네컷만화를 만들어드려요!</p>
+                <button
+                  onClick={generateManhwa}
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
+                      생성중...
+                    </>
+                  ) : (
+                    '네컷만화 생성하기'
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
-      
+
       <ChatTitleModal
         isOpen={showTitleModal}
         onClose={() => setShowTitleModal(false)}
