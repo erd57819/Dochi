@@ -250,7 +250,7 @@ export const MainPage = () => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const sectionHeight = window.innerHeight;
-      
+       
       let newSection;
       if (scrollTop < sectionHeight * 0.5) {
         newSection = 0;
