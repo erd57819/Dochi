@@ -13,7 +13,7 @@ public class AiAnalysisResult {
     private Long id;
     private Long conflictId;
     private Long userId;
-    private String emotionAnalysis; // JSON 또는 문자열
+    private String emotionAnalysis; // 감정 분석 (JSON 또는 문자열)
     private String conflictAnalysis; // JSON 또는 문자열
     private String myPosition; // 내 입장 분석 (JSON 또는 문자열)
     private String partnerPosition; // 상대방 입장 분석 (JSON 또는 문자열)
@@ -26,8 +26,8 @@ public class AiAnalysisResult {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public AiAnalysisResult(Long conflictId, Long userId, String emotionAnalysis, 
-                           String conflictAnalysis, String myPosition, String partnerPosition,
+    public AiAnalysisResult(Long conflictId, Long userId, String emotionAnalysis, String conflictAnalysis, 
+                           String myPosition, String partnerPosition,
                            Integer relationshipHealthScore, String trustScore, 
                            Integer communicationScore, String cooperationScore, 
                            String priorityRecommendation, String recommendedActions) {
