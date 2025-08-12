@@ -142,22 +142,22 @@ const ConflictReportPage = () => {
         
         <div className="container mx-auto px-12 py-24 max-w-6xl relative z-10">
           {/* 헤더 */}
-          <div className="flex items-center justify-between mb-20">
-            {/* 왼쪽: 도치 이미지 */}
-            <div className="flex-shrink-0">
+          <div className="relative mb-20">
+            {/* 오른쪽 상단에 도치 이미지 */}
+            <div className="absolute right-0 top-0 z-20">
               <img 
                 src={consultantDochiImg} 
                 alt="컨설턴트 도치" 
-                className="w-40 h-40 object-contain drop-shadow-lg opacity-90 hover:opacity-100 transition-opacity duration-300"
+                className="w-56 h-56 object-contain drop-shadow-lg opacity-90 hover:opacity-100 transition-opacity duration-300"
               />
             </div>
             
-            {/* 오른쪽: 헤더 텍스트 */}
-            <div className="flex-1 text-right pl-12">
+            {/* 중앙 정렬된 헤더 텍스트 */}
+            <div className="text-center">
               <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
                 갈등 분석 레포트
               </h1>
-              <div className="w-24 h-0.5 bg-[#8B5A3C] ml-auto mb-8"></div>
+              <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
               <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
                 AI가 분석한 갈등의 깊이와 해결책을 만나보세요
               </p>
