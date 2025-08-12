@@ -167,10 +167,18 @@ async def analyze_conflict_integrated(analysis_text):
 다음 형식으로 정확히 분석해주세요:
 
 ===== 1. 책임 비율 분석 =====
-각 참가자의 갈등 책임 비율을 %로 표시하고 아래와 같은 형식으로 이유를 설명하세요. 
-예시:                                                       
- - 화자1: 60% - 상대방 의견을 무시하고 일방적으로 주장함      
- - 화자2: 40% - 감정적으로 대응하여 갈등을 증폭시킴 
+각 참가자의 갈등 책임 비율을 %로 표시하고, 토마스-킬만 갈등관리 유형 5가지 중에서 해당하는 유형을 정확히 분석해주세요.
+
+갈등관리 유형 설명:
+- 경쟁형(Competing): 자신의 이익 우선, 상대방 배려 부족
+- 수용형(Accommodating): 자신을 희생하며 상대방 우선
+- 회피형(Avoiding): 갈등 상황 자체를 피하거나 무시
+- 타협형(Compromising): 서로 양보하며 중간 지점 찾기
+- 협력형(Collaborating): 양방이 만족할 수 있는 해결책 추구
+
+반드시 다음 형식으로 작성하세요:
+ - 화자1: 60% - 상대방 의견을 무시하고 일방적으로 주장함 - 갈등유형: 경쟁형     
+ - 화자2: 40% - 감정적으로 대응하여 갈등을 증폭시킴 - 갈등유형: 경쟁형
 
 
 ===== 2. 갈등 상황 요약 =====
@@ -193,7 +201,8 @@ async def analyze_conflict_integrated(analysis_text):
  - 제안 1                                                    
 - 제안 2    
 
- 모든 답변은 한국어로 대답하고, 실제 대화 내용을 바탕으로 구체적이고 실행 가능한 조언을 제공해주세요
+ 모든 답변은 한국어로 대답하고, 실제 대화 내용을 바탕으로 구체적이고 실행 가능한 조언을 제공해주세요.
+ 또 조언을 생성할 때 토마스 고든의 나-전달법, 칼 로저스의 적극적 경청, 존 가트맨의 비폭력 대화 등 다양한 이론들에 근거해서 조언을 제공해주세요.  
 """
 
         # GPT API 호출 (비동기)
@@ -438,13 +447,37 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                         result["action_plans"]["long_term_suggestions"].append(content)
                         print(f"[파싱] 장기 제안 추가: {content}")
                 elif current_section == "responsibility":
-                    # 책임 비율 파싱 (예: "김철수: 60%", "화자1 70%", "A 화자: 40% - 이유...")
+                    # 책임 비율 파싱 (예: "화자1: 60% - 상대방 의견을 무시 - 갈등유형: 경쟁형")
                     for speaker in speakers:
                         if speaker in content and ('%' in content or '퍼센트' in content):
                             # 퍼센트 추출
                             percent_match = re.search(r'(\d+)%?', content)
+                            
+                            # 갈등유형 추출
+                            conflict_type = "미분류"
+                            conflict_patterns = {
+                                "경쟁형": ["경쟁형", "competing"],
+                                "수용형": ["수용형", "호의형", "accommodating"], 
+                                "회피형": ["회피형", "avoiding"],
+                                "타협형": ["타협형", "compromising"],
+                                "협력형": ["협력형", "collaborating"]
+                            }
+                            
+                            for type_name, patterns in conflict_patterns.items():
+                                for pattern in patterns:
+                                    if pattern in content.lower():
+                                        conflict_type = type_name
+                                        break
+                                if conflict_type != "미분류":
+                                    break
+                            
                             if percent_match:
                                 percentage = int(percent_match.group(1))
+                                
+                                # 이유 추출 (갈등유형 앞부분까지만)
+                                reason_part = content.split('갈등유형')[0] if '갈등유형' in content else content
+                                reason = reason_part.split('-')[-1].strip() if '-' in reason_part else reason_part
+                                
                                 # 이미 추가된 화자인지 확인
                                 existing_participant = None
                                 for p in result["responsibility"]["responsibility_analysis"]["participants"]:
@@ -454,13 +487,18 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                                 
                                 if existing_participant:
                                     existing_participant["responsibility_percentage"] = percentage
+                                    existing_participant["conflict_management_type"] = conflict_type
+                                    existing_participant["reasons"] = [reason]
                                 else:
                                     # 새로 추가
                                     result["responsibility"]["responsibility_analysis"]["participants"].append({
                                         "name": speaker,
                                         "responsibility_percentage": percentage,
-                                        "reasons": [content.split('-')[-1].strip() if '-' in content else content]
+                                        "conflict_management_type": conflict_type,
+                                        "reasons": [reason]
                                     })
+                                    
+                                print(f"[파싱] {speaker}: {percentage}% - {conflict_type} - {reason}")
                 elif current_section == "summary":
                     if "갈등 수준" in content:
                         if "HIGH" in content.upper():
@@ -523,7 +561,8 @@ def parse_gpt_conflict_analysis(gpt_response, speakers):
                 frontend_responsibility[speaker_key] = {
                     "name": p["name"],
                     "responsibility_percentage": p["responsibility_percentage"],
-                    "communication_style": "",
+                    "conflict_management_type": p.get("conflict_management_type", "미분류"),
+                    "communication_style": "",  # 기존 호환성 유지
                     "key_issues": p.get("reasons", []),
                 }
             result["responsibility"]["responsibility_analysis"] = frontend_responsibility
