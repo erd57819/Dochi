@@ -18,6 +18,8 @@ export const useSTT = (roomName, participantName) => {
   const speechTimeoutRef = useRef(null);
   const conversationLogRef = useRef([]);
   const lastSentTextRef = useRef(''); // 마지막 전송된 텍스트 저장
+  const lastSentTimeRef = useRef(0); // 마지막 전송 시간
+  const processingRef = useRef(false); // 처리 중 플래그
   const coachingTimeoutRef = useRef(null);
   const lastCoachingTimeRef = useRef(0);
   const lastSpeechTimeRef = useRef(Date.now()); // 마지막 발언 시간
@@ -135,57 +137,75 @@ export const useSTT = (roomName, participantName) => {
 
   // 음성 인식 결과 처리
   const handleSpeechResult = async (speaker, text) => {
-    // 중복 전송 방지: 마지막에 전송한 텍스트와 동일하면 스킵
-    if (lastSentTextRef.current === text.trim()) {
-      console.log('[STT] 중복 텍스트 감지, 전송 스킵:', text.trim());
+    const currentTime = Date.now();
+    const trimmedText = text.trim();
+    
+    // 처리 중이면 스킵
+    if (processingRef.current) {
+      console.log('[STT] 이미 처리 중, 전송 스킵:', trimmedText);
+      return;
+    }
+
+    // 중복 전송 방지: 마지막에 전송한 텍스트와 동일하거나 2초 내 재전송이면 스킵
+    if (lastSentTextRef.current === trimmedText || 
+        (currentTime - lastSentTimeRef.current < 2000 && lastSentTextRef.current.includes(trimmedText))) {
+      console.log('[STT] 중복 텍스트 감지, 전송 스킵:', trimmedText);
       return;
     }
 
     // 너무 짧은 텍스트는 무시 (노이즈 방지)
-    if (text.trim().length < 2) {
-      console.log('[STT] 텍스트가 너무 짧음, 전송 스킵:', text.trim());
+    if (trimmedText.length < 2) {
+      console.log('[STT] 텍스트가 너무 짧음, 전송 스킵:', trimmedText);
       return;
     }
 
-    lastSentTextRef.current = text.trim();
+    // 처리 시작
+    processingRef.current = true;
+    lastSentTextRef.current = trimmedText;
+    lastSentTimeRef.current = currentTime;
     
-    const timestamp = new Date().toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const timestamp = new Date().toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
-    const newConversation = {
-      id: Date.now(),
-      speaker,
-      text,
-      timestamp,
-      aiSuggestion: null
-    };
+      const newConversation = {
+        id: Date.now(),
+        speaker,
+        text: trimmedText,
+        timestamp,
+        aiSuggestion: null
+      };
 
-    setConversations(prev => [...prev, newConversation]);
-    conversationLogRef.current.push(newConversation);
+      setConversations(prev => [...prev, newConversation]);
+      conversationLogRef.current.push(newConversation);
 
-    // 발언 시간 업데이트 (침묵 추적용)
-    lastSpeechTimeRef.current = Date.now();
-    
-    // 기존 침묵 체크 타이머 초기화
-    if (silenceCheckTimeoutRef.current) {
-      clearTimeout(silenceCheckTimeoutRef.current);
+      // 발언 시간 업데이트 (침묵 추적용)
+      lastSpeechTimeRef.current = currentTime;
+      
+      // 기존 침묵 체크 타이머 초기화
+      if (silenceCheckTimeoutRef.current) {
+        clearTimeout(silenceCheckTimeoutRef.current);
+      }
+      
+      // 새로운 침묵 체크 타이머 시작
+      if (coachingEnabled) {
+        startSilenceMonitoring();
+      }
+
+      // WebSocket으로 실시간 전송 (상대방 화면에 즉시 표시)
+      sendSTTToWebSocket(speaker, trimmedText);
+
+      // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
+      await sendSTTToFastAPI(speaker, trimmedText);
+
+      // 코칭 분석 수행 (항상 실행)
+      await checkCoachingNeeded();
+    } finally {
+      // 처리 완료
+      processingRef.current = false;
     }
-    
-    // 새로운 침묵 체크 타이머 시작
-    if (coachingEnabled) {
-      startSilenceMonitoring();
-    }
-
-    // WebSocket으로 실시간 전송 (상대방 화면에 즉시 표시)
-    sendSTTToWebSocket(speaker, text);
-
-    // FastAPI로 STT 데이터 전송 (한 화자가 말이 끝났을 때)
-    await sendSTTToFastAPI(speaker, text);
-
-    // 코칭 분석 수행 (항상 실행)
-    await checkCoachingNeeded();
 
     // 프론트엔드 갈등 감지 및 AI 중재 기능 제거 (Google API만 사용)
     // const shouldMediate = await analyzeConflictAndTiming(text, speaker);
@@ -448,7 +468,15 @@ export const useSTT = (roomName, participantName) => {
     };
 
     const processSentence = async (text) => {
-      if (text.trim() && !isProcessing) {
+      const trimmedText = text.trim();
+      
+      if (trimmedText && !isProcessing && !processingRef.current) {
+        // 중복 체크 - 같은 텍스트가 이미 처리 중이면 스킵
+        if (lastSentTextRef.current === trimmedText) {
+          console.log('[processSentence] 중복 텍스트 스킵:', trimmedText);
+          return;
+        }
+        
         isProcessing = true;
         currentSpeaker = activeSpeaker || participantName;
         
@@ -456,24 +484,8 @@ export const useSTT = (roomName, participantName) => {
         if (uiDisplayTimeoutRef.current) clearTimeout(uiDisplayTimeoutRef.current);
         if (apiSendTimeoutRef.current) clearTimeout(apiSendTimeoutRef.current);
         
-        // 즉시 UI에 표시
-        const timestamp = new Date().toLocaleTimeString('ko-KR', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-
-        const newConversation = {
-          id: Date.now(),
-          speaker: currentSpeaker,
-          text: text.trim(),
-          timestamp,
-          aiSuggestion: null
-        };
-
-        setConversations(prev => [...prev, newConversation]);
-        
-        // API 전송
-        await handleSpeechResult(currentSpeaker, text.trim());
+        // API 전송만 수행 (UI 표시는 handleSpeechResult에서 처리)
+        await handleSpeechResult(currentSpeaker, trimmedText);
         speakerQueue.push(currentSpeaker);
         if (speakerQueue.length > 3) speakerQueue.shift();
         lastProcessTime = Date.now();
@@ -604,8 +616,10 @@ export const useSTT = (roomName, participantName) => {
       // WebSocket 연결 시작
       initWebSocket();
       
-      // STT 재시작 시 마지막 전송 텍스트 초기화
+      // STT 재시작 시 참조 변수들 초기화
       lastSentTextRef.current = '';
+      lastSentTimeRef.current = 0;
+      processingRef.current = false;
     } catch (error) {
       console.error('음성 인식 시작 실패:', error);
       // 이미 시작된 상태라면 에러를 무시
