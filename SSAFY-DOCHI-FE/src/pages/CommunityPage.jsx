@@ -176,31 +176,9 @@ const CommunityPage = () => {
   const selectedCategoryData = categories.find(cat => cat.value === selectedCategory);
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative " style={{ zoom: '0.85' }}>
-        {/* 전체 배경 컨테이너 */}
-        <div className="absolute inset-0">
-          {/* 상단 배경 */}
-          <div
-              className="absolute top-0 left-0 w-full"
-              style={{
-                height: '100%',
-                // background: 'linear-gradient(to bottom right, #fff7ed, #ffffff, #fffbeb);',
-                opacity: 0.14
-              }}
-          ></div>
-
-          {/* 하단 배경 */}
-          <div
-              className="absolute bottom-0 left-0 w-full"
-              style={{
-                // height: '50%',
-                backgroundColor: '#FFFFFF'
-              }}
-          ></div>
-        </div>
-
-        {/* 메인 컨텐츠 */}
-        <main className="max-w-5xl mx-auto px-3 py-10 relative z-10">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+        {/* 메인 컨테이너 */}
+        <main className="max-w-5xl mx-auto px-3 py-10">
 
           {/* 상단 인사말 및 글쓰기 버튼 */}
           <div className="flex flex-row items-center justify-between text-3xl font-bold mb-4 py-2 px-6" style={{ color: '#8B4513' }}>
