@@ -36,7 +36,6 @@ const ConflictAnalysisResultPage = () => {
   // 간단한 폴백 분석 (AI 백엔드 실패 시에만 사용)
   const generateSimpleFallback = (basicData) => {
     return {
-      emotion_analysis: '현재 갈등 상황으로 인해 스트레스를 받고 있는 상태입니다.',
       conflict_analysis: '의사소통 부족과 서로 다른 관점이 주요 원인으로 보입니다.',
       my_position: '갈등 해결을 위해 노력하고 있으며, 상대방과의 소통을 원하고 있습니다.',
       partner_position: '상대방도 나름의 입장과 이유가 있을 것으로 추정됩니다.',
@@ -151,7 +150,6 @@ const ConflictAnalysisResultPage = () => {
           
           // 캐시된 데이터 디버그 로그
           console.log('캐시된 분석 데이터 확인:');
-          console.log('- emotion_analysis:', adv.emotion_analysis);
           console.log('- conflict_analysis:', adv.conflict_analysis);
           console.log('- my_position:', adv.my_position);
           console.log('- partner_position:', adv.partner_position);
@@ -160,7 +158,6 @@ const ConflictAnalysisResultPage = () => {
             ...basicData,
             aiSummary: basicAi.summary,
             aiSolutions: basicAi.solutions,
-            emotionAnalysis: adv.emotion_analysis ?? adv.emotionAnalysis ?? '',
             conflictAnalysis: adv.conflict_analysis ?? adv.conflictAnalysis ?? '',
             myPosition: adv.my_position ?? adv.myPosition ?? '내 입장을 AI가 분석해서 정리해드립니다.',
             partnerPosition: adv.partner_position ?? adv.partnerPosition ?? '상대방의 입장을 AI가 추정해서 분석해드립니다.',
@@ -212,7 +209,6 @@ const ConflictAnalysisResultPage = () => {
       const adv = advJson.data;
       
       // 6) 고급 분석 데이터 추출
-      const emotionAnalysis         = adv.emotion_analysis         ?? adv.emotionAnalysis         ?? '';
       const conflictAnalysis        = adv.conflict_analysis        ?? adv.conflictAnalysis        ?? '';
       const myPosition              = adv.my_position              ?? adv.myPosition              ?? '';
       const partnerPosition         = adv.partner_position         ?? adv.partnerPosition         ?? '';
@@ -225,19 +221,17 @@ const ConflictAnalysisResultPage = () => {
       
       // 디버그 로그 추가
       console.log('AI 분석 데이터 확인:');
-      console.log('- emotionAnalysis:', emotionAnalysis);
       console.log('- conflictAnalysis:', conflictAnalysis);
       console.log('- myPosition:', myPosition);
       console.log('- partnerPosition:', partnerPosition);
       
       console.log('비어있는 값 확인:');
-      console.log('- emotionAnalysis 비어있음?', isEmptyOrError(emotionAnalysis));
       console.log('- conflictAnalysis 비어있음?', isEmptyOrError(conflictAnalysis));
       console.log('- myPosition 비어있음?', isEmptyOrError(myPosition));
       console.log('- partnerPosition 비어있음?', isEmptyOrError(partnerPosition));
       
-      // 핵심 분석(emotion, conflict)만 체크하고, position은 선택적으로 처리
-      if (isEmptyOrError(emotionAnalysis) || isEmptyOrError(conflictAnalysis)) {
+      // 핵심 분석(conflict)만 체크하고, position은 선택적으로 처리
+      if (isEmptyOrError(conflictAnalysis)) {
         console.log('백엔드에서 핵심 분석 데이터 수신 실패 - 폴백 분석 사용');
         throw new Error('백엔드 AI 핵심 분석 결과가 비어있음');
       }
@@ -260,7 +254,6 @@ const ConflictAnalysisResultPage = () => {
         ...basicData,
         aiSummary:                basicAi.summary,
         aiSolutions:              basicAi.solutions,
-        emotionAnalysis:          emotionAnalysis,
         conflictAnalysis:         conflictAnalysis,
         myPosition:               myPosition || '내 입장을 AI가 분석해서 정리해드립니다.',
         partnerPosition:          partnerPosition || '상대방의 입장을 AI가 추정해서 분석해드립니다.',
@@ -282,7 +275,6 @@ const ConflictAnalysisResultPage = () => {
         ...basicData,
         aiSummary:                basicData.aiSummary,
         aiSolutions:              basicData.aiSolutions,
-        emotionAnalysis:          fallbackAnalysis.emotion_analysis,
         conflictAnalysis:         fallbackAnalysis.conflict_analysis,
         myPosition:               fallbackAnalysis.my_position,
         partnerPosition:          fallbackAnalysis.partner_position,
@@ -532,9 +524,9 @@ const ConflictAnalysisResultPage = () => {
             </h3>
 
 
-            {/* 새로운 레이아웃: 이미지 + 감정분석 위쪽, 갈등분석 아래쪽 */}
+            {/* 새로운 레이아웃: 이미지와 갈등분석 */}
             <div className="space-y-8">
-              {/* 상단: 이미지와 감정 분석 */}
+              {/* 상단: 이미지와 갈등 분석 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 {/* 이미지 영역 */}
                 <div className="text-center">
@@ -553,29 +545,17 @@ const ConflictAnalysisResultPage = () => {
                   </h4>
                 </div>
 
-                {/* 감정 분석 */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8">
-                  <h4 className="text-xl font-bold text-blue-800 mb-6 flex items-center gap-3">
-                    <span className="text-2xl">😊</span> 감정 분석
+                {/* 갈등 분석 */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8">
+                  <h4 className="text-xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+                    <span className="text-2xl">⚡</span> 갈등 분석
                   </h4>
                   <div 
-                    className="text-blue-700"
+                    className="text-purple-700"
                     style={{ lineHeight: '1.8' }}
-                    dangerouslySetInnerHTML={{ __html: renderAnalysisData(conflictData?.emotionAnalysis) }}
+                    dangerouslySetInnerHTML={{ __html: renderAnalysisData(conflictData?.conflictAnalysis) }}
                   />
                 </div>
-              </div>
-
-              {/* 갈등 분석 - 전체 너비 */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8">
-                <h4 className="text-xl font-bold text-purple-800 mb-6 flex items-center gap-3">
-                  <span className="text-2xl">⚡</span> 갈등 분석
-                </h4>
-                <div 
-                  className="text-purple-700"
-                  style={{ lineHeight: '1.8' }}
-                  dangerouslySetInnerHTML={{ __html: renderAnalysisData(conflictData?.conflictAnalysis) }}
-                />
               </div>
 
               {/* 입장 정리 - 감정/갈등 분석 아래로 */}

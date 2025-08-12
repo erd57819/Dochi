@@ -20,7 +20,7 @@ public class ConflictResDto {
     private String desiredOutcome;
     private Priority priority;
     private TalkWillingness talkWillingness;
-    private InitialEmotion initialEmotion;
+    private String initialEmotion;  // String으로 변경
     private Integer intensity;
     private String aiSummary;
     private LocalDateTime createdAt;

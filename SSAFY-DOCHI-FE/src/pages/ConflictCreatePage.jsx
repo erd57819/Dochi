@@ -21,7 +21,7 @@ const ConflictCreatePage = () => {
     conflictWhen: '',
     conflictFrequency: 1,
     participants: '',
-    desiredOutcome: '',
+    desiredOutcome: [],
     priority: 'NONE',
     talkWillingness: 'NONE',
     initialEmotion: [],
@@ -83,7 +83,9 @@ const ConflictCreatePage = () => {
         participants: formData.participants && formData.participants.trim() !== ''
           ? formData.participants
           : null,
-        desiredOutcome: formData.desiredOutcome || 'NONE',
+        desiredOutcome: Array.isArray(formData.desiredOutcome) && formData.desiredOutcome.length > 0 
+          ? formData.desiredOutcome.join(',')
+          : 'NONE',
         priority: formData.priority || 'NONE',
         talkWillingness: formData.talkWillingness || 'NONE',
         initialEmotion: Array.isArray(formData.initialEmotion) && formData.initialEmotion.length > 0 
@@ -164,19 +166,28 @@ const ConflictCreatePage = () => {
         });
 
         if (advancedResponse.ok) {
-          const advancedResult = await advancedResponse.json();
-          const advancedData = advancedResult.data || advancedResult.response?.response || advancedResult;
-          setAdvancedAnalysis(advancedData);
+          const responseText = await advancedResponse.text();
+          if (responseText.trim()) {
+            try {
+              const advancedResult = JSON.parse(responseText);
+              const advancedData = advancedResult.data || advancedResult.response?.response || advancedResult;
+              setAdvancedAnalysis(advancedData);
+            } catch (parseError) {
+              console.error('고급 AI 분석 결과 JSON 파싱 오류:', parseError);
+            }
+          } else {
+            console.log('고급 AI 분석 응답이 비어있습니다.');
+          }
         } else {
-          console.log('Advanced analysis failed, but continuing...');
+          console.log(`Advanced analysis failed with status: ${advancedResponse.status}, but continuing...`);
         }
       } catch (error) {
         console.error('고급 AI 분석 오류:', error);
         // 고급 분석 실패는 전체 플로우를 중단시키지 않음
       }
 
-      // AI 분석 완료 후 바로 리포트 페이지로 이동
-      navigate(`/conflicts/analysis/${conflictId}`);
+      // AI 분석 완료 후 4단계(분석 결과 확인)로 이동
+      setCurrentStep(4);
 
     } catch (error) {
       console.error('갈등 분석 오류:', error);
@@ -188,7 +199,7 @@ const ConflictCreatePage = () => {
   };
 
 
-  // 최종 저장
+  // 최종 저장 - 고급 AI 분석 결과를 포함하여 저장
   const handleFinalSave = async () => {
     if (!tempConflictId) {
       alert('임시 저장된 갈등 데이터가 없습니다.');
@@ -197,6 +208,10 @@ const ConflictCreatePage = () => {
 
     setIsLoading(true);
     try {
+      console.log('Final save - tempConflictId:', tempConflictId);
+      console.log('Final save - advancedAnalysis:', advancedAnalysis);
+      
+      // 고급 AI 분석 결과와 함께 갈등 저장
       const response = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${tempConflictId}`, {
         method: 'POST',
         headers: {
@@ -205,15 +220,28 @@ const ConflictCreatePage = () => {
         }
       });
 
+      console.log('Final save response status:', response.status);
+      const responseText = await response.text();
+      console.log('Final save response:', responseText);
+
       if (response.ok) {
+        const result = JSON.parse(responseText);
+        const savedConflict = result.data || result.response?.response;
+        
         alert('갈등 카드가 성공적으로 생성되었습니다! 🦔');
-        navigate('/mypage');
+        
+        // 저장된 갈등의 상세보기로 이동하여 결과 확인
+        if (savedConflict && savedConflict.id) {
+          navigate(`/conflict/${savedConflict.id}`);
+        } else {
+          navigate('/mypage');
+        }
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '갈등 카드 생성에 실패했습니다.');
+        throw new Error(`갈등 카드 생성에 실패했습니다: ${response.status} - ${responseText}`);
       }
     } catch (error) {
-      alert(error.message);
+      console.error('Final save error:', error);
+      alert(error.message || '갈등 카드 생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }

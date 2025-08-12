@@ -444,9 +444,9 @@ ${summary.join('\n')}
               {conflict?.title || '갈등 제목'}
             </h3>
 
-            {/* 감정 분석과 갈등 분석을 나란히, 그 아래에 입장 정리 */}
+            {/* 갈등 분석과 이미지 레이아웃 */}
             <div className="space-y-8">
-              {/* 감정 분석과 갈등 분석 - 이미지와 나란히 */}
+              {/* 이미지와 갈등 분석 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 {/* 이미지 영역 */}
                 <div className="text-center">
@@ -465,40 +465,39 @@ ${summary.join('\n')}
                   </h4>
                 </div>
 
-                {/* 감정 분석 */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8">
-                  <h4 className="text-xl font-bold text-blue-800 mb-6 flex items-center gap-3">
-                    <span className="text-2xl">😊</span> 감정 분석
+                {/* 갈등 분석 */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8">
+                  <h4 className="text-xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+                    <span className="text-2xl">⚡</span> 갈등 분석
                   </h4>
                   <div 
-                    className="text-blue-700"
+                    className="text-purple-700"
                     style={{ lineHeight: '1.8' }}
                     dangerouslySetInnerHTML={{
                       __html: renderAnalysisData(
-                        analysisResult?.emotionAnalysis || analysisResult?.emotion_analysis ||
-                        `현재 ${getEmotionText(conflict?.initialEmotion)} 감정 상태로, 갈등 강도 ${conflict?.intensity || 0}/10입니다.`
+                        analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis ||
+                        `갈등 상황: ${conflict?.description || '상세 정보가 없습니다.'}`
                       )
                     }}
                   />
                 </div>
               </div>
 
-              {/* 갈등 분석 - 전체 너비 */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8">
-                <h4 className="text-xl font-bold text-purple-800 mb-6 flex items-center gap-3">
-                  <span className="text-2xl">⚡</span> 갈등 분석
-                </h4>
-                <div 
-                  className="text-purple-700"
-                  style={{ lineHeight: '1.8' }}
-                  dangerouslySetInnerHTML={{
-                    __html: renderAnalysisData(
-                      analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis ||
-                      `갈등 상황: ${conflict?.description || '상세 정보가 없습니다.'}`
-                    )
-                  }}
-                />
-              </div>
+              {/* 감정 분석 */}
+              {analysisResult?.emotionAnalysis && (
+                <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-8">
+                  <h4 className="text-xl font-bold text-pink-800 mb-6 flex items-center gap-3">
+                    <span className="text-2xl">💝</span> 감정 분석
+                  </h4>
+                  <div 
+                    className="text-pink-700"
+                    style={{ lineHeight: '1.8' }}
+                    dangerouslySetInnerHTML={{
+                      __html: renderAnalysisData(analysisResult.emotionAnalysis)
+                    }}
+                  />
+                </div>
+              )}
 
               {/* 입장 정리 - 감정/갈등 분석 아래로 */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">

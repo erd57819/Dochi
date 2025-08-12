@@ -6,16 +6,7 @@ class ModelType(str, Enum):
     gpt = "gpt"
     gemini = "gemini"
 
-class SummaryRequest(BaseModel):
-    model_config = ConfigDict(extra='ignore')
-    
-    original_text: str
-    model_type: ModelType = ModelType.gpt  # 기본값으로 gpt 설정
-
-class SummaryResponse(BaseModel):
-    model_config = ConfigDict(extra='ignore')
-    
-    summary_text: str
+# 기본 요약 스키마 제거됨 - 통합 분석만 사용
 
 class AdvancedAnalysisRequest(BaseModel):
     model_config = ConfigDict(extra='ignore')
@@ -25,6 +16,4 @@ class AdvancedAnalysisRequest(BaseModel):
     model_type: ModelType = ModelType.gpt
 
 
-class SummaryRequest(BaseModel):
-    roomId: str
-    text: str
+# 중복 스키마 제거됨
