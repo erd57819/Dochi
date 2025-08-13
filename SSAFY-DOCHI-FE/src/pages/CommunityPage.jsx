@@ -25,7 +25,8 @@ const CommunityPage = () => {
     { value: 'CONFLICT_SHARING', label: '찬반투표', color: '#cd9f6e', gradient: 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)' },
     { value: 'ADVICE_REQUEST', label: '조언해줘', color: '#EE9278', gradient: 'linear-gradient(135deg, #EE9278 0%, #f5a893 100%)' },
     { value: 'SUCCESS_STORIES', label: '해결했어요', color: '#f8d6b3', gradient: 'linear-gradient(135deg, #f8d6b3 0%, #ffe4cc 100%)' },
-    { value: 'GENERAL', label: '자유게시판', color: '#7F5539', gradient: 'linear-gradient(135deg, #7F5539 0%, #a06d4d 100%)' }
+    { value: 'GENERAL', label: '자유게시판', color: '#7F5539', gradient: 'linear-gradient(135deg, #7F5539 0%, #a06d4d 100%)' },
+    { value: 'MY_POSTS', label: '내가 쓴 글', color: '#6B7280', gradient: 'linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)' }
   ];
 
   // 순위 게시글 조회
@@ -46,19 +47,53 @@ const CommunityPage = () => {
   const fetchPosts = async (page = 0, category = '') => {
     try {
       setLoading(true);
-      const categoryParam = category === 'ALL' ? '' : category;
-      const data = await communityApi.getPosts(page, 10, '', categoryParam);
+      
+      if (category === 'MY_POSTS') {
+        // 내가 쓴 글 조회
+        if (!isLoggedIn || !user) {
+          alert('로그인이 필요합니다.');
+          setLoading(false);
+          return;
+        }
+        
+        // 전체 게시글을 가져와서 내가 쓴 글만 필터링
+        // 실제로는 백엔드에서 userId로 필터링하는 API가 있어야 합니다.
+        const allData = await communityApi.getPosts(page, 50, '', ''); // 더 많은 데이터를 가져와서 필터링
+        const myPosts = (allData.content || []).filter(post => post.userId === user.id);
+        
+        // 페이지네이션을 위한 계산
+        const pageSize = 10;
+        const startIndex = page * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedMyPosts = myPosts.slice(startIndex, endIndex);
+        const totalMyPages = Math.ceil(myPosts.length / pageSize);
+        
+        setPosts(paginatedMyPosts);
+        setTotalPages(totalMyPages);
+        setCurrentPage(page);
+        
+        console.log('내가 쓴 글 조회 성공:', {
+          totalMyPosts: myPosts.length,
+          totalPages: totalMyPages,
+          currentPage: page,
+          contentLength: paginatedMyPosts.length
+        });
+      } else {
+        // 일반 게시글 조회
+        const categoryParam = category === 'ALL' ? '' : category;
+        const data = await communityApi.getPosts(page, 10, '', categoryParam);
 
-      setPosts(data.content || []);
-      setTotalPages(data.totalPages || 0);
-      setCurrentPage(page);
+        setPosts(data.content || []);
+        setTotalPages(data.totalPages || 0);
+        setCurrentPage(page);
 
-      console.log('게시글 목록 조회 성공:', {
-        totalPages: data.totalPages,
-        currentPage: page,
-        totalElements: data.totalElements,
-        contentLength: data.content?.length
-      });
+        console.log('게시글 목록 조회 성공:', {
+          totalPages: data.totalPages,
+          currentPage: page,
+          totalElements: data.totalElements,
+          contentLength: data.content?.length
+        });
+      }
     } catch (error) {
       console.error('게시글 목록 조회 실패:', error);
       alert('게시글 목록을 불러오는데 실패했습니다.');
@@ -246,7 +281,9 @@ const CommunityPage = () => {
             {/* 왼쪽: 카테고리 목록 */}
             <div className="w-1/4">
               <div className="space-y-2 mb-6 bg-white p-2 rounded-lg">
-                {categories.map((category) => (
+                {categories
+                  .filter(category => category.value !== 'MY_POSTS' || isLoggedIn) // 로그인된 경우에만 "내가 쓴 글" 표시
+                  .map((category) => (
                   <div
                     key={category.value}
                     className={`p-2 rounded cursor-pointer transition-all transform hover:-translate-y-1 ${

@@ -300,10 +300,15 @@ export const communityApi = {
 // 댓글 API
 export const commentApi = {
   // 댓글 목록 조회
-  async getComments(postId) {
+  async getComments(postId, sortType = 'latest') {
     try {
-      // ✅ 백엔드 매핑 확인 필요 (comments 컨트롤러가 있는지)
-      const response = await fetch(`${API_BASE_URL}/comments/post/${postId}`, {
+      // sortType에 따른 정렬 파라미터 추가
+      const sortParam = sortType === 'likes' ? 'likeCount,desc' : 'createdAt,desc';
+      const url = `${API_BASE_URL}/comments/post/${postId}?sort=${sortParam}`;
+      
+      console.log('댓글 목록 조회 URL:', url);
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -312,7 +317,35 @@ export const commentApi = {
       
       const data = await response.json();
       
-      console.log('댓글 목록 API 응답:', data);
+      console.log('=== 댓글 목록 API 응답 상세 ===');
+      console.log('전체 응답:', data);
+      console.log('댓글 배열:', data.data);
+      if (data.data && data.data.length > 0) {
+        data.data.forEach((comment, index) => {
+          console.log(`댓글 ${index + 1}:`, {
+            id: comment.id,
+            content: comment.content?.substring(0, 30) + '...',
+            parentCommentId: comment.parentCommentId,
+            replies: comment.replies,
+            repliesCount: comment.replies?.length || 0,
+            createdAt: comment.createdAt,
+            userName: comment.userName || comment.userNickname
+          });
+          
+          if (comment.replies && comment.replies.length > 0) {
+            comment.replies.forEach((reply, replyIndex) => {
+              console.log(`  └─ 대댓글 ${replyIndex + 1}:`, {
+                id: reply.id,
+                content: reply.content?.substring(0, 30) + '...',
+                parentCommentId: reply.parentCommentId,
+                createdAt: reply.createdAt,
+                userName: reply.userName || reply.userNickname
+              });
+            });
+          }
+        });
+      }
+      console.log('================================');
       
       if (!response.ok) {
         throw new Error(data.message || '댓글 조회 실패');
@@ -320,34 +353,84 @@ export const commentApi = {
       
       const comments = data.data || [];
       
-      // 각 댓글에 대해 좋아요 통계 조회
-      const commentsWithLikes = await Promise.all(
-        comments.map(async (comment) => {
-          try {
-            const likeStats = await likeApi.getCommentLikeStats(comment.id);
-            return {
-              ...comment,
-              author: comment.userNickname || comment.userName || `사용자${comment.userId}`,
-              authorNickname: comment.userNickname,
-              createdAt: formatDate(comment.createdAt),
-              likeCount: likeStats.likeCount || 0,
-              dislikeCount: likeStats.dislikeCount || 0,
-              userLikeType: likeStats.userLikeType
-            };
-          } catch (error) {
-            console.warn(`댓글 ${comment.id} 좋아요 통계 로드 실패:`, error);
-            return {
-              ...comment,
-              author: comment.userNickname || comment.userName || `사용자${comment.userId}`,
-              authorNickname: comment.userNickname,
-              createdAt: formatDate(comment.createdAt),
+      // 댓글 처리 함수 (대댓글 포함)
+      const processComment = async (comment) => {
+        try {
+          const likeStats = await likeApi.getCommentLikeStats(comment.id);
+          const processedComment = {
+            ...comment,
+            author: comment.userNickname || comment.userName || `사용자${comment.userId}`,
+            authorNickname: comment.userNickname || comment.userName,
+            createdAt: comment.createdAt, // 원본 날짜 형식 유지
+            likeCount: likeStats.likeCount || 0,
+            dislikeCount: likeStats.dislikeCount || 0,
+            userLikeType: likeStats.userLikeType
+          };
+
+          // 대댓글이 있는 경우 처리
+          if (comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0) {
+            console.log(`댓글 ${comment.id}의 대댓글 ${comment.replies.length}개 처리 중...`);
+            processedComment.replies = await Promise.all(
+              comment.replies.map(async (reply) => {
+                try {
+                  const replyLikeStats = await likeApi.getCommentLikeStats(reply.id);
+                  return {
+                    ...reply,
+                    author: reply.userNickname || reply.userName || `사용자${reply.userId}`,
+                    authorNickname: reply.userNickname || reply.userName,
+                    createdAt: reply.createdAt, // 원본 날짜 형식 유지
+                    likeCount: replyLikeStats.likeCount || 0,
+                    dislikeCount: replyLikeStats.dislikeCount || 0,
+                    userLikeType: replyLikeStats.userLikeType
+                  };
+                } catch (error) {
+                  console.warn(`대댓글 ${reply.id} 좋아요 통계 로드 실패:`, error);
+                  return {
+                    ...reply,
+                    author: reply.userNickname || reply.userName || `사용자${reply.userId}`,
+                    authorNickname: reply.userNickname || reply.userName,
+                    createdAt: reply.createdAt,
+                    likeCount: 0,
+                    dislikeCount: 0,
+                    userLikeType: null
+                  };
+                }
+              })
+            );
+          }
+
+          return processedComment;
+        } catch (error) {
+          console.warn(`댓글 ${comment.id} 좋아요 통계 로드 실패:`, error);
+          const processedComment = {
+            ...comment,
+            author: comment.userNickname || comment.userName || `사용자${comment.userId}`,
+            authorNickname: comment.userNickname || comment.userName,
+            createdAt: comment.createdAt,
+            likeCount: 0,
+            dislikeCount: 0,
+            userLikeType: null
+          };
+
+          // 대댓글도 기본값으로 처리
+          if (comment.replies && Array.isArray(comment.replies)) {
+            processedComment.replies = comment.replies.map(reply => ({
+              ...reply,
+              author: reply.userNickname || reply.userName || `사용자${reply.userId}`,
+              authorNickname: reply.userNickname || reply.userName,
+              createdAt: reply.createdAt,
               likeCount: 0,
               dislikeCount: 0,
               userLikeType: null
-            };
+            }));
           }
-        })
-      );
+
+          return processedComment;
+        }
+      };
+
+      // 각 댓글(및 대댓글) 처리
+      const commentsWithLikes = await Promise.all(comments.map(processComment));
       
       return commentsWithLikes;
     } catch (error) {
@@ -381,6 +464,103 @@ export const commentApi = {
       return data;
     } catch (error) {
       console.error('댓글 작성 에러:', error);
+      throw error;
+    }
+  },
+
+  // 댓글 수정
+  async updateComment(commentId, content) {
+    try {
+      console.log('댓글 수정 요청:', { commentId, content, userId: getCurrentUserId() });
+      
+      const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          content: content,
+          userId: getCurrentUserId()
+        })
+      });
+
+      const data = await response.json();
+      
+      console.log('댓글 수정 API 응답:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.message || '댓글 수정 실패');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('댓글 수정 에러:', error);
+      throw error;
+    }
+  },
+
+  // 댓글 삭제
+  async deleteComment(commentId) {
+    try {
+      const userId = getCurrentUserId();
+      console.log('댓글 삭제 요청:', { commentId, userId });
+      
+      const response = await fetch(`${API_BASE_URL}/comments/${commentId}?userId=${userId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || '댓글 삭제 실패');
+      }
+      
+      console.log('댓글 삭제 성공');
+      return true;
+    } catch (error) {
+      console.error('댓글 삭제 에러:', error);
+      throw error;
+    }
+  },
+
+  // 대댓글 작성
+  async createReply(postId, parentCommentId, content) {
+    try {
+      console.log('대댓글 작성 요청:', { postId, parentCommentId, content });
+      
+      // 먼저 실제 대댓글 API 시도
+      const response = await fetch(`${API_BASE_URL}/comments`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          postId: postId,
+          parentCommentId: parentCommentId, // 부모 댓글 ID 포함
+          userId: getCurrentUserId(),
+          content: content
+        })
+      });
+
+      const data = await response.json();
+      
+      console.log('대댓글 작성 API 응답:', data);
+      
+      if (!response.ok) {
+        // 대댓글 API가 지원되지 않으면 일반 댓글로 폴백
+        if (response.status === 400 || response.status === 405) {
+          console.log('대댓글 API 미지원, 일반 댓글로 폴백');
+          return await this.createComment(postId, `@답글 ${content}`);
+        }
+        throw new Error(data.message || '대댓글 작성 실패');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('대댓글 작성 에러:', error);
+      
+      // 네트워크 에러 등의 경우 일반 댓글로 폴백
+      if (error.name === 'TypeError') {
+        console.log('네트워크 에러, 일반 댓글로 폴백');
+        return await this.createComment(postId, `@답글 ${content}`);
+      }
+      
       throw error;
     }
   }

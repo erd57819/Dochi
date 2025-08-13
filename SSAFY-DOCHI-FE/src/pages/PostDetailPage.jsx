@@ -27,6 +27,16 @@ const PostDetailPage = () => {
   const [editContent, setEditContent] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [commentSortType, setCommentSortType] = useState('likes'); // 'latest' or 'likes'
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
+  const [replyToCommentId, setReplyToCommentId] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [commentPage, setCommentPage] = useState(0);
+  const [totalComments, setTotalComments] = useState(0);
+  const [allComments, setAllComments] = useState([]);
+  const [expandedReplies, setExpandedReplies] = useState(new Set()); // 펼쳐진 답글들의 commentId 저장
+  const COMMENTS_PER_PAGE = 10;
 
   const categories = {
     'GENERAL': { label: '자유게시판', color: '#7F5539' },
@@ -36,6 +46,7 @@ const PostDetailPage = () => {
   };
 
   // 작성자 닉네임 또는 이름 표시 함수
+  // 작성자 닉네임 또는 이름 표시 함수
   const getDisplayName = (item) => {
     // 삭제된 사용자인 경우
     if (!item.author && !item.authorNickname) {
@@ -43,6 +54,65 @@ const PostDetailPage = () => {
     }
     // 닉네임이 있으면 닉네임을, 없으면 이름을 표시
     return item.authorNickname || item.author || '익명';
+  };
+
+  // 베스트 댓글 판별 함수
+  const getBestComments = (comments) => {
+    // 대댓글을 제외한 부모 댓글들만 대상으로 함
+    const parentComments = comments.filter(comment => !comment.parentCommentId);
+    
+    // 좋아요 점수 계산 (좋아요 - 싫어요)
+    const commentsWithScore = parentComments.map(comment => ({
+      ...comment,
+      likeScore: (comment.likeCount || 0) - (comment.dislikeCount || 0)
+    }));
+    
+    // 좋아요 점수로 정렬하고 상위 3개 선택 (점수가 양수인 것만)
+    const sortedByLikes = commentsWithScore
+      .filter(comment => comment.likeScore > 0) // 점수가 양수인 댓글만
+      .sort((a, b) => b.likeScore - a.likeScore)
+      .slice(0, 3);
+    
+    return sortedByLikes.map(comment => comment.id);
+  };
+
+  // 날짜 포맷팅 함수
+  const formatDisplayDate = (dateString) => {
+    if (!dateString) return '방금 전';
+    
+    try {
+      let date = new Date(dateString);
+      
+      // 만약 유효하지 않다면 한국어 날짜 형식 시도
+      if (isNaN(date.getTime())) {
+        const koreanFormat = dateString.replace(/\./g, '-');
+        date = new Date(koreanFormat);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return dateString; // 원본 그대로 반환
+      }
+      
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffMinutes < 1) return '방금 전';
+      if (diffMinutes < 60) return `${diffMinutes}분 전`;
+      if (diffHours < 24) return `${diffHours}시간 전`;
+      if (diffDays < 7) return `${diffDays}일 전`;
+      
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.warn('날짜 포맷팅 실패:', dateString, error);
+      return dateString;
+    }
   };
 
   // 데이터 로드
@@ -65,9 +135,21 @@ const PostDetailPage = () => {
       setEditContent(postData.content);
       setEditCategory(postData.category);
       
-      // 댓글 로드
-      const commentsData = await commentApi.getComments(postId);
-      setComments(commentsData);
+      // 댓글 로드 (정렬 타입 포함)
+      const commentsData = await commentApi.getComments(postId, commentSortType);
+      // 백엔드에서 정렬해서 오므로 프론트엔드 정렬은 필요 없지만, 
+      // 백엔드에서 정렬을 지원하지 않을 경우를 대비해 프론트엔드 정렬도 유지
+      const sortedComments = sortComments(commentsData, commentSortType);
+      
+      // 페이지네이션을 위해 전체 댓글 저장
+      setAllComments(sortedComments);
+      setTotalComments(sortedComments.length);
+      
+      // 현재 페이지의 댓글만 표시
+      const startIndex = commentPage * COMMENTS_PER_PAGE;
+      const endIndex = startIndex + COMMENTS_PER_PAGE;
+      const paginatedComments = sortedComments.slice(startIndex, endIndex);
+      setComments(paginatedComments);
       
     } catch (error) {
       console.error('게시글 로드 실패:', error);
@@ -75,6 +157,160 @@ const PostDetailPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 댓글 정렬 함수 (백엔드에서 이미 계층 구조로 온 데이터 정렬)
+  const sortComments = (commentsData, sortType) => {
+    console.log('=== 댓글 정렬 시작 ===');
+    console.log('입력 데이터:', commentsData);
+    console.log('정렬 타입:', sortType);
+    
+    if (!commentsData || !Array.isArray(commentsData)) {
+      console.log('댓글 데이터가 없거나 배열이 아님');
+      return [];
+    }
+
+    // 날짜 파싱 함수 (다양한 형식 지원)
+    const parseDate = (dateString) => {
+      if (!dateString) return null;
+      
+      // ISO 8601 format이나 다른 표준 포맷 처리
+      let date = new Date(dateString);
+      
+      // 만약 유효하지 않다면 한국어 날짜 형식 시도
+      if (isNaN(date.getTime())) {
+        // "2024.01.15" 형식 처리
+        const koreanFormat = dateString.replace(/\./g, '-');
+        date = new Date(koreanFormat);
+      }
+      
+      return isNaN(date.getTime()) ? null : date;
+    };
+
+    // 백엔드에서 이미 계층 구조로 온 데이터를 정렬
+    const sortedComments = [...commentsData].sort((a, b) => {
+      if (sortType === 'likes') {
+        // 좋아요순: 좋아요 - 싫어요로 계산
+        const aScore = (a.likeCount || 0) - (a.dislikeCount || 0);
+        const bScore = (b.likeCount || 0) - (b.dislikeCount || 0);
+        if (aScore !== bScore) {
+          return bScore - aScore; // 좋아요 많은 순
+        }
+        // 좋아요 점수가 같으면 최신순으로 2차 정렬
+        const aDate = parseDate(a.createdAt);
+        const bDate = parseDate(b.createdAt);
+        if (aDate && bDate) return bDate - aDate;
+        return (b.id || 0) - (a.id || 0);
+      } else {
+        // 최신순: 최신이 위에 오도록
+        const aDate = parseDate(a.createdAt);
+        const bDate = parseDate(b.createdAt);
+        
+        console.log(`댓글 ${a.id}: ${a.createdAt} -> ${aDate}`);
+        console.log(`댓글 ${b.id}: ${b.createdAt} -> ${bDate}`);
+        
+        if (aDate && bDate) {
+          const diff = bDate - aDate;
+          console.log(`날짜 차이: ${diff} (${diff > 0 ? 'b가 더 최신' : 'a가 더 최신'})`);
+          return diff; // 최신이 위에
+        }
+        
+        // 날짜가 없으면 ID로 정렬 (보통 ID가 클수록 최신)
+        console.log(`날짜 파싱 실패, ID로 정렬: ${b.id || 0} - ${a.id || 0}`);
+        return (b.id || 0) - (a.id || 0);
+      }
+    });
+
+    // 각 댓글의 대댓글도 최신순으로 정렬
+    const sortedWithReplies = sortedComments.map(comment => {
+      if (comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0) {
+        console.log(`댓글 ${comment.id}의 대댓글 ${comment.replies.length}개 정렬 중...`);
+        
+        const sortedReplies = [...comment.replies].sort((a, b) => {
+          const aDate = parseDate(a.createdAt);
+          const bDate = parseDate(b.createdAt);
+          
+          if (aDate && bDate) {
+            return bDate - aDate; // 대댓글도 최신이 위에
+          }
+          return (b.id || 0) - (a.id || 0);
+        });
+        
+        return {
+          ...comment,
+          replies: sortedReplies
+        };
+      }
+      return comment;
+    });
+    
+    console.log(`댓글 정렬 완료 (${sortType}):`, sortedWithReplies.map(c => ({
+      id: c.id, 
+      content: c.content?.substring(0, 20) + '...', 
+      createdAt: c.createdAt,
+      likeCount: c.likeCount,
+      dislikeCount: c.dislikeCount,
+      repliesCount: c.replies?.length || 0,
+      hasReplies: !!(c.replies && c.replies.length > 0)
+    })));
+    console.log('=== 댓글 정렬 완료 ===');
+    
+    return sortedWithReplies;
+  };
+
+  // 댓글 정렬 타입 변경 (백엔드에서 재조회)
+  const handleCommentSortChange = async (sortType) => {
+    setCommentSortType(sortType);
+    setCommentPage(0); // 정렬 변경시 첫 페이지로
+    console.log('댓글 정렬 변경:', sortType);
+    
+    try {
+      // 백엔드에서 정렬된 댓글 재조회
+      const commentsData = await commentApi.getComments(postId, sortType);
+      const sortedComments = sortComments(commentsData, sortType);
+      
+      // 페이지네이션 적용
+      setAllComments(sortedComments);
+      setTotalComments(sortedComments.length);
+      
+      const startIndex = 0;
+      const endIndex = COMMENTS_PER_PAGE;
+      const paginatedComments = sortedComments.slice(startIndex, endIndex);
+      setComments(paginatedComments);
+    } catch (error) {
+      console.error('댓글 재정렬 실패:', error);
+      // 실패 시 프론트엔드 정렬로 폴백
+      const sortedComments = sortComments(allComments, sortType);
+      setAllComments(sortedComments);
+      setTotalComments(sortedComments.length);
+      
+      const startIndex = 0;
+      const endIndex = COMMENTS_PER_PAGE;
+      const paginatedComments = sortedComments.slice(startIndex, endIndex);
+      setComments(paginatedComments);
+    }
+  };
+
+  // 댓글 페이지 변경
+  const handleCommentPageChange = (newPage) => {
+    setCommentPage(newPage);
+    const startIndex = newPage * COMMENTS_PER_PAGE;
+    const endIndex = startIndex + COMMENTS_PER_PAGE;
+    const paginatedComments = allComments.slice(startIndex, endIndex);
+    setComments(paginatedComments);
+  };
+
+  // 답글 접기/펼치기 토글
+  const toggleReplies = (commentId) => {
+    setExpandedReplies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
   };
 
   // 게시글 좋아요 처리
@@ -170,7 +406,7 @@ const PostDetailPage = () => {
 
   // 댓글 작성
   const handleCommentSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     if (!isLoggedIn) {
       alert('로그인이 필요합니다.');
@@ -188,9 +424,16 @@ const PostDetailPage = () => {
       await commentApi.createComment(postId, commentText);
       setCommentText('');
       
-      // 댓글 목록 새로고침
-      const updatedComments = await commentApi.getComments(postId);
-      setComments(updatedComments);
+      // 댓글 목록 새로고침 (페이지네이션 적용)
+      const updatedComments = await commentApi.getComments(postId, commentSortType);
+      const sortedComments = sortComments(updatedComments, commentSortType);
+      setAllComments(sortedComments);
+      setTotalComments(sortedComments.length);
+      
+      const startIndex = commentPage * COMMENTS_PER_PAGE;
+      const endIndex = startIndex + COMMENTS_PER_PAGE;
+      const paginatedComments = sortedComments.slice(startIndex, endIndex);
+      setComments(paginatedComments);
       
       // alert('댓글이 작성되었습니다.');
     } catch (error) {
@@ -198,6 +441,20 @@ const PostDetailPage = () => {
       alert('댓글 작성에 실패했습니다.');
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  // 댓글 입력창 키 이벤트 핸들러
+  const handleCommentKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        // Shift + Enter: 줄바꿈 (기본 동작 유지)
+        return;
+      } else {
+        // Enter: 댓글 작성
+        e.preventDefault();
+        handleCommentSubmit();
+      }
     }
   };
 
@@ -219,20 +476,150 @@ const PostDetailPage = () => {
       const result = await likeApi.toggleCommentLike(commentId, user.id, likeType);
       
       setComments(prev => 
-        prev.map(comment => 
-          comment.id === commentId 
-            ? {
-                ...comment,
-                likeCount: result.likeCount,
-                dislikeCount: result.dislikeCount,
-                userLikeType: result.userLikeType
-              }
-            : comment
-        )
+        prev.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              likeCount: result.likeCount,
+              dislikeCount: result.dislikeCount,
+              userLikeType: result.userLikeType
+            };
+          }
+          // 대댓글에서 좋아요가 눌린 경우
+          if (comment.replies) {
+            return {
+              ...comment,
+              replies: comment.replies.map(reply => 
+                reply.id === commentId 
+                  ? {
+                      ...reply,
+                      likeCount: result.likeCount,
+                      dislikeCount: result.dislikeCount,
+                      userLikeType: result.userLikeType
+                    }
+                  : reply
+              )
+            };
+          }
+          return comment;
+        })
       );
     } catch (error) {
       console.error('댓글 좋아요 처리 실패:', error);
       alert('댓글 좋아요 처리에 실패했습니다.');
+    }
+  };
+
+  // 댓글 수정 시작
+  const handleEditComment = (commentId, currentContent) => {
+    setEditingCommentId(commentId);
+    setEditingCommentText(currentContent);
+  };
+
+  // 댓글 수정 취소
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentText('');
+  };
+
+  // 댓글 수정 저장
+  const handleSaveEditComment = async (commentId) => {
+    if (!editingCommentText.trim()) {
+      alert('댓글 내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      await commentApi.updateComment(commentId, editingCommentText);
+      // 댓글 목록 새로고침 (페이지네이션 적용)
+      const updatedComments = await commentApi.getComments(postId, commentSortType);
+      const sortedComments = sortComments(updatedComments, commentSortType);
+      setAllComments(sortedComments);
+      setTotalComments(sortedComments.length);
+      
+      const startIndex = commentPage * COMMENTS_PER_PAGE;
+      const endIndex = startIndex + COMMENTS_PER_PAGE;
+      const paginatedComments = sortedComments.slice(startIndex, endIndex);
+      setComments(paginatedComments);
+      setEditingCommentId(null);
+      setEditingCommentText('');
+    } catch (error) {
+      console.error('댓글 수정 실패:', error);
+      alert('댓글 수정에 실패했습니다.');
+    }
+  };
+
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('댓글을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      await commentApi.deleteComment(commentId);
+      // 댓글 목록 새로고침 (페이지네이션 적용)
+      const updatedComments = await commentApi.getComments(postId, commentSortType);
+      const sortedComments = sortComments(updatedComments, commentSortType);
+      setAllComments(sortedComments);
+      setTotalComments(sortedComments.length);
+      
+      // 삭제 후 현재 페이지가 비어있다면 이전 페이지로 이동
+      const totalPages = Math.ceil(sortedComments.length / COMMENTS_PER_PAGE);
+      const adjustedPage = commentPage >= totalPages ? Math.max(0, totalPages - 1) : commentPage;
+      setCommentPage(adjustedPage);
+      
+      const startIndex = adjustedPage * COMMENTS_PER_PAGE;
+      const endIndex = startIndex + COMMENTS_PER_PAGE;
+      const paginatedComments = sortedComments.slice(startIndex, endIndex);
+      setComments(paginatedComments);
+    } catch (error) {
+      console.error('댓글 삭제 실패:', error);
+      alert('댓글 삭제에 실패했습니다.');
+    }
+  };
+
+  // 대댓글 작성
+  const handleReplySubmit = async (parentCommentId) => {
+    if (!replyText.trim()) {
+      alert('답글 내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      await commentApi.createReply(postId, parentCommentId, replyText);
+      setReplyText('');
+      setReplyToCommentId(null);
+      
+      // 답글 작성한 댓글의 답글 목록을 자동으로 펼치기
+      setExpandedReplies(prev => new Set(prev).add(parentCommentId));
+      
+      // 댓글 목록 새로고침 (페이지네이션 적용)
+      const updatedComments = await commentApi.getComments(postId, commentSortType);
+      const sortedComments = sortComments(updatedComments, commentSortType);
+      setAllComments(sortedComments);
+      setTotalComments(sortedComments.length);
+      
+      const startIndex = commentPage * COMMENTS_PER_PAGE;
+      const endIndex = startIndex + COMMENTS_PER_PAGE;
+      const paginatedComments = sortedComments.slice(startIndex, endIndex);
+      setComments(paginatedComments);
+    } catch (error) {
+      console.error('답글 작성 실패:', error);
+      alert('답글 작성에 실패했습니다.');
+    }
+  };
+
+  // 대댓글 입력창 키 이벤트 핸들러
+  const handleReplyKeyDown = (e, parentCommentId) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        // Shift + Enter: 줄바꿈 (기본 동작 유지)
+        return;
+      } else {
+        // Enter: 답글 작성
+        e.preventDefault();
+        handleReplySubmit(parentCommentId);
+      }
     }
   };
 
@@ -405,7 +792,7 @@ const PostDetailPage = () => {
                       {postDisplayName}
                     </span>
                     <span className="text-gray-400">•</span>
-                    <span>{post.createdAt || '방금 전'}</span>
+                    <span>{formatDisplayDate(post.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -615,10 +1002,34 @@ const PostDetailPage = () => {
 
           {/* 댓글 목록 */}
           <div className="bg-white rounded p-5">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold" style={{ color: '#333333' }}>
-                댓글 ({comments.length})
+                댓글 ({totalComments})
               </h3>
+              
+              {/* 댓글 정렬 버튼 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleCommentSortChange('latest')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    commentSortType === 'latest'
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  최신순
+                </button>
+                <button
+                  onClick={() => handleCommentSortChange('likes')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    commentSortType === 'likes'
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  좋아요순
+                </button>
+              </div>
             </div>
             
             {isLoggedIn ? (
@@ -627,7 +1038,8 @@ const PostDetailPage = () => {
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="건설적이고 따뜻한 댓글을 작성해주세요..."
+                    onKeyDown={handleCommentKeyDown}
+                    placeholder="건설적이고 따뜻한 댓글을 작성해주세요... (Enter: 작성, Shift+Enter: 줄바꿈)"
                     rows={3}
                     className="w-full h-20 px-3 py-2 border-2 rounded focus:outline-none text-sm placeholder-gray-400 resize-none transition-all"
                     style={{ 
@@ -683,14 +1095,18 @@ const PostDetailPage = () => {
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
-                {comments.map((comment, index) => {
-                  const commentDisplayName = getDisplayName(comment);
+              <div className="space-y-3">
+                {(() => {
+                  const bestCommentIds = getBestComments(allComments); // 전체 댓글에서 베스트 댓글 계산
                   
-                  return (
+                  return comments.map((comment, index) => {
+                    const commentDisplayName = getDisplayName(comment);
+                    const isBestComment = bestCommentIds.includes(comment.id);
+                    
+                    return (
                     <div 
                       key={comment.id} 
-                      className="pl-4 py-3"
+                      className="pl-4 py-2"
                       style={{ borderColor: categoryData.color }}
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -719,96 +1135,395 @@ const PostDetailPage = () => {
                             >
                               {commentDisplayName}
                             </span>
+                            {isBestComment && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-400 to-orange-400 text-white ml-2">
+                                ✨ 베스트
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <div>
-                          <span className="text-sm mr-3" style={{ color: '#666666' }}>
-                            {comment.createdAt || '방금 전'}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm" style={{ color: '#666666' }}>
+                            {formatDisplayDate(comment.createdAt)}
                           </span>
-                          <span className="text-xs px-2 py-1 rounded-full" style={{ 
-                            backgroundColor: '#F8D6B3',
-                            color: '#8B4513'
-                          }}>
-                            #{index + 1}
-                          </span>
+                          {/* 수정/삭제 버튼 */}
+                          {isLoggedIn && user && (comment.userId === user.id || user.role === 'ADMIN') && (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleEditComment(comment.id, comment.content)}
+                                className="text-xs px-2 py-1 rounded text-blue-600 hover:bg-blue-50 transition-all"
+                              >
+                                수정
+                              </button>
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50 transition-all"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
-                      <div className="text-sm mb-3 leading-relaxed whitespace-pre-wrap" style={{ color: '#333333' }}>
-                        {comment.content}
+                      {/* 댓글 내용 또는 수정 폼 */}
+                      {editingCommentId === comment.id ? (
+                        <div className="mb-3">
+                          <textarea
+                            value={editingCommentText}
+                            onChange={(e) => setEditingCommentText(e.target.value)}
+                            className="w-full px-3 py-2 border-2 rounded focus:outline-none text-sm resize-none"
+                            style={{ borderColor: '#F0F0F0' }}
+                            rows={3}
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleSaveEditComment(comment.id)}
+                              className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-all"
+                            >
+                              저장
+                            </button>
+                            <button
+                              onClick={handleCancelEditComment}
+                              className="px-3 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 transition-all"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm mb-3 leading-relaxed whitespace-pre-wrap" style={{ color: '#333333' }}>
+                          {comment.content}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleCommentLike(comment.id, 'LIKE')}
+                            disabled={!isLoggedIn}
+                            className={`flex items-center gap-2 transition-all text-sm font-medium ${
+                                !isLoggedIn
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : comment.userLikeType === 'LIKE'
+                                        ? 'cursor-pointer'
+                                        : 'text-gray-500 cursor-pointer'
+                            }`}
+                            style={{
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              padding: '0',
+                              color: !isLoggedIn 
+                                ? '#d1d5db' 
+                                : comment.userLikeType === 'LIKE' 
+                                  ? 'rgba(255,177,32,1)' 
+                                  : '#6b7280'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (isLoggedIn && comment.userLikeType !== 'LIKE') {
+                                e.target.style.color = 'rgba(255,177,32,0.7)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (isLoggedIn && comment.userLikeType !== 'LIKE') {
+                                e.target.style.color = '#6b7280';
+                              }
+                            }}
+                          >
+                            <img src={thumbUp} alt="따봉" className="w-5 h-5" /> {comment.likeCount || 0}
+                          </button>
+                          <button
+                            onClick={() => handleCommentLike(comment.id, 'DISLIKE')}
+                            disabled={!isLoggedIn}
+                            className={`flex items-center gap-2 transition-all text-sm font-medium ${
+                                !isLoggedIn
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : comment.userLikeType === 'DISLIKE'
+                                        ? 'cursor-pointer'
+                                        : 'text-gray-500 cursor-pointer'
+                            }`}
+                            style={{
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              padding: '0',
+                              color: !isLoggedIn 
+                                ? '#d1d5db' 
+                                : comment.userLikeType === 'DISLIKE' 
+                                  ? 'rgba(191,125,44,1)' 
+                                  : '#6b7280'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (isLoggedIn && comment.userLikeType !== 'DISLIKE') {
+                                e.target.style.color = 'rgba(191,125,44,0.7)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (isLoggedIn && comment.userLikeType !== 'DISLIKE') {
+                                e.target.style.color = '#6b7280';
+                              }
+                            }}
+                          >
+                            <img src={thumbDown} alt="안따봉" className="w-5 h-5" /> {comment.dislikeCount || 0}
+                          </button>
+                        </div>
+                        
+                        {/* 대댓글 버튼 */}
+                        {isLoggedIn && (
+                          <button
+                            onClick={() => {
+                              // 답글 목록을 자동으로 펼치기
+                              setExpandedReplies(prev => new Set(prev).add(comment.id));
+                              // 답글 작성 활성화
+                              setReplyToCommentId(comment.id);
+                            }}
+                            className="text-xs px-2 py-1 rounded text-gray-600 hover:bg-gray-100 transition-all flex items-center gap-1"
+                          >
+                            💬 답글
+                            {comment.replies && comment.replies.length > 0 && (
+                              <span className="text-xs text-gray-500">({comment.replies.length})</span>
+                            )}
+                          </button>
+                        )}
                       </div>
                       
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleCommentLike(comment.id, 'LIKE')}
-                          disabled={!isLoggedIn}
-                          className={`flex items-center gap-2 transition-all text-sm font-medium ${
-                              !isLoggedIn
-                                  ? 'text-gray-300 cursor-not-allowed'
-                                  : comment.userLikeType === 'LIKE'
-                                      ? 'cursor-pointer'
-                                      : 'text-gray-500 cursor-pointer'
-                          }`}
-                          style={{
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            padding: '0',
-                            color: !isLoggedIn 
-                              ? '#d1d5db' 
-                              : comment.userLikeType === 'LIKE' 
-                                ? 'rgba(255,177,32,1)' 
-                                : '#6b7280'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (isLoggedIn && comment.userLikeType !== 'LIKE') {
-                              e.target.style.color = 'rgba(255,177,32,0.7)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (isLoggedIn && comment.userLikeType !== 'LIKE') {
-                              e.target.style.color = '#6b7280';
-                            }
-                          }}
-                        >
-                          <img src={thumbUp} alt="따봉" className="w-5 h-5" /> {comment.likeCount || 0}
-                        </button>
-                        <button
-                          onClick={() => handleCommentLike(comment.id, 'DISLIKE')}
-                          disabled={!isLoggedIn}
-                          className={`flex items-center gap-2 transition-all text-sm font-medium ${
-                              !isLoggedIn
-                                  ? 'text-gray-300 cursor-not-allowed'
-                                  : comment.userLikeType === 'DISLIKE'
-                                      ? 'cursor-pointer'
-                                      : 'text-gray-500 cursor-pointer'
-                          }`}
-                          style={{
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            padding: '0',
-                            color: !isLoggedIn 
-                              ? '#d1d5db' 
-                              : comment.userLikeType === 'DISLIKE' 
-                                ? 'rgba(191,125,44,1)' 
-                                : '#6b7280'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (isLoggedIn && comment.userLikeType !== 'DISLIKE') {
-                              e.target.style.color = 'rgba(191,125,44,0.7)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (isLoggedIn && comment.userLikeType !== 'DISLIKE') {
-                              e.target.style.color = '#6b7280';
-                            }
-                          }}
-                        >
-                          <img src={thumbDown} alt="안따봉" className="w-5 h-5" /> {comment.dislikeCount || 0}
-                        </button>
-                      </div>
+                      
+                      {/* 대댓글 접기/펼치기 버튼 및 목록 */}
+                      {(comment.replies && comment.replies.length > 0) || expandedReplies.has(comment.id) ? (
+                        <div className="mt-3 ml-6">
+                          {comment.replies && comment.replies.length > 0 && (
+                            <button
+                              onClick={() => toggleReplies(comment.id)}
+                              className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-800 transition-colors mb-2 p-1 rounded hover:bg-gray-100"
+                            >
+                              <span className={`transform transition-transform duration-200 ${
+                                expandedReplies.has(comment.id) ? 'rotate-90' : 'rotate-0'
+                              }`}>
+                                ▶
+                              </span>
+                              <span className="w-4 h-px bg-gray-300"></span>
+                              답글 {comment.replies.length}개 {expandedReplies.has(comment.id) ? '접기' : '보기'}
+                            </button>
+                          )}
+                          
+                          {expandedReplies.has(comment.id) && (
+                            <div className="space-y-2">
+                              {/* 답글 작성 폼 - 답글 목록 맨 위에 표시 */}
+                              {isLoggedIn && (
+                                <div className="p-3 bg-blue-50 rounded border-l-4 border-blue-400 mb-3">
+                                  <div className="text-xs text-blue-600 mb-2">
+                                    💬 {getDisplayName(comment)}님에게 답글 작성
+                                  </div>
+                                  <textarea
+                                    value={replyToCommentId === comment.id ? replyText : ''}
+                                    onChange={(e) => {
+                                      setReplyText(e.target.value);
+                                      if (replyToCommentId !== comment.id) {
+                                        setReplyToCommentId(comment.id);
+                                      }
+                                    }}
+                                    onKeyDown={(e) => handleReplyKeyDown(e, comment.id)}
+                                    placeholder="답글을 작성해주세요... (Enter: 작성, Shift+Enter: 줄바꿈)"
+                                    className="w-full px-3 py-2 border-2 rounded focus:outline-none text-sm resize-none"
+                                    style={{ borderColor: '#F0F0F0' }}
+                                    rows={2}
+                                  />
+                                  <div className="flex gap-2 mt-2">
+                                    <button
+                                      onClick={() => handleReplySubmit(comment.id)}
+                                      className="px-3 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600 transition-all"
+                                    >
+                                      답글 작성
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setReplyToCommentId(null);
+                                        setReplyText('');
+                                      }}
+                                      className="px-3 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 transition-all"
+                                    >
+                                      취소
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* 답글 목록 */}
+                              {comment.replies && comment.replies.map((reply) => {
+                                const replyDisplayName = getDisplayName(reply);
+                                return (
+                                  <div key={reply.id} className="p-3 bg-gray-50 rounded-lg border-l-4 border-orange-200">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-6 h-6 rounded-full flex items-center justify-center"
+                                      style={{ 
+                                        backgroundColor: replyDisplayName === '탈퇴한 회원' ? '#CCCCCC' : '#F8D6B3'
+                                      }}
+                                    >
+                                      <span 
+                                        className="text-xs font-medium" 
+                                        style={{ 
+                                          color: replyDisplayName === '탈퇴한 회원' ? '#666666' : '#8B4513'
+                                        }}
+                                      >
+                                        {replyDisplayName.charAt(0)}
+                                      </span>
+                                    </div>
+                                    <span className="text-sm font-bold" style={{ color: '#333333' }}>
+                                      {replyDisplayName}
+                                    </span>
+                                    <span className="text-xs text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">
+                                      답글
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs" style={{ color: '#666666' }}>
+                                      {formatDisplayDate(reply.createdAt)}
+                                    </span>
+                                    {isLoggedIn && user && (reply.userId === user.id || user.role === 'ADMIN') && (
+                                      <div className="flex gap-1">
+                                        <button
+                                          onClick={() => handleEditComment(reply.id, reply.content)}
+                                          className="text-xs px-1 py-0.5 rounded text-blue-600 hover:bg-blue-50 transition-all"
+                                        >
+                                          수정
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteComment(reply.id)}
+                                          className="text-xs px-1 py-0.5 rounded text-red-600 hover:bg-red-50 transition-all"
+                                        >
+                                          삭제
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {editingCommentId === reply.id ? (
+                                  <div>
+                                    <textarea
+                                      value={editingCommentText}
+                                      onChange={(e) => setEditingCommentText(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                          e.preventDefault();
+                                          handleSaveEditComment(reply.id);
+                                        }
+                                      }}
+                                      className="w-full px-2 py-1 border rounded focus:outline-none text-sm resize-none"
+                                      rows={2}
+                                      placeholder="수정할 내용을 입력하세요... (Enter: 저장, Shift+Enter: 줄바꿈)"
+                                    />
+                                    <div className="flex gap-1 mt-1">
+                                      <button
+                                        onClick={() => handleSaveEditComment(reply.id)}
+                                        className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-all"
+                                      >
+                                        저장
+                                      </button>
+                                      <button
+                                        onClick={handleCancelEditComment}
+                                        className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 transition-all"
+                                      >
+                                        취소
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <div className="text-sm leading-relaxed whitespace-pre-wrap mb-2" style={{ color: '#333333' }}>
+                                      {reply.content}
+                                    </div>
+                                    
+                                    {/* 대댓글 좋아요 버튼 */}
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() => handleCommentLike(reply.id, 'LIKE')}
+                                        disabled={!isLoggedIn}
+                                        className={`flex items-center gap-1 transition-all text-xs font-medium ${
+                                          !isLoggedIn
+                                            ? 'text-gray-300 cursor-not-allowed'
+                                            : reply.userLikeType === 'LIKE'
+                                              ? 'text-orange-500'
+                                              : 'text-gray-500 hover:text-orange-400'
+                                        }`}
+                                      >
+                                        👍 {reply.likeCount || 0}
+                                      </button>
+                                      <button
+                                        onClick={() => handleCommentLike(reply.id, 'DISLIKE')}
+                                        disabled={!isLoggedIn}
+                                        className={`flex items-center gap-1 transition-all text-xs font-medium ${
+                                          !isLoggedIn
+                                            ? 'text-gray-300 cursor-not-allowed'
+                                            : reply.userLikeType === 'DISLIKE'
+                                              ? 'text-red-500'
+                                              : 'text-gray-500 hover:text-red-400'
+                                        }`}
+                                      >
+                                        👎 {reply.dislikeCount || 0}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
+              </div>
+            )}
+            
+            {/* 댓글 페이지네이션 */}
+            {totalComments > COMMENTS_PER_PAGE && (
+              <div className="flex justify-center items-center gap-2 mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => handleCommentPageChange(commentPage - 1)}
+                  disabled={commentPage === 0}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                    commentPage === 0
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  이전
+                </button>
+                
+                {Array.from({ length: Math.ceil(totalComments / COMMENTS_PER_PAGE) }, (_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleCommentPageChange(index)}
+                    className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                      commentPage === index
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => handleCommentPageChange(commentPage + 1)}
+                  disabled={commentPage >= Math.ceil(totalComments / COMMENTS_PER_PAGE) - 1}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                    commentPage >= Math.ceil(totalComments / COMMENTS_PER_PAGE) - 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  다음
+                </button>
+                
+                <div className="ml-4 text-sm text-gray-500">
+                  {commentPage * COMMENTS_PER_PAGE + 1} - {Math.min((commentPage + 1) * COMMENTS_PER_PAGE, totalComments)} / {totalComments}
+                </div>
               </div>
             )}
           </div>

@@ -29,6 +29,16 @@ public interface CommentDao {
     int softDelete(@Param("id") Long id, @Param("userId") Long userId);
 
     /**
+     * 댓글 완전 삭제
+     */
+    int hardDelete(@Param("id") Long id, @Param("userId") Long userId);
+
+    /**
+     * 부모 댓글의 모든 대댓글 삭제
+     */
+    int deleteRepliesByParentId(@Param("parentCommentId") Long parentCommentId);
+
+    /**
      * 댓글 ID로 조회
      */
     CommentResDto findById(@Param("id") Long id);
