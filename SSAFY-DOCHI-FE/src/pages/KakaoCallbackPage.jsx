@@ -73,8 +73,26 @@ const KakaoCallbackPage = () => {
           role: role || 'USER'
         }, accessToken);
 
-        // 메인 페이지로 이동
-        navigate('/', { replace: true });
+        // 🔥 첫 로그인 시 닉네임 변경 안내
+        const checkNicknameChange = () => {
+          const hasShownAlert = localStorage.getItem('nicknameChangeAlertShown');
+          
+          if (!hasShownAlert && name === nickname && isSocial) {
+            // 먼저 표시했다고 기록 (확인/취소 상관없이)
+            localStorage.setItem('nicknameChangeAlertShown', 'true');
+            
+            const userChoice = confirm("닉네임을 변경해주세요");
+            
+            if (userChoice) {
+              navigate('/profile-edit', { replace: true });
+              return;
+            }
+          }
+          
+          navigate('/', { replace: true });
+        };
+
+        checkNicknameChange();
       } catch (err) {
         console.error('Kakao login error:', err);
         setError(err.message || '카카오 로그인 처리 중 오류가 발생했습니다.');
