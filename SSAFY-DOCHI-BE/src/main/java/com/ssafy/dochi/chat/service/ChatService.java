@@ -54,27 +54,27 @@ public class ChatService {
         String aiResponse;
         
         if ("COMIC".equals(dto.getMode())) {
-            String comicId = "comic_" + UUID.randomUUID().toString();
-            
-            setComicStatus(comicId, "GENERATING", "4컷 만화를 생성하고 있어요...", null);
-            
-            CompletableFuture.runAsync(() -> {
-                try {
-                    String imageUrl = gmsImageClient.generateImage(prompt);
-                    String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
-                    String description = generateComicDescription(conversationContent);
-                    String finalResponse = imageUrl + "\n\n" + description;
-                    
-                    setComicStatus(comicId, "COMPLETED", description, imageUrl);
-                    
-                    saveMessage(sessionId, "BOT", finalResponse);
-                } catch (Exception e) {
-                    log.error("만화 생성 실패", e);
-                    setComicStatus(comicId, "FAILED", "만화 생성에 실패했습니다. 다시 시도해주세요.", null);
-                }
-            });
-            
-            aiResponse = "COMIC_GENERATING:" + comicId;
+            try {
+                log.info("🎨 네컷만화 생성 시작");
+                String imageUrl = gmsImageClient.generateImage(prompt);
+                log.info("✅ 이미지 생성 완료: {}", imageUrl);
+                
+                String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
+                String description = generateComicDescription(conversationContent);
+                
+                // 이미지 URL만 반환 (설명은 별도로 처리할 수 있음)
+                aiResponse = imageUrl;
+                
+                saveMessage(sessionId, "USER", dto.getMessage());
+                saveMessage(sessionId, "BOT", aiResponse);
+                
+            } catch (Exception e) {
+                log.error("❌ 만화 생성 실패", e);
+                aiResponse = "만화 생성에 실패했습니다. 다시 시도해주세요.";
+                
+                saveMessage(sessionId, "USER", dto.getMessage());
+                saveMessage(sessionId, "BOT", aiResponse);
+            }
         } else {
             aiResponse = gmsAiClient.ask(prompt, "gpt-4o");
             saveMessage(sessionId, "USER", dto.getMessage());
