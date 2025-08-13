@@ -72,7 +72,7 @@ const GamePage = () => {
 };
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 font-['Pretendard'] text-gray-800">
+    <div className="w-full min-h-screen bg-gray-50 font-['Pretendard'] text-gray-800" style={{zoom: "75%"}}>
       <div className="w-full max-w-6xl mx-auto p-6 sm:p-8 lg:p-12">
         {/* 헤더 섹션 */}
         <div className="text-center mb-12">
