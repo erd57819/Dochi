@@ -18,6 +18,7 @@ const useComfortStore = create(
       selectedMode: 'NORMAL', // 입장정리가 기본값
       showTimeline: false,
       showManhwa: false,
+      showTutorial: false, // 튜토리얼 모달 상태 추가
       
       // 모달 콘텐츠 캐시
       timelineCache: {},
@@ -403,6 +404,17 @@ const useComfortStore = create(
         // 모달을 닫을 때 로딩 상태 초기화
         if (!show) {
           set({ isLoading: false });
+        }
+      },
+      
+      // 튜토리얼 모달 제어
+      setShowTutorial: (show) => set({ showTutorial: show }),
+      
+      // 첫 방문자 감지 및 튜토리얼 자동 표시
+      checkFirstVisit: () => {
+        const hasSeenTutorial = localStorage.getItem('dochi-tutorial-completed');
+        if (!hasSeenTutorial) {
+          set({ showTutorial: true });
         }
       },
       
