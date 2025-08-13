@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,6 +32,7 @@ public class ChatService {
 
     private static final Duration SESSION_TTL = Duration.ofHours(2);
     private static final String REDIS_PREFIX = "chat:";
+    private static final String COMIC_STATUS_PREFIX = "comic_status:";
 
     public Long createChatRoom(Long userId, String title) {
         String sessionId = "session_" + UUID.randomUUID().toString();
@@ -50,16 +52,39 @@ public class ChatService {
         List<String> history = getHistory(sessionId);
         String prompt = buildPrompt(dto.getMode(), history, dto.getMessage());
         String aiResponse;
+        
         if ("COMIC".equals(dto.getMode())) {
-            String imageUrl = gmsImageClient.generateImage(prompt);
-            String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
-            String description = generateComicDescription(conversationContent);
-            aiResponse = imageUrl + "\n\n" + description;
+            String comicId = "comic_" + UUID.randomUUID().toString();
+            
+            setComicStatus(comicId, "GENERATING", "4컷 만화를 생성하고 있어요...", null);
+            
+            CompletableFuture.runAsync(() -> {
+                try {
+                    String imageUrl = gmsImageClient.generateImage(prompt);
+                    String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
+                    String description = generateComicDescription(conversationContent);
+                    String finalResponse = imageUrl + "\n\n" + description;
+                    
+                    setComicStatus(comicId, "COMPLETED", description, imageUrl);
+                    
+                    saveMessage(sessionId, "BOT", finalResponse);
+                } catch (Exception e) {
+                    log.error("만화 생성 실패", e);
+                    setComicStatus(comicId, "FAILED", "만화 생성에 실패했습니다. 다시 시도해주세요.", null);
+                }
+            });
+            
+            aiResponse = "COMIC_GENERATING:" + comicId;
         } else {
             aiResponse = gmsAiClient.ask(prompt, "gpt-4o");
+            saveMessage(sessionId, "USER", dto.getMessage());
+            saveMessage(sessionId, "BOT", aiResponse);
         }
-        saveMessage(sessionId, "USER", dto.getMessage());
-        saveMessage(sessionId, "BOT", aiResponse);
+        
+        if (!"COMIC".equals(dto.getMode())) {
+            saveMessage(sessionId, "USER", dto.getMessage());
+        }
+        
         return ChatResDto.builder()
                 .senderType("BOT")
                 .message(aiResponse)
@@ -325,5 +350,37 @@ public class ChatService {
     @Transactional
     public void updateChatRoomTitle(Long chatRoomId, String newTitle) {
         chatDao.updateChatRoomTitle(chatRoomId, newTitle);
+    }
+
+    private void setComicStatus(String comicId, String status, String message, String imageUrl) {
+        try {
+            Map<String, String> statusData = new HashMap<>();
+            statusData.put("status", status);
+            statusData.put("message", message);
+            if (imageUrl != null) {
+                statusData.put("imageUrl", imageUrl);
+            }
+            statusData.put("timestamp", LocalDateTime.now().toString());
+            
+            redisTemplate.opsForValue().set(
+                COMIC_STATUS_PREFIX + comicId, 
+                objectMapper.writeValueAsString(statusData), 
+                Duration.ofMinutes(10)
+            );
+        } catch (Exception e) {
+            log.error("만화 상태 저장 실패", e);
+        }
+    }
+
+    public Map<String, String> getComicStatus(String comicId) {
+        try {
+            Object raw = redisTemplate.opsForValue().get(COMIC_STATUS_PREFIX + comicId);
+            if (raw != null) {
+                return objectMapper.readValue(raw.toString(), new TypeReference<>() {});
+            }
+        } catch (Exception e) {
+            log.error("만화 상태 조회 실패", e);
+        }
+        return Map.of("status", "NOT_FOUND", "message", "만화 생성 상태를 찾을 수 없습니다.");
     }
 }
