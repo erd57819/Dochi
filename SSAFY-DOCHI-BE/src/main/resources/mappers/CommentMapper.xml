@@ -36,6 +36,7 @@
             c.parent_comment_id as parentCommentId,
             c.content,
             u.name as userName,
+            u.nickname as userNickname,
             u.profile_image as userProfileImage,
             DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
             DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,
@@ -60,6 +61,10 @@
                 WHEN c.deleted_at IS NOT NULL THEN '탈퇴한 사용자'
                 ELSE u.name 
             END as userName,
+            CASE 
+                WHEN c.deleted_at IS NOT NULL THEN '탈퇴한 사용자'
+                ELSE u.nickname 
+            END as userNickname,
             CASE 
                 WHEN c.deleted_at IS NOT NULL THEN NULL
                 ELSE u.profile_image 
@@ -89,6 +94,10 @@
                 WHEN c.deleted_at IS NOT NULL THEN '탈퇴한 사용자'
                 ELSE u.name 
             END as userName,
+            CASE 
+                WHEN c.deleted_at IS NOT NULL THEN '탈퇴한 사용자'
+                ELSE u.nickname 
+            END as userNickname,
             CASE 
                 WHEN c.deleted_at IS NOT NULL THEN NULL
                 ELSE u.profile_image 
@@ -125,6 +134,7 @@
             c.parent_comment_id as parentCommentId,
             c.content,
             u.name as userName,
+            u.nickname as userNickname,
             u.profile_image as userProfileImage,
             DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
             DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,
