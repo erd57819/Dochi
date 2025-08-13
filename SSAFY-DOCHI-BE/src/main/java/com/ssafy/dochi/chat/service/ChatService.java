@@ -53,6 +53,8 @@ public class ChatService {
         String prompt = buildPrompt(dto.getMode(), history, dto.getMessage());
         String aiResponse;
         
+        String description = null;
+        
         if ("COMIC".equals(dto.getMode())) {
             try {
                 log.info("🎨 네컷만화 생성 시작");
@@ -60,9 +62,9 @@ public class ChatService {
                 log.info("✅ 이미지 생성 완료: {}", imageUrl);
                 
                 String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
-                String description = generateComicDescription(conversationContent);
+                description = generateComicDescription(conversationContent);
                 
-                // 이미지 URL만 반환 (설명은 별도로 처리할 수 있음)
+                // 이미지 URL과 설명을 반환
                 aiResponse = imageUrl;
                 
                 saveMessage(sessionId, "USER", dto.getMessage());
@@ -71,6 +73,7 @@ public class ChatService {
             } catch (Exception e) {
                 log.error("❌ 만화 생성 실패", e);
                 aiResponse = "만화 생성에 실패했습니다. 다시 시도해주세요.";
+                description = "만화 생성에 실패했습니다.";
                 
                 saveMessage(sessionId, "USER", dto.getMessage());
                 saveMessage(sessionId, "BOT", aiResponse);
@@ -89,6 +92,7 @@ public class ChatService {
                 .senderType("BOT")
                 .message(aiResponse)
                 .timestamp(LocalDateTime.now().toString())
+                .description(description)
                 .build();
     }
 
@@ -169,36 +173,36 @@ public class ChatService {
     private String convertToComicScenario(String conversationHistory) {
         try {
             String prompt = """
-                    You are an expert scriptwriter creating a 4-panel comic story based on the user's real conversation.
+                    You are an expert comic scriptwriter. Your task is to convert the EXACT conversation below into a 4-panel hedgehog comic story.
                     
-                    MISSION: Analyze the conversation and create a specific 4-panel story featuring a hedgehog character.
+                    🚨 CRITICAL RULES:
+                    - Use ONLY what is EXPLICITLY mentioned in the conversation
+                    - NO fictional additions, NO assumptions, NO generic scenarios  
+                    - If conversation mentions "friend Sarah", use "friend Sarah" not "a friend"
+                    - If they say "at work", show work environment, not home
+                    - If they mention specific emotions, use those EXACT emotions
+                    - Extract the REAL story, don't create a new one
                     
-                    STRICT REQUIREMENTS:
-                    1. Use ONLY the actual events, people, situations mentioned in the conversation
-                    2. Extract the EXACT emotional journey from start to current state
-                    3. Include SPECIFIC details: names, places, events, relationships mentioned
-                    4. NO generic scenarios - this must be THEIR specific story
-                    
-                    [User's Conversation]
+                    [ACTUAL USER CONVERSATION]
                     %s
                     
-                    ANALYSIS STEPS:
-                    1. Identify the main conflict/situation from the conversation
-                    2. Find the specific people involved (friend, family, coworker, etc.)
-                    3. Track the emotional progression through the conversation
-                    4. Determine current emotional state and what they want
+                    MANDATORY ANALYSIS:
+                    1. What SPECIFIC situation/event happened? (Extract exact details)
+                    2. Who are the EXACT people involved? (Use their actual relationship/name)
+                    3. What SPECIFIC emotions were expressed in order?
+                    4. What is their CURRENT state and what do they ACTUALLY want?
                     
-                    OUTPUT FORMAT - 4 Panels with hedgehog as main character:
+                    OUTPUT - 4 Panels featuring hedgehog representing the user:
                     
-                    Panel 1: [Initial situation before conflict - set the scene with specific context from conversation. Include hedgehog's starting emotional state, detailed facial expression (eyes, mouth, eyebrows), body pose, and environmental setting mentioned in conversation]
+                    Panel 1: [Show the EXACT initial situation from conversation. Include: hedgehog's starting emotion, precise facial expression (eye shape, mouth curve, eyebrow position), body posture, and the SPECIFIC environment mentioned in conversation]
                     
-                    Panel 2: [The exact conflict/event described - what specifically happened with whom. Show hedgehog's immediate reaction with detailed facial expression changes, body language shift, and include the specific situation/people from conversation]
+                    Panel 2: [Show the PRECISE conflict/event described. Include: the EXACT people involved, what SPECIFICALLY happened, hedgehog's immediate emotional reaction with detailed facial changes, body language shift]
                     
-                    Panel 3: [Peak emotional moment from conversation - the strongest feeling expressed (anger, hurt, disappointment, etc.). Show hedgehog's intense emotional expression with very detailed face and body language reflecting this specific emotion]
+                    Panel 3: [Show the STRONGEST emotion expressed in conversation. Include: hedgehog displaying the EXACT emotion mentioned (anger/sadness/frustration etc.), very detailed facial expression, intense body language]
                     
-                    Panel 4: [Current state or desired outcome mentioned in conversation - where they are now emotionally or what they hope happens next. Show hedgehog's final emotional state with detailed expression and pose]
+                    Panel 4: [Show their CURRENT emotional state or ACTUAL desired outcome from conversation. Include: hedgehog's final expression reflecting where they are now or what they hope for]
                     
-                    CRITICAL: Each panel must include hedgehog's detailed facial features (eye shape, mouth position, eyebrow angle) and full body pose (sitting/standing/curled/leaning etc.)
+                    ⚠️ WARNING: If you add ANY details not in the conversation, the comic will be rejected. Stick to THEIR story ONLY.
                     """.formatted(conversationHistory);
 
             return gmsAiClient.ask(prompt, "gpt-4o");
