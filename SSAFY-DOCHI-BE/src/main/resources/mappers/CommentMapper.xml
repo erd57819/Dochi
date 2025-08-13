@@ -27,6 +27,18 @@
         WHERE id = #{id} AND user_id = #{userId} AND deleted_at IS NULL
     </update>
 
+    <!-- 댓글 완전 삭제 -->
+    <delete id="hardDelete">
+        DELETE FROM comments
+        WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <!-- 부모 댓글의 모든 대댓글 삭제 -->
+    <delete id="deleteRepliesByParentId">
+        DELETE FROM comments
+        WHERE parent_comment_id = #{parentCommentId}
+    </delete>
+
     <!-- 댓글 ID로 조회 -->
     <select id="findById" parameterType="long" resultType="com.ssafy.dochi.comment.dto.response.CommentResDto">
         SELECT 
@@ -45,28 +57,19 @@
         WHERE c.id = #{id}
     </select>
 
-    <!-- 게시글의 부모 댓글 조회 (대댓글 제외) -->
+    <!-- 게시글의 부모 댓글 조회 (대댓글 제외, 삭제되지 않은 것만) -->
     <select id="findByPostId" parameterType="long" resultType="com.ssafy.dochi.comment.dto.response.CommentResDto">
         SELECT 
             c.id,
             c.post_id as postId,
             c.user_id as userId,
             c.parent_comment_id as parentCommentId,
-            CASE 
-                WHEN c.deleted_at IS NOT NULL THEN '삭제된 댓글입니다.'
-                ELSE c.content 
-            END as content,
-            CASE 
-                WHEN c.deleted_at IS NOT NULL THEN '탈퇴한 사용자'
-                ELSE u.name 
-            END as userName,
-            CASE 
-                WHEN c.deleted_at IS NOT NULL THEN NULL
-                ELSE u.profile_image 
-            END as userProfileImage,
+            c.content,
+            u.name as userName,
+            u.profile_image as userProfileImage,
             DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
             DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,
-            CASE WHEN c.deleted_at IS NOT NULL THEN TRUE ELSE FALSE END as isDeleted
+            FALSE as isDeleted
         FROM comments c
         LEFT JOIN users u ON c.user_id = u.id
         WHERE c.post_id = #{postId} 
@@ -74,39 +77,30 @@
         ORDER BY c.created_at ASC
     </select>
 
-    <!-- 특정 댓글의 대댓글 조회 -->
+    <!-- 특정 댓글의 대댓글 조회 (삭제되지 않은 것만) -->
     <select id="findRepliesByParentId" parameterType="long" resultType="com.ssafy.dochi.comment.dto.response.CommentResDto">
         SELECT 
             c.id,
             c.post_id as postId,
             c.user_id as userId,
             c.parent_comment_id as parentCommentId,
-            CASE 
-                WHEN c.deleted_at IS NOT NULL THEN '삭제된 댓글입니다.'
-                ELSE c.content 
-            END as content,
-            CASE 
-                WHEN c.deleted_at IS NOT NULL THEN '탈퇴한 사용자'
-                ELSE u.name 
-            END as userName,
-            CASE 
-                WHEN c.deleted_at IS NOT NULL THEN NULL
-                ELSE u.profile_image 
-            END as userProfileImage,
+            c.content,
+            u.name as userName,
+            u.profile_image as userProfileImage,
             DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
             DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,
-            CASE WHEN c.deleted_at IS NOT NULL THEN TRUE ELSE FALSE END as isDeleted
+            FALSE as isDeleted
         FROM comments c
         LEFT JOIN users u ON c.user_id = u.id
         WHERE c.parent_comment_id = #{parentCommentId}
         ORDER BY c.created_at ASC
     </select>
 
-    <!-- 게시글의 댓글 총 개수 (삭제되지 않은 것만) -->
+    <!-- 게시글의 댓글 총 개수 -->
     <select id="getCommentCountByPostId" parameterType="long" resultType="int">
         SELECT COUNT(*)
         FROM comments
-        WHERE post_id = #{postId} AND deleted_at IS NULL
+        WHERE post_id = #{postId}
     </select>
 
     <!-- 게시글의 댓글 수 업데이트 (community_posts 테이블) -->
@@ -133,7 +127,7 @@
         FROM comments c
         LEFT JOIN users u ON c.user_id = u.id
         LEFT JOIN community_posts cp ON c.post_id = cp.id
-        WHERE c.user_id = #{userId} AND c.deleted_at IS NULL
+        WHERE c.user_id = #{userId}
         ORDER BY c.created_at DESC
         LIMIT #{offset}, #{limit}
     </select>
@@ -142,7 +136,7 @@
     <select id="getCommentCountByUserId" parameterType="long" resultType="int">
         SELECT COUNT(*)
         FROM comments
-        WHERE user_id = #{userId} AND deleted_at IS NULL
+        WHERE user_id = #{userId}
     </select>
 
 </mapper>

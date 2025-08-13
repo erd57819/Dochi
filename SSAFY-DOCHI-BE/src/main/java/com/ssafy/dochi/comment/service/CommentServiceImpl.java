@@ -109,7 +109,13 @@ public class CommentServiceImpl implements CommentService {
             throw new IllegalArgumentException("댓글 삭제 권한이 없습니다.");
         }
 
-        int result = commentDao.softDelete(commentId, userId);
+        // 부모 댓글인 경우 (parent_comment_id가 null) 대댓글들도 함께 삭제
+        if (existingComment.getParentCommentId() == null) {
+            log.info("부모 댓글 삭제 - 대댓글들도 함께 삭제: commentId={}", commentId);
+            commentDao.deleteRepliesByParentId(commentId);
+        }
+
+        int result = commentDao.hardDelete(commentId, userId);
         if (result == 0) {
             throw new RuntimeException("댓글 삭제에 실패했습니다.");
         }
