@@ -301,6 +301,35 @@ async uploadProfileImage(formData) {
   },
 
   /**
+   * 갈등 삭제
+   * @param {number} conflictId - 갈등 ID
+   * @returns {Promise<Object>} 삭제 결과
+   */
+  async deleteConflict(conflictId) {
+    try {
+      console.log('🗑️ 갈등 삭제 시작:', conflictId);
+      
+      const response = await fetch(`${API_BASE_URL}/conflict/${conflictId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      
+      await handleApiError(response);
+      const data = await response.json();
+      
+      console.log('✅ 갈등 삭제 성공:', data);
+      
+      return {
+        success: true,
+        message: '갈등이 성공적으로 삭제되었습니다.'
+      };
+    } catch (error) {
+      console.error('❌ 갈등 삭제 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
    * 비밀번호 변경
    * @param {Object} passwordData - 비밀번호 변경 데이터 {currentPassword, newPassword}
    * @returns {Promise<Object>} 변경 결과
