@@ -257,13 +257,41 @@ const ComfortChatPage = () => {
 
       try {
         const response = await comfortService.sendMessage(currentSessionId, prompt, 'COMIC');
-        const imageUrl = response.data.message;
+        console.log('🎨 네컷만화 API 응답:', response);
+        
+        let imageUrl = response.data.message;
+        
+        // 응답이 문자열이 아닌 경우 처리
+        if (typeof imageUrl === 'object') {
+          imageUrl = imageUrl.url || imageUrl.imageUrl || imageUrl.src || '';
+        }
+        
+        // 문자열로 변환 후 공백 제거
+        imageUrl = String(imageUrl || '').trim();
+        
+        console.log('🔍 처리된 이미지 URL:', imageUrl);
 
-        if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('data:image'))) {
+        // 더 유연한 URL 검증 로직
+        const isValidUrl = imageUrl && (
+          imageUrl.startsWith('http://') || 
+          imageUrl.startsWith('https://') || 
+          imageUrl.startsWith('data:image/') ||
+          imageUrl.startsWith('/') || // 상대 경로
+          imageUrl.includes('amazonaws.com') || // AWS S3
+          imageUrl.includes('cloudfront.net') || // CloudFront CDN
+          imageUrl.includes('.jpg') || 
+          imageUrl.includes('.jpeg') || 
+          imageUrl.includes('.png') || 
+          imageUrl.includes('.gif') || 
+          imageUrl.includes('.webp')
+        );
+
+        if (isValidUrl) {
           const manhwaData = [{ type: 'image', url: imageUrl, title: '오늘의 네컷만화' }];
           useComfortStore.getState().setManhwaCache(currentChatRoomId, manhwaData);
         } else {
-          throw new Error("유효하지 않은 이미지 URL입니다.");
+          console.error('❌ 유효하지 않은 이미지 URL:', imageUrl);
+          throw new Error(`유효하지 않은 이미지 URL입니다: ${imageUrl}`);
         }
       } catch (error) {
         console.error('❌ 네컷만화 생성 API 오류:', error);
