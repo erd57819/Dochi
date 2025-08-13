@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import Nav from '../components/Nav';
+import Typed from 'typed.js';
 
 import image9 from "@/assets/image 9.png";
 import image10 from "@/assets/image 10.png";
@@ -18,6 +18,12 @@ export const MainPage = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
   const [animatedSections, setAnimatedSections] = useState(new Set());
+  
+  // Typed.js refs
+  const typewriterRef = useRef(null);
+  const typewriterLine1Ref = useRef(null);
+  const typewriterLine2Ref = useRef(null);
+  const typedInstances = useRef([]);
 
   const typewriterStyle = `
     .typewriter {
@@ -28,13 +34,14 @@ export const MainPage = () => {
     }
     
     .typewriter.animate {
-      animation: typing 1.5s steps(9, end) 0.3s forwards, blink-caret 0.75s step-end infinite 0.3s;
+      animation: typing 1.5s steps(9, end) 0.3s forwards;
       animation-fill-mode: both;
     }
     
     .typewriter.animate.finished {
       border-right: none;
     }
+    
     
     .typewriter-line1 {
       overflow: hidden;
@@ -44,7 +51,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line1.animate {
-      animation: typing-line1 1.0s steps(6, end) 0.7s forwards, blink-caret 0.75s step-end infinite 0.7s;
+      animation: typing-line1 1.0s steps(6, end) 0.7s forwards;
       animation-fill-mode: both;
     }
     
@@ -61,7 +68,7 @@ export const MainPage = () => {
     }
     
     .typewriter-line2.animate {
-      animation: fade-in 0.1s ease-in 1.8s forwards, typing-line2 1.5s steps(10, end) 1.8s forwards, blink-caret 0.75s step-end infinite 1.8s;
+      animation: fade-in 0.1s ease-in 1.8s forwards, typing-line2 1.5s steps(10, end) 1.8s forwards;
     }
     
     .typewriter-line2.animate.finished {
@@ -155,10 +162,6 @@ export const MainPage = () => {
       100% { width: 16ch; }
     }
     
-    @keyframes blink-caret {
-      from, to { border-color: transparent }
-      50% { border-color: #000 }
-    }
     
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
@@ -176,6 +179,8 @@ export const MainPage = () => {
   useEffect(() => {
     let isScrolling = false;
     let scrollTimeout;
+    let scrollAccumulator = 0;
+
 
     const handleWheel = (e) => {
       const currentScrollTop = window.scrollY;
@@ -189,8 +194,19 @@ export const MainPage = () => {
       
       if (isScrolling) return;
       
+      // 트랙패드의 미세한 스크롤을 누적하여 처리
+      scrollAccumulator += e.deltaY;
+      
+      // 임계값을 설정하여 충분한 스크롤이 감지되면 섹션 이동
+      const scrollThreshold = 50;
+      
+      if (Math.abs(scrollAccumulator) < scrollThreshold) {
+        return;
+      }
+      
       isScrolling = true;
-      const delta = e.deltaY;
+      const delta = scrollAccumulator;
+      scrollAccumulator = 0; // 누적값 리셋
       
       let targetScroll;
       
@@ -226,13 +242,14 @@ export const MainPage = () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
         isScrolling = false;
-      }, 600);
+        scrollAccumulator = 0; // 타임아웃 후 누적값도 리셋
+      }, 800);
     };
 
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const sectionHeight = window.innerHeight;
-      
+       
       let newSection;
       if (scrollTop < sectionHeight * 0.5) {
         newSection = 0;
@@ -247,6 +264,29 @@ export const MainPage = () => {
       }
       
       if (currentSection !== newSection) {
+        // 즉시 모든 typed 인스턴스 정리 (섹션 변경 전에)
+        typedInstances.current.forEach(typed => {
+          if (typed) {
+            typed.destroy();
+          }
+        });
+        typedInstances.current = [];
+        
+        // 즉시 모든 커서 제거
+        document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+        document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
+        
+        // 즉시 모든 ref 내용 초기화
+        if (typewriterRef.current) {
+          typewriterRef.current.innerHTML = '';
+        }
+        if (typewriterLine1Ref.current) {
+          typewriterLine1Ref.current.innerHTML = '';
+        }
+        if (typewriterLine2Ref.current) {
+          typewriterLine2Ref.current.innerHTML = '';
+        }
+        
         setCurrentSection(newSection);
         
         const typewriterEl = document.querySelector('.typewriter');
@@ -269,33 +309,61 @@ export const MainPage = () => {
         fadeElements.forEach(el => el.classList.remove('animate'));
         
         setTimeout(() => {
+          // 추가로 한 번 더 정리
+          document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+          document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
+          
           if (newSection === 0) {
-            const typewriterEl = document.querySelector('.typewriter');
             const shakeEl = document.querySelector('.shake-text');
-            if (typewriterEl) typewriterEl.classList.add('animate');
             if (shakeEl) shakeEl.classList.add('animate');
             
+            // 완전한 딜레이 후 새로운 인스턴스 생성
             setTimeout(() => {
-              if (typewriterEl) typewriterEl.classList.add('finished');
+              // 생성 직전에 한 번 더 강제 정리
+              document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+              document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
+              
+              if (typewriterRef.current) {
+                // DOM 요소를 완전히 새로 생성
+                typewriterRef.current.innerHTML = '';
+                
+                // 새로운 span 요소를 만들어서 typed.js가 깨끗한 상태에서 시작하도록
+                const newSpan = document.createElement('span');
+                typewriterRef.current.appendChild(newSpan);
+                
+                const typed = new Typed(newSpan, {
+                  strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
+                  typeSpeed: 80,
+                  backSpeed: 50,
+                  backDelay: 2000,
+                  loop: true,
+                  showCursor: true,
+                  cursorChar: '|',
+                  cursorClass: 'typed-cursor'
+                });
+                typedInstances.current.push(typed);
+              }
+            }, 300);
+            
+            setTimeout(() => {
               if (shakeEl) shakeEl.classList.add('finished');
             }, 2500);
           }
           
           if (newSection === 1) {
-            const line1El = document.querySelector('.typewriter-line1');
-            const line2El = document.querySelector('.typewriter-line2');
             const pulseEl = document.querySelector('.pulse-text');
-            if (line1El) line1El.classList.add('animate');
-            if (line2El) line2El.classList.add('animate');
             if (pulseEl) pulseEl.classList.add('animate');
             
             setTimeout(() => {
-              if (line1El) line1El.classList.add('finished');
-            }, 1800);
-            
-            setTimeout(() => {
-              if (line2El) line2El.classList.add('finished');
-            }, 3400);
+              if (typewriterLine1Ref.current) {
+                const typed1 = new Typed(typewriterLine1Ref.current, {
+                  strings: ['<div><span class="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">비밀보장</span><span class="text-black">되는</span></div><div><span class="text-[#030303]">참견도치</span><span class="text-black">가 들어줄게요</span></div>'],
+                  typeSpeed: 70,
+                  showCursor: false,
+                });
+                typedInstances.current.push(typed1);
+              }
+            }, 200);
           }
           
           if (newSection === 2) {
@@ -312,13 +380,38 @@ export const MainPage = () => {
     window.addEventListener('scroll', handleScroll);
     
     setTimeout(() => {
-      const typewriterEl = document.querySelector('.typewriter');
+      // 초기 모든 typed 관련 요소 정리
+      document.querySelectorAll('.typed-cursor').forEach(el => el.remove());
+      document.querySelectorAll('.typed-cursor-char').forEach(el => el.remove());
+      
+      // 초기 로딩 시 Section 0 애니메이션 시작
       const shakeEl = document.querySelector('.shake-text');
-      if (typewriterEl) typewriterEl.classList.add('animate');
       if (shakeEl) shakeEl.classList.add('animate');
       
+      // Section 0 타이핑 시작
       setTimeout(() => {
-        if (typewriterEl) typewriterEl.classList.add('finished');
+        if (typewriterRef.current) {
+          typewriterRef.current.innerHTML = '';
+          
+          // 새로운 span 요소를 만들어서 typed.js가 깨끗한 상태에서 시작하도록
+          const newSpan = document.createElement('span');
+          typewriterRef.current.appendChild(newSpan);
+          
+          const typed = new Typed(newSpan, {
+            strings: ['좁혀지지 않는 갈등', '반복되는 다툼', '끝나지 않는 논쟁'],
+            typeSpeed: 80,
+            backSpeed: 50,
+            backDelay: 2000,
+            loop: true,
+            showCursor: true,
+            cursorChar: '|',
+            cursorClass: 'typed-cursor'
+          });
+          typedInstances.current.push(typed);
+        }
+      }, 200);
+      
+      setTimeout(() => {
         if (shakeEl) shakeEl.classList.add('finished');
       }, 2500);
       
@@ -331,6 +424,10 @@ export const MainPage = () => {
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
+      // Cleanup typed instances
+      typedInstances.current.forEach(typed => {
+        if (typed) typed.destroy();
+      });
     };
   }, [currentSection]);
   
@@ -346,9 +443,6 @@ export const MainPage = () => {
     <div className="bg-white overflow-x-hidden" style={{scrollSnapType: 'y mandatory', scrollBehavior: 'smooth'}}>
       <style>{typewriterStyle}</style>
       
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <Nav />
-      </div>
       
       <div className="fixed right-4 sm:right-6 lg:right-8 xl:right-12 top-1/2 transform -translate-y-1/2 z-40 flex flex-col space-y-3 sm:space-y-4">
         {[0, 1, 2, 3, 4].map((index) => (
@@ -367,15 +461,18 @@ export const MainPage = () => {
       <div className="bg-white w-full mx-auto relative">
         
         {/* Section 0: 좁혀지지 않는 갈등 */}
-        <section id="section-0" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-0" className="relative w-full h-screen bg-white flex items-center justify-center pt-4 lg:pt-6" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
             <div className="absolute top-[6vh] sm:top-[8vh] lg:top-[10vh] xl:top-[8vh] 2xl:top-[6vh] right-8 sm:right-16 lg:right-32">
-              <div className="text-right">
+              <div className="flex justify-end">
                 <div 
-                  className="font-['Pretendard-SemiBold'] font-semibold text-black leading-tight typewriter"
-                  style={{ fontSize: 'clamp(60px, 6.5vw, 128px)' }}
+                  className="font-['Pretendard-SemiBold'] font-semibold text-black leading-tight"
+                  style={{ 
+                    fontSize: 'clamp(60px, 6.5vw, 128px)',
+                    textAlign: 'left'
+                  }}
                 >
-                  좁혀지지 않는 갈등
+                  <span ref={typewriterRef}></span>
                 </div>
               </div>
             </div>
@@ -405,7 +502,7 @@ export const MainPage = () => {
         </section>
 
         {/* Section 1: 고민이 있다면? */}
-        <section id="section-1" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-1" className="relative w-full h-screen bg-white flex items-center justify-center pt-4 lg:pt-6" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
             <header 
               className="absolute top-[6vh] sm:top-[8vh] lg:top-[10vh] xl:top-[8vh] 2xl:top-[6vh] left-8 sm:left-16 lg:left-32 text-black max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight pulse-text"
@@ -415,36 +512,30 @@ export const MainPage = () => {
             </header>
             <main className="absolute w-full top-1/2 left-8 sm:left-16 lg:left-32 right-8 sm:right-16 lg:right-32 transform -translate-y-2/5">
               <div 
-                className="relative max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line1"
-                style={{ fontSize: 'clamp(50px, 5.5vw, 112px)' }}
-              >
-                <span className="bg-[linear-gradient(108deg,rgba(255,177,32,1)_0%,rgba(191,125,44,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">비밀보장</span>
-                <span className="text-black">되는</span>
-              </div>
-              
-              <div 
-                className="relative mt-4 sm:mt-6 lg:mt-8 max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight typewriter-line2"
-                style={{ fontSize: 'clamp(50px, 5.5vw, 112px)' }}
-              >
-                <span className="text-[#030303]">참견도치</span>
-                <span className="text-black">가 들어줄게요</span>
-              </div>
-              
-              <img
-                className="absolute -top-8 sm:-top-12 lg:-top-20 right-0 sm:right-8 lg:right-20 object-cover"
-                alt="참곬도치 캐릭터 이미지"
-                src={image10}
-                style={{
-                  width: 'clamp(288px, 25vw, 512px)',
-                  height: 'auto'
+                ref={typewriterLine1Ref}
+                className="relative max-w-4xl font-['Pretendard-SemiBold'] font-semibold leading-tight z-20"
+                style={{ 
+                  fontSize: 'clamp(50px, 5.5vw, 112px)',
+                  lineHeight: '1.2'
                 }}
-              />
+              >
+              </div>
             </main>
+            
+            <img
+              className="absolute top-60 sm:top-52 lg:top-44 right-16 sm:right-20 lg:right-32 object-cover z-10"
+              alt="참견도치 캐릭터 이미지"
+              src={image10}
+              style={{
+                width: 'clamp(288px, 25vw, 512px)',
+                height: 'auto'
+              }}
+            />
           </div>
         </section>
 
         {/* Section 2: 나만의 고민해결 플랫폼 */}
-        <section id="section-2" className="relative w-full h-screen bg-white flex items-center justify-center" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-2" className="relative w-full h-screen bg-white flex items-center justify-center pt-4 lg:pt-6" style={{scrollSnapAlign: 'start'}}>
           <div className="relative w-full h-full px-4 sm:px-8 lg:px-20">
             <div className="absolute top-[10vh] sm:top-[12vh] lg:top-[15vh] xl:top-[12vh] 2xl:top-[10vh] left-8 sm:left-16 lg:left-32 fade-in-title max-w-4xl">
               <div 
@@ -496,7 +587,7 @@ export const MainPage = () => {
         </section>
 
         {/* Section 3: 서비스 이용해보기 */}
-        <section id="section-3" className="relative w-full min-h-screen bg-white flex items-start justify-center pt-8 sm:pt-12 lg:pt-16 xl:pt-12 2xl:pt-8 pb-12 px-4 sm:px-8 lg:px-20 scale-90" style={{scrollSnapAlign: 'start'}}>
+        <section id="section-3" className="relative w-full min-h-screen bg-white flex items-start justify-center pt-12 lg:pt-16 pb-12 px-4 sm:px-8 lg:px-20 scale-90" style={{scrollSnapAlign: 'start'}}>
           <div>
             <div className="text-center mb-6 sm:mb-8 lg:mb-12 xl:mb-10 2xl:mb-8">
               <h2 
@@ -551,7 +642,7 @@ export const MainPage = () => {
         
       <div className="relative w-full" style={{background: 'linear-gradient(to top, #f0f4ff 0%, #ffffff 100%)'}}>
         {/* Section 4: Detailed Services Section */}
-        <section id="section-4" className="w-full flex flex-col items-center justify-center px-4 sm:px-8 lg:px-20 py-16" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
+        <section id="section-4" className="w-full flex flex-col items-center justify-center px-4 sm:px-8 lg:px-20 pt-20 lg:pt-24 pb-16" style={{minHeight: '100vh', scrollSnapAlign: 'start'}}>
             {/* 전체 제목 */}
             <div className="text-center mb-16">
                 <h2

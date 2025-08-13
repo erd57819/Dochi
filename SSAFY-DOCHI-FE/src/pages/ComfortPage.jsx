@@ -68,7 +68,7 @@ const ComfortPage = () => {
           어떤 갈등이 있으신가요? 편하게 이야기해보세요.
         </p>
         <p className="text-sm text-gray-500">
-          최근 5개월 뒤의 대화방은 자동 삭제됩니다
+          최근 2시간 뒤의 대화방은 자동 삭제됩니다
         </p>
       </div>
 

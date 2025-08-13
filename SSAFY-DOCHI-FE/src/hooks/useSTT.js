@@ -617,13 +617,13 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         interimResults: recognition.interimResults
       });
       
-      // recognitionRef.current가 존재하고 STT가 활성화된 상태에서만 재시작
-      if (recognitionRef.current && sttEnabled) {
+      // recognitionRef.current가 존재하면 재시작 (STT가 켜진 상태)
+      if (recognitionRef.current) {
         console.log('1초 후 재시작 시도...');
         setTimeout(() => {
           try {
-            // 재시작 전에 현재 STT 상태를 다시 확인
-            if (recognitionRef.current && sttEnabled) {
+            // 재시작 전에 recognitionRef 존재 여부 다시 확인
+            if (recognitionRef.current) {
               console.log('재시작 시도 전 상태:', {
                 sttEnabled,
                 readyState: recognition.readyState
@@ -631,7 +631,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
               recognition.start();
               console.log('음성 인식을 다시 시작합니다.');
             } else {
-              console.log('재시작 조건이 맞지 않음 - STT 비활성화됨');
+              console.log('재시작 조건이 맞지 않음 - recognitionRef 없음');
             }
           } catch (error) {
             console.error('음성 인식 재시작 실패:', error);
@@ -645,7 +645,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
             if (error.name === 'InvalidStateError') {
               console.log('STT 완전 재초기화 시도...');
               setTimeout(() => {
-                if (sttEnabled) {
+                if (recognitionRef.current) {
                   stopSTT();
                   setTimeout(() => {
                     startSTT();
@@ -656,7 +656,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
           }
         }, 1000);
       } else {
-        console.log('STT가 비활성화되어 재시작하지 않습니다.');
+        console.log('STT가 비활성화되어 재시작하지 않습니다. (recognitionRef 없음)');
       }
     };
 
@@ -752,7 +752,6 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
     setSttEnabled(false);
     setAiMediationEnabled(false);
     setCoachingEnabled(false);
-    setConversations([]);
     setCurrentSpeech({ speaker: null, text: '' });
     lastCoachingTimeRef.current = 0;
     lastSpeechTimeRef.current = Date.now();

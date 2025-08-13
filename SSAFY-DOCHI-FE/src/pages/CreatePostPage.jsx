@@ -474,11 +474,11 @@ const CreatePostPage = () => {
       
       <div className="max-w-4xl mx-auto px-2 py-4 relative z-10">
         {/* 헤더 */}
-        <div className="px-6 py-4 mb-5 border border-gray-100">
+        <div className="px-4 py-3 mb-4 border border-gray-100">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div>
-                <h2 className="text-4xl font-bold mb-3" 
+                <h2 className="text-2xl font-bold mb-2" 
                   style={{ 
                     background: 'black',
                     WebkitBackgroundClip: 'text',
@@ -487,7 +487,7 @@ const CreatePostPage = () => {
                 >
                   {isConflictSharingPost ? '갈등 상황 공유하기' : '새 게시글 작성'}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-sm">
                   {isConflictSharingPost 
                     ? '갈등 상황을 공유하고 커뮤니티의 조언을 구해보세요' 
                     : '갈등 해결 경험과 조언을 커뮤니티와 나누어보세요'
@@ -497,8 +497,8 @@ const CreatePostPage = () => {
             </div>
             {/* 작성자 정보 */}
             <div className="text-right">
-              <p className="text-sm text-gray-500">작성자</p>
-              <p className="font-bold" style={{ color: '#8B4513' }}>
+              <p className="text-xs text-gray-500">작성자</p>
+              <p className="font-bold text-sm" style={{ color: '#8B4513' }}>
                 {user?.nickname || user?.name || user?.email}님
               </p>
             </div>
@@ -507,13 +507,13 @@ const CreatePostPage = () => {
 
         {/* 카테고리별 안내 */}
         {formData.category === 'CONFLICT_SHARING' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm">💡</span>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs">💡</span>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">찬반대결 게시글 안내</h3>
+                <h3 className="text-xs font-medium text-gray-700 mb-1">찬반대결 게시글 안내</h3>
                 <ul className="text-gray-600 space-y-1 text-xs">
                   <li>• 개인정보나 실명은 절대 포함하지 마세요</li>
                   <li>• 객관적이고 균형잡힌 시각으로 상황을 설명해주세요</li>
@@ -525,13 +525,13 @@ const CreatePostPage = () => {
         )}
         
         {formData.category === 'ADVICE_REQUEST' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm">🤝</span>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs">🤝</span>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">조언 요청 게시글 안내</h3>
+                <h3 className="text-xs font-medium text-gray-700 mb-1">조언 요청 게시글 안내</h3>
                 <ul className="text-gray-600 space-y-1 text-xs">
                   <li>• 상황을 구체적이고 명확하게 설명해주세요</li>
                   <li>• 어떤 도움이 필요한지 직접적으로 말해주세요</li>
@@ -543,13 +543,13 @@ const CreatePostPage = () => {
         )}
         
         {formData.category === 'SUCCESS_STORIES' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm">🎉</span>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs">🎉</span>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">해결 성공사례 게시글 안내</h3>
+                <h3 className="text-xs font-medium text-gray-700 mb-1">해결 성공사례 게시글 안내</h3>
                 <ul className="text-gray-600 space-y-1 text-xs">
                   <li>• 해결 과정을 단계별로 상세히 공유해주세요</li>
                   <li>• 다른 사람에게 도움이 될 수 있는 팁을 포함해주세요</li>
@@ -561,13 +561,13 @@ const CreatePostPage = () => {
         )}
         
         {formData.category === 'GENERAL' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm">💬</span>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs">💬</span>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">자유게시판 게시글 안내</h3>
+                <h3 className="text-xs font-medium text-gray-700 mb-1">자유게시판 게시글 안내</h3>
                 <ul className="text-gray-600 space-y-1 text-xs">
                   <li>• 서로 존중하는 대화로 자유롭게 소통해주세요</li>
                   <li>• 일상 경험과 고민을 나누며 공감대를 형성해보세요</li>
@@ -579,8 +579,8 @@ const CreatePostPage = () => {
         )}
 
         {/* 작성 폼 */}
-        <div className="bg-white rounded-2xl p-6">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white rounded-2xl p-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* 카테고리 선택 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -593,7 +593,7 @@ const CreatePostPage = () => {
                 {categories.map(category => (
                   <label
                     key={category.value}
-                    className="cursor-pointer p-4 rounded-lg border-2 text-center transition-all duration-250 ease-in-out transform hover:scale-105 hover:rotate-1"
+                    className="cursor-pointer p-3 rounded-lg border-2 text-center transition-all duration-250 ease-in-out transform hover:scale-105 hover:rotate-1"
                     style={{
                       background: formData.category === category.value ? category.gradient : '#FFFFFF',
                       borderColor: formData.category === category.value ? category.color : '#E5E7EB',
@@ -609,7 +609,7 @@ const CreatePostPage = () => {
                       className="hidden"
                       disabled={isGenerating}
                     />
-                    <div className="font-bold text-base">{category.label}</div>
+                    <div className="font-bold text-sm">{category.label}</div>
                   </label>
                 ))}
               </div>
@@ -617,7 +617,7 @@ const CreatePostPage = () => {
 
             {/* 제목 입력 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 제목 <span className="text-red-500">*</span>
                 {isGenerating && (
                   <span className="ml-2 text-xs text-blue-600">
@@ -649,7 +649,7 @@ const CreatePostPage = () => {
 
             {/* 내용 입력 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 내용 <span className="text-red-500">*</span>
                 {isGenerating && (
                   <span className="ml-2 text-xs text-blue-600">
@@ -684,11 +684,11 @@ const CreatePostPage = () => {
 
 
             {/* 버튼 그룹 */}
-            <div className="flex gap-4 pt-6">
+            <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition-all duration-250 ease-in-out transform hover:scale-105 font-bold text-2xl"
+                className="flex-1 py-2 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition-all duration-250 ease-in-out transform hover:scale-105 font-bold text-sm"
                 disabled={isLoading}
                 style={{
                   borderColor: '#cd9f6e',
@@ -709,7 +709,7 @@ const CreatePostPage = () => {
               <button
                 type="submit"
                 disabled={isLoading || !formData.title.trim() || !formData.content.trim()}
-                className="flex-1 py-3 text-white rounded transition-all duration-250 ease-in-out transform hover:scale-105 hover:brightness-110 disabled:bg-gray-300 disabled:transform-none disabled:hover:scale-100 disabled:hover:brightness-100 font-bold"
+                className="flex-1 py-2 text-white rounded transition-all duration-250 ease-in-out transform hover:scale-105 hover:brightness-110 disabled:bg-gray-300 disabled:transform-none disabled:hover:scale-100 disabled:hover:brightness-100 font-bold"
                 style={{
                   background: isLoading || !formData.title.trim() || !formData.content.trim() 
                     ? '#D1D5DB' 
@@ -718,12 +718,12 @@ const CreatePostPage = () => {
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {isConflictSharingPost ? '공유 중...' : '작성 중...'}
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">{isConflictSharingPost ? '공유 중...' : '작성 중...'}</span>
                   </div>
                 ) : (
-                  <span className="flex items-center justify-center gap-2 text-2xl">
-                    <img src={hedgehogImg} alt="갈등도치" className="relative w-12 h-12 right-5 animate-bounce" />
+                  <span className="flex items-center justify-center gap-2 text-sm">
+                    <img src={hedgehogImg} alt="갈등도치" className="w-6 h-6 animate-bounce" />
                     {isConflictSharingPost ? '갈등 상황 공유하기' : '게시글 작성'}
                   </span>
                 )}
@@ -733,8 +733,8 @@ const CreatePostPage = () => {
         </div>
 
         {/* 하단 안내 */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
             게시글 작성 시 <Link to="/community" className="font-bold hover:underline" style={{ color: '#8B4513' }}>커뮤니티 이용규칙</Link>에 동의한 것으로 간주됩니다
           </p>
         </div>
