@@ -761,7 +761,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex flex-col overflow-hidden mt-16 lg:mt-20">
+    <div className="h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex flex-col overflow-hidden">
       {/* 헤더 */}
       <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-b border-[#5C351A]"> 
         <div className="flex justify-between items-center">
