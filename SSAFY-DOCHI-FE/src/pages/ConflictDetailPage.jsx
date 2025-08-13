@@ -48,16 +48,38 @@ const ConflictDetailPage = () => {
       if (response.ok) {
         const result = await response.json();
         const conflictData = result.data || result.response?.response;
+        
+        // 작성자 확인 - 현재 로그인한 사용자와 갈등 작성자가 다른 경우 접근 차단
+        if (user && conflictData.userId && user.userId !== conflictData.userId) {
+          console.log('접근 권한 없음 - 작성자:', conflictData.userId, '현재 사용자:', user.userId);
+          setError('본인이 작성한 갈등만 조회할 수 있습니다.');
+          setTimeout(() => {
+            navigate('/mypage', { replace: true });
+          }, 2000);
+          return;
+        }
+        
         setConflict(conflictData);
         
         // AI 분석 결과도 함께 조회
         fetchAnalysisResult(conflictId);
+      } else if (response.status === 403) {
+        setError('본인이 작성한 갈등만 조회할 수 있습니다.');
+        setTimeout(() => {
+          navigate('/mypage', { replace: true });
+        }, 2000);
       } else {
         throw new Error('갈등 상세 정보를 불러오는데 실패했습니다.');
       }
     } catch (error) {
       console.error('갈등 상세 조회 오류:', error);
       setError(error.message);
+      // 권한 관련 오류가 아닌 경우에도 마이페이지로 리다이렉트
+      if (error.message.includes('권한') || error.message.includes('작성자')) {
+        setTimeout(() => {
+          navigate('/mypage', { replace: true });
+        }, 2000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -326,19 +348,33 @@ const ConflictDetailPage = () => {
   }
 
   if (error) {
+    const isPermissionError = error.includes('작성자') || error.includes('권한');
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">😞</span>
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className={`w-20 h-20 ${isPermissionError ? 'bg-yellow-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-6`}>
+            <span className="text-3xl">{isPermissionError ? '🔒' : '😞'}</span>
           </div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">오류가 발생했습니다</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+            {isPermissionError ? '접근 권한이 없습니다' : '오류가 발생했습니다'}
+          </h2>
+          <p className="text-gray-600 mb-6 leading-relaxed">{error}</p>
+          
+          {isPermissionError && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-blue-800 text-sm">
+                💡 본인이 작성한 갈등만 조회할 수 있습니다.<br/>
+                잠시 후 마이페이지로 이동합니다.
+              </p>
+            </div>
+          )}
+          
           <button
             onClick={() => navigate('/mypage')}
-            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
           >
-            목록으로 돌아가기
+            {isPermissionError ? '마이페이지로 돌아가기' : '목록으로 돌아가기'}
           </button>
         </div>
       </div>

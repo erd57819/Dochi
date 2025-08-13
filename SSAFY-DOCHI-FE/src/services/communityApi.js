@@ -28,13 +28,14 @@ const formatDate = (dateString) => {
 // 커뮤니티 API
 export const communityApi = {
   // 게시글 목록 조회
-  async getPosts(page = 0, size = 10, search = '', category = '') {
+  async getPosts(page = 0, size = 10, search = '', category = '', sort = '') {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
         size: size.toString(),
         ...(search && { search }),
-        ...(category && { category })
+        ...(category && { category }),
+        ...(sort && { sort: `${sort},desc` })
       });
       
       // ✅ 백엔드 매핑과 일치하도록 수정
