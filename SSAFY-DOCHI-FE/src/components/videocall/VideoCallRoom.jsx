@@ -103,6 +103,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
           accessToken = response.data.data.token;
         }
+        
+        // ConflictReportPage 접근용으로 토큰 저장
+        localStorage.setItem(`conflict_report_token_${roomName}`, accessToken);
+        console.log('갈등 레포트 접근용 토큰 저장 완료:', roomName);
       } catch (tokenError) {
         console.error('토큰 생성 실패:', tokenError);
         if (tokenError.response?.status === 404) {
