@@ -418,7 +418,7 @@ const ProfileEditPage = () => {
                     <input
                       type="text"
                       name="address"
-                      value={formData.address || ""}
+                      value={formData.address && formData.address !== "NULL" && formData.address !== "null" ? formData.address : ""}
                       readOnly
                       onClick={openDaumPostcode}
                       className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] cursor-pointer text-sm transition-colors"
