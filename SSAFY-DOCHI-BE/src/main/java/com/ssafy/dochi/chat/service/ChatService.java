@@ -158,14 +158,14 @@ public class ChatService {
 
     private String buildOptimizedDallePrompt(String scenario) {
         return """
-            A 2x2 grid four-panel comic strip featuring the same cute chubby hedgehog character in all panels,
-            with a round beige body, darker brown spines, small round black eyes, blush cheeks, and short limbs.
-            Same proportions, features, and style in every panel.
-            Minimal soft pastel background, identical lighting and environment across all panels,
-            background not distracting from characters.
-            Smooth, soft-lit, pastel-colored 3D rendered style, award-winning character design,
-            consistent art style across all panels, visual storytelling through expressive poses and facial expressions only,
-            no text, no labels, no speech balloons, professional illustration quality.
+           A 2x2 grid four-panel comic strip featuring the same cute chubby hedgehog character in all panels,
+                with a round beige body, dense, short brown spines with a subtle sheen pointing outwards, large, round, sparkling black eyes, blush cheeks, a small, cute, button nose, and short limbs.
+                Same proportions, features, and charming style in every panel.
+                Minimal soft pastel background, identical soft ambient lighting with subtle shadows and highlights to emphasize the 3D form across all panels,
+                background not distracting from characters.
+                Smooth, soft-lit, pastel-colored 3D rendered style, award-winning adorable character design,
+                consistent art style across all panels, visual storytelling through expressive poses and facial expressions only,
+                no text, no labels, no speech balloons, professional heartwarming illustration quality.
 
             %s
             """.formatted(scenario);
