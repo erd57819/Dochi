@@ -84,7 +84,7 @@ const KakaoCallbackPage = () => {
             const userChoice = confirm("닉네임을 변경해주세요");
             
             if (userChoice) {
-              navigate('/profile-edit', { replace: true });
+              navigate('/mypage/profile', { replace: true });
               return;
             }
           }
