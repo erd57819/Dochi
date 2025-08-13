@@ -38,10 +38,28 @@ const ConflictReportPage = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('summary');
   const [selectedSpeaker, setSelectedSpeaker] = useState(null);
+  const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
-    fetchReport();
+    checkAccess();
   }, [roomId]);
+
+  const checkAccess = () => {
+    // localStorage에서 해당 roomId에 대한 접근 토큰 확인
+    const accessToken = localStorage.getItem(`conflict_report_token_${roomId}`);
+    
+    if (!accessToken) {
+      console.log('갈등 레포트 접근 토큰이 없음:', roomId);
+      setError('이 레포트에 접근할 권한이 없습니다. 화상 통화를 완료한 후에만 접근할 수 있습니다.');
+      setLoading(false);
+      setHasAccess(false);
+      return;
+    }
+    
+    console.log('갈등 레포트 접근 토큰 확인됨:', accessToken);
+    setHasAccess(true);
+    fetchReport();
+  };
 
   const fetchReport = async () => {
     try {
@@ -95,17 +113,31 @@ const ConflictReportPage = () => {
     );
   }
 
-  if (error) {
+  if (error || !hasAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-[#f0f4ff]">
-        <div className="flex items-center justify-center h-[80vh]">
-          <div className="text-center">
-            <p className="text-xl text-red-600 mb-4">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
+        <div className="bg-[#FEFCF8] p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-[#5C351A]">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-[#5C351A] rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-white text-2xl">🔒</span>
+            </div>
+            <h2 className="text-2xl font-['Pretendard-SemiBold'] font-semibold text-[#2A2A2A] mb-4">접근 권한 없음</h2>
+            <p className="text-[#4A4A4A] mb-6 font-['Pretendard-Regular'] font-normal">
+              {error || '이 레포트에 접근할 권한이 없습니다.'}
+            </p>
+          </div>
+          <div className="space-y-3">
             <button
-              onClick={() => navigate('/mypage')}
-              className="px-6 py-3 bg-[#bf7d2c] text-white rounded-lg hover:bg-[#a06624] transition-colors"
+              onClick={() => navigate('/')}
+              className="w-full px-6 py-3 bg-[#5C351A] text-white font-['Pretendard-SemiBold'] font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
             >
-              돌아가기
+              홈으로 돌아가기
+            </button>
+            <button
+              onClick={() => navigate('/video-call')}
+              className="w-full px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] font-['Pretendard-Regular'] font-normal rounded-lg hover:bg-[#CCC2A7] transition-colors shadow border border-[#C2B596]"
+            >
+              화상 통화 시작하기
             </button>
           </div>
         </div>

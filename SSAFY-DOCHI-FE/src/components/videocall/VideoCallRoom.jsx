@@ -645,6 +645,11 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
     // 종료 버튼 클릭 시에만 갈등 레포트로 이동
     if (isEndCall) {
+      // 갈등 레포트 접근 토큰 생성 및 저장
+      const reportAccessToken = `report_${actualRoomId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem(`conflict_report_token_${actualRoomId}`, reportAccessToken);
+      console.log('갈등 레포트 접근 토큰 생성:', reportAccessToken);
+      
       if (onEndCall) {
         onEndCall();
       } else {
