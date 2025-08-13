@@ -1,5 +1,9 @@
 server:
   port: 8080
+  tomcat:
+    connection-timeout: 120000
+    keep-alive-timeout: 120000
+    max-keep-alive-requests: 100
 
 spring:
   datasource:
