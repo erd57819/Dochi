@@ -33,13 +33,12 @@ public class ChatService {
     private static final String REDIS_PREFIX = "chat:";
 
     public Long createChatRoom(Long userId, String title) {
-        // sessionId 생성
         String sessionId = "session_" + UUID.randomUUID().toString();
 
         ChatRoom room = ChatRoom.builder()
                 .userId(userId)
                 .title(title)
-                .sessionId(sessionId)  // 새로 추가
+                .sessionId(sessionId)
                 .createdAt(LocalDateTime.now())
                 .build();
         chatDao.saveChatRoom(room);
@@ -52,7 +51,10 @@ public class ChatService {
         String prompt = buildPrompt(dto.getMode(), history, dto.getMessage());
         String aiResponse;
         if ("COMIC".equals(dto.getMode())) {
-            aiResponse = gmsImageClient.generateImage(prompt);
+            String imageUrl = gmsImageClient.generateImage(prompt);
+            String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
+            String description = generateComicDescription(conversationContent);
+            aiResponse = imageUrl + "\n\n" + description;
         } else {
             aiResponse = gmsAiClient.ask(prompt, "gpt-4o");
         }
@@ -141,14 +143,39 @@ public class ChatService {
 
     private String convertToComicScenario(String conversationHistory) {
         try {
-            String prompt = "다음 대화 내용을 분석해서 4컷 만화 시나리오로 변환해줘. 고슴도치 캐릭터가 주인공이고, 표정과 자세로만 감정을 표현해야 해.\n\n" +
-                    "대화 내용:\n" + conversationHistory + "\n\n" +
-                    "다음 형식으로 영어로 작성해줘:\n" +
-                    "Panel 1: [peaceful/normal situation with hedgehog's expression and pose]\n" +
-                    "Panel 2: [conflict or problem arises - hedgehog's reaction]\n" +
-                    "Panel 3: [emotional peak or climax - hedgehog's intense expression]\n" +
-                    "Panel 4: [resolution or aftermath - hedgehog's final state]\n\n" +
-                    "각 패널은 고슴도치의 구체적인 표정(눈, 입, 전체적인 느낌)과 자세(앉기, 서기, 웅크리기 등)를 포함해서 설명해줘.";
+            String prompt = """
+                    You are an expert scriptwriter creating a 4-panel comic story based on the user's real conversation.
+                    
+                    MISSION: Analyze the conversation and create a specific 4-panel story featuring a hedgehog character.
+                    
+                    STRICT REQUIREMENTS:
+                    1. Use ONLY the actual events, people, situations mentioned in the conversation
+                    2. Extract the EXACT emotional journey from start to current state
+                    3. Include SPECIFIC details: names, places, events, relationships mentioned
+                    4. NO generic scenarios - this must be THEIR specific story
+                    
+                    [User's Conversation]
+                    %s
+                    
+                    ANALYSIS STEPS:
+                    1. Identify the main conflict/situation from the conversation
+                    2. Find the specific people involved (friend, family, coworker, etc.)
+                    3. Track the emotional progression through the conversation
+                    4. Determine current emotional state and what they want
+                    
+                    OUTPUT FORMAT - 4 Panels with hedgehog as main character:
+                    
+                    Panel 1: [Initial situation before conflict - set the scene with specific context from conversation. Include hedgehog's starting emotional state, detailed facial expression (eyes, mouth, eyebrows), body pose, and environmental setting mentioned in conversation]
+                    
+                    Panel 2: [The exact conflict/event described - what specifically happened with whom. Show hedgehog's immediate reaction with detailed facial expression changes, body language shift, and include the specific situation/people from conversation]
+                    
+                    Panel 3: [Peak emotional moment from conversation - the strongest feeling expressed (anger, hurt, disappointment, etc.). Show hedgehog's intense emotional expression with very detailed face and body language reflecting this specific emotion]
+                    
+                    Panel 4: [Current state or desired outcome mentioned in conversation - where they are now emotionally or what they hope happens next. Show hedgehog's final emotional state with detailed expression and pose]
+                    
+                    CRITICAL: Each panel must include hedgehog's detailed facial features (eye shape, mouth position, eyebrow angle) and full body pose (sitting/standing/curled/leaning etc.)
+                    """.formatted(conversationHistory);
+
             return gmsAiClient.ask(prompt, "gpt-4o");
         } catch (Exception e) {
             log.warn("만화 시나리오 변환 실패", e);
@@ -156,21 +183,68 @@ public class ChatService {
         }
     }
 
-    private String buildOptimizedDallePrompt(String scenario) {
-        return """
-           A 2x2 grid four-panel comic strip featuring the same cute chubby hedgehog character in all panels,
-                with a round beige body, dense, short brown spines with a subtle sheen pointing outwards, large, round, sparkling black eyes, blush cheeks, a small, cute, button nose, and short limbs.
-                Same proportions, features, and charming style in every panel.
-                Minimal soft pastel background, identical soft ambient lighting with subtle shadows and highlights to emphasize the 3D form across all panels,
-                background not distracting from characters.
-                Smooth, soft-lit, pastel-colored 3D rendered style, award-winning adorable character design,
-                consistent art style across all panels, visual storytelling through expressive poses and facial expressions only,
-                no text, no labels, no speech balloons, professional heartwarming illustration quality.
+    private String generateComicDescription(String conversationContent) {
+        try {
+            String prompt = """
+                    다음 대화 내용을 바탕으로 4컷 만화에 대한 한 줄 설명을 생성해줘.
+                    설명은 친근하고 따뜻한 톤으로 작성하고, "~을 4컷 만화로 표현했어요" 형식으로 끝내줘.
+                    
+                    대화 내용:
+                    %s
+                    
+                    예시:
+                    - "친구와의 갈등 상황을 4컷 만화로 표현했어요"
+                    - "오늘 있었던 힘든 일을 4컷 만화로 그려봤어요"
+                    - "복잡한 감정들을 4컷 만화로 담아봤어요"
+                    """.formatted(conversationContent);
 
-            %s
-            """.formatted(scenario);
+            return gmsAiClient.ask(prompt, "gpt-4o");
+        } catch (Exception e) {
+            log.warn("만화 설명 생성 실패", e);
+            return "당신의 이야기를 4컷 만화로 표현했어요";
+        }
     }
 
+    private String buildOptimizedDallePrompt(String scenario) {
+        return """
+               Create a heartwarming 2x2 grid four-panel comic strip (yonkoma style) featuring the same adorable hedgehog character throughout all panels.
+               
+               CHARACTER CONSISTENCY (CRITICAL - must be identical in all panels):
+               - Round, chubby hedgehog with soft beige/cream colored body
+               - Short, dense brown spines with natural sheen, pointing outward in a cute crown pattern
+               - Large, expressive round black eyes that sparkle with emotion
+               - Small pink button nose, rosy blush cheeks
+               - Tiny stubby limbs, perfectly proportioned for maximum cuteness
+               - Same exact size, proportions, and coloring in every single panel
+               
+               VISUAL STYLE REQUIREMENTS:
+               - Clean, modern 3D rendered cartoon style with soft lighting
+               - Gentle pastel color palette with warm, comforting tones
+               - Minimal, non-distracting backgrounds that support the story
+               - Professional animation quality with smooth gradients and subtle shadows
+               - Each panel clearly defined with thin borders
+               - NO text, NO speech bubbles, NO labels - pure visual storytelling
+               
+               LIGHTING & COMPOSITION:
+               - Consistent soft ambient lighting across all panels
+               - Each panel should have identical lighting direction and intensity
+               - Gentle highlights on the hedgehog's spines and cheeks
+               - Warm, welcoming atmosphere throughout
+               
+               STORY STRUCTURE (Kishōtenketsu - traditional 4-panel flow):
+               Panel 1 (Setup): %s
+               Panel 2 (Development): %s  
+               Panel 3 (Twist/Climax): %s
+               Panel 4 (Resolution): %s
+               
+               Focus on the hedgehog's facial expressions and body language to convey the emotional journey. Make this a touching, relatable story that viewers can connect with emotionally.
+               """.formatted(
+                   scenario.contains("Panel 1:") ? scenario.substring(scenario.indexOf("Panel 1:"), scenario.indexOf("Panel 2:")).replace("Panel 1:", "").trim() : "hedgehog in peaceful starting situation",
+                   scenario.contains("Panel 2:") ? scenario.substring(scenario.indexOf("Panel 2:"), scenario.indexOf("Panel 3:")).replace("Panel 2:", "").trim() : "conflict or change occurs",
+                   scenario.contains("Panel 3:") ? scenario.substring(scenario.indexOf("Panel 3:"), scenario.indexOf("Panel 4:")).replace("Panel 3:", "").trim() : "emotional peak moment",
+                   scenario.contains("Panel 4:") ? scenario.substring(scenario.indexOf("Panel 4:")).replace("Panel 4:", "").trim() : "resolution and peace"
+               );
+    }
 
     private String buildPrompt(String mode, List<String> history, String input) {
         String joinedHistory = String.join("\n", history);
@@ -185,15 +259,18 @@ public class ChatService {
             case "COMIC" -> {
                 String conversationContent = joinedHistory + "\n현재 질문: " + input;
                 String scenario = convertToComicScenario(conversationContent);
+
+                if (scenario == null || scenario.isBlank()) {
+                    scenario = "A hedgehog is just sitting there looking cute.";
+                }
+
                 yield buildOptimizedDallePrompt(scenario);
             }
             default ->  "너는 갈등을 정리해주는 '정리도치'야. 사용자의 상황을 공감하면서도 객관적으로 분석하고, " +
                     "실용적인 해결방안을 제시해줘. 감정적 지지와 논리적 조언을 균형있게 제공해줘. " +
                     "친근하면서도 신뢰할 수 있는 톤으로 응답해줘.";
-
         };
         
-        // COMIC 모드는 이미 완성된 프롬프트를 반환
         if ("COMIC".equals(mode)) {
             return system;
         }
@@ -245,11 +322,8 @@ public class ChatService {
         chatDao.deleteRoomById(chatRoomId);
     }
 
-
     @Transactional
     public void updateChatRoomTitle(Long chatRoomId, String newTitle) {
         chatDao.updateChatRoomTitle(chatRoomId, newTitle);
     }
-
-
 }
