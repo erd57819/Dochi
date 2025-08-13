@@ -450,6 +450,75 @@ const CreatePostPage = () => {
     setIsLoading(true);
     
     try {
+      // sessionStorage에서 갈등카드 저장 필요 여부 확인
+      const shouldSave = sessionStorage.getItem('shouldSaveConflictCard') === 'true';
+      const tempId = sessionStorage.getItem('currentTempId') || location.state?.conflictData?.tempId;
+      
+      if (shouldSave && tempId) {
+        console.log('🎯 갈등카드 자동 저장 시작... tempId:', tempId);
+        
+        try {
+          // tempId로 갈등 저장 시도
+          const saveResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${tempId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+          });
+
+          if (saveResponse.ok) {
+            console.log('✅ 갈등카드가 자동으로 저장되었습니다.');
+            // 저장 성공 후 sessionStorage 클리어
+            sessionStorage.removeItem('shouldSaveConflictCard');
+            sessionStorage.removeItem('currentTempId');
+          } else {
+            console.log('⚠️ tempId 저장 실패, 대체 API 사용 시도');
+            // tempId 저장 실패 시 기본 갈등 생성 API 사용
+            const conflictCreateData = {
+              title: sessionStorage.getItem('tempTitle') || '갈등 제목',
+              description: sessionStorage.getItem('tempDescription') || '갈등 설명',
+              conflictType: sessionStorage.getItem('tempConflictType') || 'ETC',
+              conflictWhen: parseInt(sessionStorage.getItem('tempConflictWhen')) || 7,
+              conflictFrequency: parseInt(sessionStorage.getItem('tempConflictFrequency')) || 3,
+              participants: sessionStorage.getItem('tempParticipants') || null,
+              intensity: parseInt(sessionStorage.getItem('tempIntensity')) || 7,
+              initialEmotion: sessionStorage.getItem('tempEmotion') || 'FRUSTRATION',
+              priority: sessionStorage.getItem('tempPriority') || 'SOLUTION',
+              talkWillingness: sessionStorage.getItem('tempTalkWillingness') || 'MAYBE',
+              desiredOutcome: sessionStorage.getItem('tempDesiredOutcome') || 'RELATIONSHIP',
+              aiSummary: sessionStorage.getItem('tempAiSummary') || '분석 결과'
+            };
+
+            console.log('📦 갈등 생성 데이터:', conflictCreateData);
+
+            const createResponse = await fetch(`${API_BASE_URL}/conflict/create`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              },
+              body: JSON.stringify(conflictCreateData)
+            });
+
+            if (createResponse.ok) {
+              console.log('✅ 갈등카드가 자동으로 저장되었습니다. (대체 API 사용)');
+              // 저장 성공 후 sessionStorage 클리어
+              sessionStorage.removeItem('shouldSaveConflictCard');
+              sessionStorage.removeItem('currentTempId');
+            } else {
+              console.error('❌ 갈등 생성 API 실패:', await createResponse.text());
+            }
+          }
+        } catch (saveError) {
+          console.error('갈등카드 저장 중 오류 발생:', saveError);
+          // 갈등카드 저장 실패해도 게시글은 계속 작성
+        }
+      } else {
+        console.log('🔄 갈등카드 저장 건너뛰기 (shouldSave:', shouldSave, ', tempId:', tempId, ')');
+      }
+      
+      // 게시글 작성
       await communityApi.createPost(formData);
       alert('게시글이 성공적으로 작성되었습니다!');
       navigate('/community');
