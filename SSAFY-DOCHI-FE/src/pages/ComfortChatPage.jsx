@@ -14,6 +14,8 @@ const ComfortChatPage = () => {
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [editingTitleId, setEditingTitleId] = useState(null);
   const [editTitleValue, setEditTitleValue] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
   
   const {
     sessions,
@@ -79,8 +81,24 @@ const ComfortChatPage = () => {
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    if (messages && messages.length > 0) {
+      scrollToBottom();
+    }
   }, [messages]);
+
+  // 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -304,28 +322,50 @@ const ComfortChatPage = () => {
   };
 
   return (
-    <div className="relative h-screen bg-gray-50" style={{ height: 'calc(100vh - 8vh)' }}>
+    <div className="relative bg-gradient-to-br from-orange-50 via-white to-yellow-50 overflow-hidden flex"
+         style={{ height: 'calc(100vh - 200px)' }}>
+      {/* 배경 오버레이 */}
+      <div className="absolute inset-0" style={{ opacity: 0.3 }}>
+        <div 
+          className="absolute top-0 left-0 w-full h-full"
+          style={{ 
+            background: 'linear-gradient(to bottom, rgb(248, 214, 179), white)',
+            opacity: 0.5
+          }}
+        ></div>
+      </div>
+      
       {/* 사이드바 */}
-      <div className={`absolute left-0 top-0 h-full bg-orange-100 shadow-lg transition-all duration-300 z-40 ${
-        isSidebarOpen ? 'w-[280px] md:w-[280px]' : 'w-[60px] md:w-[60px]'
-      }`}>
+      <div className={`bg-white shadow-lg transition-all duration-300 z-40 flex flex-col ${
+        isSidebarOpen ? 'w-[320px]' : 'w-[80px]'
+      }`} style={{ 
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        height: 'calc(100vh - 200px)'
+      }}>
         {/* 사이드바 토글 버튼 */}
-        <div className="p-4 border-b border-orange-200">
+        <div className="p-3 flex-shrink-0">
           <button
             onClick={toggleSidebar}
-            className={`w-full flex items-center justify-center p-2 bg-orange-200 rounded-lg hover:bg-orange-300 transition-colors ${
-              !isSidebarOpen ? 'px-2' : 'px-4'
+            className={`w-full flex items-center justify-center p-2 rounded-full transition-colors ${
+              !isSidebarOpen ? 'w-8 h-8' : 'w-full h-10'
             }`}
+            style={{ 
+              backgroundColor: 'transparent',
+              color: '#8B4513'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f5f5f5';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+            }}
           >
             {isSidebarOpen ? (
-              <>
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                </svg>
-
-              </>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
             ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
@@ -334,28 +374,56 @@ const ComfortChatPage = () => {
 
         {/* 새 대화 버튼 */}
         {isSidebarOpen && (
-          <div className="p-4 border-b border-orange-200">
+          <div className="px-3 pb-4 flex-shrink-0">
             <button
               onClick={() => setShowTitleModal(true)}
-              className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm border"
+              style={{ 
+                backgroundColor: 'transparent',
+                borderColor: '#bf7d2c',
+                color: '#8B4513'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#bf7d2c';
+                e.target.style.color = 'white';
+                e.target.style.borderColor = '#bf7d2c';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#8B4513';
+                e.target.style.borderColor = '#bf7d2c';
+              }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              새 대화 시작하기
+              새 대화
             </button>
           </div>
         )}
 
         {/* 세션 목록 */}
-        <div className="overflow-y-auto" style={{ height: isSidebarOpen ? 'calc(100% - 176px)' : 'calc(100% - 88px)' }}>
+        <div className="flex-1 overflow-y-auto px-2">
           {isSidebarOpen ? (
             sessions.map((session) => (
               <div
                 key={session.id}
-                className={`p-4 border-b border-orange-200 cursor-pointer hover:bg-orange-200 transition-colors ${
-                  currentChatRoomId === session.id ? 'bg-orange-200' : ''
+                className={`p-4 cursor-pointer transition-colors mb-2 group ${
+                  currentChatRoomId === session.id ? 'rounded-lg' : ''
                 }`}
+                style={{ 
+                  backgroundColor: currentChatRoomId === session.id ? '#f8d6b3' : 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (currentChatRoomId !== session.id) {
+                    e.target.style.backgroundColor = '#f9f9f9';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentChatRoomId !== session.id) {
+                    e.target.style.backgroundColor = 'transparent';
+                  }
+                }}
                 onClick={() => loadSession(session.id)}
               >
                 <div className="flex justify-between items-center">
@@ -394,15 +462,22 @@ const ComfortChatPage = () => {
                       </div>
                     ) : (
                       // 일반 제목 보기 모드
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-gray-800 truncate mb-1">{session.title}</h3>
+                      <div className="flex items-center gap-1">
+                        <h3 className="font-medium text-gray-800 truncate text-base">{session.title}</h3>
                         {currentChatRoomId === session.id && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStartEditTitle(session.id, session.title);
                             }}
-                            className="p-1 text-gray-500 hover:text-orange-600 transition-colors ml-1"
+                            className="p-1 transition-colors opacity-0 group-hover:opacity-100"
+                            style={{ color: '#8B4513' }}
+                            onMouseEnter={(e) => {
+                              e.target.style.color = '#bf7d2c';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.color = '#8B4513';
+                            }}
                             title="제목 수정"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,7 +487,7 @@ const ComfortChatPage = () => {
                         )}
                       </div>
                     )}
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-500 mt-2">
                       {new Date(session.createdAt).toLocaleDateString('ko-KR')}
                     </p>
                   </div>
@@ -421,9 +496,9 @@ const ComfortChatPage = () => {
                       e.stopPropagation();
                       handleDeleteSession(session.id);
                     }}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors ml-2"
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
@@ -431,52 +506,174 @@ const ComfortChatPage = () => {
               </div>
             ))
           ) : (
-            sessions.slice(0, 5).map((session, index) => (
-              <div
-                key={session.id}
-                className={`p-3 border-b border-orange-200 cursor-pointer hover:bg-orange-200 transition-colors flex items-center justify-center ${
-                  currentChatRoomId === session.id ? 'bg-orange-200' : ''
-                }`}
-                onClick={() => loadSession(session.id)}
-                title={session.title}
-              >
-                <div className="w-8 h-8 bg-orange-300 rounded-full flex items-center justify-center text-lg font-bold text-white">
-                  {index + 1}
+            sessions.slice(0, 5).map((session, index) => {
+              // 제목에서 키워드 추출 (첫 2-3 단어)
+              const getKeyword = (title) => {
+                const words = title.split(' ');
+                if (words.length <= 2) return words.join(' ');
+                return words.slice(0, 2).join(' ');
+              };
+
+              return (
+                <div
+                  key={session.id}
+                  className={`p-3 cursor-pointer transition-colors flex items-center justify-center mb-2 ${
+                    currentChatRoomId === session.id ? 'rounded-lg' : ''
+                  }`}
+                  style={{ 
+                    backgroundColor: currentChatRoomId === session.id ? '#f8d6b3' : 'transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentChatRoomId !== session.id) {
+                      e.target.style.backgroundColor = '#f9f9f9';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (currentChatRoomId !== session.id) {
+                      e.target.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                  onClick={() => loadSession(session.id)}
+                  title={session.title}
+                >
+                  <div className="text-base font-medium text-center leading-tight" style={{ color: '#8B4513' }}>
+                    {getKeyword(session.title)}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
 
       {/* 메인 채팅 영역 */}
-      <div className={`h-full flex flex-col transition-all duration-300 ${
-        isSidebarOpen ? 'ml-[280px] md:ml-[280px]' : 'ml-[60px] md:ml-[60px]'
-      }`}>
+      <div className="flex-1 overflow-hidden relative"
+           style={{ height: 'calc(100vh - 200px)' }}>
         {/* 채팅 도구바 */}
-        <div className="bg-orange-50 border-b border-orange-200 px-3 md:px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0">
-          {/* 드롭다운 (왼쪽으로 이동) */}
-          <select
-            value={selectedMode}
-            onChange={(e) => setSelectedMode(e.target.value)}
-            className="px-3 py-2 border border-orange-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
-          >
-            <option value="NORMAL">입장정리</option>
-            <option value="COMFORT_ONLY">내편들기</option>
-          </select>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 shadow-sm" 
+             style={{ 
+               backgroundColor: 'rgba(255, 255, 255, 0.95)',
+               backdropFilter: 'blur(10px)',
+               padding: '12px 24px',
+               position: 'absolute',
+               top: '0',
+               left: '0',
+               right: '0',
+               zIndex: 1000
+             }}>
+          {/* 커스텀 드롭다운 */}
+          <div ref={dropdownRef} className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none border"
+              style={{ 
+                backgroundColor: 'transparent',
+                borderColor: '#bf7d2c',
+                color: '#8B4513',
+                minWidth: '140px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#fefaf5';
+                e.target.style.borderColor = '#8B4513';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.borderColor = '#bf7d2c';
+              }}
+            >
+              <span>{selectedMode === 'NORMAL' ? '입장정리' : '내편들기'}</span>
+              <svg 
+                className={`w-4 h-4 ml-2 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                fill="none" 
+                viewBox="0 0 24 24"
+                style={{ stroke: '#8B4513' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {isDropdownOpen && (
+              <div 
+                className="absolute top-full left-0 mt-1 w-full bg-white rounded-lg border overflow-hidden"
+                style={{ 
+                  borderColor: '#bf7d2c',
+                  animation: 'fadeIn 0.15s ease-out',
+                  zIndex: 1001
+                }}
+              >
+                <div
+                  onClick={() => {
+                    setSelectedMode('NORMAL');
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`px-4 py-3 text-sm cursor-pointer transition-colors hover:bg-gray-50 flex items-center ${
+                    selectedMode === 'NORMAL' ? 'font-medium' : ''
+                  }`}
+                  style={{
+                    color: selectedMode === 'NORMAL' ? '#bf7d2c' : '#374151'
+                  }}
+                >
+                  <span>입장정리</span>
+                  {selectedMode === 'NORMAL' && (
+                    <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <div
+                  onClick={() => {
+                    setSelectedMode('COMFORT_ONLY');
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`px-4 py-3 text-sm cursor-pointer transition-colors hover:bg-gray-50 flex items-center ${
+                    selectedMode === 'COMFORT_ONLY' ? 'font-medium' : ''
+                  }`}
+                  style={{
+                    color: selectedMode === 'COMFORT_ONLY' ? '#bf7d2c' : '#374151'
+                  }}
+                >
+                  <span>내편들기</span>
+                  {selectedMode === 'COMFORT_ONLY' && (
+                    <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-2 md:gap-4 flex-wrap">
             {/* 네컷만화 버튼 */}
             <button
               onClick={handleManhwaButtonClick}
               disabled={isLoading}
-              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm flex items-center gap-2 ${
-                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+              className={`px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border ${
+                isLoading ? 'cursor-not-allowed' : ''
               }`}
+              style={{
+                backgroundColor: isLoading ? 'transparent' : 'transparent',
+                borderColor: isLoading ? '#d1d5db' : '#8B4513',
+                color: isLoading ? '#d1d5db' : '#8B4513'
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.target.style.backgroundColor = '#8B4513';
+                  e.target.style.color = 'white';
+                  e.target.style.borderColor = '#8B4513';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = '#8B4513';
+                  e.target.style.borderColor = '#8B4513';
+                }
+              }}
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
                   생성중...
                 </>
               ) : (
@@ -493,18 +690,41 @@ const ComfortChatPage = () => {
             <button
               onClick={handleTimelineButtonClick}
               disabled={isLoading}
-              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm flex items-center gap-2 ${
-                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
+              className={`px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border ${
+                isLoading ? 'cursor-not-allowed' : ''
               }`}
+              style={{
+                backgroundColor: isLoading ? 'transparent' : 'transparent',
+                borderColor: isLoading ? '#d1d5db' : '#bf7d2c',
+                color: isLoading ? '#d1d5db' : '#bf7d2c'
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.target.style.backgroundColor = '#bf7d2c';
+                  e.target.style.color = 'white';
+                  e.target.style.borderColor = '#bf7d2c';
+                  const svg = e.target.querySelector('svg');
+                  if (svg) svg.style.stroke = 'white';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = '#bf7d2c';
+                  e.target.style.borderColor = '#bf7d2c';
+                  const svg = e.target.querySelector('svg');
+                  if (svg) svg.style.stroke = '#bf7d2c';
+                }
+              }}
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
                   분석중...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" style={{ stroke: '#bf7d2c' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   타임라인
@@ -515,7 +735,22 @@ const ComfortChatPage = () => {
             {/* 저장 후 종료 버튼 */}
             <button
               onClick={handleSaveAndExit}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm flex items-center gap-2"
+              className="px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border"
+              style={{ 
+                backgroundColor: 'transparent',
+                borderColor: '#bf7d2c',
+                color: '#bf7d2c'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#bf7d2c';
+                e.target.style.color = 'white';
+                e.target.style.borderColor = '#bf7d2c';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#bf7d2c';
+                e.target.style.borderColor = '#bf7d2c';
+              }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -526,9 +761,19 @@ const ComfortChatPage = () => {
         </div>
 
         {/* 메시지 영역 */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-6 bg-gray-50">
+        <div className="relative"
+             style={{ 
+               backgroundColor: 'rgba(254, 254, 254, 0.8)',
+               backdropFilter: 'blur(5px)',
+               overflow: messages.length > 0 ? 'auto' : 'hidden',
+               padding: '8px',
+               paddingTop: '60px',
+               paddingBottom: '80px',
+               height: 'calc(100vh - 200px)',
+               maxHeight: 'calc(100vh - 200px)'
+             }}>
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg shadow-sm">
               {error}
               <button
                 onClick={() => setError(null)}
@@ -547,7 +792,7 @@ const ComfortChatPage = () => {
               <div className={`max-w-[70%] ${message.sender === 'user' ? 'order-2' : 'order-1'}`}>
                 {message.sender === 'bot' && (
                   <div className="flex items-center mb-2">
-                    <div className="w-8 h-8 bg-orange-200 rounded-full flex items-center justify-center mr-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center mr-2" style={{ backgroundColor: '#f8d6b3' }}>
                       🦔
                     </div>
                     <span className="text-sm text-gray-600">
@@ -559,9 +804,18 @@ const ComfortChatPage = () => {
                 )}
                 <div className={`px-4 py-2 rounded-lg ${
                   message.sender === 'user' 
-                    ? 'bg-orange-500 text-white' 
-                    : 'bg-white text-gray-800 shadow-sm border'
-                }`}>
+                    ? 'text-white shadow-lg' 
+                    : 'text-gray-800 shadow-lg'
+                }`}
+                  style={message.sender === 'user' 
+                    ? { 
+                        backgroundColor: '#bf7d2c',
+                        boxShadow: '0 4px 12px rgba(191, 125, 44, 0.3)'
+                      } 
+                    : { 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(10px)'
+                      }}>
                   {renderMessage(message)}
                   {message.mode === 'COMIC' && message.content.startsWith('http') && (
                     <p className="text-sm text-gray-600 mt-2" style={{ display: 'none' }}>
@@ -578,7 +832,11 @@ const ComfortChatPage = () => {
 
           {isLoading && (
             <div className="flex justify-start mb-4">
-              <div className="bg-white rounded-lg px-4 py-2 shadow-sm border">
+              <div className="rounded-lg px-4 py-2 shadow-lg" 
+                   style={{ 
+                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                     backdropFilter: 'blur(10px)'
+                   }}>
                 <div className="flex items-center space-x-2">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -595,25 +853,52 @@ const ComfortChatPage = () => {
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
+          {messages.length > 0 && <div ref={messagesEndRef} />}
         </div>
 
         {/* 입력 영역 */}
-        <div className="bg-white border-t p-3 md:p-4">
+        <div className="border-t" 
+             style={{ 
+               backgroundColor: 'rgba(255, 255, 255, 0.98)',
+               backdropFilter: 'blur(10px)',
+               borderColor: 'rgba(191, 125, 44, 0.1)',
+               padding: '12px',
+               position: 'absolute',
+               bottom: '0',
+               left: '0',
+               right: '0',
+               zIndex: 1000
+             }}>
           <div className="flex gap-2">
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="갈등 상황을 자세히 이야기해주세요..."
-              className="flex-1 px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 px-4 py-2 rounded-lg resize-none focus:outline-none bg-white shadow-sm"
+              style={{ 
+                border: 'none'
+              }}
               rows="1"
               disabled={isLoading}
             />
             <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isLoading}
-              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: (!inputValue.trim() || isLoading) ? '#d1d5db' : '#bf7d2c'
+              }}
+              onMouseEnter={(e) => {
+                if (inputValue.trim() && !isLoading) {
+                  e.target.style.backgroundColor = '#8B4513';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (inputValue.trim() && !isLoading) {
+                  e.target.style.backgroundColor = '#bf7d2c';
+                }
+              }}
             >
               전송
             </button>
@@ -623,14 +908,25 @@ const ComfortChatPage = () => {
 
       {/* 타임라인 모달 */}
       {showTimeline && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl" 
+               style={{ 
+                 backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                 backdropFilter: 'blur(20px)'
+               }}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">갈등 타임라인</h3>
               <div className="flex gap-2">
                 <button
                   onClick={generateTimeline}
-                  className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
+                  className="px-3 py-1 text-white text-sm rounded transition-colors"
+                  style={{ backgroundColor: '#bf7d2c' }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#8B4513';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#bf7d2c';
+                  }}
                 >
                   새로고침
                 </button>
@@ -667,8 +963,12 @@ const ComfortChatPage = () => {
 
       {/* 네컷만화 모달 */}
       {showManhwa && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
+          <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl" 
+               style={{ 
+                 backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                 backdropFilter: 'blur(20px)'
+               }}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">오늘의 네컷만화</h3>
               <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
@@ -712,7 +1012,20 @@ const ComfortChatPage = () => {
                   <button
                     onClick={generateManhwa}
                     disabled={isLoading}
-                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+                    className="px-6 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: isLoading ? '#d1d5db' : '#bf7d2c'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isLoading) {
+                        e.target.style.backgroundColor = '#8B4513';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isLoading) {
+                        e.target.style.backgroundColor = '#bf7d2c';
+                      }
+                    }}
                   >
                     {isLoading ? '생성중...' : '다시 생성하기'}
                   </button>
@@ -726,7 +1039,20 @@ const ComfortChatPage = () => {
                 <button
                   onClick={generateManhwa}
                   disabled={isLoading}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="px-6 py-3 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: isLoading ? '#d1d5db' : '#bf7d2c'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) {
+                      e.target.style.backgroundColor = '#8B4513';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) {
+                      e.target.style.backgroundColor = '#bf7d2c';
+                    }
+                  }}
                 >
                   {isLoading ? (
                     <>
