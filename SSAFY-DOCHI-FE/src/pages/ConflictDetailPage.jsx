@@ -76,6 +76,33 @@ const ConflictDetailPage = () => {
       if (response.ok) {
         const result = await response.json();
         const analysisData = result.data || result.response?.response;
+        console.log('📊 AI 분석 결과 원본 데이터:', analysisData);
+        
+        // recommendedActions 파싱 처리
+        if (analysisData) {
+          // recommendedActions가 문자열인 경우 파싱
+          if (analysisData.recommendedActions && typeof analysisData.recommendedActions === 'string') {
+            try {
+              analysisData.recommendedActions = JSON.parse(analysisData.recommendedActions);
+              console.log('✅ recommendedActions 파싱 성공:', analysisData.recommendedActions);
+            } catch (e) {
+              console.error('⚠️ recommendedActions 파싱 실패:', e);
+              analysisData.recommendedActions = [];
+            }
+          }
+          
+          // recommended_actions도 확인 (snake_case)
+          if (analysisData.recommended_actions && typeof analysisData.recommended_actions === 'string') {
+            try {
+              analysisData.recommended_actions = JSON.parse(analysisData.recommended_actions);
+              console.log('✅ recommended_actions 파싱 성공:', analysisData.recommended_actions);
+            } catch (e) {
+              console.error('⚠️ recommended_actions 파싱 실패:', e);
+              analysisData.recommended_actions = [];
+            }
+          }
+        }
+        
         setAnalysisResult(analysisData);
       } else {
         console.log('AI 분석 결과가 없습니다.');
@@ -625,23 +652,26 @@ const ConflictDetailPage = () => {
                   if (conflict && analysisResult) {
                     console.log('🚀 ConflictDetailPage에서 로드맵으로 데이터 전달:', analysisResult);
                     
-                    // recommendedActions 처리 - 다양한 형태 지원
+                    // recommendedActions 처리 - 이미 fetchAnalysisResult에서 파싱됨
                     let recommendedActions = analysisResult.recommendedActions || 
                                            analysisResult.recommended_actions || 
                                            analysisResult.recommendedAction ||
                                            analysisResult.recommended_action;
                     
-                    // 문자열인 경우 JSON 파싱 시도
-                    if (typeof recommendedActions === 'string') {
+                    // 이미 파싱된 객체인지 확인
+                    if (recommendedActions && typeof recommendedActions === 'object') {
+                      // 객체 형태면 그대로 사용
+                      console.log('📋 이미 파싱된 recommendedActions 사용:', recommendedActions);
+                    } else if (typeof recommendedActions === 'string') {
+                      // 문자열인 경우 JSON 파싱 시도
                       try {
                         recommendedActions = JSON.parse(recommendedActions);
                       } catch (e) {
-                        console.log('recommendedActions 파싱 실패, 문자열 그대로 사용:', recommendedActions);
+                        console.log('recommendedActions 파싱 실패, 빈 배열 사용');
+                        recommendedActions = [];
                       }
-                    }
-                    
-                    // 배열이 아닌 경우 빈 배열로 설정
-                    if (!Array.isArray(recommendedActions)) {
+                    } else {
+                      // null이거나 undefined인 경우
                       recommendedActions = [];
                     }
                     
@@ -651,7 +681,7 @@ const ConflictDetailPage = () => {
                     const analysisDataForRoadmap = {
                       ...conflict,
                       aiSummary: conflict.aiSummary || analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis || '분석을 생성할 수 없습니다.',
-                      aiSolutions: conflict.aiSolutions || (analysisResult?.recommendedActions ? JSON.stringify(analysisResult.recommendedActions) : '해결방안을 생성할 수 없습니다.'),
+                      aiSolutions: conflict.aiSolutions || (recommendedActions ? JSON.stringify(recommendedActions) : '해결방안을 생성할 수 없습니다.'),
                       conflictAnalysis: analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis || '',
                       myPosition: analysisResult?.myPosition || analysisResult?.my_position || '내 입장을 AI가 분석해서 정리해드립니다.',
                       partnerPosition: analysisResult?.partnerPosition || analysisResult?.partner_position || '상대방의 입장을 AI가 추정해서 분석해드립니다.',

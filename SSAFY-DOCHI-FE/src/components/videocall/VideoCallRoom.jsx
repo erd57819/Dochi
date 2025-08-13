@@ -69,7 +69,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
     ? 'ws://localhost:7880'
     : 'wss://i13c209.p.ssafy.io/livekit';
-  const API_BASE_URL = '';
 
   // 참조들
   const localVideoRef = useRef(null);
@@ -94,26 +93,28 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       let accessToken;
       const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
       
-      if (isGuestMode || !isLoggedIn) {
-        const response = await fetch(`${API_BASE_URL}/api/video-call/guest-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      try {
+        if (isGuestMode || !isLoggedIn) {
+          const response = await apiClient.post('/video-call/guest-token', {
             room: roomName,
             identity: identity,
             name: identity
-          }),
-        });
+          });
 
-        if (!response.ok) {
-          throw new Error('토큰 생성에 실패했습니다');
+          accessToken = response.data.data.token;
+        } else {
+          const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
+          accessToken = response.data.data.token;
         }
-
-        const data = await response.json();
-        accessToken = data.data.token;
-      } else {
-        const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
-        accessToken = response.data.data.token;
+      } catch (tokenError) {
+        console.error('토큰 생성 실패:', tokenError);
+        if (tokenError.response?.status === 404) {
+          throw new Error('토큰 생성 API를 찾을 수 없습니다. 서버 연결을 확인해주세요.');
+        } else if (tokenError.response?.status === 500) {
+          throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          throw new Error('토큰 생성에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
       }
 
       const newRoom = new Room({
@@ -1003,7 +1004,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       </div>
 
       {/* 하단 컨트롤 바 */}
-      <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-t border-[#5C351A]">
+      <div className="fixed bottom-0 left-0 w-full bg-transparent p-4 z-50">
         <div className="flex justify-center items-center space-x-4">
           {/* 마이크 토글 */}
           <button

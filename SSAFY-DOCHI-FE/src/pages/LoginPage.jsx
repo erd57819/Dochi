@@ -20,6 +20,13 @@ const LoginPage = () => {
     });
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -130,6 +137,7 @@ const LoginPage = () => {
                           name="userId"
                           value={formData.userId}
                           onChange={handleInputChange}
+                          onKeyDown={handleKeyDown}
                           className="w-full max-w-sm px-0 py-4 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-base transition-colors text-center"
                           placeholder="아이디를 입력해주세요"
                           required
@@ -148,6 +156,7 @@ const LoginPage = () => {
                           name="password"
                           value={formData.password}
                           onChange={handleInputChange}
+                          onKeyDown={handleKeyDown}
                           className="w-full max-w-sm px-0 py-4 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-base transition-colors text-center"
                           placeholder="비밀번호를 입력해주세요"
                           required
@@ -163,6 +172,7 @@ const LoginPage = () => {
                 {/* 로그인 버튼 - 전체 페이지 가운데 */}
                 <div className="flex justify-center mb-8">
                   <button
+                    type="submit"
                     onClick={handleSubmit}
                     className="px-6 py-2 rounded-lg font-medium transition-colors text-sm"
                     style={{ 

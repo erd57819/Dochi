@@ -459,19 +459,28 @@ const ConflictAnalysisResultPage = () => {
     console.log('🚀 갈등 분석 결과에서 커뮤니티로 이동, AI 분석 데이터:', {
       conflictData: conflictData,
       conflictTypeText: conflictTypeText,
-      conflictDescription: conflictDescription
+      conflictDescription: conflictDescription,
+      tempId: tempId
     });
 
-    // CreatePostPage로 즉시 이동하면서 갈등 데이터 전달
+    // sessionStorage에 tempId 저장 (CreatePostPage에서 사용)
+    if (tempId) {
+      sessionStorage.setItem('currentTempId', tempId);
+      sessionStorage.setItem('shouldSaveConflictCard', 'true');
+    }
+
+    // CreatePostPage로 즉시 이동하면서 갈등 데이터와 tempId 전달
     navigate('/community/create', {
       state: {
         conflictData: {
           ...conflictData,
           conflictTypeText: conflictTypeText,
-          description: conflictDescription
+          description: conflictDescription,
+          tempId: tempId // tempId 추가 전달
         },
         targetCategory: 'CONFLICT_SHARING',
-        shouldGenerateAI: true // AI 생성 플래그
+        shouldGenerateAI: true, // AI 생성 플래그
+        shouldSaveConflictCard: true // 갈등카드 저장 플래그 추가
       }
     });
   };
