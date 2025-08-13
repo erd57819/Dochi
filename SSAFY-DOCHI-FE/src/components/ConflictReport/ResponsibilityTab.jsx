@@ -56,6 +56,23 @@ const ResponsibilityTab = ({ responsibilityData }) => {
                 <h4 className="font-semibold text-gray-800">
                   {speaker.name} ({speaker.responsibility_percentage}%)
                 </h4>
+                
+                {/* 갈등관리 유형 표시 */}
+                {speaker.conflict_management_type && (
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      speaker.conflict_management_type === '경쟁형' ? 'bg-red-100 text-red-800' :
+                      speaker.conflict_management_type === '수용형' ? 'bg-blue-100 text-blue-800' :
+                      speaker.conflict_management_type === '회피형' ? 'bg-gray-100 text-gray-800' :
+                      speaker.conflict_management_type === '타협형' ? 'bg-yellow-100 text-yellow-800' :
+                      speaker.conflict_management_type === '협력형' ? 'bg-green-100 text-green-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      🔍 갈등관리 유형: {speaker.conflict_management_type}
+                    </span>
+                  </div>
+                )}
+                
                 <p className="text-sm text-gray-600 mt-1">
                   의사소통 스타일: {speaker.communication_style}
                 </p>
@@ -71,6 +88,52 @@ const ResponsibilityTab = ({ responsibilityData }) => {
           </div>
         </div>
       )}
+
+      {/* 갈등관리 유형 설명 */}
+      <div className="bg-[#F8F5F0] rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[#2A2A2A] mb-4">📊 갈등관리 유형별 특징</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="flex items-center mb-2">
+              <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+              <h4 className="font-medium text-red-800">경쟁형 (Competing)</h4>
+            </div>
+            <p className="text-sm text-red-700">자신의 목표를 우선시하며 상대방과의 협력보다는 승부를 중시</p>
+          </div>
+          
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="flex items-center mb-2">
+              <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+              <h4 className="font-medium text-blue-800">수용형 (Accommodating)</h4>
+            </div>
+            <p className="text-sm text-blue-700">관계 유지를 위해 자신의 욕구를 포기하고 상대방을 우선시</p>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="flex items-center mb-2">
+              <span className="inline-block w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
+              <h4 className="font-medium text-gray-800">회피형 (Avoiding)</h4>
+            </div>
+            <p className="text-sm text-gray-700">갈등 상황 자체를 피하거나 늦추려는 경향</p>
+          </div>
+          
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-center mb-2">
+              <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+              <h4 className="font-medium text-yellow-800">타협형 (Compromising)</h4>
+            </div>
+            <p className="text-sm text-yellow-700">양측이 어느 정도 양보하여 중간 지점에서 해결책 모색</p>
+          </div>
+          
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="flex items-center mb-2">
+              <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+              <h4 className="font-medium text-green-800">협력형 (Collaborating)</h4>
+            </div>
+            <p className="text-sm text-green-700">양방 모두가 만족할 수 있는 창의적 해결책 추구</p>
+          </div>
+        </div>
+      </div>
 
       {/* 갈등 고조 지점 */}
       {responsibilityData?.escalation_points && responsibilityData.escalation_points.length > 0 && (

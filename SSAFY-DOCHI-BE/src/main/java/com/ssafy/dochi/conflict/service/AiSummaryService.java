@@ -153,25 +153,16 @@ public class AiSummaryService {
     }
     
     /**
-     * 기본 AI 분석 (구 메서드 호환성용)
-     */
-    public AiAnalysisResDto generateAnalysis(String description, ConflictType conflictType) {
-        Map<String, Object> result = generateAdvancedAnalysis(description, conflictType);
-        String summary = (String) result.getOrDefault("summary", "분석을 생성할 수 없습니다.");
-        String solutions = (String) result.getOrDefault("solutions", "해결방안을 생성할 수 없습니다.");
-        
-        return AiAnalysisResDto.builder()
-            .summary(summary)
-            .solutions(solutions)
-            .build();
-    }
-    
-    /**
-     * AI 요약 생성 (구 메서드 호환성용)
+     * AI 요약 생성 (VideoCall용 - 호환성 유지)
      */
     public String generateSummary(String description, ConflictType conflictType) {
-        Map<String, Object> result = generateAdvancedAnalysis(description, conflictType);
-        return (String) result.getOrDefault("summary", "분석을 생성할 수 없습니다.");
+        try {
+            Map<String, Object> result = generateAdvancedAnalysis(description, conflictType);
+            return (String) result.getOrDefault("summary", "분석을 생성할 수 없습니다.");
+        } catch (Exception e) {
+            log.error("VideoCall용 AI 요약 생성 실패: {}", e.getMessage());
+            return "중재 제안을 생성할 수 없습니다.";
+        }
     }
     
     /**

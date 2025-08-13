@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { conflictReportApi } from '../services/conflictReportApi';
+import consultantDochiImg from '../assets/consultantdochi.png';
 
 // Chart.js 설정
 import {
@@ -73,12 +74,6 @@ const ConflictReportPage = () => {
       }
       
       setReportData(data);
-      
-      // 첫 번째 화자 선택
-      const speakers = Object.keys(data?.sections?.emotion_analysis?.data || {});
-      if (speakers.length > 0) {
-        setSelectedSpeaker(speakers[0]);
-      }
     } catch (err) {
       console.error('레포트 로딩 실패:', err);
       setError('레포트를 불러오는데 실패했습니다.');
@@ -120,7 +115,6 @@ const ConflictReportPage = () => {
 
   const tabs = [
     { id: 'summary', label: '종합 요약' },
-    { id: 'emotion', label: '감정 분석' },
     { id: 'responsibility', label: '책임 분석' },
     { id: 'action', label: '액션 플랜' },
     { id: 'transcript', label: '대화 내용' },
@@ -141,17 +135,29 @@ const ConflictReportPage = () => {
         
         <div className="container mx-auto px-12 py-24 max-w-6xl relative z-10">
           {/* 헤더 */}
-          <div className="text-center mb-20">
-            <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
-              갈등 분석 레포트
-            </h1>
-            <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
-            <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
-              AI가 분석한 갈등의 깊이와 해결책을 만나보세요
-            </p>
-            <p className="text-[#8B7B7B] text-sm mt-4 font-light">
-              생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
-            </p>
+          <div className="relative mb-20">
+            {/* 오른쪽 상단에 도치 이미지 */}
+            <div className="absolute right-0 top-0 z-20">
+              <img 
+                src={consultantDochiImg} 
+                alt="컨설턴트 도치" 
+                className="w-56 h-56 object-contain drop-shadow-lg opacity-90 hover:opacity-100 transition-opacity duration-300"
+              />
+            </div>
+            
+            {/* 중앙 정렬된 헤더 텍스트 */}
+            <div className="text-center">
+              <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
+                갈등 분석 레포트
+              </h1>
+              <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
+              <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
+                AI가 분석한 갈등의 깊이와 해결책을 만나보세요
+              </p>
+              <p className="text-[#8B7B7B] text-sm mt-4 font-light">
+                생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
+              </p>
+            </div>
           </div>
 
           {/* 종합 요약 */}
