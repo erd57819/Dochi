@@ -18,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -75,5 +76,10 @@ public class ChatController {
         return ApiResponseGenerator.success(HttpStatus.OK);
     }
 
+    @GetMapping("/comic/{comicId}/status")
+    public ApiResponse<?> getComicStatus(@PathVariable String comicId) {
+        Map<String, String> status = chatService.getComicStatus(comicId);
+        return ApiResponseGenerator.success(status, HttpStatus.OK);
+    }
 
 }
