@@ -13,6 +13,7 @@ public class ChatRoom {
     @Setter
     private Long userId;
     private String title;
+    private String sessionId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

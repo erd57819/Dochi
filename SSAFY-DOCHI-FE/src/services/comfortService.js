@@ -94,9 +94,11 @@ const comfortService = {
   },
 
   // 채팅 기록 조회
-  getMessages: async (chatRoomId) => {
+  getMessages: async (chatRoomId, sessionId) => {
     try {
-      const response = await apiClient.get(`/chat/rooms/${chatRoomId}/messages`);
+      const response = await apiClient.get(`/chat/rooms/${chatRoomId}/messages`, {
+        params: { sessionId }
+      });
       return response.data;
     } catch (error) {
       console.error('Failed to get messages:', error);

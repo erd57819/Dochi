@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-
+import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,9 +33,13 @@ public class ChatService {
     private static final String REDIS_PREFIX = "chat:";
 
     public Long createChatRoom(Long userId, String title) {
+        // sessionId 생성
+        String sessionId = "session_" + UUID.randomUUID().toString();
+
         ChatRoom room = ChatRoom.builder()
                 .userId(userId)
                 .title(title)
+                .sessionId(sessionId)  // 새로 추가
                 .createdAt(LocalDateTime.now())
                 .build();
         chatDao.saveChatRoom(room);
@@ -201,10 +205,40 @@ public class ChatService {
         return chatDao.findAllRoomsByUserId(userId);
     }
 
-    public List<Chat> getMessages(Long chatRoomId) {
+    public List<Chat> getMessages(Long chatRoomId, String sessionId) {
+        if (sessionId != null && !sessionId.isBlank()) {
+            List<Chat> redisMessages = getMessagesFromRedis(sessionId);
+            if (!redisMessages.isEmpty()) {
+                log.info("활성 세션 {}의 대화 내역을 Redis에서조회했습니다.", sessionId);
+                return redisMessages;
+            }
+        }
+        log.info("chatRoomId {}의 대화 내역을 MySQL에서 조회합니다.", chatRoomId);
         return chatDao.findAllByChatRoomId(chatRoomId);
     }
 
+    private List<Chat> getMessagesFromRedis(String sessionId) {
+        List<String> historyWithSummary = getHistory(sessionId);
+        if (historyWithSummary.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Chat> messages = new ArrayList<>();
+        long tempId = 1L;
+        for (String entry : historyWithSummary) {
+            if (entry.startsWith("요약:")) {
+                continue;
+            }
+            String[] parts = entry.split(":", 2);
+            if (parts.length < 2) continue;
+            messages.add(Chat.builder()
+                    .id(tempId++)
+                    .senderType(parts[0].trim())
+                    .message(parts[1].trim())
+                    .timestamp(LocalDateTime.now())
+                    .build());
+        }
+        return messages;
+    }
     @Transactional
     public void deleteRoom(Long chatRoomId) {
         chatDao.deleteMessagesByRoomId(chatRoomId);
