@@ -135,6 +135,39 @@ public class ChatService {
         }
     }
 
+    private String convertToComicScenario(String conversationHistory) {
+        try {
+            String prompt = "다음 대화 내용을 분석해서 4컷 만화 시나리오로 변환해줘. 고슴도치 캐릭터가 주인공이고, 표정과 자세로만 감정을 표현해야 해.\n\n" +
+                    "대화 내용:\n" + conversationHistory + "\n\n" +
+                    "다음 형식으로 영어로 작성해줘:\n" +
+                    "Panel 1: [peaceful/normal situation with hedgehog's expression and pose]\n" +
+                    "Panel 2: [conflict or problem arises - hedgehog's reaction]\n" +
+                    "Panel 3: [emotional peak or climax - hedgehog's intense expression]\n" +
+                    "Panel 4: [resolution or aftermath - hedgehog's final state]\n\n" +
+                    "각 패널은 고슴도치의 구체적인 표정(눈, 입, 전체적인 느낌)과 자세(앉기, 서기, 웅크리기 등)를 포함해서 설명해줘.";
+            return gmsAiClient.ask(prompt, "gpt-4o");
+        } catch (Exception e) {
+            log.warn("만화 시나리오 변환 실패", e);
+            return null;
+        }
+    }
+
+    private String buildOptimizedDallePrompt(String scenario) {
+        return """
+            A 2x2 grid four-panel comic strip featuring the same cute chubby hedgehog character in all panels,
+            with a round beige body, darker brown spines, small round black eyes, blush cheeks, and short limbs.
+            Same proportions, features, and style in every panel.
+            Minimal soft pastel background, identical lighting and environment across all panels,
+            background not distracting from characters.
+            Smooth, soft-lit, pastel-colored 3D rendered style, award-winning character design,
+            consistent art style across all panels, visual storytelling through expressive poses and facial expressions only,
+            no text, no labels, no speech balloons, professional illustration quality.
+
+            %s
+            """.formatted(scenario);
+    }
+
+
     private String buildPrompt(String mode, List<String> history, String input) {
         String joinedHistory = String.join("\n", history);
         String system = switch (mode) {
@@ -145,12 +178,22 @@ public class ChatService {
             case "TIMELINE" -> "너는 갈등 상황을 분석하는 '분석도치'야. 대화 내용에서 일어난 사건들을 시간순으로 정리해줘. " +
                     "형식: '시간/상황: 무슨 일이 일어났는지' 형태로 핵심 사건만 간단명료하게 정리해줘. " +
                     "객관적이고 중립적인 톤으로 작성해줘.";
-            case "COMIC" -> "지금까지 대화를 기반으로 갈등 상황을 네컷 그림으로 그려줘. (NO TEXT, NO BUBBLES) 1. 각 컷은 상황을 묘사했으면 좋겠고 최대한 사용자가 말한 내용과 비슷하게 그려서 사용자가 보고 거울치료되게, 상황을 객관적으로 볼 수 있게 해줘. 2. [https://www.notion.so/24ddf4b4eff7802188c6e3de3f3a348e?source=copy_link] 이 링크의 고슴도치 캐릭터와 유사하고 귀엽게 네컷 그림 생성해주면 좋겠어 3. show only with poses and expressions, no words";
+            case "COMIC" -> {
+                String conversationContent = joinedHistory + "\n현재 질문: " + input;
+                String scenario = convertToComicScenario(conversationContent);
+                yield buildOptimizedDallePrompt(scenario);
+            }
             default ->  "너는 갈등을 정리해주는 '정리도치'야. 사용자의 상황을 공감하면서도 객관적으로 분석하고, " +
                     "실용적인 해결방안을 제시해줘. 감정적 지지와 논리적 조언을 균형있게 제공해줘. " +
                     "친근하면서도 신뢰할 수 있는 톤으로 응답해줘.";
 
         };
+        
+        // COMIC 모드는 이미 완성된 프롬프트를 반환
+        if ("COMIC".equals(mode)) {
+            return system;
+        }
+        
         return system + "\n\n[이전 대화]\n" + joinedHistory + "\n\n[현재 질문]\n" + input;
     }
 
