@@ -807,7 +807,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       </div>
 
       {/* 메인 비디오 영역 */}
-      <div className="flex-1 flex overflow-hidden pb-20">
+      <div className="flex-1 flex overflow-hidden">
         {/* 비디오 그리드 */}
         <div className="flex-1 relative">
           <div className={`h-full grid gap-2 p-4 ${
@@ -1004,7 +1004,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       </div>
 
       {/* 하단 컨트롤 바 */}
-      <div className="fixed bottom-0 left-0 w-full bg-[#FEFCF8] shadow-lg p-4 border-t border-[#5C351A] z-50">
+      <div className="fixed bottom-0 left-0 w-full bg-transparent p-4 z-50">
         <div className="flex justify-center items-center space-x-4">
           {/* 마이크 토글 */}
           <button
