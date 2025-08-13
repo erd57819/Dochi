@@ -13,6 +13,9 @@ const CommunityPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [rankingPosts, setRankingPosts] = useState([]);
+  const [rankingType, setRankingType] = useState('views'); // 'views' or 'likes'
+  const [rankingLoading, setRankingLoading] = useState(false);
 
   // 실제 AuthStore 사용
   const { isLoggedIn, user } = useAuthStore();
@@ -24,6 +27,20 @@ const CommunityPage = () => {
     { value: 'SUCCESS_STORIES', label: '해결했어요', color: '#f8d6b3', gradient: 'linear-gradient(135deg, #f8d6b3 0%, #ffe4cc 100%)' },
     { value: 'GENERAL', label: '자유게시판', color: '#7F5539', gradient: 'linear-gradient(135deg, #7F5539 0%, #a06d4d 100%)' }
   ];
+
+  // 순위 게시글 조회
+  const fetchRankingPosts = async (type = 'views') => {
+    try {
+      setRankingLoading(true);
+      const sortParam = type === 'views' ? 'viewCount' : 'likeCount';
+      const data = await communityApi.getPosts(0, 10, '', '', sortParam);
+      setRankingPosts(data.content || []);
+    } catch (error) {
+      console.error('순위 조회 오류:', error);
+    } finally {
+      setRankingLoading(false);
+    }
+  };
 
   // 게시글 목록 조회
   const fetchPosts = async (page = 0, category = '') => {
@@ -53,7 +70,13 @@ const CommunityPage = () => {
   // 초기 데이터 로드
   useEffect(() => {
     fetchPosts(0, selectedCategory);
+    fetchRankingPosts(rankingType); // 순위 데이터도 로드
   }, [selectedCategory]);
+
+  // 순위 타입 변경 시 순위 데이터 다시 로드
+  useEffect(() => {
+    fetchRankingPosts(rankingType);
+  }, [rankingType]);
 
   // 카테고리 변경
   const handleCategoryChange = (category) => {
@@ -259,6 +282,79 @@ const CommunityPage = () => {
                 ))}
               </div>
 
+              {/* 커뮤니티 순위 */}
+              <div className="bg-white rounded-lg p-5 mb-4 shadow-sm">
+                <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>🏆 커뮤니티 순위</h4>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => setRankingType('views')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      rankingType === 'views'
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    조회순
+                  </button>
+                  <button
+                    onClick={() => setRankingType('likes')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      rankingType === 'likes'
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    좋아요순
+                  </button>
+                </div>
+                
+                {rankingLoading ? (
+                  <div className="text-center py-4">
+                    <div className="text-sm text-gray-500">순위를 불러오는 중...</div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {rankingPosts.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500 text-sm">
+                        순위 데이터가 없습니다
+                      </div>
+                    ) : (
+                      rankingPosts.map((post, index) => {
+                        const displayName = getDisplayName(post);
+                        return (
+                          <div
+                            key={post.id}
+                            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-all"
+                            onClick={() => handlePostClick(post.id)}
+                          >
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                              style={{
+                                background: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 
+                                          index < 5 ? '#D2691E' : '#8B4513',
+                                fontSize: '10px'
+                              }}
+                            >
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h5 className="text-xs font-medium text-gray-800 truncate mb-0.5">
+                                {post.title}
+                              </h5>
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <span className="truncate max-w-[60px]">{displayName}</span>
+                                <span>•</span>
+                                <span className="text-xs">{rankingType === 'views' ? `조회 ${post.viewCount || 0}` : `좋아요 ${post.likeCount || 0}`}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* 커뮤니티 가이드 */}
               <div className="bg-white rounded p-5">
                 <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>💡 커뮤니티 가이드</h4>
@@ -333,7 +429,7 @@ const CommunityPage = () => {
                             <div className="flex items-center justify-between gap-3 mb-4">
                               <div className="flex gap-3 items-center flex-1 min-w-0">
                                 <span
-                                  className="text-white text-xs px-2 py-1 rounded font-medium"
+                                  className="text-white text-xs px-2 py-1 rounded font-medium flex-shrink-0"
                                   style={{ 
                                     background: postCategoryData?.color || '#8B4513'
                                   }}
