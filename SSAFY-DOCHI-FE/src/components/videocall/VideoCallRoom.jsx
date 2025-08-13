@@ -39,9 +39,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   
   const [participantName, setParticipantName] = useState(getUserIdentifier());
 
-  // 녹화 상태
-  const [isRecording, setIsRecording] = useState(false);
-
   // 타이머 관련 상태
   const [callStartTime, setCallStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -69,7 +66,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
     ? 'ws://localhost:7880'
     : 'wss://i13c209.p.ssafy.io/livekit';
-  const API_BASE_URL = '';
 
   // 참조들
   const localVideoRef = useRef(null);
@@ -94,26 +90,28 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       let accessToken;
       const identity = isGuestMode ? participantName : (isLoggedIn ? participantName : 'guest');
       
-      if (isGuestMode || !isLoggedIn) {
-        const response = await fetch(`${API_BASE_URL}/api/video-call/guest-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      try {
+        if (isGuestMode || !isLoggedIn) {
+          const response = await apiClient.post('/video-call/guest-token', {
             room: roomName,
             identity: identity,
             name: identity
-          }),
-        });
+          });
 
-        if (!response.ok) {
-          throw new Error('토큰 생성에 실패했습니다');
+          accessToken = response.data.data.token;
+        } else {
+          const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
+          accessToken = response.data.data.token;
         }
-
-        const data = await response.json();
-        accessToken = data.data.token;
-      } else {
-        const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
-        accessToken = response.data.data.token;
+      } catch (tokenError) {
+        console.error('토큰 생성 실패:', tokenError);
+        if (tokenError.response?.status === 404) {
+          throw new Error('토큰 생성 API를 찾을 수 없습니다. 서버 연결을 확인해주세요.');
+        } else if (tokenError.response?.status === 500) {
+          throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          throw new Error('토큰 생성에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
       }
 
       const newRoom = new Room({
@@ -555,11 +553,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     window.location.href = '/login';
   };
 
-  // 녹화 토글
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-  };
-
   // 마이크 토글
   const toggleMicrophone = async () => {
     if (!room) return;
@@ -768,7 +761,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex flex-col overflow-hidden">
       {/* 헤더 */}
       <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-b border-[#5C351A]"> 
         <div className="flex justify-between items-center">
@@ -806,7 +799,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       </div>
 
       {/* 메인 비디오 영역 */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* 비디오 그리드 */}
         <div className="flex-1 relative">
           <div className={`h-full grid gap-2 p-4 ${
@@ -869,7 +862,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         {/* 사이드바 - AI 대화코치 */}
         <div className="w-80 bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
           {/* 감정 및 갈등 레벨 표시 */}
-          <div className="p-4 border-b border-[#5C351A] flex-shrink-0 max-h-64 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+          <div className="p-3 border-b border-[#5C351A] flex-shrink-0 max-h-48 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
             <h3 className="text-[#2A2A2A] font-bold mb-2 flex items-center">
               <span className="mr-2">🤖</span>AI 감정 분석
             </h3>
@@ -907,7 +900,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
           {/* 대화 내용 */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+            <div className="p-3 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
               <h3 className="text-[#2A2A2A] font-bold flex items-center">
                 <span className="mr-2">💬</span>참견도치
               </h3>
@@ -931,7 +924,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
               {/* 현재 음성 */}
               {currentSpeech.text && (
                 <div className="bg-gradient-to-r from-[#F8F5F0] to-[#F2EDE2] p-3 rounded-lg shadow-lg border-l-4 border-[#5C351A] animate-pulse">
@@ -949,7 +942,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 const isCoachingMessage = conv.isCoachingMessage || conv.speaker === '참견도치';
                 
                 return (
-                  <div key={conv.id} className={`p-3 rounded-lg shadow border mb-3 ${
+                  <div key={conv.id} className={`p-2 rounded-lg shadow border mb-2 ${
                     isCoachingMessage 
                       ? 'bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] border-[#5C351A] border-2 shadow-lg'
                       : 'bg-[#FEFCF8] bg-opacity-80 border-[#5C351A]'
@@ -1025,17 +1018,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
           >
             {isCameraOn ? '📹' : '📷'}
-          </button>
-
-          {/* 녹화 토글 */}
-          <button
-            onClick={toggleRecording}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isRecording ? 'bg-[#3E1F0A] hover:bg-[#2A2A2A] border-2 border-[#4D280E]' : 'bg-[#F2EDE2] hover:bg-[#E8DCC0] border-2 border-[#D6CDB8] text-[#5C351A]'
-            }`}
-            title={isRecording ? '녹화 중지' : '녹화 시작'}
-          >
-            {isRecording ? '⏹️' : '⏺️'}
           </button>
 
           {/* 소음 억제 토글 */}

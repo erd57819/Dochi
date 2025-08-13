@@ -18,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -55,8 +56,10 @@ public class ChatController {
     }
 
     @GetMapping("/rooms/{chatRoomId}/messages")
-    public ApiResponse<?> getMessages(@PathVariable Long chatRoomId) {
-        List<Chat> messages = chatService.getMessages(chatRoomId);
+    public ApiResponse<?> getMessages(@PathVariable Long chatRoomId,
+                                      @RequestParam(required = false)
+                                      String sessionId) {
+        List<Chat> messages = chatService.getMessages(chatRoomId, sessionId);
         return ApiResponseGenerator.success(messages, HttpStatus.OK);
     }
 
@@ -73,5 +76,10 @@ public class ChatController {
         return ApiResponseGenerator.success(HttpStatus.OK);
     }
 
+    @GetMapping("/comic/{comicId}/status")
+    public ApiResponse<?> getComicStatus(@PathVariable String comicId) {
+        Map<String, String> status = chatService.getComicStatus(comicId);
+        return ApiResponseGenerator.success(status, HttpStatus.OK);
+    }
 
 }
