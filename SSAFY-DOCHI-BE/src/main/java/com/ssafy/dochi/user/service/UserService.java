@@ -123,11 +123,17 @@ public class UserService {
     }
 
     public void updateUserInfo(CustomUserDetails user, UserUpdateReqDto reqDto) {
-        userDao.findByNickname(reqDto.getNickname()).ifPresent(member -> {
-            throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
-        });
-        userDao.update(user.getId(), user.getName(), reqDto.getNickname(), reqDto.getAddress());
+        // 닉네임이 변경된 경우에만 중복 검사
+        User currentUser = userDao.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
+        if (!currentUser.getNickname().equals(reqDto.getNickname())) {
+            userDao.findByNickname(reqDto.getNickname()).ifPresent(member -> {
+                throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
+            });
+        }
+
+        userDao.update(user.getId(), user.getName(), reqDto.getNickname(), reqDto.getAddress());
     }
 
     public void deleteUser(CustomUserDetails user) {

@@ -203,15 +203,45 @@ const ProfileEditPage = () => {
       let errorMessage = '';
       
       // 1. 사용자 정보가 변경된 경우만 업데이트
-      const isDataChanged = formData.nickname !== originalData.nickname || formData.address !== originalData.address;
+      const isNicknameChanged = formData.nickname !== originalData.nickname;
+      const isAddressChanged = formData.address !== originalData.address;
+      const isDataChanged = isNicknameChanged || isAddressChanged;
       
       if (isDataChanged) {
         try {
-          await myPageApi.updateUserInfo(formData);
+          // 디버깅: 전송할 데이터 확인
+          console.log('🔍 전송 전 formData:', formData);
+          console.log('🔍 원본 originalData:', originalData);
+          console.log('🔍 닉네임 변경 여부:', isNicknameChanged);
+          console.log('🔍 주소 변경 여부:', isAddressChanged);
+          
+          // 주소만 변경된 경우 닉네임 중복 검사 피하기
+          if (!isNicknameChanged && isAddressChanged) {
+            // 주소만 변경: 모든 필드를 보내되 닉네임은 기존 값 사용
+            const requestData = {
+              nickname: originalData.nickname, // 기존 닉네임 그대로
+              address: formData.address || ''
+            };
+            console.log('🔍 주소만 업데이트 - 전송 데이터:', requestData);
+            await myPageApi.updateUserInfo(requestData);
+          } else {
+            // 닉네임도 변경된 경우: 모든 데이터 전송
+            const requestData = {
+              nickname: formData.nickname || originalData.nickname,
+              address: formData.address || ''
+            };
+            console.log('🔍 전체 업데이트 - 전송 데이터:', requestData);
+            await myPageApi.updateUserInfo(requestData);
+          }
           console.log('✅ 사용자 정보 업데이트 성공');
         } catch (err) {
           hasError = true;
-          errorMessage = err.message || '사용자 정보 업데이트에 실패했습니다.';
+          // 닉네임 중복 에러 체크
+          if (err.message && err.message.includes('이미 사용중인 닉네임')) {
+            errorMessage = '이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.';
+          } else {
+            errorMessage = err.message || '사용자 정보 업데이트에 실패했습니다.';
+          }
           console.error('❌ 사용자 정보 업데이트 실패:', err);
         }
       }
@@ -249,7 +279,12 @@ const ProfileEditPage = () => {
       
     } catch (err) {
       console.error('사용자 정보 수정 실패:', err);
-      setError(err.message || '정보 수정에 실패했습니다.');
+      // 닉네임 중복 에러 체크
+      if (err.message && err.message.includes('이미 사용중인 닉네임')) {
+        setError('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.');
+      } else {
+        setError(err.message || '정보 수정에 실패했습니다.');
+      }
     } finally {
       setSaving(false);
     }
