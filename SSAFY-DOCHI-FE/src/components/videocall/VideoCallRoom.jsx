@@ -39,9 +39,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   
   const [participantName, setParticipantName] = useState(getUserIdentifier());
 
-  // 녹화 상태
-  const [isRecording, setIsRecording] = useState(false);
-
   // 타이머 관련 상태
   const [callStartTime, setCallStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -556,11 +553,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     window.location.href = '/login';
   };
 
-  // 녹화 토글
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-  };
-
   // 마이크 토글
   const toggleMicrophone = async () => {
     if (!room) return;
@@ -645,11 +637,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
     // 종료 버튼 클릭 시에만 갈등 레포트로 이동
     if (isEndCall) {
-      // 갈등 레포트 접근 토큰 생성 및 저장
-      const reportAccessToken = `report_${actualRoomId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem(`conflict_report_token_${actualRoomId}`, reportAccessToken);
-      console.log('갈등 레포트 접근 토큰 생성:', reportAccessToken);
-      
       if (onEndCall) {
         onEndCall();
       } else {
@@ -812,7 +799,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       </div>
 
       {/* 메인 비디오 영역 */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden" pb-24>
         {/* 비디오 그리드 */}
         <div className="flex-1 relative">
           <div className={`h-full grid gap-2 p-4 ${
@@ -987,7 +974,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                       {conv.text}
                     </p>
                     {conv.aiSuggestion && (
-                      <div className="mt-2 p-2 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
+                      <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
                         <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
                           <span className="text-white text-xs">✨</span>
                         </div>
@@ -1031,17 +1018,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
           >
             {isCameraOn ? '📹' : '📷'}
-          </button>
-
-          {/* 녹화 토글 */}
-          <button
-            onClick={toggleRecording}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isRecording ? 'bg-[#3E1F0A] hover:bg-[#2A2A2A] border-2 border-[#4D280E]' : 'bg-[#F2EDE2] hover:bg-[#E8DCC0] border-2 border-[#D6CDB8] text-[#5C351A]'
-            }`}
-            title={isRecording ? '녹화 중지' : '녹화 시작'}
-          >
-            {isRecording ? '⏹️' : '⏺️'}
           </button>
 
           {/* 소음 억제 토글 */}

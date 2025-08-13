@@ -133,12 +133,6 @@ const ConflictReportPage = () => {
             >
               홈으로 돌아가기
             </button>
-            <button
-              onClick={() => navigate('/video-call')}
-              className="w-full px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] font-['Pretendard-Regular'] font-normal rounded-lg hover:bg-[#CCC2A7] transition-colors shadow border border-[#C2B596]"
-            >
-              화상 통화 시작하기
-            </button>
           </div>
         </div>
       </div>
