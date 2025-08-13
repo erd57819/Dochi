@@ -4,6 +4,7 @@ import useAuthStore from '../stores/AuthStore.js';
 import useComfortStore from '../stores/ComfortStore.js';
 import comfortService from '../services/comfortService.js';
 import ChatTitleModal from '../components/ChatTitleModal.jsx';
+import TutorialModal from '../components/TutorialModal.jsx';
 
 const ComfortChatPage = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const ComfortChatPage = () => {
     selectedMode,
     showTimeline,
     showManhwa,
+    showTutorial, // 튜토리얼 상태 추가
     timelineCache,
     manhwaCache,
     createNewSessionWithTitle,
@@ -39,13 +41,18 @@ const ComfortChatPage = () => {
     toggleSidebar,
     setSelectedMode,
     setShowTimeline,
-    setShowManhwa
+    setShowManhwa,
+    setShowTutorial, // 튜토리얼 제어 함수 추가
+    checkFirstVisit // 첫 방문자 감지 함수 추가
   } = useComfortStore();
 
   useEffect(() => {
     loadChatRooms().catch(() => {
       console.log('채팅방 목록 로드 실패, 새 세션 생성으로 진행');
     });
+    
+    // 첫 방문자 감지 및 튜토리얼 자동 표시
+    checkFirstVisit();
   }, []);
 
   useEffect(() => {
@@ -741,6 +748,11 @@ const ComfortChatPage = () => {
         onClose={() => setShowTitleModal(false)}
         onConfirm={handleCreateWithTitle}
         mode="create"
+      />
+      
+      <TutorialModal
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
       />
     </div>
   );

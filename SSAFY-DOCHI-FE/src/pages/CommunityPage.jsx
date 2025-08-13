@@ -19,7 +19,7 @@ const CommunityPage = () => {
 
   const categories = [
     { value: 'ALL', label: '전체', color: '#83673f', gradient: 'linear-gradient(135deg, #83673f 0%, #a58659 100%)' },
-    { value: 'CONFLICT_SHARING', label: '찬반대결', color: '#cd9f6e', gradient: 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)' },
+    { value: 'CONFLICT_SHARING', label: '찬반투표', color: '#cd9f6e', gradient: 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)' },
     { value: 'ADVICE_REQUEST', label: '조언해줘', color: '#EE9278', gradient: 'linear-gradient(135deg, #EE9278 0%, #f5a893 100%)' },
     { value: 'SUCCESS_STORIES', label: '해결했어요', color: '#f8d6b3', gradient: 'linear-gradient(135deg, #f8d6b3 0%, #ffe4cc 100%)' },
     { value: 'GENERAL', label: '자유게시판', color: '#7F5539', gradient: 'linear-gradient(135deg, #7F5539 0%, #a06d4d 100%)' }
@@ -208,10 +208,12 @@ const CommunityPage = () => {
               ) : (
                   <Link
                       to="/login"
-                      className="w-full block text-center py-3 text-white rounded hover:opacity-90 transition-all transform hover:-translate-y-1 font-medium text-base"
-                      style={{ backgroundColor: '#696969' }}
+                      className="w-32 h-8 block flex items-center justify-center py-1 rounded hover:opacity-80 transition-all transform hover:bg-orange-50 font-medium text-xs"
+                      style={{ 
+                        backgroundColor: '#696969'
+                      }}
                   >
-                    로그인하여 글쓰기
+                    <span className='text-white'>로그인하여 글쓰기</span>
                   </Link>
               )}
             </div>
@@ -330,10 +332,10 @@ const CommunityPage = () => {
                               className="px-5 py-5 cursor-pointer transition-all duration-100 hover:bg-orange-50 rounded-r-lg"
                               onClick={() => handlePostClick(post.id)}
                           >
-                            <div className="flex items-center justify-between gap-3 mb-4">
-                              <div className="flex gap-3 items-center flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3 mb-4">
+                              <div className="flex gap-3 items-start flex-1 min-w-0">
                                 <span
-                                  className="text-white text-xs px-2 py-1 rounded font-medium"
+                                  className="text-white text-xs px-2 py-1 rounded font-medium flex-shrink-0"
                                   style={{ 
                                     background: postCategoryData?.color || '#8B4513'
                                   }}
@@ -341,17 +343,16 @@ const CommunityPage = () => {
                                   {postCategoryData?.label || post.category}
                                 </span>
                                 <h4
-                                  className="text-xl font-bold transition-colors truncate"
+                                  className="text-xl font-bold transition-colors flex-1 min-w-0 truncate leading-tight"
                                   style={{ color: '#333333' }}
                                 >
                                   {post.title}
                                 </h4>
                               </div>
                               
-                              <div className="flex items-center gap-2 text-sm" style={{ color: '#666666' }}>
-                                <span>{displayName}</span>
-                                <span className="text-gray-400">•</span>
-                                <span>{post.createdAt}</span>
+                              <div className="flex flex-col items-end gap-1 text-sm flex-shrink-0" style={{ color: '#666666' }}>
+                                <span className="whitespace-nowrap">{displayName}</span>
+                                <span className="whitespace-nowrap text-xs">{post.createdAt}</span>
                               </div>
                             </div>
                             

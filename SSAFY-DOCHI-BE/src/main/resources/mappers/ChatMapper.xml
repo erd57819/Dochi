@@ -15,8 +15,8 @@
 
     <!-- 2. 새로운 채팅방 저장 -->
     <insert id="saveChatRoom" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO chat_rooms (user_id, title)
-        VALUES (#{userId}, #{title})
+        INSERT INTO chat_rooms (user_id, title, session_id)
+        VALUES (#{userId}, #{title}, #{sessionId})
     </insert>
 
     <!-- 3. 채팅 메시지 저장 -->
@@ -35,7 +35,7 @@
 
     <!-- 5. 사용자 ID 기준 모든 채팅방 조회 -->
     <select id="findAllRoomsByUserId" resultType="com.ssafy.dochi.chat.domain.ChatRoom">
-        SELECT id, user_id, title, created_at, updated_at
+        SELECT id, user_id, title, session_id, created_at, updated_at
         FROM chat_rooms
         WHERE user_id = #{userId}
         ORDER BY updated_at DESC
