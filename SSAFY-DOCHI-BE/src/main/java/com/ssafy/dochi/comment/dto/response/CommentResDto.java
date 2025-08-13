@@ -24,6 +24,7 @@ public class CommentResDto {
     private Long parentCommentId;
     private String content;
     private String userName;
+    private String userNickname;
     private String userProfileImage;
     private String createdAt;
     private String updatedAt;
