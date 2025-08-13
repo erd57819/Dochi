@@ -147,14 +147,14 @@ const ConflictReportPage = () => {
             
             {/* 중앙 정렬된 헤더 텍스트 */}
             <div className="text-center">
-              <h1 className="text-6xl font-light mb-8 text-[#2A2A2A] tracking-tight">
+              <h1 className="text-6xl font-['Pretendard-SemiBold'] font-semibold mb-8 text-[#2A2A2A] tracking-tight">
                 갈등 분석 레포트
               </h1>
               <div className="w-24 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
-              <p className="text-[#6B5B5B] text-lg font-light tracking-wide">
+              <p className="text-[#6B5B5B] text-lg font-['Pretendard-Regular'] font-normal tracking-wide">
                 AI가 분석한 갈등의 깊이와 해결책을 만나보세요
               </p>
-              <p className="text-[#8B7B7B] text-sm mt-4 font-light">
+              <p className="text-[#8B7B7B] text-sm mt-4 font-['Pretendard-Regular'] font-normal">
                 생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
               </p>
             </div>
@@ -163,7 +163,7 @@ const ConflictReportPage = () => {
           {/* 종합 요약 */}
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-light text-[#2A2A2A] mb-4 tracking-tight">
+              <h2 className="text-4xl font-['Pretendard-SemiBold'] font-semibold text-[#2A2A2A] mb-4 tracking-tight">
                 종합 분석 요약
               </h2>
               <div className="w-16 h-0.5 bg-[#8B5A3C] mx-auto mb-8"></div>
@@ -180,11 +180,11 @@ const ConflictReportPage = () => {
       <section className="min-h-screen bg-[#EAE3D8] flex items-center py-24">
         <div className="container mx-auto px-12 max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+            <h2 className="text-5xl font-['Pretendard-SemiBold'] font-semibold text-[#2A2A2A] mb-6 tracking-tight">
               감정 분석
             </h2>
             <div className="w-16 h-0.5 bg-[#6B4226] mx-auto mb-8"></div>
-            <p className="text-[#5A5A5A] text-xl font-light">대화 속 숨겨진 감정의 흐름</p>
+            <p className="text-[#5A5A5A] text-xl font-['Pretendard-Regular'] font-normal">대화 속 숨겨진 감정의 흐름</p>
           </div>
           
           <div className="bg-white shadow-xl p-16 rounded-none border-l-4 border-[#6B4226]">
@@ -200,11 +200,11 @@ const ConflictReportPage = () => {
       <section className="min-h-screen bg-[#E0D7C9] flex items-center py-24">
         <div className="container mx-auto px-12 max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+            <h2 className="text-5xl font-['Pretendard-SemiBold'] font-semibold text-[#2A2A2A] mb-6 tracking-tight">
               책임 분석
             </h2>
             <div className="w-16 h-0.5 bg-[#5C351A] mx-auto mb-8"></div>
-            <p className="text-[#4A4A4A] text-xl font-light">갈등의 원인과 각자의 역할</p>
+            <p className="text-[#4A4A4A] text-xl font-['Pretendard-Regular'] font-normal">갈등의 원인과 각자의 역할</p>
           </div>
           
           <div className="bg-[#FEFCF8] shadow-xl p-16 rounded-none border-l-4 border-[#5C351A]">
@@ -219,11 +219,11 @@ const ConflictReportPage = () => {
       <section className="min-h-screen bg-[#D6CDB8] flex items-center py-24">
         <div className="container mx-auto px-12 max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+            <h2 className="text-5xl font-['Pretendard-SemiBold'] font-semibold text-[#2A2A2A] mb-6 tracking-tight">
               액션 플랜
             </h2>
             <div className="w-16 h-0.5 bg-[#4D280E] mx-auto mb-8"></div>
-            <p className="text-[#3A3A3A] text-xl font-light">구체적인 해결 방안과 실행 계획</p>
+            <p className="text-[#3A3A3A] text-xl font-['Pretendard-Regular'] font-normal">구체적인 해결 방안과 실행 계획</p>
           </div>
           
           <div className="bg-[#F8F5F0] shadow-xl p-16 rounded-none border-l-4 border-[#4D280E]">
@@ -238,11 +238,11 @@ const ConflictReportPage = () => {
       <section className="min-h-screen bg-[#CCC2A7] flex items-center py-24">
         <div className="container mx-auto px-12 max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-light text-[#2A2A2A] mb-6 tracking-tight">
+            <h2 className="text-5xl font-['Pretendard-SemiBold'] font-semibold text-[#2A2A2A] mb-6 tracking-tight">
               대화 내용
             </h2>
             <div className="w-16 h-0.5 bg-[#3E1F0A] mx-auto mb-8"></div>
-            <p className="text-[#2A2A2A] text-xl font-light">실제 대화의 전체 기록</p>
+            <p className="text-[#2A2A2A] text-xl font-['Pretendard-Regular'] font-normal">실제 대화의 전체 기록</p>
           </div>
           
           <div className="bg-[#F2EDE2] shadow-xl p-16 rounded-none border-l-4 border-[#3E1F0A]">

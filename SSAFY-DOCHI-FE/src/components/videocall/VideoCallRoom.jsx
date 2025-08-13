@@ -870,7 +870,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         {/* 사이드바 - AI 대화코치 */}
         <div className="w-80 bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
           {/* 감정 및 갈등 레벨 표시 */}
-          <div className="p-4 border-b border-[#5C351A] flex-shrink-0 max-h-64 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+          <div className="p-3 border-b border-[#5C351A] flex-shrink-0 max-h-48 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
             <h3 className="text-[#2A2A2A] font-bold mb-2 flex items-center">
               <span className="mr-2">🤖</span>AI 감정 분석
             </h3>
@@ -908,7 +908,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
           {/* 대화 내용 */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+            <div className="p-3 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
               <h3 className="text-[#2A2A2A] font-bold flex items-center">
                 <span className="mr-2">💬</span>참견도치
               </h3>
@@ -932,7 +932,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
               {/* 현재 음성 */}
               {currentSpeech.text && (
                 <div className="bg-gradient-to-r from-[#F8F5F0] to-[#F2EDE2] p-3 rounded-lg shadow-lg border-l-4 border-[#5C351A] animate-pulse">
@@ -950,7 +950,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 const isCoachingMessage = conv.isCoachingMessage || conv.speaker === '참견도치';
                 
                 return (
-                  <div key={conv.id} className={`p-3 rounded-lg shadow border mb-3 ${
+                  <div key={conv.id} className={`p-2 rounded-lg shadow border mb-2 ${
                     isCoachingMessage 
                       ? 'bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] border-[#5C351A] border-2 shadow-lg'
                       : 'bg-[#FEFCF8] bg-opacity-80 border-[#5C351A]'
@@ -982,7 +982,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                       {conv.text}
                     </p>
                     {conv.aiSuggestion && (
-                      <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
+                      <div className="mt-2 p-2 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
                         <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
                           <span className="text-white text-xs">✨</span>
                         </div>
