@@ -173,43 +173,48 @@ public class ChatService {
     private String convertToComicScenario(String conversationHistory) {
         try {
             String prompt = """
-                    You are an expert comic scriptwriter. Your task is to convert the EXACT conversation below into a 4-panel hedgehog comic story.
-                    
-                    🚨 CRITICAL RULES:
-                    - Use ONLY what is EXPLICITLY mentioned in the conversation
-                    - NO fictional additions, NO assumptions, NO generic scenarios  
-                    - If conversation mentions "friend Sarah", use "friend Sarah" not "a friend"
-                    - If they say "at work", show work environment, not home
-                    - If they mention specific emotions, use those EXACT emotions
-                    - Extract the REAL story, don't create a new one
-                    
-                    [ACTUAL USER CONVERSATION]
-                    %s
-                    
-                    MANDATORY ANALYSIS:
-                    1. What SPECIFIC situation/event happened? (Extract exact details)
-                    2. Who are the EXACT people involved? (Use their actual relationship/name)
-                    3. What SPECIFIC emotions were expressed in order?
-                    4. What is their CURRENT state and what do they ACTUALLY want?
-                    
-                    OUTPUT - 4 Panels featuring hedgehog representing the user:
-                    
-                    Panel 1: [Show the EXACT initial situation from conversation. Include: hedgehog's starting emotion, precise facial expression (eye shape, mouth curve, eyebrow position), body posture, and the SPECIFIC environment mentioned in conversation]
-                    
-                    Panel 2: [Show the PRECISE conflict/event described. Include: the EXACT people involved, what SPECIFICALLY happened, hedgehog's immediate emotional reaction with detailed facial changes, body language shift]
-                    
-                    Panel 3: [Show the STRONGEST emotion expressed in conversation. Include: hedgehog displaying the EXACT emotion mentioned (anger/sadness/frustration etc.), very detailed facial expression, intense body language]
-                    
-                    Panel 4: [Show their CURRENT emotional state or ACTUAL desired outcome from conversation. Include: hedgehog's final expression reflecting where they are now or what they hope for]
-                    
-                    ⚠️ WARNING: If you add ANY details not in the conversation, the comic will be rejected. Stick to THEIR story ONLY.
-                    """.formatted(conversationHistory);
+            You must create a **4-panel comic scenario** STRICTLY based on the conversation below.
+
+            RULES:
+            - Use ONLY people, places, events, and emotions explicitly mentioned in the conversation.
+            - Do NOT add fictional details or generic scenarios.
+            - If something is not mentioned, leave it out — do NOT invent.
+            - Preserve the exact emotional flow and setting.
+
+            STEP 1 — Extract key facts as a table:
+            | Step | Exact Event | People Involved | Location | Emotion |
+            |------|-------------|-----------------|----------|---------|
+            (Fill from conversation, only exact words used by user)
+
+            STEP 2 — Write the scenario in this format:
+            Panel 1: (Describe initial situation based ONLY on table)
+            Panel 2: (Describe the specific event/conflict)
+            Panel 3: (Describe the strongest emotion moment)
+            Panel 4: (Describe the current state or resolution)
+
+            Conversation:
+            %s
+            """.formatted(conversationHistory);
 
             return gmsAiClient.ask(prompt, "gpt-4o");
         } catch (Exception e) {
             log.warn("만화 시나리오 변환 실패", e);
             return null;
         }
+    }
+
+    private String validateScenario(String conversation, String scenario) {
+        String prompt = """
+        Check if the scenario below matches ONLY the events, people, and emotions from the conversation. 
+        If anything is invented, rewrite it to remove invented parts.
+
+        Conversation:
+        %s
+
+        Scenario:
+        %s
+        """.formatted(conversation, scenario);
+        return gmsAiClient.ask(prompt, "gpt-4o");
     }
 
     private String generateComicDescription(String conversationContent) {
@@ -238,6 +243,11 @@ public class ChatService {
         return """
                Create a heartwarming 2x2 grid four-panel comic strip (yonkoma style) featuring the same adorable hedgehog character throughout all panels.
                
+               CRITICAL FORMAT REQUIREMENTS:
+               - EXACTLY 4 panels arranged in 2x2 grid format
+               - NO text, NO speech bubbles, NO labels, NO written words - pure visual storytelling only
+               - Each panel clearly defined with thin borders
+               
                CHARACTER CONSISTENCY (CRITICAL - must be identical in all panels):
                - Round, chubby hedgehog with soft beige/cream colored body
                - Short, dense brown spines with natural sheen, pointing outward in a cute crown pattern
@@ -251,7 +261,6 @@ public class ChatService {
                - Gentle pastel color palette with warm, comforting tones
                - Minimal, non-distracting backgrounds that support the story
                - Professional animation quality with smooth gradients and subtle shadows
-               - Each panel clearly defined with thin borders
                - NO text, NO speech bubbles, NO labels - pure visual storytelling
                
                LIGHTING & COMPOSITION:
