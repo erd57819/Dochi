@@ -18,6 +18,7 @@ const getApiConfig = () => {
 // axios 인터셉터로 토큰 자동 추가
 const apiClient = axios.create({
   ...getApiConfig(),
+  timeout: 180000, // 3분 타임아웃 (만화 생성은 시간이 오래 걸릴 수 있음)
 });
 
 apiClient.interceptors.request.use(
