@@ -54,6 +54,16 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showConnectButton, setShowConnectButton] = useState(true); // 연결 버튼 표시 상태
+  const [showMediaTest, setShowMediaTest] = useState(false); // 미디어 테스트 화면 표시 상태
+
+  // 미디어 테스트 관련 상태
+  const [testStream, setTestStream] = useState(null);
+  const [testVideoEnabled, setTestVideoEnabled] = useState(true);
+  const [testAudioEnabled, setTestAudioEnabled] = useState(true);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [mediaDevices, setMediaDevices] = useState({ cameras: [], microphones: [], speakers: [] });
+  const [selectedCamera, setSelectedCamera] = useState('');
+  const [selectedMicrophone, setSelectedMicrophone] = useState('');
 
   const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
@@ -69,6 +79,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 참조들
   const localVideoRef = useRef(null);
+  const testVideoRef = useRef(null); // 미디어 테스트용 비디오 참조
+  const testAudioContextRef = useRef(null); // 오디오 레벨 측정용
+  const testAnalyserRef = useRef(null);
   const remoteVideoRefs = useRef(new Map());
   const remoteAudioRefs = useRef(new Map());
   const pendingVideoTracks = useRef(new Map());
@@ -484,6 +497,21 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     }
   }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
+  // 미디어 테스트 초기화
+  useEffect(() => {
+    if (showMediaTest) {
+      getMediaDevices().then(() => {
+        startTestStream();
+      });
+    }
+
+    return () => {
+      if (showMediaTest) {
+        stopTestStream();
+      }
+    };
+  }, [showMediaTest, selectedCamera, selectedMicrophone]);
+
   // 갈등 레벨 분석 (감정 점수 변화 감지)
   useEffect(() => {
     analyzeConflictLevel(emotionScores);
@@ -545,11 +573,163 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setShowConnectButton(true); // 연결 버튼 표시
   };
 
-  // 연결 시작 버튼 클릭
-  const handleStartConnection = async () => {
+  // 연결 시작 버튼 클릭 - 미디어 테스트 단계로 이동
+  const handleStartConnection = () => {
     setShowConnectButton(false);
+    setShowMediaTest(true);
+  };
+
+  // 미디어 테스트 완료 후 실제 연결
+  const handleMediaTestComplete = async () => {
+    setShowMediaTest(false);
     setCallStartTime(Date.now());
     await connectToRoom();
+  };
+
+  // 미디어 디바이스 목록 가져오기
+  const getMediaDevices = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      const microphones = devices.filter(device => device.kind === 'audioinput');
+      const speakers = devices.filter(device => device.kind === 'audiooutput');
+      
+      setMediaDevices({ cameras, microphones, speakers });
+      
+      // 기본 디바이스 선택
+      if (cameras.length > 0 && !selectedCamera) {
+        setSelectedCamera(cameras[0].deviceId);
+      }
+      if (microphones.length > 0 && !selectedMicrophone) {
+        setSelectedMicrophone(microphones[0].deviceId);
+      }
+    } catch (error) {
+      console.error('미디어 디바이스 목록 가져오기 실패:', error);
+    }
+  };
+
+  // 테스트 스트림 시작
+  const startTestStream = async () => {
+    try {
+      const constraints = {
+        video: testVideoEnabled ? {
+          deviceId: selectedCamera ? { exact: selectedCamera } : undefined,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } : false,
+        audio: testAudioEnabled ? {
+          deviceId: selectedMicrophone ? { exact: selectedMicrophone } : undefined,
+          echoCancellation: true,
+          noiseSuppression: noiseSuppressionEnabled
+        } : false
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setTestStream(stream);
+
+      // 비디오 연결
+      if (testVideoRef.current && testVideoEnabled) {
+        testVideoRef.current.srcObject = stream;
+        testVideoRef.current.play().catch(console.error);
+      }
+
+      // 오디오 레벨 분석 시작
+      if (testAudioEnabled) {
+        setupAudioLevelDetection(stream);
+      }
+
+    } catch (error) {
+      console.error('테스트 스트림 시작 실패:', error);
+      setError(`미디어 접근 실패: ${error.message}`);
+    }
+  };
+
+  // 오디오 레벨 감지 설정
+  const setupAudioLevelDetection = (stream) => {
+    try {
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      
+      testAudioContextRef.current = audioContext;
+      testAnalyserRef.current = analyser;
+      
+      // 오디오 레벨 모니터링 시작
+      const checkAudioLevel = () => {
+        if (!testAnalyserRef.current) return;
+        
+        const bufferLength = testAnalyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        testAnalyserRef.current.getByteFrequencyData(dataArray);
+        
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+        setAudioLevel(Math.round((average / 255) * 100));
+        
+        requestAnimationFrame(checkAudioLevel);
+      };
+      
+      checkAudioLevel();
+    } catch (error) {
+      console.error('오디오 레벨 감지 설정 실패:', error);
+    }
+  };
+
+  // 테스트 스트림 정리
+  const stopTestStream = () => {
+    if (testStream) {
+      testStream.getTracks().forEach(track => track.stop());
+      setTestStream(null);
+    }
+    
+    if (testAudioContextRef.current) {
+      testAudioContextRef.current.close();
+      testAudioContextRef.current = null;
+    }
+    
+    if (testVideoRef.current) {
+      testVideoRef.current.srcObject = null;
+    }
+    
+    setAudioLevel(0);
+  };
+
+  // 테스트 비디오 토글
+  const toggleTestVideo = async () => {
+    setTestVideoEnabled(!testVideoEnabled);
+    if (testStream) {
+      stopTestStream();
+      setTimeout(() => startTestStream(), 100);
+    }
+  };
+
+  // 테스트 오디오 토글
+  const toggleTestAudio = async () => {
+    setTestAudioEnabled(!testAudioEnabled);
+    if (testStream) {
+      stopTestStream();
+      setTimeout(() => startTestStream(), 100);
+    }
+  };
+
+  // 디바이스 변경
+  const handleDeviceChange = async (type, deviceId) => {
+    if (type === 'camera') {
+      setSelectedCamera(deviceId);
+    } else if (type === 'microphone') {
+      setSelectedMicrophone(deviceId);
+    }
+    
+    if (testStream) {
+      stopTestStream();
+      setTimeout(() => startTestStream(), 100);
+    }
   };
 
   // 로그인 페이지로 이동
@@ -722,6 +902,164 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     );
   }
 
+  // 미디어 테스트 화면
+  if (showMediaTest) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center p-4">
+        <div className="bg-[#FEFCF8] rounded-lg shadow-xl max-w-4xl w-full border border-[#5C351A]">
+          <div className="p-6 border-b border-[#5C351A]">
+            <h2 className="text-2xl font-bold text-[#2A2A2A] mb-2">카메라 및 마이크 테스트</h2>
+            <p className="text-[#4A4A4A]">통화를 시작하기 전에 카메라와 마이크가 제대로 작동하는지 확인해주세요.</p>
+          </div>
+
+          <div className="p-6 grid md:grid-cols-2 gap-6">
+            {/* 비디오 프리뷰 */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-[#2A2A2A]">카메라 테스트</h3>
+              <div className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] aspect-video">
+                {testVideoEnabled ? (
+                  <video
+                    ref={testVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#4A4A4A]">
+                    <div className="text-center">
+                      <span className="text-4xl mb-2 block">📷</span>
+                      <p>카메라가 꺼져있습니다</p>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute bottom-2 right-2">
+                  <button
+                    onClick={toggleTestVideo}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${
+                      testVideoEnabled ? 'bg-[#5C351A] hover:bg-[#4D280E]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7]'
+                    }`}
+                  >
+                    {testVideoEnabled ? '📹' : '📷'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 카메라 선택 */}
+              {mediaDevices.cameras.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">카메라 선택</label>
+                  <select
+                    value={selectedCamera}
+                    onChange={(e) => handleDeviceChange('camera', e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+                  >
+                    {mediaDevices.cameras.map((camera) => (
+                      <option key={camera.deviceId} value={camera.deviceId}>
+                        {camera.label || `카메라 ${camera.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* 오디오 테스트 */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-[#2A2A2A]">마이크 테스트</h3>
+              
+              {/* 마이크 레벨 표시 */}
+              <div className="p-4 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-[#4A4A4A]">음성 레벨</span>
+                  <span className="text-sm text-[#5C351A] font-medium">{audioLevel}%</span>
+                </div>
+                <div className="w-full bg-[#D6CDB8] rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all duration-150 ${
+                      audioLevel > 50 ? 'bg-green-500' :
+                      audioLevel > 20 ? 'bg-yellow-500' : 'bg-[#CCC2A7]'
+                    }`}
+                    style={{ width: `${Math.min(audioLevel, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-[#4A4A4A] mt-1">
+                  마이크에 대고 말씀해보세요. 막대가 움직이면 정상입니다.
+                </p>
+              </div>
+
+              {/* 마이크 토글 */}
+              <button
+                onClick={toggleTestAudio}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                  testAudioEnabled 
+                    ? 'bg-[#5C351A] hover:bg-[#4D280E] text-white' 
+                    : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] text-[#4A4A4A]'
+                }`}
+              >
+                {testAudioEnabled ? '🎤 마이크 켜짐' : '🔇 마이크 꺼짐'}
+              </button>
+
+              {/* 마이크 선택 */}
+              {mediaDevices.microphones.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">마이크 선택</label>
+                  <select
+                    value={selectedMicrophone}
+                    onChange={(e) => handleDeviceChange('microphone', e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+                  >
+                    {mediaDevices.microphones.map((mic) => (
+                      <option key={mic.deviceId} value={mic.deviceId}>
+                        {mic.label || `마이크 ${mic.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* 소음 억제 설정 */}
+              <div className="flex items-center justify-between p-3 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
+                <span className="text-sm text-[#4A4A4A]">소음 억제</span>
+                <button
+                  onClick={toggleNoiseSuppression}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    noiseSuppressionEnabled ? 'bg-[#5C351A] text-white' : 'bg-[#D6CDB8] text-[#4A4A4A]'
+                  }`}
+                >
+                  {noiseSuppressionEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 하단 버튼 */}
+          <div className="p-6 border-t border-[#5C351A] flex justify-between">
+            <button
+              onClick={() => {
+                stopTestStream();
+                setShowMediaTest(false);
+                setShowConnectButton(true);
+              }}
+              className="px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors"
+            >
+              뒤로 가기
+            </button>
+            <button
+              onClick={() => {
+                stopTestStream();
+                handleMediaTestComplete();
+              }}
+              className="px-8 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg"
+            >
+              테스트 완료 - 통화 시작
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 연결 버튼 표시 조건
   if (showConnectButton && !isConnected && !isLoading) {
     return (
@@ -739,7 +1077,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               onClick={handleStartConnection}
               className="w-full px-6 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
             >
-              🎥 연결 시작하기
+              🎤📹 미디어 테스트
             </button>
             <button
               onClick={() => window.location.href = '/'}
