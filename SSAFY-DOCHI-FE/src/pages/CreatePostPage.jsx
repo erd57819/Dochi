@@ -20,6 +20,87 @@ const CreatePostPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasPrefilledData, setHasPrefilledData] = useState(false); // 추가: prefilled 상태 추적
 
+  // 카테고리별 placeholder 텍스트 (함수를 useEffect보다 먼저 정의)
+  const getCategoryPlaceholder = (category) => {
+    const placeholderTexts = {
+      CONFLICT_SHARING: `📝 이렇게 작성해보세요:
+
+🤔 상황 설명
+• 갈등이 발생한 배경과 상황을 구체적으로 설명해주세요
+• 어떤 사람들이 관련되어 있는지 알려주세요
+• 언제, 어디서 일어난 일인지 맥락을 제시해주세요
+
+⚖️ 찬반 의견 구하기
+👍 찬성 입장:
+• 이 방법이 좋다고 생각하는 이유
+• 기대할 수 있는 긍정적인 결과
+• 장기적으로 도움이 될 점
+
+👎 반대 입장:
+• 이 방법이 우려되는 이유
+• 예상되는 부작용이나 위험
+• 다른 대안이 더 나은 이유
+
+💭 커뮤니티에 묻고 싶은 점
+• 여러분이라면 어떤 선택을 하실지 궁금해요
+• 다른 좋은 방법이 있다면 함께 제안해주세요`,
+      ADVICE_REQUEST: `📝 이렇게 작성해보세요:
+
+😰 현재 상황
+• 갈등의 배경과 경과를 구체적으로 설명해주세요
+• 어떤 점이 가장 힘든지, 무엇 때문에 고민인지 적어주세요
+
+🎯 원하는 결과
+• 어떤 방향으로 해결되기를 원하는지 적어주세요
+• 관계 회복, 문제 해결, 타협점 찾기 등 구체적인 목표를 설정해주세요
+
+🔄 시도해본 방법들
+• 지금까지 어떤 노력을 해봤는지 공유해주세요
+• 그 결과는 어땠는지도 함께 적어주세요
+
+❓ 구체적인 질문
+• 어떤 부분에 대한 조언이 필요한지 명확하게 질문해주세요`,
+      SUCCESS_STORIES: `📝 이렇게 작성해보세요:
+
+😅 처음 상황
+• 갈등이 어떻게 시작되었는지 설명해주세요
+• 당시 느꼈던 감정과 어려움을 솔직하게 공유해주세요
+
+🛠️ 해결 과정 (단계별로)
+• 1단계: 초기에 어떻게 접근했는지
+• 2단계: 본격적인 해결 노력은 무엇이었는지
+• 3단계: 어떻게 마무리하고 관계를 회복했는지
+
+✨ 해결 결과
+• 최종적으로 어떻게 해결되었는지
+• 현재 관계나 상황이 어떻게 변했는지
+
+💡 경험에서 얻은 교훈
+• 가장 효과적이었던 방법은 무엇인지
+• 다시 한다면 다르게 할 점은 무엇인지
+• 비슷한 상황의 분들에게 드리고 싶은 조언`,
+      GENERAL: `📝 이런 이야기들을 나눠주세요:
+
+💭 일상의 갈등 이야기
+• 가족, 친구, 직장에서 겪은 크고 작은 갈등들
+• 소통이 어려웠던 경험이나 오해가 생긴 상황들
+
+🌱 성장하는 이야기
+• 갈등을 통해 배운 점이나 깨달은 것들
+• 관계가 더 좋아진 경험이나 변화한 모습들
+
+🤝 소통에 관한 이야기
+• 효과적이었던 대화 방법이나 소통 기술
+• 감정 조절이나 스트레스 관리 방법
+
+❓ 궁금한 것들
+• 해결하지 못한 고민이나 의문점들
+• 다른 사람들의 경험이 궁금한 상황들`
+    };
+    
+    return placeholderTexts[category] || placeholderTexts.GENERAL;
+  };
+
   // 카테고리별 기본 템플릿 (함수를 useEffect보다 먼저 정의)
   const getCategoryTemplate = (category, hasConflictData = false) => {
     // 갈등 데이터가 있을 때는 간단한 템플릿
@@ -194,14 +275,12 @@ const CreatePostPage = () => {
         generateCategoryContent(category);
       }
     } else if (!prefilledData && !conflictData && !hasPrefilledData) {
-      // 새로 접근한 경우에만 기본 카테고리(GENERAL)의 가이드 템플릿 적용
-      console.log("🆕 새로운 글 작성, 가이드 템플릿 적용");
-      const defaultTemplate = getCategoryTemplate('GENERAL', false); // 가이드 템플릿 사용
-      console.log("📋 초기 가이드 템플릿:", defaultTemplate);
+      // 새로 접근한 경우에는 빈 폼으로 시작 (가이드는 placeholder에서 표시)
+      console.log("🆕 새로운 글 작성, 빈 폼으로 시작");
       setFormData(prev => ({
         ...prev,
-        title: defaultTemplate.title,
-        content: defaultTemplate.content
+        title: '',
+        content: ''
       }));
       setHasPrefilledData(true); // 초기화 완료 표시
       window.conflictContext = null; // 갈등 컨텍스트 초기화
@@ -261,15 +340,14 @@ const CreatePostPage = () => {
       
       console.log("🎯 실제 갈등 상황 사용 여부:", hasRealConflict);
       
-      // 갈등 데이터가 없으면 AI 호출 없이 바로 기본 템플릿 사용
+      // 갈등 데이터가 없으면 AI 호출 없이 빈 폼으로 설정 (placeholder에서 가이드 표시)
       if (!hasRealConflict) {
-        console.log("📋 갈등 데이터 없음 - AI 호출 없이 기본 가이드 템플릿 사용");
-        const templates = getCategoryTemplate(category, false);
+        console.log("📋 갈등 데이터 없음 - 빈 폼으로 설정 (가이드는 placeholder에서 표시)");
         setFormData(prev => ({
           ...prev,
           category: category,
-          title: templates.title,
-          content: templates.content
+          title: '',
+          content: ''
         }));
         setIsGenerating(false);
         return;
@@ -356,39 +434,47 @@ const CreatePostPage = () => {
         }));
       } else {
         console.log('🔄 AI API 실패, 기본 템플릿 사용');
-        // 백엔드 API가 없으면 기본 템플릿 사용
-        const hasConflictData = hasRealConflict;
-        const templates = getCategoryTemplate(category, hasConflictData);
-        console.log('📋 기본 템플릿 적용:', templates, '갈등데이터:', hasConflictData);
-        setFormData(prev => {
-          const newData = {
+        // 백엔드 API가 없으면 갈등 데이터가 있을 때만 템플릿 사용, 없으면 빈 폼
+        if (hasRealConflict) {
+          const templates = getCategoryTemplate(category, true);
+          console.log('📋 갈등 데이터 있음 - 기본 템플릿 적용:', templates);
+          setFormData(prev => ({
             ...prev,
-            category: category, // 카테고리도 함께 업데이트
+            category: category,
             title: templates.title,
             content: templates.content
-          };
-          console.log('📝 formData 업데이트 전:', prev);
-          console.log('📝 formData 업데이트 후:', newData);
-          return newData;
-        });
+          }));
+        } else {
+          console.log('📋 갈등 데이터 없음 - 빈 폼으로 설정');
+          setFormData(prev => ({
+            ...prev,
+            category: category,
+            title: '',
+            content: ''
+          }));
+        }
       }
     } catch (error) {
       console.error('❌ AI 콘텐츠 생성 오류:', error);
-      // 오류 시 기본 템플릿 사용
-      const hasConflictData = hasRealConflict;
-      const templates = getCategoryTemplate(category, hasConflictData);
-      console.log('📋 오류 시 기본 템플릿 적용:', templates, '갈등데이터:', hasConflictData);
-      setFormData(prev => {
-        const newData = {
+      // 오류 시 갈등 데이터가 있을 때만 템플릿 사용, 없으면 빈 폼
+      if (hasRealConflict) {
+        const templates = getCategoryTemplate(category, true);
+        console.log('📋 오류 시 갈등 데이터 있음 - 기본 템플릿 적용:', templates);
+        setFormData(prev => ({
           ...prev,
-          category: category, // 카테고리도 함께 업데이트
+          category: category,
           title: templates.title,
           content: templates.content
-        };
-        console.log('📝 오류 시 formData 업데이트 전:', prev);
-        console.log('📝 오류 시 formData 업데이트 후:', newData);
-        return newData;
-      });
+        }));
+      } else {
+        console.log('📋 오류 시 갈등 데이터 없음 - 빈 폼으로 설정');
+        setFormData(prev => ({
+          ...prev,
+          category: category,
+          title: '',
+          content: ''
+        }));
+      }
     } finally {
       console.log('✅ generateCategoryContent 완료, isGenerating = false');
       setIsGenerating(false);
@@ -421,15 +507,15 @@ const CreatePostPage = () => {
         window.history.replaceState({}, '', window.location.pathname);
       }
       
-      // 카테고리가 변경되면 항상 새 템플릿 적용
+      // 카테고리가 변경되면 빈 폼으로 시작하고 갈등 데이터가 있을 때만 AI 생성
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        title: '', // 생성 중임을 표시하기 위해 임시로 비움
+        title: '',
         content: ''
       }));
       
-      // AI 콘텐츠 생성
+      // AI 콘텐츠 생성 (갈등 데이터가 있을 때만)
       await generateCategoryContent(value);
     } else {
       setFormData(prev => ({
@@ -544,108 +630,25 @@ const CreatePostPage = () => {
       <div className="max-w-4xl mx-auto px-2 py-4 relative z-10">
         {/* 헤더 */}
         <div className="px-4 py-3 mb-4 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div>
-                <h2 className="text-2xl font-bold mb-2" 
-                  style={{ 
-                    background: 'black',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
-                  }}
-                >
-                  {isConflictSharingPost ? '갈등 상황 공유하기' : '새 게시글 작성'}
-                </h2>
-                <p className="text-gray-600 text-sm">
-                  {isConflictSharingPost 
-                    ? '갈등 상황을 공유하고 커뮤니티의 조언을 구해보세요' 
-                    : '갈등 해결 경험과 조언을 커뮤니티와 나누어보세요'
-                  }
-                </p>
-              </div>
-            </div>
-            {/* 작성자 정보 */}
-            <div className="text-right">
-              <p className="text-xs text-gray-500">작성자</p>
-              <p className="font-bold text-sm" style={{ color: '#8B4513' }}>
-                {user?.nickname || user?.name || user?.email}님
-              </p>
-            </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-2" 
+              style={{ 
+                background: 'black',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
+            >
+              {isConflictSharingPost ? '갈등 상황 공유하기' : '새 게시글 작성'}
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {isConflictSharingPost 
+                ? '갈등 상황을 공유하고 커뮤니티의 조언을 구해보세요' 
+                : '갈등 해결 경험과 조언을 커뮤니티와 나누어보세요'
+              }
+            </p>
           </div>
         </div>
 
-        {/* 카테고리별 안내 */}
-        {formData.category === 'CONFLICT_SHARING' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-2">
-              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs">💡</span>
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-700 mb-1">찬반대결 게시글 안내</h3>
-                <ul className="text-gray-600 space-y-1 text-xs">
-                  <li>• 개인정보나 실명은 절대 포함하지 마세요</li>
-                  <li>• 객관적이고 균형잡힌 시각으로 상황을 설명해주세요</li>
-                  <li>• A안/B안 형태로 선택지를 제시하면 더 많은 의견을 받을 수 있어요</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {formData.category === 'ADVICE_REQUEST' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-2">
-              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs">🤝</span>
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-700 mb-1">조언 요청 게시글 안내</h3>
-                <ul className="text-gray-600 space-y-1 text-xs">
-                  <li>• 상황을 구체적이고 명확하게 설명해주세요</li>
-                  <li>• 어떤 도움이 필요한지 직접적으로 말해주세요</li>
-                  <li>• 이미 시도해본 방법들도 함께 공유해주세요</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {formData.category === 'SUCCESS_STORIES' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-2">
-              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs">🎉</span>
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-700 mb-1">해결 성공사례 게시글 안내</h3>
-                <ul className="text-gray-600 space-y-1 text-xs">
-                  <li>• 해결 과정을 단계별로 상세히 공유해주세요</li>
-                  <li>• 다른 사람에게 도움이 될 수 있는 팁을 포함해주세요</li>
-                  <li>• 어려웠던 점과 극복한 방법을 솔직하게 작성해주세요</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {formData.category === 'GENERAL' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-2">
-              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs">💬</span>
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-700 mb-1">자유게시판 게시글 안내</h3>
-                <ul className="text-gray-600 space-y-1 text-xs">
-                  <li>• 서로 존중하는 대화로 자유롭게 소통해주세요</li>
-                  <li>• 일상 경험과 고민을 나누며 공감대를 형성해보세요</li>
-                  <li>• 긍정적이고 건설적인 내용으로 작성해주세요</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 작성 폼 */}
         <div className="bg-white rounded-2xl p-4">
@@ -662,7 +665,7 @@ const CreatePostPage = () => {
                 {categories.map(category => (
                   <label
                     key={category.value}
-                    className="cursor-pointer p-3 rounded-lg border-2 text-center transition-all duration-250 ease-in-out transform hover:scale-105 hover:rotate-1"
+                    className="cursor-pointer p-2 rounded-lg border-2 text-center transition-all duration-250 ease-in-out transform hover:scale-105 hover:rotate-1"
                     style={{
                       background: formData.category === category.value ? category.gradient : '#FFFFFF',
                       borderColor: formData.category === category.value ? category.color : '#E5E7EB',
@@ -678,7 +681,7 @@ const CreatePostPage = () => {
                       className="hidden"
                       disabled={isGenerating}
                     />
-                    <div className="font-bold text-sm">{category.label}</div>
+                    <div className="font-medium text-xs">{category.label}</div>
                   </label>
                 ))}
               </div>
@@ -733,7 +736,7 @@ const CreatePostPage = () => {
                   onChange={handleInputChange}
                   placeholder={isGenerating 
                     ? "AI가 카테고리에 맞는 내용을 생성하고 있습니다..." 
-                    : "게시글 내용을 입력하세요\n\n• 갈등 상황을 구체적으로 설명해주세요\n• 어떤 도움이 필요한지 명확히 해주세요\n• 다른 사람들에게 도움이 될 수 있는 경험을 공유해주세요"
+                    : getCategoryPlaceholder(formData.category)
                   }
                   rows={12}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-orange-300 focus:bg-orange-50 text-gray-800 placeholder-gray-400 resize-none transition-all duration-350 ease-in-out"
@@ -757,20 +760,22 @@ const CreatePostPage = () => {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="flex-1 py-2 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition-all duration-250 ease-in-out transform hover:scale-105 font-bold text-sm"
+                className="flex-1 py-2 rounded-lg font-medium transition-all text-sm border"
                 disabled={isLoading}
                 style={{
-                  borderColor: '#cd9f6e',
-                  color: '#cd9f6e',
-                  background: 'linear-gradient(135deg, #fff 0%, #fff7ed 100%)'
+                  backgroundColor: 'transparent',
+                  borderColor: '#8B4513',
+                  color: '#8B4513'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #cd9f6e 0%, #e6b88a 100%)';
-                  e.currentTarget.style.color = '#FFFFFF';
+                  e.target.style.backgroundColor = '#8B4513';
+                  e.target.style.color = 'white';
+                  e.target.style.borderColor = '#8B4513';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #fff 0%, #fff7ed 100%)';
-                  e.currentTarget.style.color = '#cd9f6e';
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = '#8B4513';
+                  e.target.style.borderColor = '#8B4513';
                 }}
               >
                 취소
@@ -778,23 +783,32 @@ const CreatePostPage = () => {
               <button
                 type="submit"
                 disabled={isLoading || !formData.title.trim() || !formData.content.trim()}
-                className="flex-1 py-2 text-white rounded transition-all duration-250 ease-in-out transform hover:scale-105 hover:brightness-110 disabled:bg-gray-300 disabled:transform-none disabled:hover:scale-100 disabled:hover:brightness-100 font-bold"
+                className="flex-1 py-2 rounded-lg font-medium transition-all text-sm"
                 style={{
-                  background: isLoading || !formData.title.trim() || !formData.content.trim() 
-                    ? '#D1D5DB' 
-                    : 'linear-gradient(135deg, #8B4513 0%, #cd9f6e 100%)'
+                  backgroundColor: isLoading || !formData.title.trim() || !formData.content.trim() 
+                    ? '#d1d5db' 
+                    : '#8B4513',
+                  color: 'white',
+                  border: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isLoading && formData.title.trim() && formData.content.trim()) {
+                    e.target.style.backgroundColor = '#bf7d2c';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isLoading && formData.title.trim() && formData.content.trim()) {
+                    e.target.style.backgroundColor = '#8B4513';
+                  }
                 }}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm">{isConflictSharingPost ? '공유 중...' : '작성 중...'}</span>
+                    <span>{isConflictSharingPost ? '공유 중...' : '작성 중...'}</span>
                   </div>
                 ) : (
-                  <span className="flex items-center justify-center gap-2 text-sm">
-                    <img src={hedgehogImg} alt="갈등도치" className="w-6 h-6 animate-bounce" />
-                    {isConflictSharingPost ? '갈등 상황 공유하기' : '게시글 작성'}
-                  </span>
+                  isConflictSharingPost ? '갈등 상황 공유하기' : '게시글 작성'
                 )}
               </button>
             </div>

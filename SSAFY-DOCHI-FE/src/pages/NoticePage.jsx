@@ -241,7 +241,7 @@ const NoticePage = () => {
             className="absolute top-0 left-0 w-full" 
             style={{ 
               height: '100%',
-              background: 'linear-gradient(to bottom, rgb(248, 214, 179), white)',
+              background: 'linear-gradient(to bottom, rgba(255, 206, 157, 1), white)',
               opacity: 0.14
             }}
           ></div>

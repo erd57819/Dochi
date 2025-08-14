@@ -53,30 +53,33 @@ public class ChatService {
         String prompt = buildPrompt(dto.getMode(), history, dto.getMessage());
         String aiResponse;
         
+        String description = null;
+        
         if ("COMIC".equals(dto.getMode())) {
-            String comicId = "comic_" + UUID.randomUUID().toString();
-            
-            setComicStatus(comicId, "GENERATING", "4컷 만화를 생성하고 있어요...", null);
-            
-            CompletableFuture.runAsync(() -> {
-                try {
-                    String imageUrl = gmsImageClient.generateImage(prompt);
-                    String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
-                    String description = generateComicDescription(conversationContent);
-                    String finalResponse = imageUrl + "\n\n" + description;
-                    
-                    setComicStatus(comicId, "COMPLETED", description, imageUrl);
-                    
-                    saveMessage(sessionId, "BOT", finalResponse);
-                } catch (Exception e) {
-                    log.error("만화 생성 실패", e);
-                    setComicStatus(comicId, "FAILED", "만화 생성에 실패했습니다. 다시 시도해주세요.", null);
-                }
-            });
-            
-            aiResponse = "COMIC_GENERATING:" + comicId;
+            try {
+                log.info("🎨 네컷만화 생성 시작");
+                String imageUrl = gmsImageClient.generateImage(prompt);
+                log.info("✅ 이미지 생성 완료: {}", imageUrl);
+                
+                String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
+                description = generateComicDescription(conversationContent);
+                
+                // 이미지 URL과 설명을 반환
+                aiResponse = imageUrl;
+                
+                saveMessage(sessionId, "USER", dto.getMessage());
+                saveMessage(sessionId, "BOT", aiResponse);
+                
+            } catch (Exception e) {
+                log.error("❌ 만화 생성 실패", e);
+                aiResponse = "만화 생성에 실패했습니다. 다시 시도해주세요.";
+                description = "만화 생성에 실패했습니다.";
+                
+                saveMessage(sessionId, "USER", dto.getMessage());
+                saveMessage(sessionId, "BOT", aiResponse);
+            }
         } else {
-            aiResponse = gmsAiClient.ask(prompt, "gpt-4o");
+            aiResponse = gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
             saveMessage(sessionId, "USER", dto.getMessage());
             saveMessage(sessionId, "BOT", aiResponse);
         }
@@ -85,6 +88,7 @@ public class ChatService {
                 .senderType("BOT")
                 .message(aiResponse)
                 .timestamp(LocalDateTime.now().toString())
+                .description(description)
                 .build();
     }
 
@@ -165,43 +169,48 @@ public class ChatService {
     private String convertToComicScenario(String conversationHistory) {
         try {
             String prompt = """
-                    You are an expert scriptwriter creating a 4-panel comic story based on the user's real conversation.
-                    
-                    MISSION: Analyze the conversation and create a specific 4-panel story featuring a hedgehog character.
-                    
-                    STRICT REQUIREMENTS:
-                    1. Use ONLY the actual events, people, situations mentioned in the conversation
-                    2. Extract the EXACT emotional journey from start to current state
-                    3. Include SPECIFIC details: names, places, events, relationships mentioned
-                    4. NO generic scenarios - this must be THEIR specific story
-                    
-                    [User's Conversation]
-                    %s
-                    
-                    ANALYSIS STEPS:
-                    1. Identify the main conflict/situation from the conversation
-                    2. Find the specific people involved (friend, family, coworker, etc.)
-                    3. Track the emotional progression through the conversation
-                    4. Determine current emotional state and what they want
-                    
-                    OUTPUT FORMAT - 4 Panels with hedgehog as main character:
-                    
-                    Panel 1: [Initial situation before conflict - set the scene with specific context from conversation. Include hedgehog's starting emotional state, detailed facial expression (eyes, mouth, eyebrows), body pose, and environmental setting mentioned in conversation]
-                    
-                    Panel 2: [The exact conflict/event described - what specifically happened with whom. Show hedgehog's immediate reaction with detailed facial expression changes, body language shift, and include the specific situation/people from conversation]
-                    
-                    Panel 3: [Peak emotional moment from conversation - the strongest feeling expressed (anger, hurt, disappointment, etc.). Show hedgehog's intense emotional expression with very detailed face and body language reflecting this specific emotion]
-                    
-                    Panel 4: [Current state or desired outcome mentioned in conversation - where they are now emotionally or what they hope happens next. Show hedgehog's final emotional state with detailed expression and pose]
-                    
-                    CRITICAL: Each panel must include hedgehog's detailed facial features (eye shape, mouth position, eyebrow angle) and full body pose (sitting/standing/curled/leaning etc.)
-                    """.formatted(conversationHistory);
+            You must create a **4-panel comic scenario** STRICTLY based on the conversation below.
 
-            return gmsAiClient.ask(prompt, "gpt-4o");
+            RULES:
+            - Use ONLY people, places, events, and emotions explicitly mentioned in the conversation.
+            - Do NOT add fictional details or generic scenarios.
+            - If something is not mentioned, leave it out — do NOT invent.
+            - Preserve the exact emotional flow and setting.
+
+            STEP 1 — Extract key facts as a table:
+            | Step | Exact Event | People Involved | Location | Emotion |
+            |------|-------------|-----------------|----------|---------|
+            (Fill from conversation, only exact words used by user)
+
+            STEP 2 — Write the scenario in this format:
+            Panel 1: (Describe initial situation based ONLY on table)
+            Panel 2: (Describe the specific event/conflict)
+            Panel 3: (Describe the strongest emotion moment)
+            Panel 4: (Describe the current state or resolution)
+
+            Conversation:
+            %s
+            """.formatted(conversationHistory);
+
+            return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
         } catch (Exception e) {
             log.warn("만화 시나리오 변환 실패", e);
             return null;
         }
+    }
+
+    private String validateScenario(String conversation, String scenario) {
+        String prompt = """
+        Check if the scenario below matches ONLY the events, people, and emotions from the conversation. 
+        If anything is invented, rewrite it to remove invented parts.
+
+        Conversation:
+        %s
+
+        Scenario:
+        %s
+        """.formatted(conversation, scenario);
+        return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
     }
 
     private String generateComicDescription(String conversationContent) {
@@ -219,7 +228,7 @@ public class ChatService {
                     - "복잡한 감정들을 4컷 만화로 담아봤어요"
                     """.formatted(conversationContent);
 
-            return gmsAiClient.ask(prompt, "gpt-4o");
+            return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
         } catch (Exception e) {
             log.warn("만화 설명 생성 실패", e);
             return "당신의 이야기를 4컷 만화로 표현했어요";
@@ -229,6 +238,11 @@ public class ChatService {
     private String buildOptimizedDallePrompt(String scenario) {
         return """
                Create a heartwarming 2x2 grid four-panel comic strip (yonkoma style) featuring the same adorable hedgehog character throughout all panels.
+               
+               CRITICAL FORMAT REQUIREMENTS:
+               - EXACTLY 4 panels arranged in 2x2 grid format
+               - NO text, NO speech bubbles, NO labels, NO written words - pure visual storytelling only
+               - Each panel clearly defined with thin borders
                
                CHARACTER CONSISTENCY (CRITICAL - must be identical in all panels):
                - Round, chubby hedgehog with soft beige/cream colored body
@@ -243,7 +257,6 @@ public class ChatService {
                - Gentle pastel color palette with warm, comforting tones
                - Minimal, non-distracting backgrounds that support the story
                - Professional animation quality with smooth gradients and subtle shadows
-               - Each panel clearly defined with thin borders
                - NO text, NO speech bubbles, NO labels - pure visual storytelling
                
                LIGHTING & COMPOSITION:

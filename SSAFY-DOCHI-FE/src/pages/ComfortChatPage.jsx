@@ -278,7 +278,10 @@ const ComfortChatPage = () => {
       setLoading(true);
       setShowManhwa(true);
 
-      const prompt = "네컷만화를 그려주세요";
+      // 최근 사용자 메시지들을 기반으로 만화 생성 프롬프트 구성
+      const userMessages = messages.filter(msg => msg.sender === 'user').slice(-5); // 최근 5개 사용자 메시지
+      const chatContext = userMessages.map(msg => msg.content).join(' ');
+      const prompt = `다음 대화 내용을 바탕으로 네컷만화를 그려주세요: ${chatContext}`;
 
       try {
         const response = await comfortService.sendMessage(currentSessionId, prompt, 'COMIC');
@@ -312,7 +315,14 @@ const ComfortChatPage = () => {
         );
 
         if (isValidUrl) {
-          const manhwaData = [{ type: 'image', url: imageUrl, title: '오늘의 네컷만화' }];
+          // 백엔드에서 받은 description 사용 (없으면 기본값)
+          const description = response.data.description || '당신의 이야기를 4컷 만화로 표현했어요';
+          const manhwaData = [{ 
+            type: 'image', 
+            url: imageUrl, 
+            title: '오늘의 네컷만화',
+            description: description
+          }];
           useComfortStore.getState().setManhwaCache(currentChatRoomId, manhwaData);
         } else {
           console.error('❌ 유효하지 않은 이미지 URL:', imageUrl);
@@ -1186,6 +1196,11 @@ const ComfortChatPage = () => {
                         <p className="text-center text-gray-500 text-sm mt-2" style={{ display: 'none' }}>
                           이미지를 불러올 수 없습니다
                         </p>
+                        {panel.description && (
+                          <p className="text-center text-gray-600 text-sm mt-3 px-4 py-2 bg-gray-50 rounded-lg">
+                            {panel.description}
+                          </p>
+                        )}
                       </div>
                     );
                   }

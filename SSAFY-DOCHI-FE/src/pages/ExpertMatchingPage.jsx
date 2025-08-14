@@ -55,7 +55,12 @@ const ExpertMatchingPage = () => {
   ];
 
   const handleGoBack = () => {
-    navigate(-1);
+    // 브라우저 히스토리가 있으면 뒤로가기, 없으면 홈으로 이동
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleExpertSelect = (expert) => {
@@ -69,134 +74,101 @@ const ExpertMatchingPage = () => {
   };
 
   const handleConfirmBooking = () => {
-    alert(`${selectedExpert.name} 상담사와의 상담이 예약되었습니다! 📅`);
+    alert(`${selectedExpert.name} 상담사 예약 - 서비스 준비중입니다! 🚧`);
     setShowBookingModal(false);
     setSelectedExpert(null);
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ zoom: '0.85' }}>
       {/* 전체 배경 컨테이너 */}
       <div className="absolute inset-0">
-        {/* 상단 배경 */}
         <div 
           className="absolute top-0 left-0 w-full" 
           style={{ 
-            height: '50%',
-            backgroundColor: '#F8D6B3',
+            height: '100%',
+            background: 'linear-gradient(to bottom, rgb(248, 214, 179), white)',
             opacity: 0.14
-          }}
-        ></div>
-        
-        {/* 하단 배경 */}
-        <div 
-          className="absolute bottom-0 left-0 w-full" 
-          style={{ 
-            height: '50%',
-            backgroundColor: '#FFFFFF'
           }}
         ></div>
       </div>
 
       {/* 메인 컨텐츠 */}
-      <main className="max-w-6xl mx-auto px-4 py-12 relative z-10">
+      <main className="max-w-5xl mx-auto px-3 py-10 relative z-10">
         {/* 헤더 */}
-        <div className="flex items-center mb-8">
-          <button 
-            onClick={handleGoBack}
-            className="text-2xl mr-4 hover:opacity-70 transition-opacity"
-            style={{ color: '#8B4513' }}
-          >
-            ←
-          </button>
-          <div className="flex items-center gap-3">
-            <img src={hedgehogImg} alt="참견도치" className="w-12 h-12 rounded-full" />
-            <h1 className="text-3xl font-bold" style={{ color: '#8B4513' }}>전문상담사 매칭</h1>
+        <div className="flex flex-row items-center justify-between text-3xl font-bold mb-4 py-2 px-6" style={{ color: '#8B4513' }}>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleGoBack}
+              className="text-2xl hover:opacity-70 transition-opacity"
+              style={{ color: '#8B4513' }}
+            >
+              ←
+            </button>
+            <div>
+              <h3 className="text-4xl font-bold" style={{ color: '#333333' }}>
+                전문상담사 매칭
+              </h3>
+              <p className="text-base" style={{ color: '#666666' }}>
+                각 분야별 전문 상담사가 여러분의 갈등 해결을 도와드립니다
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* 상단 메시지 */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4" style={{ 
-            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            전문 상담사와 함께 갈등을 해결해보세요
-          </h2>
-          <p className="text-xl" style={{ color: '#666666' }}>
-            각 분야별 전문 상담사가 여러분의 갈등 해결을 도와드립니다
-          </p>
-        </div>
-
         {/* 상담사 목록 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {experts.map((expert) => (
-            <div 
-              key={expert.id}
-              className={`bg-white rounded-3xl p-8 cursor-pointer transition-all transform hover:-translate-y-2 shadow-xl relative overflow-hidden ${
-                selectedExpert?.id === expert.id ? 'ring-4 ring-opacity-50' : ''
-              }`}
-              style={{
-                ringColor: selectedExpert?.id === expert.id ? '#EE9278' : 'transparent'
-              }}
-              onClick={() => handleExpertSelect(expert)}
-            >
-              {/* 선택 표시 */}
-              {selectedExpert?.id === expert.id && (
-                <div 
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-white text-lg"
-                  style={{ backgroundColor: '#EE9278' }}
-                >
-                  ✓
-                </div>
-              )}
-
-              <div className="flex items-start gap-6">
-                {/* 프로필 이미지 */}
-                <div 
-                  className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
-                  style={{ backgroundColor: '#F8D6B3' }}
-                >
-                  {expert.image}
-                </div>
-
-                {/* 상담사 정보 */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-2xl font-bold" style={{ color: '#333333' }}>
-                      {expert.name}
-                    </h3>
-                    <div className="flex items-center gap-1">
-                      <span className="text-yellow-500">⭐</span>
-                      <span className="font-medium" style={{ color: '#666666' }}>
-                        {expert.rating}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <span 
-                      className="px-3 py-1 rounded-full text-sm font-medium"
-                      style={{ backgroundColor: '#EE9278', color: '#FFFFFF' }}
+        <div className="bg-white">
+          <div className="space-y-1">
+            {experts.map((expert) => (
+              <div 
+                key={expert.id}
+                className={`px-5 py-5 cursor-pointer transition-all duration-100 hover:bg-orange-50 ${
+                  selectedExpert?.id === expert.id ? 'bg-orange-100' : ''
+                }`}
+                onClick={() => handleExpertSelect(expert)}
+              >
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex gap-3 items-start flex-1 min-w-0">
+                    <span
+                      className="text-white text-xs px-2 py-1 rounded font-medium flex-shrink-0"
+                      style={{ 
+                        background: '#EE9278'
+                      }}
                     >
                       {expert.specialty}
                     </span>
-                    <span className="ml-3 text-sm" style={{ color: '#666666' }}>
-                      경력 {expert.experience}
-                    </span>
-                  </div>
-
-                  <p className="text-sm mb-4 leading-relaxed" style={{ color: '#666666' }}>
-                    {expert.description}
-                  </p>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-bold mb-2" style={{ color: '#333333' }}>
-                      상담 가능 시간:
+                    <h4
+                      className="text-xl font-bold transition-colors flex-1 min-w-0 truncate leading-tight"
+                      style={{ color: '#333333' }}
+                    >
+                      {expert.name} {expert.image}
                     </h4>
-                    <div className="flex flex-wrap gap-2">
+                    {selectedExpert?.id === expert.id && (
+                      <span className="text-orange-600 font-bold text-sm">✓ 선택됨</span>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-1 text-sm flex-shrink-0" style={{ color: '#666666' }}>
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-500">⭐</span>
+                      <span className="font-medium">{expert.rating}</span>
+                    </div>
+                    <span className="whitespace-nowrap font-bold text-lg" style={{ color: '#EE9278' }}>{expert.price}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center gap-4 text-sm" style={{ color: '#666666' }}>
+                    <span>경력 {expert.experience}</span>
+                    <span className="text-gray-400">•</span>
+                    <span>{expert.description}</span>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs" style={{ color: '#666666' }}>
+                    <span>상담 가능 시간:</span>
+                    <div className="flex flex-wrap gap-1">
                       {expert.availableTimes.map((time, index) => (
                         <span 
                           key={index}
@@ -208,47 +180,36 @@ const ExpertMatchingPage = () => {
                       ))}
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    <span className="text-2xl font-bold" style={{ color: '#EE9278' }}>
-                      {expert.price}
-                    </span>
-                  </div>
                 </div>
               </div>
-            </div>
           ))}
+          </div>
         </div>
 
         {/* 선택된 상담사 정보 및 예약 버튼 */}
         {selectedExpert && (
-          <div className="bg-white rounded-3xl p-8 shadow-xl mb-8">
-            <h3 className="text-2xl font-bold mb-4" style={{ color: '#333333' }}>
-              선택하신 상담사
+          <div className="bg-white p-5 mt-5">
+            <h3 className="text-lg font-bold mb-3" style={{ color: '#8B4513' }}>
+              💼 선택하신 상담사
             </h3>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
-                  style={{ backgroundColor: '#F8D6B3' }}
-                >
-                  {selectedExpert.image}
-                </div>
+            <div className="flex items-center justify-between p-3 rounded hover:bg-gray-50">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{selectedExpert.image}</span>
                 <div>
-                  <h4 className="text-xl font-bold" style={{ color: '#333333' }}>
+                  <h4 className="text-base font-bold" style={{ color: '#333333' }}>
                     {selectedExpert.name}
                   </h4>
-                  <p style={{ color: '#666666' }}>{selectedExpert.specialty}</p>
+                  <p className="text-sm" style={{ color: '#666666' }}>{selectedExpert.specialty}</p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold mb-2" style={{ color: '#EE9278' }}>
+                <div className="text-lg font-bold mb-2" style={{ color: '#EE9278' }}>
                   {selectedExpert.price}
                 </div>
                 <button
                   onClick={handleBooking}
-                  className="px-8 py-3 text-white rounded-xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium"
-                  style={{ backgroundColor: '#EE9278' }}
+                  className="px-4 py-2 text-white rounded-lg hover:opacity-90 transition-all font-medium text-sm"
+                  style={{ backgroundColor: '#8B4513' }}
                 >
                   상담 예약하기
                 </button>
@@ -258,49 +219,74 @@ const ExpertMatchingPage = () => {
         )}
 
         {/* 서비스 안내 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="text-center p-6">
-            <div className="text-4xl mb-4">📞</div>
-            <h4 className="text-xl font-bold mb-2" style={{ color: '#333333' }}>
-              1:1 화상 상담
-            </h4>
-            <p style={{ color: '#666666' }}>
-              편안한 공간에서 전문 상담사와 직접 대화하세요
-            </p>
-          </div>
-          <div className="text-center p-6">
-            <div className="text-4xl mb-4">🔒</div>
-            <h4 className="text-xl font-bold mb-2" style={{ color: '#333333' }}>
-              완전한 비밀보장
-            </h4>
-            <p style={{ color: '#666666' }}>
-              모든 상담 내용은 철저히 비밀이 보장됩니다
-            </p>
-          </div>
-          <div className="text-center p-6">
-            <div className="text-4xl mb-4">⏰</div>
-            <h4 className="text-xl font-bold mb-2" style={{ color: '#333333' }}>
-              유연한 시간 조정
-            </h4>
-            <p style={{ color: '#666666' }}>
-              여러분의 일정에 맞춰 상담 시간을 조정할 수 있습니다
-            </p>
+        <div className="bg-white p-5 mt-5">
+          <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>💡 상담 서비스 안내</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4">
+              <div className="text-2xl mb-2">📞</div>
+              <h5 className="text-sm font-bold mb-1" style={{ color: '#333333' }}>
+                1:1 화상 상담
+              </h5>
+              <p className="text-xs" style={{ color: '#666666' }}>
+                편안한 공간에서 전문 상담사와 직접 대화
+              </p>
+            </div>
+            <div className="text-center p-4">
+              <div className="text-2xl mb-2">🔒</div>
+              <h5 className="text-sm font-bold mb-1" style={{ color: '#333333' }}>
+                완전한 비밀보장
+              </h5>
+              <p className="text-xs" style={{ color: '#666666' }}>
+                모든 상담 내용은 철저히 비밀 보장
+              </p>
+            </div>
+            <div className="text-center p-4">
+              <div className="text-2xl mb-2">⏰</div>
+              <h5 className="text-sm font-bold mb-1" style={{ color: '#333333' }}>
+                유연한 시간 조정
+              </h5>
+              <p className="text-xs" style={{ color: '#666666' }}>
+                일정에 맞춰 상담 시간 조정 가능
+              </p>
+            </div>
           </div>
         </div>
 
         {/* 하단 액션 버튼 */}
-        <div className="text-center">
+        <div className="flex gap-3 mt-5">
           <button
             onClick={() => navigate('/mypage')}
-            className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg mr-4"
-            style={{ background: '#696969' }}
+            className="flex-1 py-2 rounded-lg font-medium transition-all text-sm border"
+            style={{
+              backgroundColor: 'transparent',
+              borderColor: '#8B4513',
+              color: '#8B4513'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#8B4513';
+              e.target.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.color = '#8B4513';
+            }}
           >
             내 갈등 목록 보기
           </button>
           <button
             onClick={() => navigate('/conflicts/create')}
-            className="px-8 py-4 text-white rounded-2xl hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-lg font-medium text-lg"
-            style={{ background: '#8B4513' }}
+            className="flex-1 py-2 rounded-lg font-medium transition-all text-sm"
+            style={{
+              backgroundColor: '#8B4513',
+              color: 'white',
+              border: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#bf7d2c';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#8B4513';
+            }}
           >
             새 갈등 상황 분석하기
           </button>
