@@ -19,24 +19,36 @@ const ConflictTypeSelector = ({ value, onChange }) => {
           key={type.value}
           type="button"
           onClick={() => onChange(type.value)}
-          style={{ paddingTop: '2.5rem', paddingBottom: '2.5rem', paddingLeft: '1rem', paddingRight: '1rem' }}
+          style={{ paddingTop: '1rem', paddingBottom: '1rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}
           className={`
-            relative rounded-2xl border-2 transition-all duration-200 min-h-[180px]
+            relative rounded-2xl border-2 transition-all duration-200 min-h-[340px] flex flex-col justify-center
             ${value === type.value 
               ? 'border-orange-500 bg-orange-50 shadow-lg transform scale-105' 
               : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
             }
           `}
         >
-          <div className="mb-2">
+          <div className="mb-5 flex-shrink-0" style={{ height: '160px' }}>
             {type.icon === '🎲' ? (
-              <div className="text-3xl">{type.icon}</div>
+              <div className="text-8xl flex items-center justify-center h-full">{type.icon}</div>
             ) : (
-              <img src={type.icon} alt={type.label} className="w-12 h-12 mx-auto" />
+              <img 
+                src={type.icon} 
+                alt={type.label} 
+                className={`mx-auto object-contain ${
+                  type.value === 'ONLINE' || type.value === 'COUPLE' 
+                    ? 'w-32 h-32' 
+                    : 'w-40 h-40'
+                }`}
+                style={{ 
+                  maxWidth: type.value === 'ONLINE' || type.value === 'COUPLE' ? '125px' : '155px', 
+                  maxHeight: type.value === 'ONLINE' || type.value === 'COUPLE' ? '125px' : '155px' 
+                }}
+              />
             )}
           </div>
-          <div className="font-medium text-base">{type.label}</div>
-          <div className="text-xs text-gray-500 mt-1">{type.description}</div>
+          <div className="font-bold text-xl mb-2">{type.label}</div>
+          <div className="text-base text-gray-600">{type.description}</div>
           {value === type.value && (
             <div className="absolute top-2 right-2">
               <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
