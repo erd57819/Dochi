@@ -16,7 +16,6 @@ import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
 import ConflictResultPage from './pages/ConflictResultPage';
 import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
-import ComfortPage from './pages/ComfortPage';
 import ComfortChatPage from './pages/ComfortChatPage';
 import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
@@ -62,7 +61,7 @@ const App = () => {
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/conflict-report/:roomId" element={<ConflictReportPage />} />
             <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
-            <Route path="/comfort" element={<ComfortPage />} />
+            <Route path="/comfort" element={<ComfortChatPage />} />
             <Route path="/comfort/chat" element={<ComfortChatPage />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<ProfileEditPage />} />

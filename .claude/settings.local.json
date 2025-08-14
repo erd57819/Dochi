@@ -12,7 +12,8 @@
       "WebFetch(domain:vaalentin.github.io)",
       "WebFetch(domain:api.github.com)",
       "Bash(docker network inspect:*)",
-      "Bash(docker:*)"
+      "Bash(docker:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

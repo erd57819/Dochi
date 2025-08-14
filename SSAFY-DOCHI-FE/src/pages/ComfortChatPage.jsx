@@ -5,6 +5,7 @@ import useComfortStore from '../stores/ComfortStore.js';
 import comfortService from '../services/comfortService.js';
 import ChatTitleModal from '../components/ChatTitleModal.jsx';
 import TutorialModal from '../components/TutorialModal.jsx';
+import todakImg from '../assets/todak.png';
 
 const ComfortChatPage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const ComfortChatPage = () => {
     timelineCache,
     manhwaCache,
     createNewSessionWithTitle,
+    createNewSessionWithFirstMessage,
     loadSession,
     deleteSession,
     sendMessage,
@@ -56,17 +58,6 @@ const ComfortChatPage = () => {
     // 첫 방문자 감지 및 튜토리얼 자동 표시
     checkFirstVisit();
   }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (sessions.length === 0 && !currentSessionId) {
-        console.log('세션이 없어 ComfortPage로 이동');
-        navigate('/comfort');
-      }
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [sessions, currentSessionId, navigate]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -130,9 +121,22 @@ const ComfortChatPage = () => {
     try {
       await createNewSessionWithTitle(title);
       setShowTitleModal(false);
+      // 새 대화 생성 시 입력값 초기화 (시작 화면으로 전환되도록)
+      setInputValue('');
     } catch (error) {
       console.error('Failed to create session with title:', error);
     }
+  };
+
+  // 빈 새 대화 생성 (시작 화면 표시용)
+  const handleCreateEmptyChat = () => {
+    // 입력값 초기화하고 현재 세션을 null로 설정하여 시작 화면 표시
+    setInputValue('');
+    useComfortStore.setState({ 
+      currentSessionId: null, 
+      messages: [],
+      currentChatRoomId: null
+    });
   };
 
   // 제목 수정 핸들러 (인라인 편집)
@@ -170,7 +174,23 @@ const ComfortChatPage = () => {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      if (messages.length === 0 && !currentSessionId) {
+        handleStartNewChat();
+      } else {
+        handleSendMessage();
+      }
+    }
+  };
+
+  // 첫 메시지로 새 채팅 시작
+  const handleStartNewChat = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    try {
+      await createNewSessionWithFirstMessage(inputValue.trim());
+      setInputValue('');
+    } catch (error) {
+      console.error('새 채팅 시작 실패:', error);
     }
   };
 
@@ -349,9 +369,12 @@ const ComfortChatPage = () => {
     return <p className="whitespace-pre-wrap">{message.content}</p>;
   };
 
+  // 새 대화 시작 상태인지 확인
+  const isNewChatMode = !currentSessionId || (messages && messages.length === 0);
+
   return (
     <div className="relative bg-gradient-to-br from-orange-50 via-white to-yellow-50 overflow-hidden flex"
-         style={{ height: 'calc(100vh - 200px)' }}>
+         style={{ height: 'calc(100vh - 80px)' }}>
       {/* 배경 오버레이 */}
       <div className="absolute inset-0" style={{ opacity: 0.3 }}>
         <div 
@@ -368,7 +391,7 @@ const ComfortChatPage = () => {
         isSidebarOpen ? 'w-[320px]' : 'w-[80px]'
       }`} style={{ 
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
-        height: 'calc(100vh - 200px)'
+        height: 'calc(100vh - 80px)'
       }}>
         {/* 사이드바 토글 버튼 */}
         <div className="p-3 flex-shrink-0">
@@ -404,7 +427,7 @@ const ComfortChatPage = () => {
         {isSidebarOpen && (
           <div className="px-3 pb-4 flex-shrink-0">
             <button
-              onClick={() => setShowTitleModal(true)}
+              onClick={handleCreateEmptyChat}
               className="w-full px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm border"
               style={{ 
                 backgroundColor: 'transparent',
@@ -576,7 +599,125 @@ const ComfortChatPage = () => {
 
       {/* 메인 채팅 영역 */}
       <div className="flex-1 overflow-hidden relative"
-           style={{ height: 'calc(100vh - 200px)' }}>
+           style={{ height: 'calc(100vh - 80px)' }}>
+        
+        {isNewChatMode ? (
+          // 새 대화 시작 화면
+          <div className="h-full flex items-center justify-center bg-gradient-to-br from-orange-50/50 to-yellow-50/30">
+            <div className="w-full max-w-3xl px-8">
+              <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-orange-100">
+                
+                {/* 헤더 섹션 */}
+                <div className="text-center mb-8">
+                  <div className="flex justify-center mb-4">
+                    <div className="relative p-2 bg-orange-100/50 rounded-full">
+                      <img 
+                        src={todakImg} 
+                        alt="참견도치" 
+                        className="w-20 h-20 object-contain"
+                      />
+                    </div>
+                  </div>
+                  <h1 className="text-3xl font-bold mb-2" style={{ color: '#8B4513' }}>
+                    참견도치
+                  </h1>
+                  <p className="text-gray-600 text-lg">
+                    갈등 상황을 이야기해보세요
+                  </p>
+                </div>
+
+                {/* 입력 영역 */}
+                <div className="relative mb-6">
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="어떤 일로 고민이신가요? 자세히 들려주세요..."
+                    className="w-full px-6 py-4 bg-gray-50/80 border-2 border-orange-200/60 rounded-2xl focus:outline-none focus:border-orange-400 text-base resize-none transition-all duration-200"
+                    style={{ 
+                      minHeight: '100px',
+                      fontFamily: 'inherit'
+                    }}
+                    rows="4"
+                    disabled={isLoading}
+                  />
+                  
+                  {/* 전송 버튼 */}
+                  <button
+                    onClick={handleStartNewChat}
+                    disabled={!inputValue.trim() || isLoading}
+                    className="absolute bottom-3 right-3 p-2 rounded-xl transition-all duration-200 disabled:cursor-not-allowed shadow-sm"
+                    style={{
+                      backgroundColor: (!inputValue.trim() || isLoading) ? '#d1d5db' : '#bf7d2c',
+                      color: 'white',
+                      transform: inputValue.trim() && !isLoading ? 'scale(1.05)' : 'scale(1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (inputValue.trim() && !isLoading) {
+                        e.target.style.backgroundColor = '#8B4513';
+                        e.target.style.transform = 'scale(1.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (inputValue.trim() && !isLoading) {
+                        e.target.style.backgroundColor = '#bf7d2c';
+                        e.target.style.transform = 'scale(1.05)';
+                      }
+                    }}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* 하단 안내 */}
+                <div className="text-center space-y-2">
+                  <div className="text-sm text-gray-500">
+                    Enter로 전송 · Shift+Enter로 줄바꿈
+                  </div>
+                  
+                  {/* 메인 시작 버튼 */}
+                  <button
+                    onClick={handleStartNewChat}
+                    disabled={!inputValue.trim() || isLoading}
+                    className="w-full py-3 rounded-xl font-medium transition-all duration-200 text-base shadow-lg"
+                    style={{ 
+                      backgroundColor: (!inputValue.trim() || isLoading) ? '#f3f4f6' : '#bf7d2c',
+                      color: (!inputValue.trim() || isLoading) ? '#9ca3af' : 'white',
+                      border: 'none',
+                      transform: inputValue.trim() && !isLoading ? 'translateY(-1px)' : 'translateY(0)',
+                      boxShadow: inputValue.trim() && !isLoading ? '0 10px 25px rgba(191, 125, 44, 0.3)' : '0 4px 10px rgba(0, 0, 0, 0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (inputValue.trim() && !isLoading) {
+                        e.target.style.backgroundColor = '#8B4513';
+                        e.target.style.transform = 'translateY(-2px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (inputValue.trim() && !isLoading) {
+                        e.target.style.backgroundColor = '#bf7d2c';
+                        e.target.style.transform = 'translateY(-1px)';
+                      }
+                    }}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                        대화 시작 중...
+                      </div>
+                    ) : (
+                      '상담 시작하기'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // 기존 채팅 화면
+          <>
         {/* 채팅 도구바 */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 shadow-sm" 
              style={{ 
@@ -797,8 +938,8 @@ const ComfortChatPage = () => {
                padding: '8px',
                paddingTop: '60px',
                paddingBottom: '80px',
-               height: 'calc(100vh - 200px)',
-               maxHeight: 'calc(100vh - 200px)'
+               height: 'calc(100vh - 160px)',
+               maxHeight: 'calc(100vh - 160px)'
              }}>
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg shadow-sm">
@@ -932,6 +1073,8 @@ const ComfortChatPage = () => {
             </button>
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* 타임라인 모달 */}
