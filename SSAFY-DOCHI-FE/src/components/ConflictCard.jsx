@@ -59,7 +59,7 @@ const ConflictCard = ({
         
         {/* 날짜 또는 갈등 등록일 텍스트 */}
         {!isEmptyCard && (
-          <div className="mt-6 text-xs text-[#8B6914] bg-[#fff8e1] px-4 py-2 rounded-lg border border-[#f8d6b3]" style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
+          <div className="mt-6 text-xs text-[#8B6914] " style={{ fontFamily: 'Pretendard-Regular, Helvetica' }}>
             {date || "갈등 등록일"}
           </div>
         )}
@@ -88,10 +88,10 @@ const ConflictCard = ({
           )}
         </div>
         
-        {/* 갈등 타입 표시 (빈 카드가 아닐 때만) */}
+        {/* 갈등 타입 표시 */}
         {!isEmptyCard && (
-          <div className="mt-4 text-xs text-[#a66a25] bg-[#fff3d4] px-3 py-2 rounded-lg border border-[#f8d6b3]" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>
-            갈등 분석 완료
+          <div className="mt-4 text-xs text-white bg-[#bf7d2c] hover:bg-[#a66a25] px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>
+            자세히 보기
           </div>
         )}
         
@@ -99,23 +99,6 @@ const ConflictCard = ({
         <div className="w-12 h-0.5 bg-[#bf7d2c] mt-6 rounded-full"></div>
       </div>
       
-      {/* 하단 버튼 영역 */}
-      <div className="pb-8 pt-6">
-        <button 
-          onClick={onButtonClick}
-          className="px-6 py-3 text-sm font-medium transition-all duration-300 text-white shadow-lg hover:shadow-xl transform hover:scale-105 rounded-xl"
-          style={{ 
-            fontFamily: 'Pretendard-Medium, Helvetica',
-            background: isSelected 
-              ? 'linear-gradient(135deg, #a66a25 0%, #bf7d2c 100%)' 
-              : 'linear-gradient(135deg, #bf7d2c 0%, #cd9f6e 100%)',
-            border: 'none',
-            letterSpacing: '-0.01em'
-          }}
-        >
-          {buttonText}
-        </button>
-      </div>
     </div>
   );
 };
