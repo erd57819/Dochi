@@ -56,21 +56,16 @@ const useComfortStore = create(
             set({
               currentSessionId: newSession.sessionId,
               currentChatRoomId: newSession.id,
-              messages: [{
-                id: 1,
-                sender: 'bot',
-                content: '안녕하세요! 말씀해주신 상황에 대해 자세히 이야기해보세요. 제가 도움을 드릴게요. 🤗',
-                timestamp: new Date()
-              }],
+              messages: [], // 초기 봇 메시지 제거 - 사용자 메시지부터 시작
               selectedMode: 'NORMAL',
               showTimeline: false,
               showManhwa: false
             });
 
-            // 5. 첫 메시지를 자동으로 전송합니다.
-            setTimeout(async () => {
-              await get().sendMessage(firstMessage);
-            }, 100);
+            // 5. 첫 메시지를 자동으로 전송
+            await get().sendMessage(firstMessage);
+            
+            return { sessionId: newSession.sessionId, chatRoomId: newSession.id };
           }
         } catch (error) {
           console.error('Failed to create new session with first message:', error);
@@ -97,12 +92,7 @@ const useComfortStore = create(
             set({
               currentSessionId: newSession.sessionId,
               currentChatRoomId: chatRoomId,
-              messages: [{
-                id: 1,
-                sender: 'bot',
-                content: `${title}에 대해 이야기해주세요. 제가 어떻게 도움을 드릴 수 있을까요? 🤗`,
-                timestamp: new Date()
-              }],
+              messages: [], // 초기 봇 메시지 제거
               selectedMode: 'NORMAL',
               showTimeline: false,
               showManhwa: false,
@@ -157,7 +147,9 @@ const useComfortStore = create(
               messages: serverMessages,
               selectedMode: 'NORMAL',
               showTimeline: false,
-              showManhwa: false
+              showManhwa: false,
+              isLoading: false, // 세션 변경 시 로딩 상태 초기화
+              error: null // 에러 상태도 초기화
               // 캐시는 유지하여 기존 데이터 보존
             });
           }
@@ -207,8 +199,12 @@ const useComfortStore = create(
           if (!currentSessionId || !currentChatRoomId) {
             throw new Error('세션이 설정되지 않았습니다.');
           }
+
+          // 메시지 전송 시작 시점의 세션 정보 저장
+          const originalSessionId = currentSessionId;
+          const originalChatRoomId = currentChatRoomId;
           
-          // 사용자 메시지 추가
+          // 사용자 메시지 준비
           const userMessage = {
             id: Date.now(),
             sender: 'user',
@@ -216,14 +212,17 @@ const useComfortStore = create(
             timestamp: new Date()
           };
           
+          // 먼저 사용자 메시지만 추가하고 로딩 시작
+          const messagesWithUser = [...messages, userMessage];
+          
           set({
-            messages: [...messages, userMessage],
+            messages: messagesWithUser,
             isLoading: true
           });
           
           console.log('API 호출 전:', { currentSessionId, message, selectedMode });
           // AI 응답 요청
-          const response = await comfortService.sendMessage(currentSessionId, message, selectedMode);
+          const response = await comfortService.sendMessage(originalSessionId, message, selectedMode);
           console.log('API 응답:', response.data);
           
           const botMessage = {
@@ -234,38 +233,53 @@ const useComfortStore = create(
             mode: selectedMode
           };
           
-          const updatedMessages = [...messages, userMessage, botMessage];
+          // 사용자 메시지와 봇 메시지 모두 포함
+          const finalMessages = [...messagesWithUser, botMessage];
+          
+          // API 응답 시점에서 현재 상태 다시 확인
+          const currentState = get();
+          const isStillOnSameSession = currentState.currentChatRoomId === originalChatRoomId;
           
           // 첫 번째 사용자 메시지로 제목 생성 (기존 메시지가 2개 이하일 때)
-          const updatedSessions = sessions.map(session => {
-            if (session.id === currentChatRoomId) {
+          const updatedSessions = currentState.sessions.map(session => {
+            if (session.id === originalChatRoomId) {
               let newTitle = session.title;
               
               // '새로운 대화'이고 첫 번째 메시지인 경우 제목 생성
-              if (session.title === '새로운 대화' && updatedMessages.length <= 2) {
+              if (session.title === '새로운 대화' && finalMessages.length <= 2) {
                 newTitle = message.length > 20 ? message.slice(0, 20) + '...' : message;
                 
                 // 기존 updateSessionTitle 함수 활용해서 제목 업데이트
                 setTimeout(() => {
-                  get().updateSessionTitle(currentChatRoomId, newTitle);
+                  get().updateSessionTitle(originalChatRoomId, newTitle);
                 }, 100);
               }
               
               return { 
                 ...session, 
-                messages: updatedMessages,
+                messages: finalMessages,
                 title: newTitle
               };
             }
             return session;
           });
           
-          set({
-            messages: updatedMessages,
-            sessions: updatedSessions,
-            isLoading: false,
-            error: null
-          });
+          // 현재 같은 세션에 있을 때만 화면 업데이트, 아니면 백그라운드에서만 세션 업데이트
+          if (isStillOnSameSession) {
+            set({
+              messages: finalMessages,
+              sessions: updatedSessions,
+              isLoading: false,
+              error: null
+            });
+          } else {
+            // 다른 세션으로 이동했으면 현재 화면은 건드리지 않고 세션 데이터만 업데이트
+            set({
+              sessions: updatedSessions,
+              isLoading: false,
+              error: null
+            });
+          }
           
         } catch (error) {
           console.error('Failed to send message:', error);
@@ -455,6 +469,7 @@ const useComfortStore = create(
         sessions: state.sessions,
         currentSessionId: state.currentSessionId,
         currentChatRoomId: state.currentChatRoomId,
+        messages: state.messages, // 메시지도 저장하여 새로고침 시 유지
         timelineCache: state.timelineCache, // 캐시 데이터 저장 추가
         manhwaCache: state.manhwaCache // 캐시 데이터 저장 추가
         // selectedMode: state.selectedMode
