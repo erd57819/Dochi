@@ -688,15 +688,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 미디어 테스트 완료 후 실제 연결
   const handleMediaTestComplete = async () => {
-    // 테스트에서 설정한 모든 상태를 실제 통화 상태에 반영
-    setIsCameraOn(testVideoEnabled);
-    setIsMicOn(testAudioEnabled);
-    
-    // 테스트에서 설정한 디바이스 및 옵션을 실제 통화에 적용
-    setActiveCamera(selectedCamera);
-    setActiveMicrophone(selectedMicrophone);
-    setActiveNoiseSuppression(noiseSuppressionEnabled);
-    
     console.log('=== 테스트 설정 적용 ===', {
       camera: selectedCamera,
       microphone: selectedMicrophone,
@@ -709,10 +700,20 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     
     // 테스트 스트림 정리
     stopTestStream();
-    
     setShowMediaTest(false);
     setCallStartTime(Date.now());
-    await connectToRoom();
+    
+    // 상태 업데이트와 함께 연결 - 상태를 직접 전달하여 비동기 문제 해결
+    setIsCameraOn(testVideoEnabled);
+    setIsMicOn(testAudioEnabled);
+    setActiveCamera(selectedCamera);
+    setActiveMicrophone(selectedMicrophone);
+    setActiveNoiseSuppression(noiseSuppressionEnabled);
+    
+    // 짧은 지연 후 연결하여 상태 업데이트가 완료되도록 함
+    setTimeout(async () => {
+      await connectToRoom();
+    }, 100);
   };
 
   // 미디어 디바이스 목록 가져오기
