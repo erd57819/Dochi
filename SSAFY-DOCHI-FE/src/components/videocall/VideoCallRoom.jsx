@@ -195,6 +195,37 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         });
       });
 
+      // 미디어 테스트에서 설정한 상태에 따라 자동으로 미디어 활성화
+      try {
+        if (isCameraOn) {
+          console.log('미디어 테스트 설정에 따라 카메라 자동 활성화');
+          await newRoom.localParticipant.setCameraEnabled(true);
+          
+          // 비디오 트랙 참조 저장
+          setTimeout(() => {
+            const videoPublication = Array.from(newRoom.localParticipant.videoTrackPublications.values())[0];
+            if (videoPublication?.track) {
+              setLocalVideoTrack(videoPublication.track);
+              console.log('로컬 비디오 트랙 설정 완료');
+            }
+          }, 500);
+        }
+
+        if (isMicOn) {
+          console.log('미디어 테스트 설정에 따라 마이크 자동 활성화');
+          await newRoom.localParticipant.setMicrophoneEnabled(true);
+          
+          // 오디오 트랙 참조 저장
+          const audioPublication = Array.from(newRoom.localParticipant.audioTrackPublications.values())[0];
+          if (audioPublication?.track) {
+            setLocalAudioTrack(audioPublication.track);
+            console.log('로컬 오디오 트랙 설정 완료');
+          }
+        }
+      } catch (mediaError) {
+        console.error('미디어 자동 활성화 실패:', mediaError);
+      }
+
     } catch (error) {
       console.error('방 연결 실패:', error);
       setError(`연결 실패: ${error.message}`);
@@ -581,6 +612,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 미디어 테스트 완료 후 실제 연결
   const handleMediaTestComplete = async () => {
+    // 테스트에서 설정한 상태를 실제 통화 상태에 반영
+    setIsCameraOn(testVideoEnabled);
+    setIsMicOn(testAudioEnabled);
+    
+    // 테스트 스트림 정리
+    stopTestStream();
+    
     setShowMediaTest(false);
     setCallStartTime(Date.now());
     await connectToRoom();
@@ -1212,6 +1250,22 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             </div>
           </div>
 
+          {/* 현재 설정 요약 */}
+          <div className="px-6 py-4 bg-[#F8F5F0] border-t border-[#5C351A]">
+            <h4 className="text-sm font-medium text-[#2A2A2A] mb-2">통화 시작 시 적용될 설정:</h4>
+            <div className="flex gap-4 text-sm text-[#4A4A4A]">
+              <span className={`flex items-center gap-1 ${testVideoEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                {testVideoEnabled ? '📹' : '📷'} 카메라: {testVideoEnabled ? 'ON' : 'OFF'}
+              </span>
+              <span className={`flex items-center gap-1 ${testAudioEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                {testAudioEnabled ? '🎤' : '🔇'} 마이크: {testAudioEnabled ? 'ON' : 'OFF'}
+              </span>
+              <span className={`flex items-center gap-1 ${noiseSuppressionEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                🔧 소음억제: {noiseSuppressionEnabled ? 'ON' : 'OFF'}
+              </span>
+            </div>
+          </div>
+
           {/* 하단 버튼 */}
           <div className="p-6 border-t border-[#5C351A] flex justify-between">
             <button
@@ -1231,7 +1285,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               }}
               className="px-8 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg"
             >
-              테스트 완료 - 통화 시작
+              이 설정으로 통화 시작
             </button>
           </div>
         </div>
