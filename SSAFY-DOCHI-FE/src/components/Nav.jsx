@@ -106,25 +106,6 @@ export const Nav = () => {
                 >
                   마이페이지
                 </Link>
-                {/* 관리자용 대시보드 링크 */}
-                {(user?.role === 'ADMIN' || 
-                  user?.userId === 'admin' || 
-                  user?.username === 'admin' || 
-                  user?.email?.includes('admin') ||
-                  ['ssafysy', 'ssafy'].includes(user?.userId) ||
-                  window.location.hostname !== 'localhost') && (
-                  <Link 
-                    to="/admin/kafka-metrics" 
-                    className={`text-sm font-semibold transition-all duration-200 hover:scale-105 ${
-                      location.pathname.startsWith('/admin') 
-                        ? 'text-purple-600' 
-                        : 'text-gray-500 hover:text-purple-600'
-                    }`}
-                    style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}
-                  >
-                    📊 관리자
-                  </Link>
-                )}
                 <span className="text-[#4a4a4a] text-sm font-medium" style={{ fontFamily: 'Pretendard-Medium, Helvetica' }}>
                   <span className="font-semibold text-[#ff6b35]" style={{ fontFamily: 'Pretendard-SemiBold, Helvetica' }}>{user?.nickname || user?.name}</span>도치님
                 </span>

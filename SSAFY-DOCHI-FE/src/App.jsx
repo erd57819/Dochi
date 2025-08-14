@@ -28,7 +28,6 @@ import ExpertMatchingPage from './pages/ExpertMatchingPage';
 import ConflictReportPage from './pages/ConflictReportPage';
 import './App.css';
 import VideoCallRoom from './components/videocall/VideoCallRoom';
-import KafkaMetricsDashboard from './components/admin/KafkaMetricsDashboard';
 
 
 const App = () => {
@@ -70,7 +69,6 @@ const App = () => {
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/expert-matching" element={<ExpertMatchingPage />} />
             <Route path="/game" element={<GamePage />} />
-            <Route path="/admin/kafka-metrics" element={<KafkaMetricsDashboard />} />
           </Routes>
         </main>
       </div>
