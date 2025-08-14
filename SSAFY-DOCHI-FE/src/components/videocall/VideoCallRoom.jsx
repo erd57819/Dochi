@@ -100,7 +100,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }, [room?.name, roomName]);
 
   // LiveKit 방 연결 함수 
-  const connectToRoom = async () => {
+  const connectToRoom = async (overrideSettings = null) => {
+    // 매개변수로 전달된 설정이 있으면 사용, 없으면 현재 상태 사용
+    const cameraEnabled = overrideSettings?.cameraEnabled ?? isCameraOn;
+    const micEnabled = overrideSettings?.micEnabled ?? isMicOn;
+    const cameraDeviceId = overrideSettings?.cameraDeviceId ?? activeCamera;
+    const micDeviceId = overrideSettings?.micDeviceId ?? activeMicrophone;
+    const noiseSuppression = overrideSettings?.noiseSuppression ?? activeNoiseSuppression;
     try {
       setError(null);
       setIsLoading(true);
@@ -204,19 +210,19 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       try {
         const mediaConstraints = {};
         
-        if (isCameraOn) {
+        if (cameraEnabled) {
           mediaConstraints.video = {
-            deviceId: activeCamera && activeCamera !== '' ? { exact: activeCamera } : undefined,
+            deviceId: cameraDeviceId && cameraDeviceId !== '' ? { exact: cameraDeviceId } : undefined,
             width: { ideal: 1280 },
             height: { ideal: 720 }
           };
         }
         
-        if (isMicOn) {
+        if (micEnabled) {
           mediaConstraints.audio = {
-            deviceId: activeMicrophone && activeMicrophone !== '' ? { exact: activeMicrophone } : undefined,
+            deviceId: micDeviceId && micDeviceId !== '' ? { exact: micDeviceId } : undefined,
             echoCancellation: true,
-            noiseSuppression: activeNoiseSuppression
+            noiseSuppression: noiseSuppression
           };
         }
         
@@ -224,11 +230,11 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           console.log('=== 테스트 설정으로 맞춤형 미디어 생성 ===');
           console.log('Media Constraints:', JSON.stringify(mediaConstraints, null, 2));
           console.log('Active Settings:', {
-            activeCamera,
-            activeMicrophone,
-            activeNoiseSuppression,
-            isCameraOn,
-            isMicOn
+            cameraDeviceId,
+            micDeviceId,
+            noiseSuppression,
+            cameraEnabled,
+            micEnabled
           });
           
           const customStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
@@ -243,7 +249,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           if (localVideoRef.current && mediaConstraints.video && customStream.getVideoTracks().length > 0) {
             localVideoRef.current.srcObject = customStream;
             localVideoRef.current.muted = true;
-            localVideoRef.current.play().catch(console.error);
+            await localVideoRef.current.play().catch(console.error);
             console.log('로컬 비디오 ref 연결 완료');
           }
           
@@ -285,10 +291,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         console.error('맞춤형 미디어 활성화 실패:', mediaError);
         // 실패 시 기본 방법으로 fallback
         try {
-          if (isCameraOn) {
+          if (cameraEnabled) {
             await newRoom.localParticipant.setCameraEnabled(true);
           }
-          if (isMicOn) {
+          if (micEnabled) {
             await newRoom.localParticipant.setMicrophoneEnabled(true);
           }
         } catch (fallbackError) {
@@ -703,17 +709,21 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setShowMediaTest(false);
     setCallStartTime(Date.now());
     
-    // 상태 업데이트와 함께 연결 - 상태를 직접 전달하여 비동기 문제 해결
+    // 상태 업데이트
     setIsCameraOn(testVideoEnabled);
     setIsMicOn(testAudioEnabled);
     setActiveCamera(selectedCamera);
     setActiveMicrophone(selectedMicrophone);
     setActiveNoiseSuppression(noiseSuppressionEnabled);
     
-    // 짧은 지연 후 연결하여 상태 업데이트가 완료되도록 함
-    setTimeout(async () => {
-      await connectToRoom();
-    }, 100);
+    // 테스트 설정을 직접 전달하여 상태 비동기 문제 해결
+    await connectToRoom({
+      cameraEnabled: testVideoEnabled,
+      micEnabled: testAudioEnabled,
+      cameraDeviceId: selectedCamera,
+      micDeviceId: selectedMicrophone,
+      noiseSuppression: noiseSuppressionEnabled
+    });
   };
 
   // 미디어 디바이스 목록 가져오기
