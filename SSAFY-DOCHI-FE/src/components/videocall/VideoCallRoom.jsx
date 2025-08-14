@@ -711,22 +711,16 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     const newVideoEnabled = !testVideoEnabled;
     setTestVideoEnabled(newVideoEnabled);
     
-    if (!testStream) {
-      // 스트림이 없는 경우 새로 생성
+    // 스트림이 없거나 비어있는 경우 새로 생성
+    if (!testStream || (testStream.getTracks().length === 0)) {
       if (newVideoEnabled || testAudioEnabled) {
         await startTestStream();
       }
       return;
     }
     
-    // 기존 비디오 트랙 제거
-    const videoTracks = testStream.getVideoTracks();
-    videoTracks.forEach(track => {
-      testStream.removeTrack(track);
-      track.stop();
-    });
-    
     if (newVideoEnabled) {
+      // 비디오를 켜는 경우
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -737,6 +731,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         });
         
         const newVideoTrack = videoStream.getVideoTracks()[0];
+        
+        // 기존 비디오 트랙이 있다면 제거
+        const existingVideoTracks = testStream.getVideoTracks();
+        existingVideoTracks.forEach(track => {
+          testStream.removeTrack(track);
+          track.stop();
+        });
+        
+        // 새 비디오 트랙 추가
         testStream.addTrack(newVideoTrack);
         
         // 비디오 엘리먼트 업데이트
@@ -749,8 +752,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         setTestVideoEnabled(false);
       }
     } else {
-      // 비디오가 꺼지고 오디오도 없으면 스트림 정리
-      if (!testAudioEnabled) {
+      // 비디오를 끄는 경우
+      const videoTracks = testStream.getVideoTracks();
+      videoTracks.forEach(track => {
+        testStream.removeTrack(track);
+        track.stop();
+      });
+      
+      // 오디오도 없으면 스트림 완전 정리
+      if (!testAudioEnabled || testStream.getAudioTracks().length === 0) {
         stopTestStream();
         return;
       }
@@ -767,20 +777,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     const newAudioEnabled = !testAudioEnabled;
     setTestAudioEnabled(newAudioEnabled);
     
-    if (!testStream) {
-      // 스트림이 없는 경우 새로 생성
+    // 스트림이 없거나 비어있는 경우 새로 생성
+    if (!testStream || (testStream.getTracks().length === 0)) {
       if (newAudioEnabled || testVideoEnabled) {
         await startTestStream();
       }
       return;
     }
-    
-    // 기존 오디오 트랙 제거
-    const audioTracks = testStream.getAudioTracks();
-    audioTracks.forEach(track => {
-      testStream.removeTrack(track);
-      track.stop();
-    });
     
     // 오디오 분석기 정리
     if (testAudioContextRef.current) {
@@ -790,6 +793,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setAudioLevel(0);
     
     if (newAudioEnabled) {
+      // 오디오를 켜는 경우
       try {
         const audioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -800,6 +804,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         });
         
         const newAudioTrack = audioStream.getAudioTracks()[0];
+        
+        // 기존 오디오 트랙이 있다면 제거
+        const existingAudioTracks = testStream.getAudioTracks();
+        existingAudioTracks.forEach(track => {
+          testStream.removeTrack(track);
+          track.stop();
+        });
+        
+        // 새 오디오 트랙 추가
         testStream.addTrack(newAudioTrack);
         
         // 오디오 레벨 분석 재시작
@@ -809,8 +822,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         setTestAudioEnabled(false);
       }
     } else {
-      // 오디오가 꺼지고 비디오도 없으면 스트림 정리
-      if (!testVideoEnabled) {
+      // 오디오를 끄는 경우
+      const audioTracks = testStream.getAudioTracks();
+      audioTracks.forEach(track => {
+        testStream.removeTrack(track);
+        track.stop();
+      });
+      
+      // 비디오도 없으면 스트림 완전 정리
+      if (!testVideoEnabled || testStream.getVideoTracks().length === 0) {
         stopTestStream();
         return;
       }
@@ -822,7 +842,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     if (type === 'camera') {
       setSelectedCamera(deviceId);
       
-      if (testStream && testVideoEnabled) {
+      // 스트림이 있고 비디오가 활성화된 경우에만 변경
+      if (testStream && testVideoEnabled && testStream.getTracks().length > 0) {
         // 기존 비디오 트랙 제거
         const videoTracks = testStream.getVideoTracks();
         videoTracks.forEach(track => {
@@ -853,20 +874,21 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     } else if (type === 'microphone') {
       setSelectedMicrophone(deviceId);
       
-      if (testStream && testAudioEnabled) {
-        // 기존 오디오 트랙 제거
-        const audioTracks = testStream.getAudioTracks();
-        audioTracks.forEach(track => {
-          testStream.removeTrack(track);
-          track.stop();
-        });
-        
+      // 스트림이 있고 오디오가 활성화된 경우에만 변경
+      if (testStream && testAudioEnabled && testStream.getTracks().length > 0) {
         // 오디오 분석기 정리
         if (testAudioContextRef.current) {
           testAudioContextRef.current.close();
           testAudioContextRef.current = null;
         }
         setAudioLevel(0);
+        
+        // 기존 오디오 트랙 제거
+        const audioTracks = testStream.getAudioTracks();
+        audioTracks.forEach(track => {
+          testStream.removeTrack(track);
+          track.stop();
+        });
         
         try {
           const audioStream = await navigator.mediaDevices.getUserMedia({
