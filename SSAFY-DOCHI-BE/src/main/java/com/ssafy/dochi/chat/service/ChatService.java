@@ -79,7 +79,7 @@ public class ChatService {
                 saveMessage(sessionId, "BOT", aiResponse);
             }
         } else {
-            aiResponse = gmsAiClient.ask(prompt, "gpt-4o");
+            aiResponse = gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
             saveMessage(sessionId, "USER", dto.getMessage());
             saveMessage(sessionId, "BOT", aiResponse);
         }
@@ -163,7 +163,7 @@ public class ChatService {
             String prompt = "다음은 이전 요약이야:\n" + oldSummary + "\n\n" +
                     "그리고 다음은 새로 들어온 대화야:\n" + newContent + "\n\n" +
                     "이 둘을 합쳐서 300자 이내로 간결하게 요약해줘.";
-            return gmsAiClient.ask(prompt, "gpt-4o");
+            return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
         } catch (Exception e) {
             log.warn("요약 실패, 이전 요약 유지", e);
             return oldSummary;
@@ -196,7 +196,7 @@ public class ChatService {
             %s
             """.formatted(conversationHistory);
 
-            return gmsAiClient.ask(prompt, "gpt-4o");
+            return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
         } catch (Exception e) {
             log.warn("만화 시나리오 변환 실패", e);
             return null;
@@ -214,7 +214,7 @@ public class ChatService {
         Scenario:
         %s
         """.formatted(conversation, scenario);
-        return gmsAiClient.ask(prompt, "gpt-4o");
+        return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
     }
 
     private String generateComicDescription(String conversationContent) {
@@ -232,7 +232,7 @@ public class ChatService {
                     - "복잡한 감정들을 4컷 만화로 담아봤어요"
                     """.formatted(conversationContent);
 
-            return gmsAiClient.ask(prompt, "gpt-4o");
+            return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
         } catch (Exception e) {
             log.warn("만화 설명 생성 실패", e);
             return "당신의 이야기를 4컷 만화로 표현했어요";

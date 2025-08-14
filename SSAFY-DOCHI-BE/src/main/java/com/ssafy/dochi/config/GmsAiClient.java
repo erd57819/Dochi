@@ -28,12 +28,12 @@ public class GmsAiClient {
         HttpHeaders headers = new HttpHeaders();
 
         List<Map<String, String>> messages = List.of(
-                Map.of("role", "system", "content", "You are a helpful assistant."),
                 Map.of("role", "user", "content", prompt)
         );
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", "gpt-4o-mini");  // gpt-3.5-turbo 대신 gpt-4o-mini 사용
+        body.put("model", model);  // 파라미터로 받은 모델 사용
+        body.put("max_tokens", 1024);
         body.put("messages", messages);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
