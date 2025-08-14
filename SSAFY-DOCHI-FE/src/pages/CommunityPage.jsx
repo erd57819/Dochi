@@ -280,7 +280,7 @@ const CommunityPage = () => {
           <div className="flex flex-wrap justify-between gap-5" >
             {/* 왼쪽: 카테고리 목록 */}
             <div className="w-1/4">
-              <div className="space-y-2 mb-6 bg-white p-2 rounded-lg">
+              <div className="space-y-2 mb-6 bg-white p-2">
                 {categories
                   .filter(category => category.value !== 'MY_POSTS' || isLoggedIn) // 로그인된 경우에만 "내가 쓴 글" 표시
                   .map((category) => (
@@ -322,16 +322,19 @@ const CommunityPage = () => {
               </div>
 
               {/* 커뮤니티 순위 */}
-              <div className="bg-white rounded-lg p-5 mb-4 shadow-sm">
-                <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>🏆 커뮤니티 순위</h4>
+              <div className="bg-white p-5 mb-4">
+                <h4 className="font-bold text-sm mb-3" style={{ color: '#8B4513' }}>🏆 커뮤니티 순위</h4>
                 <div className="flex gap-2 mb-4">
                   <button
                     onClick={() => setRankingType('views')}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                       rankingType === 'views'
-                        ? 'bg-orange-500 text-white'
+                        ? 'text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
+                    style={{
+                      backgroundColor: rankingType === 'views' ? '#8B4513' : undefined
+                    }}
                   >
                     조회순
                   </button>
@@ -339,9 +342,12 @@ const CommunityPage = () => {
                     onClick={() => setRankingType('likes')}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                       rankingType === 'likes'
-                        ? 'bg-orange-500 text-white'
+                        ? 'text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
+                    style={{
+                      backgroundColor: rankingType === 'likes' ? '#8B4513' : undefined
+                    }}
                   >
                     좋아요순
                   </button>
@@ -367,10 +373,11 @@ const CommunityPage = () => {
                             onClick={() => handlePostClick(post.id)}
                           >
                             <div
-                              className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                              className={`w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                                index < 3 ? 'rounded-full text-white' : 'text-gray-700'
+                              }`}
                               style={{
-                                background: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 
-                                          index < 5 ? '#D2691E' : '#8B4513',
+                                background: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'transparent',
                                 fontSize: '10px'
                               }}
                             >
@@ -395,9 +402,9 @@ const CommunityPage = () => {
               </div>
 
               {/* 커뮤니티 가이드 */}
-              <div className="bg-white rounded p-5">
-                <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>💡 커뮤니티 가이드</h4>
-                <ul className="space-y-2" style={{ color: '#666666' }}>
+              <div className="bg-white p-5">
+                <h4 className="font-bold text-sm mb-3" style={{ color: '#8B4513' }}>💡 커뮤니티 가이드</h4>
+                <ul className="space-y-2 text-xs" style={{ color: '#666666' }}>
                   <li className="flex items-center gap-2">
                     <span style={{ color: '#BF7D2C' }}>•</span>
                     서로 존중하는 대화
@@ -420,7 +427,7 @@ const CommunityPage = () => {
 
             {/* 오른쪽: 게시글 목록 */}
             <div className="w-5/7">
-              <div className="bg-white rounded-xl min-h-[600px]">
+              <div className="bg-white min-h-[600px]">
 
                 <div className="space-y-1">
                   {posts.length === 0 ? (
