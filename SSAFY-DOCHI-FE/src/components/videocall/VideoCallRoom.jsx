@@ -239,6 +239,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             audioTrackSettings: customStream.getAudioTracks()[0]?.getSettings()
           });
           
+          // 로컬 비디오 엘리먼트에 스트림 연결
+          if (localVideoRef.current && mediaConstraints.video && customStream.getVideoTracks().length > 0) {
+            localVideoRef.current.srcObject = customStream;
+            localVideoRef.current.muted = true;
+            localVideoRef.current.play().catch(console.error);
+            console.log('로컬 비디오 ref 연결 완료');
+          }
+          
           // 비디오 트랙 publish
           if (mediaConstraints.video && customStream.getVideoTracks().length > 0) {
             const videoTrack = customStream.getVideoTracks()[0];
