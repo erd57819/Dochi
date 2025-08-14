@@ -135,7 +135,9 @@ const ComfortChatPage = () => {
     useComfortStore.setState({ 
       currentSessionId: null, 
       messages: [],
-      currentChatRoomId: null
+      currentChatRoomId: null,
+      isLoading: false, // 로딩 상태 초기화
+      error: null // 에러 상태도 초기화
     });
   };
 
@@ -186,9 +188,12 @@ const ComfortChatPage = () => {
   const handleStartNewChat = async () => {
     if (!inputValue.trim() || isLoading) return;
 
+    const messageToSend = inputValue.trim();
+    setInputValue(''); // 먼저 input 초기화
+
     try {
-      await createNewSessionWithFirstMessage(inputValue.trim());
-      setInputValue('');
+      // 세션 생성과 동시에 첫 메시지 전송 (중복 호출 제거)
+      await createNewSessionWithFirstMessage(messageToSend);
     } catch (error) {
       console.error('새 채팅 시작 실패:', error);
     }
@@ -388,7 +393,7 @@ const ComfortChatPage = () => {
       
       {/* 사이드바 */}
       <div className={`bg-white shadow-lg transition-all duration-300 z-40 flex flex-col ${
-        isSidebarOpen ? 'w-[320px]' : 'w-[80px]'
+        isSidebarOpen ? 'w-[280px]' : 'w-[70px]'
       }`} style={{ 
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
         height: 'calc(100vh - 80px)'
@@ -454,7 +459,7 @@ const ComfortChatPage = () => {
         )}
 
         {/* 세션 목록 */}
-        <div className="flex-1 overflow-y-auto px-2">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2">
           {isSidebarOpen ? (
             sessions.map((session) => (
               <div
@@ -475,10 +480,13 @@ const ComfortChatPage = () => {
                     e.target.style.backgroundColor = 'transparent';
                   }
                 }}
-                onClick={() => loadSession(session.id)}
+                onClick={() => {
+                  loadSession(session.id);
+                  setInputValue(''); // 세션 전환 시 입력값 초기화
+                }}
               >
                 <div className="flex justify-between items-center">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0 pr-2">
                     {editingTitleId === session.id ? (
                       // 인라인 편집 모드
                       <div className="flex items-center gap-1 mb-1">
@@ -513,8 +521,14 @@ const ComfortChatPage = () => {
                       </div>
                     ) : (
                       // 일반 제목 보기 모드
-                      <div className="flex items-center gap-1">
-                        <h3 className="font-medium text-gray-800 truncate text-base">{session.title}</h3>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <h3 className="font-medium text-gray-800 truncate text-base flex-1 min-w-0" 
+                            style={{ 
+                              maxWidth: '180px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>{session.title}</h3>
                         {currentChatRoomId === session.id && (
                           <button
                             onClick={(e) => {
@@ -538,7 +552,7 @@ const ComfortChatPage = () => {
                         )}
                       </div>
                     )}
-                    <p className="text-sm text-gray-500 mt-2">
+                    <p className="text-sm text-gray-500 mt-2 truncate" style={{ maxWidth: '180px' }}>
                       {new Date(session.createdAt).toLocaleDateString('ko-KR')}
                     </p>
                   </div>
@@ -558,13 +572,6 @@ const ComfortChatPage = () => {
             ))
           ) : (
             sessions.slice(0, 5).map((session, index) => {
-              // 제목에서 키워드 추출 (첫 2-3 단어)
-              const getKeyword = (title) => {
-                const words = title.split(' ');
-                if (words.length <= 2) return words.join(' ');
-                return words.slice(0, 2).join(' ');
-              };
-
               return (
                 <div
                   key={session.id}
@@ -584,11 +591,23 @@ const ComfortChatPage = () => {
                       e.target.style.backgroundColor = 'transparent';
                     }
                   }}
-                  onClick={() => loadSession(session.id)}
+                  onClick={() => {
+                  loadSession(session.id);
+                  setInputValue(''); // 세션 전환 시 입력값 초기화
+                }}
                   title={session.title}
                 >
-                  <div className="text-base font-medium text-center leading-tight" style={{ color: '#8B4513' }}>
-                    {getKeyword(session.title)}
+                  <div 
+                    className="text-sm font-medium truncate px-1" 
+                    style={{ 
+                      color: '#8B4513',
+                      maxWidth: '100%',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {session.title}
                   </div>
                 </div>
               );
@@ -633,12 +652,12 @@ const ComfortChatPage = () => {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="어떤 일로 고민이신가요? 자세히 들려주세요..."
-                    className="w-full px-6 py-4 bg-gray-50/80 border-2 border-orange-200/60 rounded-2xl focus:outline-none focus:border-orange-400 text-base resize-none transition-all duration-200"
+                    className="w-full px-6 py-3 bg-gray-50/80 border-2 border-orange-200/60 rounded-2xl focus:outline-none focus:border-orange-400 text-base resize-none transition-all duration-200"
                     style={{ 
-                      minHeight: '100px',
+                      minHeight: '60px',
                       fontFamily: 'inherit'
                     }}
-                    rows="4"
+                    rows="2"
                     disabled={isLoading}
                   />
                   
@@ -936,7 +955,7 @@ const ComfortChatPage = () => {
                backdropFilter: 'blur(5px)',
                overflow: messages.length > 0 ? 'auto' : 'hidden',
                padding: '8px',
-               paddingTop: '60px',
+               paddingTop: '80px', // 도구창 높이 고려해서 증가
                paddingBottom: '80px',
                height: 'calc(100vh - 160px)',
                maxHeight: 'calc(100vh - 160px)'

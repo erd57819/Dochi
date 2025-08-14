@@ -81,10 +81,6 @@ public class ChatService {
             saveMessage(sessionId, "BOT", aiResponse);
         }
         
-        if (!"COMIC".equals(dto.getMode())) {
-            saveMessage(sessionId, "USER", dto.getMessage());
-        }
-        
         return ChatResDto.builder()
                 .senderType("BOT")
                 .message(aiResponse)
@@ -122,10 +118,10 @@ public class ChatService {
             }
 
             recent.add(senderType + ": " + message);
-            if (recent.size() > 6) {
-                String toSummarize = String.join("\n", recent.subList(0, recent.size() - 2));
+            if (recent.size() > 10) {  // 더 많은 메시지를 유지 (6 -> 10)
+                String toSummarize = String.join("\n", recent.subList(0, recent.size() - 6));
                 summary = summarize(toSummarize, summary);
-                recent = recent.subList(recent.size() - 2, recent.size());
+                recent = recent.subList(recent.size() - 6, recent.size()); // 최근 6개 메시지 유지 (2 -> 6)
             }
 
             Map<String, Object> toStore = new HashMap<>();
@@ -158,7 +154,7 @@ public class ChatService {
         try {
             String prompt = "다음은 이전 요약이야:\n" + oldSummary + "\n\n" +
                     "그리고 다음은 새로 들어온 대화야:\n" + newContent + "\n\n" +
-                    "이 둘을 합쳐서 300자 이내로 간결하게 요약해줘.";
+                    "이 둘을 합쳐서 500자 이내로 상세하게 요약해줘. 중요한 감정이나 구체적인 상황은 빠뜨리지 말고 포함해줘.";
             return gmsAiClient.ask(prompt, "gpt-4o");
         } catch (Exception e) {
             log.warn("요약 실패, 이전 요약 유지", e);
