@@ -2,7 +2,7 @@ import React from "react";
 import conflictImage from '../assets/conflict.png'; // conflict.png 이미지 import
 
 const HedgehogIcon = () => (
-  <div className="w-[50px] h-[50px] mt-[12px] border-[3px] border-[#bf7d2c] rounded-xl overflow-hidden flex items-center justify-center shadow-xl" style={{background: 'linear-gradient(135deg, #f8d6b3 0%, #cd9f6e 100%)'}}>
+  <div className="w-[50px] h-[50px] mt-[12px] border-[3px] border-[#cc5500] rounded-full overflow-hidden flex items-center justify-center shadow-xl" style={{background: 'linear-gradient(135deg, #ff8c42 0%, #e67e22 100%)'}}>
     <img 
       src={conflictImage} 
       alt="갈등" 
