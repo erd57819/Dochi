@@ -34,10 +34,30 @@ const CommunityPage = () => {
     try {
       setRankingLoading(true);
       const sortParam = type === 'views' ? 'viewCount' : 'likeCount';
-      const data = await communityApi.getPosts(0, 10, '', '', sortParam);
-      setRankingPosts(data.content || []);
+      const data = await communityApi.getPosts(0, 50, '', '', sortParam); // 더 많은 데이터를 가져와서 정렬
+      
+      let sortedPosts = data.content || [];
+      
+      // 클라이언트 사이드에서 정렬 처리
+      if (type === 'views') {
+        // 조회수가 0보다 큰 게시글만 필터링하고 정렬
+        sortedPosts = sortedPosts
+          .filter(post => (post.viewCount || 0) > 0)
+          .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+      } else {
+        // 좋아요수가 0보다 큰 게시글만 필터링하고 정렬
+        sortedPosts = sortedPosts
+          .filter(post => (post.likeCount || 0) > 0)
+          .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+      }
+      
+      // 상위 10개만 표시
+      setRankingPosts(sortedPosts.slice(0, 10));
+      
+      console.log(`순위 데이터 (${type}):`, sortedPosts.slice(0, 10));
     } catch (error) {
       console.error('순위 조회 오류:', error);
+      setRankingPosts([]); // 오류 시 빈 배열로 설정
     } finally {
       setRankingLoading(false);
     }
