@@ -206,7 +206,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         
         if (isCameraOn) {
           mediaConstraints.video = {
-            deviceId: activeCamera ? { exact: activeCamera } : undefined,
+            deviceId: activeCamera && activeCamera !== '' ? { exact: activeCamera } : undefined,
             width: { ideal: 1280 },
             height: { ideal: 720 }
           };
@@ -214,26 +214,53 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         
         if (isMicOn) {
           mediaConstraints.audio = {
-            deviceId: activeMicrophone ? { exact: activeMicrophone } : undefined,
+            deviceId: activeMicrophone && activeMicrophone !== '' ? { exact: activeMicrophone } : undefined,
             echoCancellation: true,
             noiseSuppression: activeNoiseSuppression
           };
         }
         
         if (mediaConstraints.video || mediaConstraints.audio) {
-          console.log('테스트 설정으로 맞춤형 미디어 생성:', mediaConstraints);
+          console.log('=== 테스트 설정으로 맞춤형 미디어 생성 ===');
+          console.log('Media Constraints:', JSON.stringify(mediaConstraints, null, 2));
+          console.log('Active Settings:', {
+            activeCamera,
+            activeMicrophone,
+            activeNoiseSuppression,
+            isCameraOn,
+            isMicOn
+          });
           
           const customStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+          console.log('사용자 미디어 스트림 생성 성공:', {
+            videoTracks: customStream.getVideoTracks().length,
+            audioTracks: customStream.getAudioTracks().length,
+            videoTrackSettings: customStream.getVideoTracks()[0]?.getSettings(),
+            audioTrackSettings: customStream.getAudioTracks()[0]?.getSettings()
+          });
           
           // 비디오 트랙 publish
           if (mediaConstraints.video && customStream.getVideoTracks().length > 0) {
             const videoTrack = customStream.getVideoTracks()[0];
+            console.log('비디오 트랙 publish 시도:', {
+              trackId: videoTrack.id,
+              trackLabel: videoTrack.label,
+              trackSettings: videoTrack.getSettings(),
+              trackState: videoTrack.readyState,
+              trackEnabled: videoTrack.enabled
+            });
+            
             const videoPublication = await newRoom.localParticipant.publishTrack(videoTrack, {
               name: 'camera',
               simulcast: false
             });
             setLocalVideoTrack(videoPublication.track);
-            console.log('맞춤형 비디오 트랙 publish 완료');
+            console.log('맞춤형 비디오 트랙 publish 완료:', {
+              publicationSid: videoPublication.sid,
+              trackSid: videoPublication.track?.sid
+            });
+          } else if (mediaConstraints.video) {
+            console.error('비디오 미디어 제약이 있지만 스트림에 비디오 트랙이 없음');
           }
           
           // 오디오 트랙 publish
@@ -563,12 +590,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     }
   }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
-  // 미디어 테스트 초기화 (최초 진입시에만)
+  // 미디어 테스트 초기화 및 상태 변경 감지
   useEffect(() => {
     if (showMediaTest) {
-      getMediaDevices().then(() => {
+      if (!mediaDevices.cameras.length && !mediaDevices.microphones.length) {
+        // 디바이스 목록이 없으면 먼저 가져오기
+        getMediaDevices().then(() => {
+          startTestStream();
+        });
+      } else {
+        // 디바이스 목록이 있으면 바로 스트림 시작
         startTestStream();
-      });
+      }
     }
 
     return () => {
@@ -576,7 +609,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         stopTestStream();
       }
     };
-  }, [showMediaTest]); // 의존성에서 selectedCamera, selectedMicrophone 제거
+  }, [showMediaTest, testVideoEnabled, testAudioEnabled]); // 미디어 상태 변경도 감지
 
   // 갈등 레벨 분석 (감정 점수 변화 감지)
   useEffect(() => {
@@ -656,12 +689,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setActiveMicrophone(selectedMicrophone);
     setActiveNoiseSuppression(noiseSuppressionEnabled);
     
-    console.log('테스트 설정 적용:', {
+    console.log('=== 테스트 설정 적용 ===', {
       camera: selectedCamera,
       microphone: selectedMicrophone,
       noiseSuppression: noiseSuppressionEnabled,
       videoEnabled: testVideoEnabled,
-      audioEnabled: testAudioEnabled
+      audioEnabled: testAudioEnabled,
+      cameraDeviceName: mediaDevices.cameras.find(c => c.deviceId === selectedCamera)?.label || 'Unknown',
+      microphoneDeviceName: mediaDevices.microphones.find(m => m.deviceId === selectedMicrophone)?.label || 'Unknown'
     });
     
     // 테스트 스트림 정리
@@ -705,12 +740,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
       const constraints = {
         video: testVideoEnabled ? {
-          deviceId: selectedCamera ? { exact: selectedCamera } : undefined,
+          deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
           width: { ideal: 1280 },
           height: { ideal: 720 }
         } : false,
         audio: testAudioEnabled ? {
-          deviceId: selectedMicrophone ? { exact: selectedMicrophone } : undefined,
+          deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
           echoCancellation: true,
           noiseSuppression: noiseSuppressionEnabled
         } : false
@@ -797,10 +832,41 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     const newVideoEnabled = !testVideoEnabled;
     setTestVideoEnabled(newVideoEnabled);
     
-    // 스트림이 없거나 비어있는 경우 새로 생성
+    // 스트림이 없거나 비어있는 경우 새로 생성 (즉시 실행)
     if (!testStream || (testStream.getTracks().length === 0)) {
+      // 새 상태로 즉시 스트림 생성
       if (newVideoEnabled || testAudioEnabled) {
-        await startTestStream();
+        try {
+          const constraints = {
+            video: newVideoEnabled ? {
+              deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            } : false,
+            audio: testAudioEnabled ? {
+              deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
+              echoCancellation: true,
+              noiseSuppression: noiseSuppressionEnabled
+            } : false
+          };
+
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          setTestStream(stream);
+
+          // 비디오 연결
+          if (testVideoRef.current && newVideoEnabled) {
+            testVideoRef.current.srcObject = stream;
+            testVideoRef.current.play().catch(console.error);
+          }
+
+          // 오디오 레벨 분석 시작
+          if (testAudioEnabled) {
+            setupAudioLevelDetection(stream);
+          }
+        } catch (error) {
+          console.error('비디오 토글 중 스트림 생성 실패:', error);
+          setError(`미디어 접근 실패: ${error.message}`);
+        }
       }
       return;
     }
@@ -810,7 +876,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            deviceId: selectedCamera ? { exact: selectedCamera } : undefined,
+            deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
             width: { ideal: 1280 },
             height: { ideal: 720 }
           }
@@ -863,10 +929,41 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     const newAudioEnabled = !testAudioEnabled;
     setTestAudioEnabled(newAudioEnabled);
     
-    // 스트림이 없거나 비어있는 경우 새로 생성
+    // 스트림이 없거나 비어있는 경우 새로 생성 (즉시 실행)
     if (!testStream || (testStream.getTracks().length === 0)) {
+      // 새 상태로 즉시 스트림 생성
       if (newAudioEnabled || testVideoEnabled) {
-        await startTestStream();
+        try {
+          const constraints = {
+            video: testVideoEnabled ? {
+              deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            } : false,
+            audio: newAudioEnabled ? {
+              deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
+              echoCancellation: true,
+              noiseSuppression: noiseSuppressionEnabled
+            } : false
+          };
+
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          setTestStream(stream);
+
+          // 비디오 연결
+          if (testVideoRef.current && testVideoEnabled) {
+            testVideoRef.current.srcObject = stream;
+            testVideoRef.current.play().catch(console.error);
+          }
+
+          // 오디오 레벨 분석 시작
+          if (newAudioEnabled) {
+            setupAudioLevelDetection(stream);
+          }
+        } catch (error) {
+          console.error('오디오 토글 중 스트림 생성 실패:', error);
+          setError(`미디어 접근 실패: ${error.message}`);
+        }
       }
       return;
     }
@@ -883,7 +980,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       try {
         const audioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            deviceId: selectedMicrophone ? { exact: selectedMicrophone } : undefined,
+            deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
             echoCancellation: true,
             noiseSuppression: noiseSuppressionEnabled
           }
@@ -1016,7 +1113,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         try {
           const audioStream = await navigator.mediaDevices.getUserMedia({
             audio: {
-              deviceId: activeMicrophone ? { exact: activeMicrophone } : undefined,
+              deviceId: activeMicrophone && activeMicrophone !== '' ? { exact: activeMicrophone } : undefined,
               echoCancellation: true,
               noiseSuppression: activeNoiseSuppression
             }
@@ -1060,7 +1157,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         try {
           const videoStream = await navigator.mediaDevices.getUserMedia({
             video: {
-              deviceId: activeCamera ? { exact: activeCamera } : undefined,
+              deviceId: activeCamera && activeCamera !== '' ? { exact: activeCamera } : undefined,
               width: { ideal: 1280 },
               height: { ideal: 720 }
             }
