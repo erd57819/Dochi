@@ -230,7 +230,7 @@ const MyPage = () => {
                     
                     <button
                       onClick={selectAllConflicts}
-                      className="px-3 py-2 rounded-lg font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all text-sm"
+                      className="px-3 py-2 rounded-lg font-medium bg-[#fff8e1] text-[#bf7d2c] hover:bg-[#fff3d4] border border-[#f8d6b3] transition-all text-sm"
                     >
                       {selectedConflicts.length === conflicts.length ? '전체 해제' : '전체 선택'}
                     </button>
