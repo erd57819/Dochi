@@ -152,6 +152,10 @@ const useComfortStore = create(
               error: null // 에러 상태도 초기화
               // 캐시는 유지하여 기존 데이터 보존
             });
+
+            // 저장된 캐시 데이터 복원 (백엔드에서 이미 Redis로 복원됨)
+            // 타임라인과 만화 캐시가 복원되었는지 확인하고 프론트엔드 캐시에도 적용
+            await get().loadCacheDataFromBackend(chatRoomId, session.sessionId);
           }
         } catch (error) {
           console.error('Failed to load session:', error);
@@ -439,6 +443,37 @@ const useComfortStore = create(
       setManhwaCache: (chatRoomId, data) => set((state) => ({
         manhwaCache: { ...state.manhwaCache, [chatRoomId]: data }
       })),
+
+      loadCacheDataFromBackend: async (chatRoomId, sessionId) => {
+        try {
+          // 타임라인 데이터 확인 및 복원
+          const timelineResponse = await comfortService.sendMessage(sessionId, '', 'TIMELINE_CHECK');
+          if (timelineResponse.data && timelineResponse.data.message !== 'NO_CACHE') {
+            const timelineData = JSON.parse(timelineResponse.data.message);
+            get().setTimelineCache(chatRoomId, timelineData);
+          }
+
+          // 만화 데이터 확인 및 복원
+          const manhwaResponse = await comfortService.sendMessage(sessionId, '', 'MANHWA_CHECK');
+          if (manhwaResponse.data && manhwaResponse.data.message !== 'NO_CACHE') {
+            const manhwaData = JSON.parse(manhwaResponse.data.message);
+            get().setManhwaCache(chatRoomId, manhwaData);
+          }
+        } catch (error) {
+          console.warn('캐시 데이터 복원 실패:', error);
+          // 실패해도 세션 로딩은 계속 진행
+        }
+      },
+
+      clearCache: () => {
+        const { currentChatRoomId } = get();
+        if (currentChatRoomId) {
+          set((state) => ({
+            timelineCache: { ...state.timelineCache, [currentChatRoomId]: null },
+            manhwaCache: { ...state.manhwaCache, [currentChatRoomId]: null }
+          }));
+        }
+      },
 
       // 전체 상태 초기화
       reset: () => set({

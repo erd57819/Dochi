@@ -21,13 +21,13 @@
 
     <!-- 3. 채팅 메시지 저장 -->
     <insert id="saveChat" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO chat_messages (chat_room_id, user_id, sender_type, message, created_at)
-        VALUES (#{chatRoomId}, #{userId}, #{senderType}, #{message}, #{timestamp})
+        INSERT INTO chat_messages (chat_room_id, sender_type, message, created_at)
+        VALUES (#{chatRoomId}, #{senderType}, #{message}, #{timestamp})
     </insert>
 
     <!-- 4. 채팅방 ID 기준 채팅 메시지 전체 조회 -->
     <select id="findAllByChatRoomId" resultType="com.ssafy.dochi.chat.domain.Chat">
-        SELECT id, chat_room_id, user_id, sender_type, message, created_at AS timestamp
+        SELECT id, chat_room_id, 0 as user_id, sender_type, message, created_at AS timestamp
         FROM chat_messages
         WHERE chat_room_id = #{chatRoomId}
         ORDER BY created_at ASC

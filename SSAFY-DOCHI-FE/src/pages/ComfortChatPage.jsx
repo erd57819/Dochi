@@ -258,6 +258,64 @@ const ComfortChatPage = () => {
     }
   };
 
+  const saveChatToDatabase = async () => {
+    const { currentChatRoomId, currentSessionId, messages } = useComfortStore.getState();
+    
+    if (!currentSessionId || !currentChatRoomId || !messages || messages.length === 0) {
+      alert('저장할 대화 내용이 없습니다.');
+      return;
+    }
+    
+    try {
+      await saveToDatabase(currentChatRoomId, currentSessionId);
+      alert('대화 내용이 성공적으로 저장되었습니다!');
+      
+      // 저장 후 Redis 캐시 정리
+      useComfortStore.getState().clearCache();
+    } catch (error) {
+      console.error('대화 저장 실패:', error);
+      alert('대화 저장에 실패했습니다.');
+    }
+  };
+
+  const downloadManhwaImage = async () => {
+    const { currentChatRoomId, manhwaCache } = useComfortStore.getState();
+    
+    if (!currentChatRoomId || !manhwaCache[currentChatRoomId]) {
+      alert('다운로드할 만화가 없습니다.');
+      return;
+    }
+    
+    try {
+      const manhwaData = manhwaCache[currentChatRoomId];
+      const imagePanel = manhwaData.find(panel => panel.type === 'image');
+      
+      if (!imagePanel) {
+        alert('다운로드할 이미지가 없습니다.');
+        return;
+      }
+      
+      // 이미지 다운로드
+      const response = await fetch(imagePanel.url);
+      const blob = await response.blob();
+      
+      // 다운로드 링크 생성
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `네컷만화_${new Date().getTime()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      alert('네컷만화 이미지가 다운로드되었습니다!');
+    } catch (error) {
+      console.error('이미지 다운로드 실패:', error);
+      alert('이미지 다운로드에 실패했습니다.');
+    }
+  };
+
   const handleManhwaButtonClick = () => {
     setShowManhwa(true);
   };
@@ -1098,7 +1156,10 @@ const ComfortChatPage = () => {
 
       {/* 타임라인 모달 */}
       {showTimeline && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center" style={{ 
+          backdropFilter: 'blur(3px)',
+          zIndex: 9999 
+        }}>
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl" 
                style={{ 
                  backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1119,6 +1180,19 @@ const ComfortChatPage = () => {
                   }}
                 >
                   새로고침
+                </button>
+                <button
+                  onClick={() => saveChatToDatabase()}
+                  className="px-3 py-1 text-white text-sm rounded transition-colors"
+                  style={{ backgroundColor: '#10B981' }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#059669';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#10B981';
+                  }}
+                >
+                  대화저장
                 </button>
                 <button onClick={() => setShowTimeline(false)} className="text-gray-500 hover:text-gray-700">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1153,7 +1227,10 @@ const ComfortChatPage = () => {
 
       {/* 네컷만화 모달 */}
       {showManhwa && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center" style={{ 
+          backdropFilter: 'blur(3px)',
+          zIndex: 9999 
+        }}>
           <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl" 
                style={{ 
                  backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1161,11 +1238,26 @@ const ComfortChatPage = () => {
                }}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">오늘의 네컷만화</h3>
-              <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => downloadManhwaImage()}
+                  className="px-3 py-1 text-white text-sm rounded transition-colors"
+                  style={{ backgroundColor: '#3B82F6' }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#2563EB';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#3B82F6';
+                  }}
+                >
+                  다운로드
+                </button>
+                <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             {manhwaCache[currentChatRoomId] && manhwaCache[currentChatRoomId].length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
