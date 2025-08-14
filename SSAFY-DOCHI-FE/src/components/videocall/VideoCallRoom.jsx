@@ -72,6 +72,11 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [isMicOn, setIsMicOn] = useState(false);  // 초기 상태: OFF
   const [isCameraOn, setIsCameraOn] = useState(false);  // 초기 상태: OFF
 
+  // 실제 통화에서 사용할 미디어 설정 (테스트에서 가져옴)
+  const [activeCamera, setActiveCamera] = useState('');
+  const [activeMicrophone, setActiveMicrophone] = useState('');
+  const [activeNoiseSuppression, setActiveNoiseSuppression] = useState(true);
+
   // LiveKit URL
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
     ? 'ws://localhost:7880'
@@ -195,35 +200,65 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         });
       });
 
-      // 미디어 테스트에서 설정한 상태에 따라 자동으로 미디어 활성화
+      // 미디어 테스트에서 설정한 상태에 따라 맞춤형 미디어 활성화
       try {
+        const mediaConstraints = {};
+        
         if (isCameraOn) {
-          console.log('미디어 테스트 설정에 따라 카메라 자동 활성화');
-          await newRoom.localParticipant.setCameraEnabled(true);
-          
-          // 비디오 트랙 참조 저장
-          setTimeout(() => {
-            const videoPublication = Array.from(newRoom.localParticipant.videoTrackPublications.values())[0];
-            if (videoPublication?.track) {
-              setLocalVideoTrack(videoPublication.track);
-              console.log('로컬 비디오 트랙 설정 완료');
-            }
-          }, 500);
+          mediaConstraints.video = {
+            deviceId: activeCamera ? { exact: activeCamera } : undefined,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          };
         }
-
+        
         if (isMicOn) {
-          console.log('미디어 테스트 설정에 따라 마이크 자동 활성화');
-          await newRoom.localParticipant.setMicrophoneEnabled(true);
+          mediaConstraints.audio = {
+            deviceId: activeMicrophone ? { exact: activeMicrophone } : undefined,
+            echoCancellation: true,
+            noiseSuppression: activeNoiseSuppression
+          };
+        }
+        
+        if (mediaConstraints.video || mediaConstraints.audio) {
+          console.log('테스트 설정으로 맞춤형 미디어 생성:', mediaConstraints);
           
-          // 오디오 트랙 참조 저장
-          const audioPublication = Array.from(newRoom.localParticipant.audioTrackPublications.values())[0];
-          if (audioPublication?.track) {
+          const customStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+          
+          // 비디오 트랙 publish
+          if (mediaConstraints.video && customStream.getVideoTracks().length > 0) {
+            const videoTrack = customStream.getVideoTracks()[0];
+            const videoPublication = await newRoom.localParticipant.publishTrack(videoTrack, {
+              name: 'camera',
+              simulcast: false
+            });
+            setLocalVideoTrack(videoPublication.track);
+            console.log('맞춤형 비디오 트랙 publish 완료');
+          }
+          
+          // 오디오 트랙 publish
+          if (mediaConstraints.audio && customStream.getAudioTracks().length > 0) {
+            const audioTrack = customStream.getAudioTracks()[0];
+            const audioPublication = await newRoom.localParticipant.publishTrack(audioTrack, {
+              name: 'microphone'
+            });
             setLocalAudioTrack(audioPublication.track);
-            console.log('로컬 오디오 트랙 설정 완료');
+            console.log('맞춤형 오디오 트랙 publish 완료');
           }
         }
       } catch (mediaError) {
-        console.error('미디어 자동 활성화 실패:', mediaError);
+        console.error('맞춤형 미디어 활성화 실패:', mediaError);
+        // 실패 시 기본 방법으로 fallback
+        try {
+          if (isCameraOn) {
+            await newRoom.localParticipant.setCameraEnabled(true);
+          }
+          if (isMicOn) {
+            await newRoom.localParticipant.setMicrophoneEnabled(true);
+          }
+        } catch (fallbackError) {
+          console.error('기본 미디어 활성화도 실패:', fallbackError);
+        }
       }
 
     } catch (error) {
@@ -612,9 +647,22 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 미디어 테스트 완료 후 실제 연결
   const handleMediaTestComplete = async () => {
-    // 테스트에서 설정한 상태를 실제 통화 상태에 반영
+    // 테스트에서 설정한 모든 상태를 실제 통화 상태에 반영
     setIsCameraOn(testVideoEnabled);
     setIsMicOn(testAudioEnabled);
+    
+    // 테스트에서 설정한 디바이스 및 옵션을 실제 통화에 적용
+    setActiveCamera(selectedCamera);
+    setActiveMicrophone(selectedMicrophone);
+    setActiveNoiseSuppression(noiseSuppressionEnabled);
+    
+    console.log('테스트 설정 적용:', {
+      camera: selectedCamera,
+      microphone: selectedMicrophone,
+      noiseSuppression: noiseSuppressionEnabled,
+      videoEnabled: testVideoEnabled,
+      audioEnabled: testAudioEnabled
+    });
     
     // 테스트 스트림 정리
     stopTestStream();
@@ -964,14 +1012,30 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         await room.localParticipant.setMicrophoneEnabled(false);
         console.log('마이크 비활성화');
       } else {
-        // 마이크 켜기 (첫 번째 활성화 시 미디어 권한 요청)
-        await room.localParticipant.setMicrophoneEnabled(true);
-        console.log('마이크 활성화');
-        
-        // 오디오 트랙 참조 저장
-        const audioPublication = Array.from(room.localParticipant.audioTrackPublications.values())[0];
-        if (audioPublication?.track) {
+        // 마이크 켜기 - 테스트에서 설정한 디바이스 및 옵션 사용
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              deviceId: activeMicrophone ? { exact: activeMicrophone } : undefined,
+              echoCancellation: true,
+              noiseSuppression: activeNoiseSuppression
+            }
+          });
+          
+          const audioTrack = audioStream.getAudioTracks()[0];
+          const audioPublication = await room.localParticipant.publishTrack(audioTrack, {
+            name: 'microphone'
+          });
           setLocalAudioTrack(audioPublication.track);
+          console.log('맞춤형 마이크 활성화 완료');
+        } catch (customError) {
+          console.warn('맞춤형 마이크 활성화 실패, 기본 방법 사용:', customError);
+          await room.localParticipant.setMicrophoneEnabled(true);
+          
+          const audioPublication = Array.from(room.localParticipant.audioTrackPublications.values())[0];
+          if (audioPublication?.track) {
+            setLocalAudioTrack(audioPublication.track);
+          }
         }
       }
       setIsMicOn(!isMicOn);
@@ -992,20 +1056,35 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         setLocalVideoTrack(null); // 트랙 제거
         console.log('카메라 비활성화');
       } else {
-        // 카메라 켜기 (첫 번째 활성화 시 미디어 권한 요청)
-        await room.localParticipant.setCameraEnabled(true);
-        console.log('카메라 활성화');
-        
-        // 짧은 지연 후 비디오 트랙 참조 저장 (트랙 생성 대기)
-        setTimeout(() => {
-          const videoPublication = Array.from(room.localParticipant.videoTrackPublications.values())[0];
-          if (videoPublication?.track) {
-            setLocalVideoTrack(videoPublication.track);
-            console.log('비디오 트랙 연결됨:', videoPublication.track);
-          } else {
-            console.log('비디오 트랙을 찾을 수 없음');
-          }
-        }, 100);
+        // 카메라 켜기 - 테스트에서 설정한 디바이스 사용
+        try {
+          const videoStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: activeCamera ? { exact: activeCamera } : undefined,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+          
+          const videoTrack = videoStream.getVideoTracks()[0];
+          const videoPublication = await room.localParticipant.publishTrack(videoTrack, {
+            name: 'camera',
+            simulcast: false
+          });
+          setLocalVideoTrack(videoPublication.track);
+          console.log('맞춤형 카메라 활성화 완료');
+        } catch (customError) {
+          console.warn('맞춤형 카메라 활성화 실패, 기본 방법 사용:', customError);
+          await room.localParticipant.setCameraEnabled(true);
+          
+          setTimeout(() => {
+            const videoPublication = Array.from(room.localParticipant.videoTrackPublications.values())[0];
+            if (videoPublication?.track) {
+              setLocalVideoTrack(videoPublication.track);
+              console.log('기본 비디오 트랙 연결됨:', videoPublication.track);
+            }
+          }, 100);
+        }
       }
       setIsCameraOn(!isCameraOn);
     } catch (error) {
