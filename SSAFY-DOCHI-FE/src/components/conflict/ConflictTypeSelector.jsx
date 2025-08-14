@@ -1,20 +1,13 @@
 import React from 'react';
-import companyDochi from '../../assets/companyDochi.png';
-import familyDochi from '../../assets/familyDochi.png';
-import friendDochi from '../../assets/friendDochi.png';
-import loveDochi from '../../assets/loveDochi.png';
-import moneyDochi from '../../assets/moneyDichi.png';
-import onlineDochi from '../../assets/onlineDochi.png';
-import soundDochi from '../../assets/soundDochi.png';
 
 const conflictTypes = [
-  { value: 'WORK', label: '직장 갈등', icon: companyDochi, description: '상사, 동료, 업무 관련' },
-  { value: 'FAMILY', label: '가족 갈등', icon: familyDochi, description: '부모, 자녀, 형제자매' },
-  { value: 'FRIEND', label: '친구 갈등', icon: friendDochi, description: '친구, 지인과의 문제' },
-  { value: 'COUPLE', label: '연인 갈등', icon: loveDochi, description: '연인, 배우자와의 갈등' },
-  { value: 'NEIGHBOR', label: '이웃 갈등', icon: soundDochi, description: '층간소음, 주차 등' },
-  { value: 'FINANCIAL', label: '금전 갈등', icon: moneyDochi, description: '돈 빌려줌, 비용 분담' },
-  { value: 'ONLINE', label: '온라인 갈등', icon: onlineDochi, description: 'SNS, 커뮤니티' },
+  { value: 'WORK', label: '직장 갈등', icon: '/images/companyDochi.png', description: '상사, 동료, 업무 관련' },
+  { value: 'FAMILY', label: '가족 갈등', icon: '/images/familyDochi.png', description: '부모, 자녀, 형제자매' },
+  { value: 'FRIEND', label: '친구 갈등', icon: '/images/friendDochi.png', description: '친구, 지인과의 문제' },
+  { value: 'COUPLE', label: '연인 갈등', icon: '/images/loveDochi.png', description: '연인, 배우자와의 갈등' },
+  { value: 'NEIGHBOR', label: '이웃 갈등', icon: '/images/soundDochi.png', description: '층간소음, 주차 등' },
+  { value: 'FINANCIAL', label: '금전 갈등', icon: '/images/moneyDichi.png', description: '돈 빌려줌, 비용 분담' },
+  { value: 'ONLINE', label: '온라인 갈등', icon: '/images/onlineDochi.png', description: 'SNS, 커뮤니티' },
   { value: 'ETC', label: '기타', icon: '🎲', description: '기타 갈등' }
 ];
 
@@ -36,7 +29,7 @@ const ConflictTypeSelector = ({ value, onChange }) => {
           `}
         >
           <div className="mb-2">
-            {typeof type.icon === 'string' ? (
+            {type.icon === '🎲' ? (
               <div className="text-3xl">{type.icon}</div>
             ) : (
               <img src={type.icon} alt={type.label} className="w-12 h-12 mx-auto" />

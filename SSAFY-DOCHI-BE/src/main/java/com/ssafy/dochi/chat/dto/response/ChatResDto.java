@@ -12,4 +12,5 @@ public class ChatResDto {
     private String senderType; // USER, BOT
     private String message;
     private String timestamp;
+    private String description; // 만화 설명 (COMIC 모드에서만 사용)
 }

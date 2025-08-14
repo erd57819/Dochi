@@ -269,10 +269,19 @@ const useComfortStore = create(
           
         } catch (error) {
           console.error('Failed to send message:', error);
-          set({ 
-            isLoading: false, 
-            error: '메시지 전송에 실패했습니다.' 
-          });
+          
+          // 504 게이트웨이 타임아웃 에러 처리
+          if (error.response?.status === 504) {
+            set({ 
+              isLoading: false, 
+              error: '서버 응답 시간이 초과되었습니다. 만화 생성은 시간이 오래 걸릴 수 있습니다. 잠시 후 다시 시도해주세요.' 
+            });
+          } else {
+            set({ 
+              isLoading: false, 
+              error: '메시지 전송에 실패했습니다.' 
+            });
+          }
         }
       },
       
