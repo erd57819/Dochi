@@ -77,6 +77,19 @@ livekit:
     key: ${LIVEKIT_API_KEY}
     secret: ${LIVEKIT_API_SECRET}
 
+# Kafka 설정 (메트릭 수집용)
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: 1
+      retries: 3
+    topics:
+      room-metrics: room-metrics
+      user-activity: user-activity
+
 management:
   endpoints:
     web:

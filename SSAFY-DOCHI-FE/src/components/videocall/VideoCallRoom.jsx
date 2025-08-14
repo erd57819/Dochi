@@ -140,6 +140,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       
       setRoom(newRoom);
       setIsConnected(true);
+      setCallStartTime(Date.now());
+
+      // 사용자 입장 활동 기록
+      setTimeout(async () => {
+        await sendUserActivity('join');
+      }, 1000);
 
       // 기존 참가자들 처리 
       const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
@@ -518,6 +524,17 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     }
   }, [callStartTime, isConnected]);
 
+  // 주기적 룸 메트릭 전송 (30초마다)
+  useEffect(() => {
+    if (callStartTime && isConnected) {
+      const metricsInterval = setInterval(() => {
+        sendRoomMetrics('active');
+      }, 30000); // 30초마다
+
+      return () => clearInterval(metricsInterval);
+    }
+  }, [callStartTime, isConnected, participants.length, currentConflictLevel, emotionScores, sttTranscripts]);
+
   // 시간 포맷 함수
   const formatTime = (milliseconds) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -623,8 +640,61 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     console.log('소음 억제:', !noiseSuppressionEnabled ? 'ON' : 'OFF');
   };
 
+  // Kafka 룸 메트릭 전송 함수
+  const sendRoomMetrics = async (status = 'active') => {
+    if (!actualRoomId) return;
+    
+    try {
+      const duration = callStartTime ? Math.floor((Date.now() - callStartTime) / 1000) : 0;
+      const avgEmotionScore = emotionScores.length > 0 
+        ? emotionScores.reduce((sum, score) => sum + score, 0) / emotionScores.length 
+        : 0;
+
+      const metricsData = {
+        roomId: actualRoomId,
+        participantCount: participants.length + 1, // 자신 포함
+        callDuration: duration,
+        conflictLevel: currentConflictLevel || 1,
+        status: status,
+        totalMessages: sttTranscripts.length || 0,
+        avgEmotionScore: Math.round(avgEmotionScore * 100) / 100
+      };
+
+      await apiClient.post('/kafka/room-metrics', metricsData);
+      console.log('룸 메트릭 전송 완료:', metricsData);
+    } catch (error) {
+      console.error('룸 메트릭 전송 실패:', error);
+    }
+  };
+
+  // 사용자 활동 전송 함수
+  const sendUserActivity = async (activityType, additionalData = {}) => {
+    if (!actualRoomId || !participantName) return;
+    
+    try {
+      const activityData = {
+        userId: participantName,
+        roomId: actualRoomId,
+        activityType: activityType,
+        sessionId: `session_${actualRoomId}_${Date.now()}`,
+        ...additionalData
+      };
+
+      await apiClient.post('/kafka/user-activity', activityData);
+      console.log('사용자 활동 전송 완료:', activityData);
+    } catch (error) {
+      console.error('사용자 활동 전송 실패:', error);
+    }
+  };
+
   // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
   const handleLeaveRoom = async (isEndCall = false) => {
+    // 나가기 활동 기록
+    await sendUserActivity('leave');
+    
+    // 최종 룸 메트릭 전송
+    await sendRoomMetrics('ended');
+
     // STT 정리
     stopSTT();
 
