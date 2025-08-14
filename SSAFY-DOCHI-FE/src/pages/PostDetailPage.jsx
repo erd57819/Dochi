@@ -1013,9 +1013,12 @@ const PostDetailPage = () => {
                   onClick={() => handleCommentSortChange('latest')}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     commentSortType === 'latest'
-                      ? 'bg-orange-500 text-white'
+                      ? 'text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
+                  style={{
+                    backgroundColor: commentSortType === 'latest' ? '#8B4513' : undefined
+                  }}
                 >
                   최신순
                 </button>
@@ -1023,9 +1026,12 @@ const PostDetailPage = () => {
                   onClick={() => handleCommentSortChange('likes')}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     commentSortType === 'likes'
-                      ? 'bg-orange-500 text-white'
+                      ? 'text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
+                  style={{
+                    backgroundColor: commentSortType === 'likes' ? '#8B4513' : undefined
+                  }}
                 >
                   좋아요순
                 </button>
@@ -1060,7 +1066,7 @@ const PostDetailPage = () => {
                         disabled={isSubmittingComment || !commentText.trim()}
                         className="px-3 py-1 rounded font-medium transition-all hover:-translate-y-1 disabled:opacity-50 disabled:transform-none text-sm"
                         style={{ 
-                          backgroundColor: categoryData.color,
+                          backgroundColor: '#8B4513',
                           color: '#FFFFFF'
                         }}
                       >

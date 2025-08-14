@@ -256,167 +256,174 @@ const RoadmapPage = () => {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ zoom: '0.85' }}>
       {/* 전체 배경 컨테이너 */}
       <div className="absolute inset-0">
-        {/* 상단 배경 */}
         <div 
           className="absolute top-0 left-0 w-full" 
           style={{ 
-            height: '50%',
-            backgroundColor: '#F8D6B3',
+            height: '100%',
+            background: 'linear-gradient(to bottom, rgb(248, 214, 179), white)',
             opacity: 0.14
-          }}
-        ></div>
-        
-        {/* 하단 배경 */}
-        <div 
-          className="absolute bottom-0 left-0 w-full" 
-          style={{ 
-            height: '50%',
-            backgroundColor: '#FFFFFF'
           }}
         ></div>
       </div>
 
       {/* 메인 컨텐츠 */}
-      <main className="max-w-6xl mx-auto px-4 py-12 relative z-10">
+      <main className="max-w-5xl mx-auto px-3 py-10 relative z-10">
         {/* 헤더 */}
-        <div className="flex items-center mb-8">
-          <button 
-            onClick={handleGoBack}
-            className="text-2xl mr-4 hover:opacity-70 transition-opacity"
-            style={{ color: '#8B4513' }}
-          >
-            ←
-          </button>
-          <div className="flex items-center gap-3">
-            <img src={hedgehogImg} alt="참견도치" className="w-12 h-12 rounded-full" />
-            <h1 className="text-3xl font-bold" style={{ color: '#8B4513' }}>5단계 해결 로드맵</h1>
+        <div className="flex flex-row items-center justify-between text-3xl font-bold mb-4 py-2 px-6" style={{ color: '#8B4513' }}>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleGoBack}
+              className="text-2xl hover:opacity-70 transition-opacity"
+              style={{ color: '#8B4513' }}
+            >
+              ←
+            </button>
+            <div>
+              <h3 className="text-4xl font-bold" style={{ color: '#333333' }}>
+                5단계 해결 로드맵
+              </h3>
+              <p className="text-base" style={{ color: '#666666' }}>
+                {conflictAnalysis 
+                  ? 'AI가 분석한 당신의 갈등 상황에 맞는 단계별 해결 방법입니다' 
+                  : '각 단계를 차근차근 따라가며 갈등을 현명하게 해결해보세요'
+                }
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* 상단 메시지 */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4" style={{ 
-            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            {conflictAnalysis ? '맞춤형' : '체계적인'} 갈등 해결을 위한 5단계 과정
-          </h2>
-          <p className="text-xl" style={{ color: '#666666' }}>
-            {conflictAnalysis 
-              ? 'AI가 분석한 당신의 갈등 상황에 맞는 단계별 해결 방법입니다' 
-              : '각 단계를 차근차근 따라가며 갈등을 현명하게 해결해보세요'
-            }
-          </p>
+          
           {conflictAnalysis && (
-            <div className="mt-2 inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium">
+            <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium">
               ✨ AI 분석 기반 맞춤 로드맵
             </div>
           )}
         </div>
 
-        <div className="flex gap-8">
+        <div className="flex flex-wrap justify-between gap-5">
           {/* 왼쪽: 단계 목록 */}
-          <div className="w-1/3">
-            <h3 className="text-2xl font-bold mb-6" style={{ color: '#333333' }}>단계별 가이드</h3>
-            <div className="space-y-4">
-              {steps.map((step) => (
-                <div 
-                  key={step.id}
-                  className={`p-6 rounded-2xl cursor-pointer transition-all transform hover:-translate-y-1 shadow-lg ${
-                    currentStep === step.id ? 'ring-4 ring-opacity-50' : ''
-                  }`}
-                  style={{ 
-                    backgroundColor: currentStep === step.id ? step.color : '#FFFFFF',
-                    color: currentStep === step.id ? '#FFFFFF' : '#333333',
-                    ringColor: step.color
-                  }}
-                  onClick={() => handleStepClick(step.id)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
-                      style={{ 
-                        backgroundColor: currentStep === step.id ? 'rgba(255,255,255,0.2)' : step.color,
-                        color: currentStep === step.id ? '#FFFFFF' : '#FFFFFF'
-                      }}
-                    >
-                      {step.id}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-lg">{step.title}</h4>
-                      <p className="text-sm opacity-90">{step.description}</p>
+          <div className="w-1/4">
+            <div className="bg-white p-5">
+              <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>📋 단계별 가이드</h4>
+              <div className="space-y-2">
+                {steps.map((step) => (
+                  <div 
+                    key={step.id}
+                    className={`p-2 rounded cursor-pointer transition-all transform hover:-translate-y-1 ${
+                      currentStep === step.id ? 'ring-4' : ''
+                    }`}
+                    style={{
+                      background: currentStep === step.id ? step.color : '#FFFFFF',
+                      color: currentStep === step.id ? '#FFFFFF' : '#333333',
+                      '--ring-color': step.color,
+                      '--tw-ring-color': step.color,
+                      boxShadow: currentStep === step.id ? '0 4px 15px rgba(0, 0, 0, 0.2)' : 'none',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentStep !== step.id) {
+                        e.currentTarget.style.background = step.color;
+                        e.currentTarget.style.color = '#FFFFFF';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentStep !== step.id) {
+                        e.currentTarget.style.background = '#FFFFFF';
+                        e.currentTarget.style.color = '#333333';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
+                    onClick={() => handleStepClick(step.id)}
+                  >
+                    <div className="flex items-center pl-5 gap-4">
+                      <div 
+                        className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs text-white"
+                        style={{ 
+                          backgroundColor: currentStep === step.id ? 'rgba(255,255,255,0.2)' : step.color
+                        }}
+                      >
+                        {step.id}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-base">{step.title}</h4>
+                        <p className="text-sm opacity-90">{step.period}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
           {/* 오른쪽: 선택된 단계 상세 내용 */}
-          <div className="w-2/3">
-            <div className="bg-white rounded-3xl p-8 shadow-xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl text-white"
-                  style={{ backgroundColor: currentStepData.color }}
-                >
-                  {currentStepData.id}
+          <div className="w-5/7">
+            <div className="bg-white p-8">
+              <div className="px-5 py-5">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex gap-3 items-start flex-1 min-w-0">
+                    <span
+                      className="text-white text-xs px-2 py-1 rounded font-medium flex-shrink-0"
+                      style={{ 
+                        background: currentStepData.color
+                      }}
+                    >
+                      단계 {currentStepData.id}
+                    </span>
+                    <h4
+                      className="text-2xl font-bold transition-colors flex-1 min-w-0 leading-tight"
+                      style={{ color: '#333333' }}
+                    >
+                      {currentStepData.title}
+                    </h4>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-1 text-base flex-shrink-0" style={{ color: '#666666' }}>
+                    <span className="whitespace-nowrap">⏱️ {currentStepData.period}</span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-3xl font-bold" style={{ color: '#333333' }}>
-                    {currentStepData.title}
-                  </h3>
-                  <p className="text-lg" style={{ color: '#666666' }}>
+                
+                <div className="mb-4">
+                  <p className="text-lg leading-relaxed" style={{ color: '#666666' }}>
                     {currentStepData.description}
                   </p>
                 </div>
-              </div>
 
-              <div className="mb-8">
-                <p className="text-lg leading-relaxed" style={{ color: '#333333' }}>
-                  {currentStepData.content}
-                </p>
-              </div>
+                <div className="mb-6">
+                  <p className="text-lg leading-relaxed" style={{ color: '#333333' }}>
+                    {currentStepData.content}
+                  </p>
+                </div>
 
-              {/* 단계별 가이드 내용 */}
-              <div className="space-y-6">
-                {/* 기간 표시 */}
-                {currentStepData && currentStepData.period && (
-                  <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full" 
-                       style={{ backgroundColor: currentStepData.color + '20' }}>
-                    <span className="text-sm font-bold" style={{ color: currentStepData.color }}>⏱️ 실행 기간:</span>
-                    <span className="text-sm font-medium" style={{ color: currentStepData.color }}>{currentStepData.period}</span>
-                  </div>
-                )}
-                
-                <div className="border-l-4 pl-6" style={{ borderColor: currentStepData?.color || '#333' }}>
+                <div className="border-l-4 pl-4 mb-6" style={{ borderColor: currentStepData?.color || '#333' }}>
                   <h4 className="text-xl font-bold mb-3" style={{ color: '#333333' }}>
                     이 단계에서 해야 할 일
                   </h4>
-                  <ul className="space-y-2 text-lg" style={{ color: '#666666' }}>
+                  <ul className="space-y-2 text-base" style={{ color: '#666666' }}>
                     {currentStepData && currentStepData.actions && currentStepData.actions.length > 0 ? (
                       currentStepData.actions.map((action, idx) => (
-                        <li key={idx}>• {action}</li>
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-sm mt-1" style={{ color: currentStepData.color }}>•</span>
+                          <span>{action}</span>
+                        </li>
                       ))
                     ) : (
-                      <li className="text-gray-400 italic">• 이 단계에 대한 구체적인 액션이 아직 생성되지 않았습니다.</li>
+                      <li className="text-gray-400 italic flex items-start gap-2">
+                        <span className="text-sm mt-1">•</span>
+                        <span>이 단계에 대한 구체적인 액션이 아직 생성되지 않았습니다.</span>
+                      </li>
                     )}
                   </ul>
                 </div>
 
                 {/* 네비게이션 버튼 */}
-                <div className="flex justify-between pt-6">
+                <div className="flex justify-between pt-4">
                   <button
                     onClick={() => currentStep > 1 && setCurrentStep(currentStep - 1)}
                     disabled={currentStep === 1}
-                    className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     style={{ 
-                      backgroundColor: currentStep === 1 ? '#E5E5E5' : '#696969',
+                      backgroundColor: currentStep === 1 ? '#d1d5db' : '#8B4513',
                       color: '#FFFFFF'
                     }}
                   >
@@ -426,9 +433,9 @@ const RoadmapPage = () => {
                   <button
                     onClick={() => currentStep < 5 && setCurrentStep(currentStep + 1)}
                     disabled={currentStep === 5}
-                    className="px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     style={{ 
-                      backgroundColor: currentStep === 5 ? '#E5E5E5' : currentStepData.color,
+                      backgroundColor: currentStep === 5 ? '#d1d5db' : currentStepData.color,
                       color: '#FFFFFF'
                     }}
                   >

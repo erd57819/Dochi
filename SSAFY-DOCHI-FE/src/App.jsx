@@ -17,7 +17,6 @@ import ConflictCreatePage from './pages/ConflictCreatePage';
 import ConflictResultPage from './pages/ConflictResultPage';
 import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
 import ComfortChatPage from './pages/ComfortChatPage';
-import ConflictListPage from './pages/ConflictListPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
 import GamePage from './pages/GamePage';
 import MyPage from './pages/MyPage';

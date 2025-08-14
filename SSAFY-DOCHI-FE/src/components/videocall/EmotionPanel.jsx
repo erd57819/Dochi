@@ -23,7 +23,7 @@ const EmotionPanel = ({
     surprised: '놀람',
     fearful: '두려움',
     disgusted: '혐오',
-    neutral: '중립'
+    neutral: '무표정'
   };
 
   const getEmotionColor = (emotion) => {

@@ -213,14 +213,6 @@ const MyPage = () => {
         {/* 헤더 - 제목과 통계 */}
         <div className="max-w-[1200px] mx-auto px-4 lg:px-8 mb-12">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4" style={{ 
-              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              내 갈등 모아보기
-            </h1>
             <p className="text-gray-600 text-lg">
               지금까지 <span className="text-orange-600 font-bold">{conflictCount}개</span>의 갈등을 기록하셨어요
             </p>

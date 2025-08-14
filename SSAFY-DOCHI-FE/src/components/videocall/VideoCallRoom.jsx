@@ -54,6 +54,16 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showConnectButton, setShowConnectButton] = useState(true); // 연결 버튼 표시 상태
+  const [showMediaTest, setShowMediaTest] = useState(false); // 미디어 테스트 화면 표시 상태
+
+  // 미디어 테스트 관련 상태
+  const [testStream, setTestStream] = useState(null);
+  const [testVideoEnabled, setTestVideoEnabled] = useState(true);
+  const [testAudioEnabled, setTestAudioEnabled] = useState(true);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [mediaDevices, setMediaDevices] = useState({ cameras: [], microphones: [], speakers: [] });
+  const [selectedCamera, setSelectedCamera] = useState('');
+  const [selectedMicrophone, setSelectedMicrophone] = useState('');
 
   const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
@@ -62,6 +72,11 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [isMicOn, setIsMicOn] = useState(false);  // 초기 상태: OFF
   const [isCameraOn, setIsCameraOn] = useState(false);  // 초기 상태: OFF
 
+  // 실제 통화에서 사용할 미디어 설정 (테스트에서 가져옴)
+  const [activeCamera, setActiveCamera] = useState('');
+  const [activeMicrophone, setActiveMicrophone] = useState('');
+  const [activeNoiseSuppression, setActiveNoiseSuppression] = useState(true);
+
   // LiveKit URL
   const LIVEKIT_URL = window.location.hostname === 'localhost' 
     ? 'ws://localhost:7880'
@@ -69,6 +84,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 참조들
   const localVideoRef = useRef(null);
+  const testVideoRef = useRef(null); // 미디어 테스트용 비디오 참조
+  const testAudioContextRef = useRef(null); // 오디오 레벨 측정용
+  const testAnalyserRef = useRef(null);
   const remoteVideoRefs = useRef(new Map());
   const remoteAudioRefs = useRef(new Map());
   const pendingVideoTracks = useRef(new Map());
@@ -82,7 +100,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   }, [room?.name, roomName]);
 
   // LiveKit 방 연결 함수 
-  const connectToRoom = async () => {
+  const connectToRoom = async (overrideSettings = null) => {
+    // 매개변수로 전달된 설정이 있으면 사용, 없으면 현재 상태 사용
+    const cameraEnabled = overrideSettings?.cameraEnabled ?? isCameraOn;
+    const micEnabled = overrideSettings?.micEnabled ?? isMicOn;
+    const cameraDeviceId = overrideSettings?.cameraDeviceId ?? activeCamera;
+    const micDeviceId = overrideSettings?.micDeviceId ?? activeMicrophone;
+    const noiseSuppression = overrideSettings?.noiseSuppression ?? activeNoiseSuppression;
     try {
       setError(null);
       setIsLoading(true);
@@ -103,6 +127,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           const response = await apiClient.post(`/video-call/token?room=${encodeURIComponent(roomName)}`);
           accessToken = response.data.data.token;
         }
+        
+        // ConflictReportPage 접근용으로 토큰 저장
+        localStorage.setItem(`conflict_report_token_${roomName}`, accessToken);
+        console.log('갈등 레포트 접근용 토큰 저장 완료:', roomName);
       } catch (tokenError) {
         console.error('토큰 생성 실패:', tokenError);
         if (tokenError.response?.status === 404) {
@@ -177,6 +205,102 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           }
         });
       });
+
+      // 미디어 테스트에서 설정한 상태에 따라 맞춤형 미디어 활성화
+      try {
+        const mediaConstraints = {};
+        
+        if (cameraEnabled) {
+          mediaConstraints.video = {
+            deviceId: cameraDeviceId && cameraDeviceId !== '' ? { exact: cameraDeviceId } : undefined,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          };
+        }
+        
+        if (micEnabled) {
+          mediaConstraints.audio = {
+            deviceId: micDeviceId && micDeviceId !== '' ? { exact: micDeviceId } : undefined,
+            echoCancellation: true,
+            noiseSuppression: noiseSuppression
+          };
+        }
+        
+        if (mediaConstraints.video || mediaConstraints.audio) {
+          console.log('=== 테스트 설정으로 맞춤형 미디어 생성 ===');
+          console.log('Media Constraints:', JSON.stringify(mediaConstraints, null, 2));
+          console.log('Active Settings:', {
+            cameraDeviceId,
+            micDeviceId,
+            noiseSuppression,
+            cameraEnabled,
+            micEnabled
+          });
+          
+          const customStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+          console.log('사용자 미디어 스트림 생성 성공:', {
+            videoTracks: customStream.getVideoTracks().length,
+            audioTracks: customStream.getAudioTracks().length,
+            videoTrackSettings: customStream.getVideoTracks()[0]?.getSettings(),
+            audioTrackSettings: customStream.getAudioTracks()[0]?.getSettings()
+          });
+          
+          // 로컬 비디오 엘리먼트에 스트림 연결
+          if (localVideoRef.current && mediaConstraints.video && customStream.getVideoTracks().length > 0) {
+            localVideoRef.current.srcObject = customStream;
+            localVideoRef.current.muted = true;
+            await localVideoRef.current.play().catch(console.error);
+            console.log('로컬 비디오 ref 연결 완료');
+          }
+          
+          // 비디오 트랙 publish
+          if (mediaConstraints.video && customStream.getVideoTracks().length > 0) {
+            const videoTrack = customStream.getVideoTracks()[0];
+            console.log('비디오 트랙 publish 시도:', {
+              trackId: videoTrack.id,
+              trackLabel: videoTrack.label,
+              trackSettings: videoTrack.getSettings(),
+              trackState: videoTrack.readyState,
+              trackEnabled: videoTrack.enabled
+            });
+            
+            const videoPublication = await newRoom.localParticipant.publishTrack(videoTrack, {
+              name: 'camera',
+              simulcast: false
+            });
+            setLocalVideoTrack(videoPublication.track);
+            console.log('맞춤형 비디오 트랙 publish 완료:', {
+              publicationSid: videoPublication.sid,
+              trackSid: videoPublication.track?.sid
+            });
+          } else if (mediaConstraints.video) {
+            console.error('비디오 미디어 제약이 있지만 스트림에 비디오 트랙이 없음');
+          }
+          
+          // 오디오 트랙 publish
+          if (mediaConstraints.audio && customStream.getAudioTracks().length > 0) {
+            const audioTrack = customStream.getAudioTracks()[0];
+            const audioPublication = await newRoom.localParticipant.publishTrack(audioTrack, {
+              name: 'microphone'
+            });
+            setLocalAudioTrack(audioPublication.track);
+            console.log('맞춤형 오디오 트랙 publish 완료');
+          }
+        }
+      } catch (mediaError) {
+        console.error('맞춤형 미디어 활성화 실패:', mediaError);
+        // 실패 시 기본 방법으로 fallback
+        try {
+          if (cameraEnabled) {
+            await newRoom.localParticipant.setCameraEnabled(true);
+          }
+          if (micEnabled) {
+            await newRoom.localParticipant.setMicrophoneEnabled(true);
+          }
+        } catch (fallbackError) {
+          console.error('기본 미디어 활성화도 실패:', fallbackError);
+        }
+      }
 
     } catch (error) {
       console.error('방 연결 실패:', error);
@@ -480,6 +604,27 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     }
   }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
+  // 미디어 테스트 초기화 및 상태 변경 감지
+  useEffect(() => {
+    if (showMediaTest) {
+      if (!mediaDevices.cameras.length && !mediaDevices.microphones.length) {
+        // 디바이스 목록이 없으면 먼저 가져오기
+        getMediaDevices().then(() => {
+          startTestStream();
+        });
+      } else {
+        // 디바이스 목록이 있으면 바로 스트림 시작
+        startTestStream();
+      }
+    }
+
+    return () => {
+      if (showMediaTest) {
+        stopTestStream();
+      }
+    };
+  }, [showMediaTest, testVideoEnabled, testAudioEnabled]); // 미디어 상태 변경도 감지
+
   // 갈등 레벨 분석 (감정 점수 변화 감지)
   useEffect(() => {
     analyzeConflictLevel(emotionScores);
@@ -541,11 +686,431 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setShowConnectButton(true); // 연결 버튼 표시
   };
 
-  // 연결 시작 버튼 클릭
-  const handleStartConnection = async () => {
+  // 연결 시작 버튼 클릭 - 미디어 테스트 단계로 이동
+  const handleStartConnection = () => {
     setShowConnectButton(false);
+    setShowMediaTest(true);
+  };
+
+  // 미디어 테스트 완료 후 실제 연결
+  const handleMediaTestComplete = async () => {
+    console.log('=== 테스트 설정 적용 ===', {
+      camera: selectedCamera,
+      microphone: selectedMicrophone,
+      noiseSuppression: noiseSuppressionEnabled,
+      videoEnabled: testVideoEnabled,
+      audioEnabled: testAudioEnabled,
+      cameraDeviceName: mediaDevices.cameras.find(c => c.deviceId === selectedCamera)?.label || 'Unknown',
+      microphoneDeviceName: mediaDevices.microphones.find(m => m.deviceId === selectedMicrophone)?.label || 'Unknown'
+    });
+    
+    // 테스트 스트림 정리
+    stopTestStream();
+    setShowMediaTest(false);
     setCallStartTime(Date.now());
-    await connectToRoom();
+    
+    // 상태 업데이트
+    setIsCameraOn(testVideoEnabled);
+    setIsMicOn(testAudioEnabled);
+    setActiveCamera(selectedCamera);
+    setActiveMicrophone(selectedMicrophone);
+    setActiveNoiseSuppression(noiseSuppressionEnabled);
+    
+    // 테스트 설정을 직접 전달하여 상태 비동기 문제 해결
+    await connectToRoom({
+      cameraEnabled: testVideoEnabled,
+      micEnabled: testAudioEnabled,
+      cameraDeviceId: selectedCamera,
+      micDeviceId: selectedMicrophone,
+      noiseSuppression: noiseSuppressionEnabled
+    });
+  };
+
+  // 미디어 디바이스 목록 가져오기
+  const getMediaDevices = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      const microphones = devices.filter(device => device.kind === 'audioinput');
+      const speakers = devices.filter(device => device.kind === 'audiooutput');
+      
+      setMediaDevices({ cameras, microphones, speakers });
+      
+      // 기본 디바이스 선택
+      if (cameras.length > 0 && !selectedCamera) {
+        setSelectedCamera(cameras[0].deviceId);
+      }
+      if (microphones.length > 0 && !selectedMicrophone) {
+        setSelectedMicrophone(microphones[0].deviceId);
+      }
+    } catch (error) {
+      console.error('미디어 디바이스 목록 가져오기 실패:', error);
+    }
+  };
+
+  // 테스트 스트림 시작
+  const startTestStream = async () => {
+    try {
+      // getUserMedia는 최소 하나의 미디어(audio 또는 video)가 필요
+      if (!testVideoEnabled && !testAudioEnabled) {
+        console.log('오디오와 비디오가 모두 비활성화되어 스트림을 생성하지 않습니다.');
+        return;
+      }
+
+      const constraints = {
+        video: testVideoEnabled ? {
+          deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } : false,
+        audio: testAudioEnabled ? {
+          deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
+          echoCancellation: true,
+          noiseSuppression: noiseSuppressionEnabled
+        } : false
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setTestStream(stream);
+
+      // 비디오 연결
+      if (testVideoRef.current && testVideoEnabled) {
+        testVideoRef.current.srcObject = stream;
+        testVideoRef.current.play().catch(console.error);
+      }
+
+      // 오디오 레벨 분석 시작
+      if (testAudioEnabled) {
+        setupAudioLevelDetection(stream);
+      }
+
+    } catch (error) {
+      console.error('테스트 스트림 시작 실패:', error);
+      setError(`미디어 접근 실패: ${error.message}`);
+    }
+  };
+
+  // 오디오 레벨 감지 설정
+  const setupAudioLevelDetection = (stream) => {
+    try {
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      
+      testAudioContextRef.current = audioContext;
+      testAnalyserRef.current = analyser;
+      
+      // 오디오 레벨 모니터링 시작
+      const checkAudioLevel = () => {
+        if (!testAnalyserRef.current) return;
+        
+        const bufferLength = testAnalyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        testAnalyserRef.current.getByteFrequencyData(dataArray);
+        
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+        setAudioLevel(Math.round((average / 255) * 100));
+        
+        requestAnimationFrame(checkAudioLevel);
+      };
+      
+      checkAudioLevel();
+    } catch (error) {
+      console.error('오디오 레벨 감지 설정 실패:', error);
+    }
+  };
+
+  // 테스트 스트림 정리
+  const stopTestStream = () => {
+    if (testStream) {
+      testStream.getTracks().forEach(track => track.stop());
+      setTestStream(null);
+    }
+    
+    if (testAudioContextRef.current) {
+      testAudioContextRef.current.close();
+      testAudioContextRef.current = null;
+    }
+    
+    if (testVideoRef.current) {
+      testVideoRef.current.srcObject = null;
+    }
+    
+    setAudioLevel(0);
+  };
+
+  // 테스트 비디오 토글
+  const toggleTestVideo = async () => {
+    const newVideoEnabled = !testVideoEnabled;
+    setTestVideoEnabled(newVideoEnabled);
+    
+    // 스트림이 없거나 비어있는 경우 새로 생성 (즉시 실행)
+    if (!testStream || (testStream.getTracks().length === 0)) {
+      // 새 상태로 즉시 스트림 생성
+      if (newVideoEnabled || testAudioEnabled) {
+        try {
+          const constraints = {
+            video: newVideoEnabled ? {
+              deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            } : false,
+            audio: testAudioEnabled ? {
+              deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
+              echoCancellation: true,
+              noiseSuppression: noiseSuppressionEnabled
+            } : false
+          };
+
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          setTestStream(stream);
+
+          // 비디오 연결
+          if (testVideoRef.current && newVideoEnabled) {
+            testVideoRef.current.srcObject = stream;
+            testVideoRef.current.play().catch(console.error);
+          }
+
+          // 오디오 레벨 분석 시작
+          if (testAudioEnabled) {
+            setupAudioLevelDetection(stream);
+          }
+        } catch (error) {
+          console.error('비디오 토글 중 스트림 생성 실패:', error);
+          setError(`미디어 접근 실패: ${error.message}`);
+        }
+      }
+      return;
+    }
+    
+    if (newVideoEnabled) {
+      // 비디오를 켜는 경우
+      try {
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+        
+        const newVideoTrack = videoStream.getVideoTracks()[0];
+        
+        // 기존 비디오 트랙이 있다면 제거
+        const existingVideoTracks = testStream.getVideoTracks();
+        existingVideoTracks.forEach(track => {
+          testStream.removeTrack(track);
+          track.stop();
+        });
+        
+        // 새 비디오 트랙 추가
+        testStream.addTrack(newVideoTrack);
+        
+        // 비디오 엘리먼트 업데이트
+        if (testVideoRef.current) {
+          testVideoRef.current.srcObject = testStream;
+          testVideoRef.current.play().catch(console.error);
+        }
+      } catch (error) {
+        console.error('비디오 트랙 추가 실패:', error);
+        setTestVideoEnabled(false);
+      }
+    } else {
+      // 비디오를 끄는 경우
+      const videoTracks = testStream.getVideoTracks();
+      videoTracks.forEach(track => {
+        testStream.removeTrack(track);
+        track.stop();
+      });
+      
+      // 오디오도 없으면 스트림 완전 정리
+      if (!testAudioEnabled || testStream.getAudioTracks().length === 0) {
+        stopTestStream();
+        return;
+      }
+      
+      // 비디오만 꺼진 경우 비디오 엘리먼트 업데이트
+      if (testVideoRef.current) {
+        testVideoRef.current.srcObject = testStream;
+      }
+    }
+  };
+
+  // 테스트 오디오 토글
+  const toggleTestAudio = async () => {
+    const newAudioEnabled = !testAudioEnabled;
+    setTestAudioEnabled(newAudioEnabled);
+    
+    // 스트림이 없거나 비어있는 경우 새로 생성 (즉시 실행)
+    if (!testStream || (testStream.getTracks().length === 0)) {
+      // 새 상태로 즉시 스트림 생성
+      if (newAudioEnabled || testVideoEnabled) {
+        try {
+          const constraints = {
+            video: testVideoEnabled ? {
+              deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            } : false,
+            audio: newAudioEnabled ? {
+              deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
+              echoCancellation: true,
+              noiseSuppression: noiseSuppressionEnabled
+            } : false
+          };
+
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          setTestStream(stream);
+
+          // 비디오 연결
+          if (testVideoRef.current && testVideoEnabled) {
+            testVideoRef.current.srcObject = stream;
+            testVideoRef.current.play().catch(console.error);
+          }
+
+          // 오디오 레벨 분석 시작
+          if (newAudioEnabled) {
+            setupAudioLevelDetection(stream);
+          }
+        } catch (error) {
+          console.error('오디오 토글 중 스트림 생성 실패:', error);
+          setError(`미디어 접근 실패: ${error.message}`);
+        }
+      }
+      return;
+    }
+    
+    // 오디오 분석기 정리
+    if (testAudioContextRef.current) {
+      testAudioContextRef.current.close();
+      testAudioContextRef.current = null;
+    }
+    setAudioLevel(0);
+    
+    if (newAudioEnabled) {
+      // 오디오를 켜는 경우
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
+            echoCancellation: true,
+            noiseSuppression: noiseSuppressionEnabled
+          }
+        });
+        
+        const newAudioTrack = audioStream.getAudioTracks()[0];
+        
+        // 기존 오디오 트랙이 있다면 제거
+        const existingAudioTracks = testStream.getAudioTracks();
+        existingAudioTracks.forEach(track => {
+          testStream.removeTrack(track);
+          track.stop();
+        });
+        
+        // 새 오디오 트랙 추가
+        testStream.addTrack(newAudioTrack);
+        
+        // 오디오 레벨 분석 재시작
+        setupAudioLevelDetection(testStream);
+      } catch (error) {
+        console.error('오디오 트랙 추가 실패:', error);
+        setTestAudioEnabled(false);
+      }
+    } else {
+      // 오디오를 끄는 경우
+      const audioTracks = testStream.getAudioTracks();
+      audioTracks.forEach(track => {
+        testStream.removeTrack(track);
+        track.stop();
+      });
+      
+      // 비디오도 없으면 스트림 완전 정리
+      if (!testVideoEnabled || testStream.getVideoTracks().length === 0) {
+        stopTestStream();
+        return;
+      }
+    }
+  };
+
+  // 디바이스 변경 - 해당 미디어만 재시작
+  const handleDeviceChange = async (type, deviceId) => {
+    if (type === 'camera') {
+      setSelectedCamera(deviceId);
+      
+      // 스트림이 있고 비디오가 활성화된 경우에만 변경
+      if (testStream && testVideoEnabled && testStream.getTracks().length > 0) {
+        // 기존 비디오 트랙 제거
+        const videoTracks = testStream.getVideoTracks();
+        videoTracks.forEach(track => {
+          testStream.removeTrack(track);
+          track.stop();
+        });
+        
+        try {
+          const videoStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: { exact: deviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+          
+          const newVideoTrack = videoStream.getVideoTracks()[0];
+          testStream.addTrack(newVideoTrack);
+          
+          if (testVideoRef.current) {
+            testVideoRef.current.srcObject = testStream;
+            testVideoRef.current.play().catch(console.error);
+          }
+        } catch (error) {
+          console.error('카메라 변경 실패:', error);
+        }
+      }
+    } else if (type === 'microphone') {
+      setSelectedMicrophone(deviceId);
+      
+      // 스트림이 있고 오디오가 활성화된 경우에만 변경
+      if (testStream && testAudioEnabled && testStream.getTracks().length > 0) {
+        // 오디오 분석기 정리
+        if (testAudioContextRef.current) {
+          testAudioContextRef.current.close();
+          testAudioContextRef.current = null;
+        }
+        setAudioLevel(0);
+        
+        // 기존 오디오 트랙 제거
+        const audioTracks = testStream.getAudioTracks();
+        audioTracks.forEach(track => {
+          testStream.removeTrack(track);
+          track.stop();
+        });
+        
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              deviceId: { exact: deviceId },
+              echoCancellation: true,
+              noiseSuppression: noiseSuppressionEnabled
+            }
+          });
+          
+          const newAudioTrack = audioStream.getAudioTracks()[0];
+          testStream.addTrack(newAudioTrack);
+          
+          // 오디오 레벨 분석 재시작
+          setupAudioLevelDetection(testStream);
+        } catch (error) {
+          console.error('마이크 변경 실패:', error);
+        }
+      }
+    }
   };
 
   // 로그인 페이지로 이동
@@ -563,14 +1128,30 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         await room.localParticipant.setMicrophoneEnabled(false);
         console.log('마이크 비활성화');
       } else {
-        // 마이크 켜기 (첫 번째 활성화 시 미디어 권한 요청)
-        await room.localParticipant.setMicrophoneEnabled(true);
-        console.log('마이크 활성화');
-        
-        // 오디오 트랙 참조 저장
-        const audioPublication = Array.from(room.localParticipant.audioTrackPublications.values())[0];
-        if (audioPublication?.track) {
+        // 마이크 켜기 - 테스트에서 설정한 디바이스 및 옵션 사용
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              deviceId: activeMicrophone && activeMicrophone !== '' ? { exact: activeMicrophone } : undefined,
+              echoCancellation: true,
+              noiseSuppression: activeNoiseSuppression
+            }
+          });
+          
+          const audioTrack = audioStream.getAudioTracks()[0];
+          const audioPublication = await room.localParticipant.publishTrack(audioTrack, {
+            name: 'microphone'
+          });
           setLocalAudioTrack(audioPublication.track);
+          console.log('맞춤형 마이크 활성화 완료');
+        } catch (customError) {
+          console.warn('맞춤형 마이크 활성화 실패, 기본 방법 사용:', customError);
+          await room.localParticipant.setMicrophoneEnabled(true);
+          
+          const audioPublication = Array.from(room.localParticipant.audioTrackPublications.values())[0];
+          if (audioPublication?.track) {
+            setLocalAudioTrack(audioPublication.track);
+          }
         }
       }
       setIsMicOn(!isMicOn);
@@ -591,20 +1172,35 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         setLocalVideoTrack(null); // 트랙 제거
         console.log('카메라 비활성화');
       } else {
-        // 카메라 켜기 (첫 번째 활성화 시 미디어 권한 요청)
-        await room.localParticipant.setCameraEnabled(true);
-        console.log('카메라 활성화');
-        
-        // 짧은 지연 후 비디오 트랙 참조 저장 (트랙 생성 대기)
-        setTimeout(() => {
-          const videoPublication = Array.from(room.localParticipant.videoTrackPublications.values())[0];
-          if (videoPublication?.track) {
-            setLocalVideoTrack(videoPublication.track);
-            console.log('비디오 트랙 연결됨:', videoPublication.track);
-          } else {
-            console.log('비디오 트랙을 찾을 수 없음');
-          }
-        }, 100);
+        // 카메라 켜기 - 테스트에서 설정한 디바이스 사용
+        try {
+          const videoStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: activeCamera && activeCamera !== '' ? { exact: activeCamera } : undefined,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+          
+          const videoTrack = videoStream.getVideoTracks()[0];
+          const videoPublication = await room.localParticipant.publishTrack(videoTrack, {
+            name: 'camera',
+            simulcast: false
+          });
+          setLocalVideoTrack(videoPublication.track);
+          console.log('맞춤형 카메라 활성화 완료');
+        } catch (customError) {
+          console.warn('맞춤형 카메라 활성화 실패, 기본 방법 사용:', customError);
+          await room.localParticipant.setCameraEnabled(true);
+          
+          setTimeout(() => {
+            const videoPublication = Array.from(room.localParticipant.videoTrackPublications.values())[0];
+            if (videoPublication?.track) {
+              setLocalVideoTrack(videoPublication.track);
+              console.log('기본 비디오 트랙 연결됨:', videoPublication.track);
+            }
+          }, 100);
+        }
       }
       setIsCameraOn(!isCameraOn);
     } catch (error) {
@@ -718,6 +1314,180 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     );
   }
 
+  // 미디어 테스트 화면
+  if (showMediaTest) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center p-4">
+        <div className="bg-[#FEFCF8] rounded-lg shadow-xl max-w-4xl w-full border border-[#5C351A]">
+          <div className="p-6 border-b border-[#5C351A]">
+            <h2 className="text-2xl font-bold text-[#2A2A2A] mb-2">카메라 및 마이크 테스트</h2>
+            <p className="text-[#4A4A4A]">통화를 시작하기 전에 카메라와 마이크가 제대로 작동하는지 확인해주세요.</p>
+          </div>
+
+          <div className="p-6 grid md:grid-cols-2 gap-6">
+            {/* 비디오 프리뷰 */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-[#2A2A2A]">카메라 테스트</h3>
+              <div className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] aspect-video">
+                {testVideoEnabled ? (
+                  <video
+                    ref={testVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#4A4A4A]">
+                    <div className="text-center">
+                      <span className="text-4xl mb-2 block">📷</span>
+                      <p>카메라가 꺼져있습니다</p>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute bottom-2 right-2">
+                  <button
+                    onClick={toggleTestVideo}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${
+                      testVideoEnabled ? 'bg-[#5C351A] hover:bg-[#4D280E]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7]'
+                    }`}
+                  >
+                    {testVideoEnabled ? '📹' : '📷'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 카메라 선택 */}
+              {mediaDevices.cameras.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">카메라 선택</label>
+                  <select
+                    value={selectedCamera}
+                    onChange={(e) => handleDeviceChange('camera', e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+                  >
+                    {mediaDevices.cameras.map((camera) => (
+                      <option key={camera.deviceId} value={camera.deviceId}>
+                        {camera.label || `카메라 ${camera.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* 오디오 테스트 */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-[#2A2A2A]">마이크 테스트</h3>
+              
+              {/* 마이크 레벨 표시 */}
+              <div className="p-4 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-[#4A4A4A]">음성 레벨</span>
+                  <span className="text-sm text-[#5C351A] font-medium">{audioLevel}%</span>
+                </div>
+                <div className="w-full bg-[#D6CDB8] rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all duration-150 ${
+                      audioLevel > 50 ? 'bg-green-500' :
+                      audioLevel > 20 ? 'bg-yellow-500' : 'bg-[#CCC2A7]'
+                    }`}
+                    style={{ width: `${Math.min(audioLevel, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-[#4A4A4A] mt-1">
+                  마이크에 대고 말씀해보세요. 막대가 움직이면 정상입니다.
+                </p>
+              </div>
+
+              {/* 마이크 토글 */}
+              <button
+                onClick={toggleTestAudio}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                  testAudioEnabled 
+                    ? 'bg-[#5C351A] hover:bg-[#4D280E] text-white' 
+                    : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] text-[#4A4A4A]'
+                }`}
+              >
+                {testAudioEnabled ? '🎤 마이크 켜짐' : '🔇 마이크 꺼짐'}
+              </button>
+
+              {/* 마이크 선택 */}
+              {mediaDevices.microphones.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">마이크 선택</label>
+                  <select
+                    value={selectedMicrophone}
+                    onChange={(e) => handleDeviceChange('microphone', e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+                  >
+                    {mediaDevices.microphones.map((mic) => (
+                      <option key={mic.deviceId} value={mic.deviceId}>
+                        {mic.label || `마이크 ${mic.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* 소음 억제 설정 */}
+              <div className="flex items-center justify-between p-3 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
+                <span className="text-sm text-[#4A4A4A]">소음 억제</span>
+                <button
+                  onClick={toggleNoiseSuppression}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    noiseSuppressionEnabled ? 'bg-[#5C351A] text-white' : 'bg-[#D6CDB8] text-[#4A4A4A]'
+                  }`}
+                >
+                  {noiseSuppressionEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 현재 설정 요약 */}
+          <div className="px-6 py-4 bg-[#F8F5F0] border-t border-[#5C351A]">
+            <h4 className="text-sm font-medium text-[#2A2A2A] mb-2">통화 시작 시 적용될 설정:</h4>
+            <div className="flex gap-4 text-sm text-[#4A4A4A]">
+              <span className={`flex items-center gap-1 ${testVideoEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                {testVideoEnabled ? '📹' : '📷'} 카메라: {testVideoEnabled ? 'ON' : 'OFF'}
+              </span>
+              <span className={`flex items-center gap-1 ${testAudioEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                {testAudioEnabled ? '🎤' : '🔇'} 마이크: {testAudioEnabled ? 'ON' : 'OFF'}
+              </span>
+              <span className={`flex items-center gap-1 ${noiseSuppressionEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                🔧 소음억제: {noiseSuppressionEnabled ? 'ON' : 'OFF'}
+              </span>
+            </div>
+          </div>
+
+          {/* 하단 버튼 */}
+          <div className="p-6 border-t border-[#5C351A] flex justify-between">
+            <button
+              onClick={() => {
+                stopTestStream();
+                setShowMediaTest(false);
+                setShowConnectButton(true);
+              }}
+              className="px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors"
+            >
+              뒤로 가기
+            </button>
+            <button
+              onClick={() => {
+                stopTestStream();
+                handleMediaTestComplete();
+              }}
+              className="px-8 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg"
+            >
+              이 설정으로 통화 시작
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 연결 버튼 표시 조건
   if (showConnectButton && !isConnected && !isLoading) {
     return (
@@ -735,7 +1505,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               onClick={handleStartConnection}
               className="w-full px-6 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
             >
-              🎥 연결 시작하기
+              🎤📹 미디어 테스트
             </button>
             <button
               onClick={() => window.location.href = '/'}
