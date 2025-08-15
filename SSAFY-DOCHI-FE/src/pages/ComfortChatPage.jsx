@@ -9,7 +9,7 @@ import todakImg from '../assets/todak.png';
 
 const ComfortChatPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, isLoggedIn } = useAuthStore();
   const messagesEndRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [showTitleModal, setShowTitleModal] = useState(false);
@@ -49,7 +49,10 @@ const ComfortChatPage = () => {
     setShowTutorial, // 튜토리얼 제어 함수 추가
     checkFirstVisit // 첫 방문자 감지 함수 추가
   } = useComfortStore();
-
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   useEffect(() => {
     loadChatRooms().catch(() => {
       console.log('채팅방 목록 로드 실패, 새 세션 생성으로 진행');
@@ -91,9 +94,20 @@ const ComfortChatPage = () => {
     };
   }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">로그인 페이지로 이동 중...</div>
+      </div>
+    );
+  }
+
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;

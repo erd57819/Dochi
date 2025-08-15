@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../config/api.js';
 import useAuthStore from '../stores/AuthStore.js';
+import { showError, showSuccess } from '../utils/errorHandler';
 
 // 인증 헤더 생성
 const getAuthHeaders = () => {
@@ -51,7 +52,20 @@ export const communityApi = {
       console.log('게시글 목록 API 응답:', data);
       
       if (!response.ok) {
-        throw new Error(data.message || '게시글 조회 실패');
+        let serverMessage = '';
+        try {
+          serverMessage = data.message || data.error;
+        } catch (parseError) {
+          console.warn('응답 JSON 파싱 실패:', parseError);
+        }
+        
+        if (response.status === 500) {
+          showError('서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          showError(serverMessage || '게시글 목록 조회에 실패했습니다.');
+        }
+        
+        throw new Error(serverMessage || '게시글 조회 실패');
       }
       
       // 응답 데이터 구조 확인 및 변환
@@ -168,20 +182,28 @@ export const communityApi = {
       console.log('📊 게시글 삭제 응답 상태:', response.status, response.statusText);
       
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let serverMessage = '';
         try {
           const errorData = await response.json();
           console.log('❌ 삭제 에러 응답 데이터:', errorData);
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          serverMessage = errorData.message || errorData.error;
         } catch (parseError) {
           console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
         }
-        throw new Error(errorMessage);
+        
+        if (response.status === 500) {
+          showError('서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          showError(serverMessage || '게시글 삭제에 실패했습니다.');
+        }
+        
+        throw new Error(serverMessage || '게시글 삭제 실패');
       }
       
       const data = await response.json();
       console.log('✅ 게시글 삭제 성공 응답:', data);
       
+      showSuccess('게시글이 삭제되었습니다.');
       return data;
     } catch (error) {
       console.error('❌ 게시글 삭제 에러:', error);
@@ -212,20 +234,28 @@ export const communityApi = {
       console.log('📊 게시글 수정 응답 상태:', response.status, response.statusText);
       
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let serverMessage = '';
         try {
           const errorData = await response.json();
           console.log('❌ 수정 에러 응답 데이터:', errorData);
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          serverMessage = errorData.message || errorData.error;
         } catch (parseError) {
           console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
         }
-        throw new Error(errorMessage);
+        
+        if (response.status === 500) {
+          showError('서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          showError(serverMessage || '게시글 수정에 실패했습니다.');
+        }
+        
+        throw new Error(serverMessage || '게시글 수정 실패');
       }
       
       const data = await response.json();
       console.log('✅ 게시글 수정 성공 응답:', data);
       
+      showSuccess('게시글이 수정되었습니다.');
       return data;
     } catch (error) {
       console.error('❌ 게시글 수정 에러:', error);
@@ -262,29 +292,28 @@ export const communityApi = {
       console.log('📊 게시글 작성 응답 상태:', response.status, response.statusText);
       
       if (!response.ok) {
-        // 응답이 JSON이 아닐 수 있으므로 안전하게 처리
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let serverMessage = '';
         try {
           const errorData = await response.json();
           console.log('❌ 에러 응답 데이터:', errorData);
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          serverMessage = errorData.message || errorData.error;
         } catch (parseError) {
           console.warn('에러 응답을 JSON으로 파싱할 수 없음:', parseError);
-          // 응답 본문을 텍스트로 읽어보기
-          try {
-            const errorText = await response.text();
-            console.log('❌ 에러 응답 텍스트:', errorText);
-            if (errorText) errorMessage = errorText;
-          } catch (textError) {
-            console.warn('에러 응답을 텍스트로도 읽을 수 없음:', textError);
-          }
         }
-        throw new Error(errorMessage);
+        
+        if (response.status === 500) {
+          showError('서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          showError(serverMessage || '게시글 작성에 실패했습니다.');
+        }
+        
+        throw new Error(serverMessage || '게시글 작성 실패');
       }
       
       const data = await response.json();
       console.log('✅ 게시글 작성 성공 응답:', data);
       
+      showSuccess('게시글이 작성되었습니다.');
       return data;
     } catch (error) {
       console.error('❌ 게시글 작성 에러:', error);

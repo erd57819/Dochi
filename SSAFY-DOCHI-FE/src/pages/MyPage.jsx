@@ -211,16 +211,14 @@ const MyPage = () => {
         )}
 
         {/* 헤더 - 제목과 통계 */}
-        <div className="max-w-[1200px] mx-auto px-4 lg:px-8 mb-12">
-          <div className="text-center mb-8">
+        <div className="max-w-[1200px] mx-auto px-4 lg:px-8 mb-8">
+          <div className="flex justify-between items-center mb-4">
             <p className="text-gray-600 text-lg">
               지금까지 <span className="text-orange-600 font-bold">{conflictCount}개</span>의 갈등을 기록하셨어요
             </p>
-          </div>
-
-          {/* 편집 모드 버튼 */}
-          {conflicts.length > 0 && (
-            <div className="flex justify-end items-center mb-6">
+            
+            {/* 편집 모드 버튼 */}
+            {conflicts.length > 0 && (
               <div className="flex items-center gap-4">
                 {isEditMode && (
                   <>
@@ -258,8 +256,8 @@ const MyPage = () => {
                   {isEditMode ? '편집 완료' : '편집'}
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* 카드 그리드 - 3열 고정 */}
