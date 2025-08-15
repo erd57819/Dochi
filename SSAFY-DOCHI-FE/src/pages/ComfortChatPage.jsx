@@ -1275,7 +1275,7 @@ const ComfortChatPage = () => {
       )}
 
       <ChatTitleModal
-        isOpen={showTitleModal}
+        isOpen={showTitleModal && !showTutorial}
         onClose={() => setShowTitleModal(false)}
         onConfirm={handleCreateWithTitle}
         mode="create"
@@ -1283,7 +1283,11 @@ const ComfortChatPage = () => {
       
       <TutorialModal
         isOpen={showTutorial}
-        onClose={() => setShowTutorial(false)}
+        onClose={() => {
+          setShowTutorial(false);
+          // 튜토리얼이 끝나면 새 대화 제목 입력 모달 표시
+          setShowTitleModal(true);
+        }}
       />
     </div>
   );
