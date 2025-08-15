@@ -5,6 +5,7 @@ import useAuthStore from '../../stores/AuthStore';
 import apiClient from '../../config/axios';
 import { useSTT } from '../../hooks/useSTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
+import MediaTestScreen from './MediaTestScreen';
 
 const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 인증 스토어에서 토큰과 사용자 정보 가져오기
@@ -56,14 +57,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const [showConnectButton, setShowConnectButton] = useState(true); // 연결 버튼 표시 상태
   const [showMediaTest, setShowMediaTest] = useState(false); // 미디어 테스트 화면 표시 상태
 
-  // 미디어 테스트 관련 상태
-  const [testStream, setTestStream] = useState(null);
-  const [testVideoEnabled, setTestVideoEnabled] = useState(true);
-  const [testAudioEnabled, setTestAudioEnabled] = useState(true);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [mediaDevices, setMediaDevices] = useState({ cameras: [], microphones: [], speakers: [] });
-  const [selectedCamera, setSelectedCamera] = useState('');
-  const [selectedMicrophone, setSelectedMicrophone] = useState('');
 
   const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [speakingParticipants, setSpeakingParticipants] = useState(new Set());
@@ -84,9 +77,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 참조들
   const localVideoRef = useRef(null);
-  const testVideoRef = useRef(null); // 미디어 테스트용 비디오 참조
-  const testAudioContextRef = useRef(null); // 오디오 레벨 측정용
-  const testAnalyserRef = useRef(null);
   const remoteVideoRefs = useRef(new Map());
   const remoteAudioRefs = useRef(new Map());
   const pendingVideoTracks = useRef(new Map());
@@ -421,32 +411,31 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     });
   };
 
-  // 참가자 비디오 참조 생성
+  // ✅ 수정된 코드 (Video)
   const createParticipantVideoRef = (participantSid) => {
     if (!remoteVideoRefs.current.has(participantSid)) {
       remoteVideoRefs.current.set(participantSid, React.createRef());
       
-      // 대기 중인 비디오 트랙이 있으면 연결
       const pendingVideoTrack = pendingVideoTracks.current.get(participantSid);
       if (pendingVideoTrack) {
         setTimeout(() => {
           const videoRef = remoteVideoRefs.current.get(participantSid);
           if (videoRef?.current) {
             pendingVideoTrack.attach(videoRef.current);
+            // ✅ attach 성공 후 여기서 삭제해야 합니다.
+            pendingVideoTracks.current.delete(participantSid); 
           }
         }, 100);
-        pendingVideoTracks.current.delete(participantSid);
       }
     }
     return remoteVideoRefs.current.get(participantSid);
   };
 
-  // 참가자 오디오 참조 생성
+  // ✅ 수정된 코드 (Audio)
   const createParticipantAudioRef = (participantSid) => {
     if (!remoteAudioRefs.current.has(participantSid)) {
       remoteAudioRefs.current.set(participantSid, React.createRef());
       
-      // 대기 중인 오디오 트랙이 있으면 연결
       const pendingAudioTrack = pendingAudioTracks.current.get(participantSid);
       if (pendingAudioTrack) {
         setTimeout(() => {
@@ -454,15 +443,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           if (audioRef?.current) {
             pendingAudioTrack.attach(audioRef.current);
             console.log('[오디오 연결] pending 오디오 트랙 연결 완료:', participantSid);
-            // 오디오 엘리먼트 설정 확인
             if (audioRef.current.muted) {
               audioRef.current.muted = false;
               console.log('[오디오 연결] muted 해제:', participantSid);
             }
             audioRef.current.play().catch(e => console.log('[오디오 연결] 자동재생 실패 (정상):', e));
+            // ✅ attach 성공 후 여기서 삭제해야 합니다.
+            pendingAudioTracks.current.delete(participantSid); 
           }
-        }, 500); // 더 긴 지연시간으로 변경
-        pendingAudioTracks.current.delete(participantSid);
+        }, 500);
       }
     }
     return remoteAudioRefs.current.get(participantSid);
@@ -485,7 +474,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     sendAccumulatedEmotionsToFastAPI, analyzeConflictLevel, generateEmotionAdvice,
     sendFinalEmotionData
   } = emotionHook;
-
+  
   // 사용자 정보 변경 감지하여 participantName 업데이트
   useEffect(() => {
     const newParticipantName = getUserIdentifier();
@@ -508,8 +497,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       setShowConnectButton(true);
     }
 
-    // 자동 연결 제거 - 수동 연결 버튼 방식으로 변경
-
     return () => {
       handleLeaveRoom();
     };
@@ -527,36 +514,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       handleLeaveRoom();
     };
 
-    // 상대방이 나갔을 때 처리
-    const handleRemoteUserLeft = () => {
-      console.log('[상대방 나감] 통화 종료 처리...');
-      handleLeaveRoom(true); // 갈등 레포트로 이동
-    };
-
-    // 대기실 모드 처리
-    const handleWaitingForUsers = () => {
-      console.log('[대기 모드] 새로운 참가자를 기다립니다...');
-      // 대기 중 메시지를 표시하거나 UI 업데이트
-    };
-
-    // 브라우저 종료/새로고침/뒤로가기 이벤트 처리
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('popstate', handlePopState);
-    window.addEventListener('remoteUserLeft', handleRemoteUserLeft);
-    window.addEventListener('waitingForUsers', handleWaitingForUsers);
 
-    // 컴포넌트 언마운트시 정리
     return () => {
       console.log('[컴포넌트 언마운트] 리소스 정리 시작...');
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('remoteUserLeft', handleRemoteUserLeft);
-      window.removeEventListener('waitingForUsers', handleWaitingForUsers);
       handleLeaveRoom();
     };
   }, []);
 
-  // 로컬 비디오 연결 (백업 파일 방식)
+  // 로컬 비디오 연결
   useEffect(() => {
     if (localVideoTrack && localVideoRef.current) {
       const mediaStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
@@ -578,13 +547,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         }
       };
     } else if (!localVideoTrack && localVideoRef.current) {
-      // 비디오 트랙이 없을 때 비디오 엘리먼트 정리
       localVideoRef.current.srcObject = null;
       console.log('로컬 비디오 트랙 정리됨');
     }
   }, [localVideoTrack]);
 
-  // 표정 분석 정리 (컴포넌트 언마운트시)
+  // 표정 분석 정리
   useEffect(() => {
     return () => {
       stopEmotionDetection();
@@ -594,38 +562,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 마이크 상태에 따른 STT 자동 연동
   useEffect(() => {
     if (isMicOn && !sttEnabled) {
-      // 마이크가 켜지면 STT도 자동으로 시작
       console.log('마이크 켜짐 - STT 자동 시작');
       startSTT();
     } else if (!isMicOn && sttEnabled) {
-      // 마이크가 꺼지면 STT도 자동으로 중지
       console.log('마이크 꺼짐 - STT 자동 중지');
       stopSTT();
     }
   }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
-  // 미디어 테스트 초기화 및 상태 변경 감지
-  useEffect(() => {
-    if (showMediaTest) {
-      if (!mediaDevices.cameras.length && !mediaDevices.microphones.length) {
-        // 디바이스 목록이 없으면 먼저 가져오기
-        getMediaDevices().then(() => {
-          startTestStream();
-        });
-      } else {
-        // 디바이스 목록이 있으면 바로 스트림 시작
-        startTestStream();
-      }
-    }
-
-    return () => {
-      if (showMediaTest) {
-        stopTestStream();
-      }
-    };
-  }, [showMediaTest, testVideoEnabled, testAudioEnabled]); // 미디어 상태 변경도 감지
-
-  // 갈등 레벨 분석 (감정 점수 변화 감지)
+  // 갈등 레벨 분석
   useEffect(() => {
     analyzeConflictLevel(emotionScores);
   }, [emotionScores]);
@@ -642,7 +587,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         if (elapsed >= maxCallDuration) {
           console.log('[타이머] 30분 제한 도달 - 통화 종료');
           alert('통화 시간 30분이 경과하여 자동으로 종료됩니다.');
-          handleLeaveRoom(true); // 갈등 레포트로 이동
+          handleLeaveRoom(true);
         }
 
         // 25분 경과 시 경고
@@ -672,7 +617,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   };
 
-
   // 게스트로 참가
   const handleGuestJoin = () => {
     if (!guestNickname.trim()) {
@@ -683,434 +627,31 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     setParticipantName(guestNickname);
     setIsGuestMode(true);
     setShowGuestModal(false);
-    setShowConnectButton(true); // 연결 버튼 표시
+    setShowConnectButton(true);
   };
 
-  // 연결 시작 버튼 클릭 - 미디어 테스트 단계로 이동
+  // 연결 시작 버튼 클릭
   const handleStartConnection = () => {
     setShowConnectButton(false);
     setShowMediaTest(true);
   };
 
   // 미디어 테스트 완료 후 실제 연결
-  const handleMediaTestComplete = async () => {
-    console.log('=== 테스트 설정 적용 ===', {
-      camera: selectedCamera,
-      microphone: selectedMicrophone,
-      noiseSuppression: noiseSuppressionEnabled,
-      videoEnabled: testVideoEnabled,
-      audioEnabled: testAudioEnabled,
-      cameraDeviceName: mediaDevices.cameras.find(c => c.deviceId === selectedCamera)?.label || 'Unknown',
-      microphoneDeviceName: mediaDevices.microphones.find(m => m.deviceId === selectedMicrophone)?.label || 'Unknown'
-    });
+  const handleMediaTestComplete = async (settings) => {
+    console.log('=== 테스트 설정 적용 ===', settings);
     
-    // 테스트 스트림 정리
-    stopTestStream();
     setShowMediaTest(false);
     setCallStartTime(Date.now());
     
     // 상태 업데이트
-    setIsCameraOn(testVideoEnabled);
-    setIsMicOn(testAudioEnabled);
-    setActiveCamera(selectedCamera);
-    setActiveMicrophone(selectedMicrophone);
-    setActiveNoiseSuppression(noiseSuppressionEnabled);
+    setIsCameraOn(settings.cameraEnabled);
+    setIsMicOn(settings.micEnabled);
+    setActiveCamera(settings.cameraDeviceId);
+    setActiveMicrophone(settings.micDeviceId);
+    setActiveNoiseSuppression(settings.noiseSuppression);
     
-    // 테스트 설정을 직접 전달하여 상태 비동기 문제 해결
-    await connectToRoom({
-      cameraEnabled: testVideoEnabled,
-      micEnabled: testAudioEnabled,
-      cameraDeviceId: selectedCamera,
-      micDeviceId: selectedMicrophone,
-      noiseSuppression: noiseSuppressionEnabled
-    });
-  };
-
-  // 미디어 디바이스 목록 가져오기
-  const getMediaDevices = async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameras = devices.filter(device => device.kind === 'videoinput');
-      const microphones = devices.filter(device => device.kind === 'audioinput');
-      const speakers = devices.filter(device => device.kind === 'audiooutput');
-      
-      setMediaDevices({ cameras, microphones, speakers });
-      
-      // 기본 디바이스 선택
-      if (cameras.length > 0 && !selectedCamera) {
-        setSelectedCamera(cameras[0].deviceId);
-      }
-      if (microphones.length > 0 && !selectedMicrophone) {
-        setSelectedMicrophone(microphones[0].deviceId);
-      }
-    } catch (error) {
-      console.error('미디어 디바이스 목록 가져오기 실패:', error);
-    }
-  };
-
-  // 테스트 스트림 시작
-  const startTestStream = async () => {
-    try {
-      // getUserMedia는 최소 하나의 미디어(audio 또는 video)가 필요
-      if (!testVideoEnabled && !testAudioEnabled) {
-        console.log('오디오와 비디오가 모두 비활성화되어 스트림을 생성하지 않습니다.');
-        return;
-      }
-
-      const constraints = {
-        video: testVideoEnabled ? {
-          deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } : false,
-        audio: testAudioEnabled ? {
-          deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
-          echoCancellation: true,
-          noiseSuppression: noiseSuppressionEnabled
-        } : false
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setTestStream(stream);
-
-      // 비디오 연결
-      if (testVideoRef.current && testVideoEnabled) {
-        testVideoRef.current.srcObject = stream;
-        testVideoRef.current.play().catch(console.error);
-      }
-
-      // 오디오 레벨 분석 시작
-      if (testAudioEnabled) {
-        setupAudioLevelDetection(stream);
-      }
-
-    } catch (error) {
-      console.error('테스트 스트림 시작 실패:', error);
-      setError(`미디어 접근 실패: ${error.message}`);
-    }
-  };
-
-  // 오디오 레벨 감지 설정
-  const setupAudioLevelDetection = (stream) => {
-    try {
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      
-      testAudioContextRef.current = audioContext;
-      testAnalyserRef.current = analyser;
-      
-      // 오디오 레벨 모니터링 시작
-      const checkAudioLevel = () => {
-        if (!testAnalyserRef.current) return;
-        
-        const bufferLength = testAnalyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        testAnalyserRef.current.getByteFrequencyData(dataArray);
-        
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          sum += dataArray[i];
-        }
-        const average = sum / bufferLength;
-        setAudioLevel(Math.round((average / 255) * 100));
-        
-        requestAnimationFrame(checkAudioLevel);
-      };
-      
-      checkAudioLevel();
-    } catch (error) {
-      console.error('오디오 레벨 감지 설정 실패:', error);
-    }
-  };
-
-  // 테스트 스트림 정리
-  const stopTestStream = () => {
-    if (testStream) {
-      testStream.getTracks().forEach(track => track.stop());
-      setTestStream(null);
-    }
-    
-    if (testAudioContextRef.current) {
-      testAudioContextRef.current.close();
-      testAudioContextRef.current = null;
-    }
-    
-    if (testVideoRef.current) {
-      testVideoRef.current.srcObject = null;
-    }
-    
-    setAudioLevel(0);
-  };
-
-  // 테스트 비디오 토글
-  const toggleTestVideo = async () => {
-    const newVideoEnabled = !testVideoEnabled;
-    setTestVideoEnabled(newVideoEnabled);
-    
-    // 스트림이 없거나 비어있는 경우 새로 생성 (즉시 실행)
-    if (!testStream || (testStream.getTracks().length === 0)) {
-      // 새 상태로 즉시 스트림 생성
-      if (newVideoEnabled || testAudioEnabled) {
-        try {
-          const constraints = {
-            video: newVideoEnabled ? {
-              deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            } : false,
-            audio: testAudioEnabled ? {
-              deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
-              echoCancellation: true,
-              noiseSuppression: noiseSuppressionEnabled
-            } : false
-          };
-
-          const stream = await navigator.mediaDevices.getUserMedia(constraints);
-          setTestStream(stream);
-
-          // 비디오 연결
-          if (testVideoRef.current && newVideoEnabled) {
-            testVideoRef.current.srcObject = stream;
-            testVideoRef.current.play().catch(console.error);
-          }
-
-          // 오디오 레벨 분석 시작
-          if (testAudioEnabled) {
-            setupAudioLevelDetection(stream);
-          }
-        } catch (error) {
-          console.error('비디오 토글 중 스트림 생성 실패:', error);
-          setError(`미디어 접근 실패: ${error.message}`);
-        }
-      }
-      return;
-    }
-    
-    if (newVideoEnabled) {
-      // 비디오를 켜는 경우
-      try {
-        const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
-        
-        const newVideoTrack = videoStream.getVideoTracks()[0];
-        
-        // 기존 비디오 트랙이 있다면 제거
-        const existingVideoTracks = testStream.getVideoTracks();
-        existingVideoTracks.forEach(track => {
-          testStream.removeTrack(track);
-          track.stop();
-        });
-        
-        // 새 비디오 트랙 추가
-        testStream.addTrack(newVideoTrack);
-        
-        // 비디오 엘리먼트 업데이트
-        if (testVideoRef.current) {
-          testVideoRef.current.srcObject = testStream;
-          testVideoRef.current.play().catch(console.error);
-        }
-      } catch (error) {
-        console.error('비디오 트랙 추가 실패:', error);
-        setTestVideoEnabled(false);
-      }
-    } else {
-      // 비디오를 끄는 경우
-      const videoTracks = testStream.getVideoTracks();
-      videoTracks.forEach(track => {
-        testStream.removeTrack(track);
-        track.stop();
-      });
-      
-      // 오디오도 없으면 스트림 완전 정리
-      if (!testAudioEnabled || testStream.getAudioTracks().length === 0) {
-        stopTestStream();
-        return;
-      }
-      
-      // 비디오만 꺼진 경우 비디오 엘리먼트 업데이트
-      if (testVideoRef.current) {
-        testVideoRef.current.srcObject = testStream;
-      }
-    }
-  };
-
-  // 테스트 오디오 토글
-  const toggleTestAudio = async () => {
-    const newAudioEnabled = !testAudioEnabled;
-    setTestAudioEnabled(newAudioEnabled);
-    
-    // 스트림이 없거나 비어있는 경우 새로 생성 (즉시 실행)
-    if (!testStream || (testStream.getTracks().length === 0)) {
-      // 새 상태로 즉시 스트림 생성
-      if (newAudioEnabled || testVideoEnabled) {
-        try {
-          const constraints = {
-            video: testVideoEnabled ? {
-              deviceId: selectedCamera && selectedCamera !== '' ? { exact: selectedCamera } : undefined,
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            } : false,
-            audio: newAudioEnabled ? {
-              deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
-              echoCancellation: true,
-              noiseSuppression: noiseSuppressionEnabled
-            } : false
-          };
-
-          const stream = await navigator.mediaDevices.getUserMedia(constraints);
-          setTestStream(stream);
-
-          // 비디오 연결
-          if (testVideoRef.current && testVideoEnabled) {
-            testVideoRef.current.srcObject = stream;
-            testVideoRef.current.play().catch(console.error);
-          }
-
-          // 오디오 레벨 분석 시작
-          if (newAudioEnabled) {
-            setupAudioLevelDetection(stream);
-          }
-        } catch (error) {
-          console.error('오디오 토글 중 스트림 생성 실패:', error);
-          setError(`미디어 접근 실패: ${error.message}`);
-        }
-      }
-      return;
-    }
-    
-    // 오디오 분석기 정리
-    if (testAudioContextRef.current) {
-      testAudioContextRef.current.close();
-      testAudioContextRef.current = null;
-    }
-    setAudioLevel(0);
-    
-    if (newAudioEnabled) {
-      // 오디오를 켜는 경우
-      try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            deviceId: selectedMicrophone && selectedMicrophone !== '' ? { exact: selectedMicrophone } : undefined,
-            echoCancellation: true,
-            noiseSuppression: noiseSuppressionEnabled
-          }
-        });
-        
-        const newAudioTrack = audioStream.getAudioTracks()[0];
-        
-        // 기존 오디오 트랙이 있다면 제거
-        const existingAudioTracks = testStream.getAudioTracks();
-        existingAudioTracks.forEach(track => {
-          testStream.removeTrack(track);
-          track.stop();
-        });
-        
-        // 새 오디오 트랙 추가
-        testStream.addTrack(newAudioTrack);
-        
-        // 오디오 레벨 분석 재시작
-        setupAudioLevelDetection(testStream);
-      } catch (error) {
-        console.error('오디오 트랙 추가 실패:', error);
-        setTestAudioEnabled(false);
-      }
-    } else {
-      // 오디오를 끄는 경우
-      const audioTracks = testStream.getAudioTracks();
-      audioTracks.forEach(track => {
-        testStream.removeTrack(track);
-        track.stop();
-      });
-      
-      // 비디오도 없으면 스트림 완전 정리
-      if (!testVideoEnabled || testStream.getVideoTracks().length === 0) {
-        stopTestStream();
-        return;
-      }
-    }
-  };
-
-  // 디바이스 변경 - 해당 미디어만 재시작
-  const handleDeviceChange = async (type, deviceId) => {
-    if (type === 'camera') {
-      setSelectedCamera(deviceId);
-      
-      // 스트림이 있고 비디오가 활성화된 경우에만 변경
-      if (testStream && testVideoEnabled && testStream.getTracks().length > 0) {
-        // 기존 비디오 트랙 제거
-        const videoTracks = testStream.getVideoTracks();
-        videoTracks.forEach(track => {
-          testStream.removeTrack(track);
-          track.stop();
-        });
-        
-        try {
-          const videoStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              deviceId: { exact: deviceId },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          });
-          
-          const newVideoTrack = videoStream.getVideoTracks()[0];
-          testStream.addTrack(newVideoTrack);
-          
-          if (testVideoRef.current) {
-            testVideoRef.current.srcObject = testStream;
-            testVideoRef.current.play().catch(console.error);
-          }
-        } catch (error) {
-          console.error('카메라 변경 실패:', error);
-        }
-      }
-    } else if (type === 'microphone') {
-      setSelectedMicrophone(deviceId);
-      
-      // 스트림이 있고 오디오가 활성화된 경우에만 변경
-      if (testStream && testAudioEnabled && testStream.getTracks().length > 0) {
-        // 오디오 분석기 정리
-        if (testAudioContextRef.current) {
-          testAudioContextRef.current.close();
-          testAudioContextRef.current = null;
-        }
-        setAudioLevel(0);
-        
-        // 기존 오디오 트랙 제거
-        const audioTracks = testStream.getAudioTracks();
-        audioTracks.forEach(track => {
-          testStream.removeTrack(track);
-          track.stop();
-        });
-        
-        try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              deviceId: { exact: deviceId },
-              echoCancellation: true,
-              noiseSuppression: noiseSuppressionEnabled
-            }
-          });
-          
-          const newAudioTrack = audioStream.getAudioTracks()[0];
-          testStream.addTrack(newAudioTrack);
-          
-          // 오디오 레벨 분석 재시작
-          setupAudioLevelDetection(testStream);
-        } catch (error) {
-          console.error('마이크 변경 실패:', error);
-        }
-      }
-    }
+    // 연결 실행
+    await connectToRoom(settings);
   };
 
   // 로그인 페이지로 이동
@@ -1169,7 +710,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       if (isCameraOn) {
         // 카메라 끄기
         await room.localParticipant.setCameraEnabled(false);
-        setLocalVideoTrack(null); // 트랙 제거
+        setLocalVideoTrack(null);
         console.log('카메라 비활성화');
       } else {
         // 카메라 켜기 - 테스트에서 설정한 디바이스 사용
@@ -1245,16 +786,16 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 게스트 모달 컴포넌트
   const GuestModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#FEFCF8] rounded-lg p-6 max-w-md w-full border border-[#5C351A]">
-        <h2 className="text-2xl font-bold mb-4 text-[#2A2A2A]">화상채팅 참여</h2>
-        <p className="text-[#4A4A4A] mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(8px)' }}>
+      <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-6 max-w-md w-full mx-4 border border-orange-100">
+        <h2 className="text-2xl font-bold mb-4" style={{ color: '#333333' }}>화상채팅 참여</h2>
+        <p className="text-gray-600 mb-6">
           게스트로 참여하거나 로그인하여 참여할 수 있습니다.
         </p>
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="guestNickname" className="block text-sm font-medium text-[#2A2A2A] mb-2">
+            <label htmlFor="guestNickname" className="block text-sm font-medium mb-2" style={{ color: '#333333' }}>
               닉네임
             </label>
             <input
@@ -1268,7 +809,11 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 }
               }}
               placeholder="닉네임을 입력하세요"
-              className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+              className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
+              style={{ 
+                '--tw-ring-color': '#bf7d2c',
+                focusRingColor: '#bf7d2c'
+              }}
               autoFocus
             />
           </div>
@@ -1276,13 +821,19 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <div className="flex space-x-3">
             <button
               onClick={handleGuestJoin}
-              className="flex-1 bg-[#5C351A] hover:bg-[#4D280E] text-white py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 text-white py-2 px-4 rounded-xl transition-all duration-200 shadow-lg font-medium"
+              style={{ backgroundColor: '#bf7d2c' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#8B4513'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#bf7d2c'}
             >
               게스트로 참여
             </button>
             <button
               onClick={handleLogin}
-              className="flex-1 bg-[#4D280E] hover:bg-[#3E1F0A] text-white py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-gray-200 py-2 px-4 rounded-xl transition-all duration-200 shadow font-medium"
+              style={{ color: '#333333' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e5e7eb'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e7eb'}
             >
               로그인
             </button>
@@ -1292,227 +843,104 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     </div>
   );
 
-  // 로딩 및 에러 처리
+  // 렌더링 로직 시작
   if (showGuestModal) {
     return <GuestModal />;
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">연결 오류</h2>
-          <p className="text-[#4A4A4A] mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-[#5C351A] text-white rounded-lg hover:bg-[#4D280E] shadow-lg border border-[#3E1F0A]"
-          >
-            다시 시도
-          </button>
+      <div className="min-h-screen relative" style={{ 
+        zoom: '0.85',
+        background: 'linear-gradient(135deg, #f8d6b3 0%, #fff 50%, #f5f2ed 100%)'
+      }}>
+        <div className="absolute inset-0">
+          <div 
+            className="absolute top-0 left-0 w-full" 
+            style={{ 
+              height: '100%',
+              background: 'linear-gradient(135deg, #83673f 0%, #cd9f6e 50%, #EE9278 100%)',
+              opacity: 0.08
+            }}
+          ></div>
+        </div>
+        
+        <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-xl text-center" style={{ border: '2px solid #f8d6b3' }}>
+            <h2 className="text-2xl font-bold text-red-600 mb-4">연결 오류</h2>
+            <p className="mb-6" style={{ color: '#666' }}>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 rounded-lg font-medium transition-all duration-200 text-white shadow-lg"
+              style={{ backgroundColor: '#83673f' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#7F5539'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#83673f'}
+            >
+              다시 시도
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // 미디어 테스트 화면
   if (showMediaTest) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center p-4">
-        <div className="bg-[#FEFCF8] rounded-lg shadow-xl max-w-4xl w-full border border-[#5C351A]">
-          <div className="p-6 border-b border-[#5C351A]">
-            <h2 className="text-2xl font-bold text-[#2A2A2A] mb-2">카메라 및 마이크 테스트</h2>
-            <p className="text-[#4A4A4A]">통화를 시작하기 전에 카메라와 마이크가 제대로 작동하는지 확인해주세요.</p>
-          </div>
-
-          <div className="p-6 grid md:grid-cols-2 gap-6">
-            {/* 비디오 프리뷰 */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#2A2A2A]">카메라 테스트</h3>
-              <div className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] aspect-video">
-                {testVideoEnabled ? (
-                  <video
-                    ref={testVideoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#4A4A4A]">
-                    <div className="text-center">
-                      <span className="text-4xl mb-2 block">📷</span>
-                      <p>카메라가 꺼져있습니다</p>
-                    </div>
-                  </div>
-                )}
-                <div className="absolute bottom-2 right-2">
-                  <button
-                    onClick={toggleTestVideo}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${
-                      testVideoEnabled ? 'bg-[#5C351A] hover:bg-[#4D280E]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7]'
-                    }`}
-                  >
-                    {testVideoEnabled ? '📹' : '📷'}
-                  </button>
-                </div>
-              </div>
-
-              {/* 카메라 선택 */}
-              {mediaDevices.cameras.length > 1 && (
-                <div>
-                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">카메라 선택</label>
-                  <select
-                    value={selectedCamera}
-                    onChange={(e) => handleDeviceChange('camera', e.target.value)}
-                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
-                  >
-                    {mediaDevices.cameras.map((camera) => (
-                      <option key={camera.deviceId} value={camera.deviceId}>
-                        {camera.label || `카메라 ${camera.deviceId.slice(0, 8)}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* 오디오 테스트 */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#2A2A2A]">마이크 테스트</h3>
-              
-              {/* 마이크 레벨 표시 */}
-              <div className="p-4 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-[#4A4A4A]">음성 레벨</span>
-                  <span className="text-sm text-[#5C351A] font-medium">{audioLevel}%</span>
-                </div>
-                <div className="w-full bg-[#D6CDB8] rounded-full h-3">
-                  <div
-                    className={`h-3 rounded-full transition-all duration-150 ${
-                      audioLevel > 50 ? 'bg-green-500' :
-                      audioLevel > 20 ? 'bg-yellow-500' : 'bg-[#CCC2A7]'
-                    }`}
-                    style={{ width: `${Math.min(audioLevel, 100)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-[#4A4A4A] mt-1">
-                  마이크에 대고 말씀해보세요. 막대가 움직이면 정상입니다.
-                </p>
-              </div>
-
-              {/* 마이크 토글 */}
-              <button
-                onClick={toggleTestAudio}
-                className={`w-full py-3 rounded-lg font-medium transition-colors ${
-                  testAudioEnabled 
-                    ? 'bg-[#5C351A] hover:bg-[#4D280E] text-white' 
-                    : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] text-[#4A4A4A]'
-                }`}
-              >
-                {testAudioEnabled ? '🎤 마이크 켜짐' : '🔇 마이크 꺼짐'}
-              </button>
-
-              {/* 마이크 선택 */}
-              {mediaDevices.microphones.length > 1 && (
-                <div>
-                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">마이크 선택</label>
-                  <select
-                    value={selectedMicrophone}
-                    onChange={(e) => handleDeviceChange('microphone', e.target.value)}
-                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
-                  >
-                    {mediaDevices.microphones.map((mic) => (
-                      <option key={mic.deviceId} value={mic.deviceId}>
-                        {mic.label || `마이크 ${mic.deviceId.slice(0, 8)}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* 소음 억제 설정 */}
-              <div className="flex items-center justify-between p-3 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
-                <span className="text-sm text-[#4A4A4A]">소음 억제</span>
-                <button
-                  onClick={toggleNoiseSuppression}
-                  className={`px-3 py-1 rounded text-sm font-medium ${
-                    noiseSuppressionEnabled ? 'bg-[#5C351A] text-white' : 'bg-[#D6CDB8] text-[#4A4A4A]'
-                  }`}
-                >
-                  {noiseSuppressionEnabled ? 'ON' : 'OFF'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 현재 설정 요약 */}
-          <div className="px-6 py-4 bg-[#F8F5F0] border-t border-[#5C351A]">
-            <h4 className="text-sm font-medium text-[#2A2A2A] mb-2">통화 시작 시 적용될 설정:</h4>
-            <div className="flex gap-4 text-sm text-[#4A4A4A]">
-              <span className={`flex items-center gap-1 ${testVideoEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
-                {testVideoEnabled ? '📹' : '📷'} 카메라: {testVideoEnabled ? 'ON' : 'OFF'}
-              </span>
-              <span className={`flex items-center gap-1 ${testAudioEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
-                {testAudioEnabled ? '🎤' : '🔇'} 마이크: {testAudioEnabled ? 'ON' : 'OFF'}
-              </span>
-              <span className={`flex items-center gap-1 ${noiseSuppressionEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
-                🔧 소음억제: {noiseSuppressionEnabled ? 'ON' : 'OFF'}
-              </span>
-            </div>
-          </div>
-
-          {/* 하단 버튼 */}
-          <div className="p-6 border-t border-[#5C351A] flex justify-between">
-            <button
-              onClick={() => {
-                stopTestStream();
-                setShowMediaTest(false);
-                setShowConnectButton(true);
-              }}
-              className="px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors"
-            >
-              뒤로 가기
-            </button>
-            <button
-              onClick={() => {
-                stopTestStream();
-                handleMediaTestComplete();
-              }}
-              className="px-8 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg"
-            >
-              이 설정으로 통화 시작
-            </button>
-          </div>
-        </div>
-      </div>
+      <MediaTestScreen
+        onTestComplete={handleMediaTestComplete}
+        onCancel={() => {
+          setShowMediaTest(false);
+          setShowConnectButton(true);
+        }}
+        initialCameraEnabled={true}
+        initialAudioEnabled={true}
+      />
     );
   }
 
-  // 연결 버튼 표시 조건
   if (showConnectButton && !isConnected && !isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
-        <div className="bg-[#FEFCF8] p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-[#5C351A]">
-          <h2 className="text-2xl font-bold text-[#2A2A2A] mb-4">화상 회의 준비</h2>
-          <div className="mb-6">
-            <p className="text-[#4A4A4A] mb-2">룸: <span className="font-semibold text-[#5C351A]">{roomName}</span></p>
-            <p className="text-[#4A4A4A]">
-              참가자: <span className="font-semibold text-[#5C351A]">{isGuestMode ? `게스트 ${participantName}` : participantName}</span>
-            </p>
-          </div>
-          <div className="space-y-3">
-            <button
-              onClick={handleStartConnection}
-              className="w-full px-6 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
-            >
-              🎤📹 미디어 테스트
-            </button>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="w-full px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors shadow border border-[#C2B596]"
-            >
-              나가기
-            </button>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ zoom: '0.85' }}>
+        <div className="absolute inset-0">
+          <div 
+            className="absolute top-0 left-0 w-full" 
+            style={{ 
+              height: '100%',
+              background: 'linear-gradient(to bottom, rgba(255, 206, 157, 1), white)',
+              opacity: 0.14
+            }}
+          ></div>
+        </div>
+        
+        <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+          <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full border border-orange-100 text-center">
+            <h2 className="text-2xl font-bold mb-4" style={{ color: '#333333' }}>화상 회의 준비</h2>
+            <div className="mb-6">
+              <p className="text-gray-600 mb-2">룸: <span className="font-semibold" style={{ color: '#bf7d2c' }}>{roomName}</span></p>
+              <p className="text-gray-600">
+                참가자: <span className="font-semibold" style={{ color: '#bf7d2c' }}>{isGuestMode ? `게스트 ${participantName}` : participantName}</span>
+              </p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={handleStartConnection}
+                className="w-full px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg"
+                style={{ backgroundColor: '#bf7d2c' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#8B4513'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#bf7d2c'}
+              >
+                미디어 테스트
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="w-full px-6 py-3 bg-gray-200 rounded-xl transition-all duration-200 shadow"
+                style={{ color: '#333333' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#e5e7eb'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e7eb'}
+              >
+                나가기
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1521,23 +949,47 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#5C351A] mx-auto mb-4"></div>
-          <p className="text-[#2A2A2A] text-xl font-medium">연결 중...</p>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative" style={{ zoom: '0.85' }}>
+        <div className="absolute inset-0">
+          <div 
+            className="absolute top-0 left-0 w-full" 
+            style={{ 
+              height: '100%',
+              background: 'linear-gradient(to bottom, rgba(255, 206, 157, 1), white)',
+              opacity: 0.14
+            }}
+          ></div>
+        </div>
+        
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-4" style={{ borderColor: '#bf7d2c' }}></div>
+            <p className="text-xl font-medium" style={{ color: '#333333' }}>연결 중...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] bg-gradient-to-br from-orange-50 via-white to-yellow-50 relative flex flex-col overflow-hidden" style={{ zoom: '0.85' }}>
+      <div className="absolute inset-0">
+        <div 
+          className="absolute top-0 left-0 w-full" 
+          style={{ 
+            height: '100%',
+            background: 'linear-gradient(to bottom, rgb(248, 214, 179), white)',
+            opacity: 0.14
+          }}
+        ></div>
+      </div>
+      
       {/* 헤더 */}
-      <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-b border-[#5C351A]"> 
+      <div className="relative z-10 bg-white/95 backdrop-blur-sm shadow-lg p-4 flex-shrink-0 border-b border-orange-200"> 
         <div className="flex justify-between items-center">
           <div className="flex-1">
-            <h1 className="text-[#2A2A2A] text-xl font-bold">화상 회의</h1>
-            <p className="text-sm text-[#4A4A4A]">
+            <h1 className="text-xl font-bold" style={{ color: '#333333' }}>화상 회의</h1>
+            <p className="text-sm text-gray-600">
               룸: {roomName} | {isGuestMode ? `게스트: ${participantName}` : `로그인: ${isLoggedIn ? '완료' : '필요'}`}
             </p>
           </div>
@@ -1697,7 +1149,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
               {/* 대화 기록 */}
               {conversations.slice().reverse().map((conv) => {
-                // AI 코칭 메시지인지 확인
                 const isCoachingMessage = conv.isCoachingMessage || conv.speaker === '참견도치';
                 
                 return (
@@ -1757,51 +1208,75 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       {/* 하단 컨트롤 바 */}
       <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-t border-[#5C351A]">
         <div className="flex justify-center items-center space-x-4">
-          {/* 마이크 토글 */}
           <button
             onClick={toggleMicrophone}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isMicOn ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg border-2`}
+            style={{
+              backgroundColor: isMicOn ? '#bf7d2c' : '#fed7aa',
+              borderColor: isMicOn ? '#D2691E' : '#fdba74'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = isMicOn ? '#D2691E' : '#fdba74';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = isMicOn ? '#bf7d2c' : '#fed7aa';
+            }}
             title={isMicOn ? '마이크 끄기' : '마이크 켜기'}
           >
             {isMicOn ? '🎤' : '🔇'}
           </button>
 
-          {/* 비디오 토글 */}
           <button
             onClick={toggleVideo}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isCameraOn ? 'bg-[#4D280E] hover:bg-[#3E1F0A] border-2 border-[#2A2A2A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg border-2`}
+            style={{
+              backgroundColor: isCameraOn ? '#ea580c' : '#fed7aa',
+              borderColor: isCameraOn ? '#c2410c' : '#fdba74'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = isCameraOn ? '#c2410c' : '#fdba74';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = isCameraOn ? '#ea580c' : '#fed7aa';
+            }}
             title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
           >
             {isCameraOn ? '📹' : '📷'}
           </button>
 
-          {/* 소음 억제 토글 */}
           <button
             onClick={toggleNoiseSuppression}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
-              noiseSuppressionEnabled
-                ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A] text-white'
-                : 'bg-[#F8F5F0] hover:bg-[#F2EDE2] border-2 border-[#E8DCC0] text-[#5C351A]'
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg border-2`}
+            style={{
+              backgroundColor: noiseSuppressionEnabled ? '#bf7d2c' : '#fed7aa',
+              borderColor: noiseSuppressionEnabled ? '#D2691E' : '#fdba74',
+              color: noiseSuppressionEnabled ? 'white' : '#bf7d2c'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = noiseSuppressionEnabled ? '#D2691E' : '#fdba74';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = noiseSuppressionEnabled ? '#bf7d2c' : '#fed7aa';
+            }}
             title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
           >
             {noiseSuppressionEnabled ? '🔇' : '🔊'}
           </button>
 
-          {/* 나가기 버튼 */}
           <button
             onClick={() => handleLeaveRoom(true)}
-            className="w-12 h-12 rounded-full bg-[#5C351A] hover:bg-[#4D280E] flex items-center justify-center text-white transition-colors shadow-lg border-2 border-[#3E1F0A]"
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg border-2"
+            style={{
+              backgroundColor: '#bf7d2c',
+              borderColor: '#D2691E'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#D2691E'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#bf7d2c'}
           >
             📞
           </button>
         </div>
 
-        {/* 상태 표시 */}
         <div className="flex justify-center mt-2 text-sm text-[#4A4A4A] font-medium">
           <span>마이크: {isMicOn ? 'ON' : 'OFF'}</span>
           <span className="mx-2">|</span>
