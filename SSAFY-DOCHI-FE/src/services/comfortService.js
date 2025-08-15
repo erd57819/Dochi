@@ -1,38 +1,4 @@
-import axios from 'axios';
-
-// 환경에 따라 다른 방식 사용
-const getApiConfig = () => {
-  if (window.location.hostname === 'localhost') {
-    // 로컬: vite 프록시 사용 (/dochi)
-    return {
-      baseURL: '/dochi',
-    };
-  } else {
-    // 배포: nginx 프록시 사용 (/dochi)  
-    return {
-      baseURL: '/dochi',
-    };
-  }
-};
-
-// axios 인터셉터로 토큰 자동 추가
-const apiClient = axios.create({
-  ...getApiConfig(),
-  timeout: 180000, // 3분 타임아웃 (만화 생성은 시간이 오래 걸릴 수 있음)
-});
-
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+import apiClient from '../config/axios.js';
 
 const comfortService = {
   // 채팅방 생성
