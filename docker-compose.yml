@@ -151,7 +151,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /app/google-service-account.json
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-localhost:9092}
-      USE_KAFKA: ${USE_KAFKA:-false}
+      USE_KAFKA: ${USE_KAFKA:-true}
 
     deploy:
       resources:

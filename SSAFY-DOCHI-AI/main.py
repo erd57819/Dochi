@@ -6,6 +6,9 @@ from core.config import settings
 # 실제 사용되는 Consumer들만 import
 from consumers.sttConsumer import STTConsumer
 from consumers.emotionConsumer import EmotionConsumer
+# 새로운 확장성 Consumer들 (기존 서비스와 분리됨)
+from consumers.roomMetricsConsumer import RoomMetricsConsumer
+from consumers.userActivityConsumer import UserActivityConsumer
 import threading
 
 app = FastAPI(
@@ -77,7 +80,10 @@ def startup_event():
         if settings.use_kafka:
             consumers = [
                 STTConsumer(),
-                EmotionConsumer()
+                EmotionConsumer(),
+                # 새로운 확장성 Consumer들 추가 (기존 서비스와 분리)
+                RoomMetricsConsumer(),
+                UserActivityConsumer()
             ]
             
             for consumer in consumers:
