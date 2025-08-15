@@ -6,9 +6,9 @@ const conflictTypes = [
   { value: 'FRIEND', label: '친구 갈등', icon: '/images/friendDochi.png', description: '친구, 지인과의 문제' },
   { value: 'COUPLE', label: '연인 갈등', icon: '/images/loveDochi.png', description: '연인, 배우자와의 갈등' },
   { value: 'NEIGHBOR', label: '이웃 갈등', icon: '/images/soundDochi.png', description: '층간소음, 주차 등' },
-  { value: 'FINANCIAL', label: '금전 갈등', icon: '/images/moneyDichi.png', description: '돈 빌려줌, 비용 분담' },
+  { value: 'FINANCIAL', label: '금전 갈등', icon: '/images/moneyDochi.png', description: '돈 빌려줌, 비용 분담' },
   { value: 'ONLINE', label: '온라인 갈등', icon: '/images/onlineDochi.png', description: 'SNS, 커뮤니티' },
-  { value: 'ETC', label: '기타', icon: '🎲', description: '기타 갈등' }
+  { value: 'ETC', label: '기타', icon: '/images/guitarDochi.png', description: '기타 갈등' }
 ];
 
 const ConflictTypeSelector = ({ value, onChange }) => {
@@ -36,13 +36,13 @@ const ConflictTypeSelector = ({ value, onChange }) => {
                 src={type.icon} 
                 alt={type.label} 
                 className={`mx-auto object-contain ${
-                  type.value === 'ONLINE' || type.value === 'COUPLE' 
+                  type.value === 'ONLINE' || type.value === 'COUPLE'  || type.value === 'ETC'
                     ? 'w-32 h-32' 
                     : 'w-40 h-40'
                 }`}
                 style={{ 
-                  maxWidth: type.value === 'ONLINE' || type.value === 'COUPLE' ? '125px' : '155px', 
-                  maxHeight: type.value === 'ONLINE' || type.value === 'COUPLE' ? '125px' : '155px' 
+                  maxWidth: type.value === 'ONLINE' || type.value === 'COUPLE' || type.value === 'ETC' ? '125px' : '155px', 
+                  maxHeight: type.value === 'ONLINE' || type.value === 'COUPLE' || type.value === 'ETC' ? '125px' : '155px' 
                 }}
               />
             )}
