@@ -21,7 +21,7 @@ export const handleApiError = (error) => {
     }
     
     // 기술적인 메시지면 일반적인 안내
-    return '서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return '서버에 문제가 발생했습니다. 다시 로그인해주세요.';
   }
   
   // 401 에러: 토큰 갱신 로직에서 처리하므로 여기서는 제외
@@ -74,11 +74,11 @@ const isUserFriendlyMessage = (message) => {
 export const showError = (message) => {
   if (message) {
     console.log('🚨 사용자에게 표시되는 오류:', message);
-    alert(`❌ ${message}`);
+    alert(`${message}`);
   }
 };
 
 export const showSuccess = (message) => {
   console.log('✅ 성공 메시지:', message);
-  alert(`✅ ${message}`);
+  alert(`${message}`);
 };
