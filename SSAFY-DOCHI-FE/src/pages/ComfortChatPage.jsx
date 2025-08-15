@@ -762,6 +762,7 @@ const ComfortChatPage = () => {
           // 기존 채팅 화면
           <>
         {/* 채팅 도구바 */}
+        {!showTutorial && (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 shadow-sm" 
              style={{ 
                backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -944,6 +945,39 @@ const ComfortChatPage = () => {
               )}
             </button>
 
+            {/* 도움말 버튼 */}
+            <button
+              onClick={() => {
+                // 다른 모달들 닫기
+                setShowTimeline(false);
+                setShowManhwa(false);
+                setShowTitleModal(false);
+                // 튜토리얼 열기
+                setShowTutorial(true);
+              }}
+              className="px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border"
+              style={{ 
+                backgroundColor: 'transparent',
+                borderColor: '#8B4513',
+                color: '#8B4513'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#8B4513';
+                e.target.style.color = 'white';
+                e.target.style.borderColor = '#8B4513';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#8B4513';
+                e.target.style.borderColor = '#8B4513';
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              도움말
+            </button>
+
             {/* 저장 후 종료 버튼 */}
             <button
               onClick={handleSaveAndExit}
@@ -971,6 +1005,7 @@ const ComfortChatPage = () => {
             </button>
           </div>
         </div>
+        )}
 
         {/* 메시지 영역 */}
         <div className="relative"
@@ -1069,6 +1104,7 @@ const ComfortChatPage = () => {
         </div>
 
         {/* 입력 영역 */}
+        {!showTutorial && (
         <div className="border-t" 
              style={{ 
                backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1116,12 +1152,13 @@ const ComfortChatPage = () => {
             </button>
           </div>
         </div>
+        )}
         </>
         )}
       </div>
 
       {/* 타임라인 모달 */}
-      {showTimeline && (
+      {showTimeline && !showTutorial && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl" 
                style={{ 
@@ -1176,7 +1213,7 @@ const ComfortChatPage = () => {
       )}
 
       {/* 네컷만화 모달 */}
-      {showManhwa && (
+      {showManhwa && !showTutorial && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
           <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl" 
                style={{ 
@@ -1299,8 +1336,12 @@ const ComfortChatPage = () => {
         isOpen={showTutorial}
         onClose={() => {
           setShowTutorial(false);
-          // 튜토리얼이 끝나면 새 대화 제목 입력 모달 표시
-          setShowTitleModal(true);
+          // 첫 방문자인 경우에만 ChatTitleModal 표시
+          const hasSeenTutorial = localStorage.getItem('dochi-tutorial-completed');
+          if (!hasSeenTutorial) {
+            localStorage.setItem('dochi-tutorial-completed', 'true');
+            setShowTitleModal(true);
+          }
         }}
       />
     </div>

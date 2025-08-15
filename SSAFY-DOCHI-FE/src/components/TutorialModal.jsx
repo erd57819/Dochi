@@ -105,8 +105,7 @@ const TutorialModal = ({ isOpen, onClose }) => {
 
   const handleClose = () => {
     setCurrentStep(0);
-    localStorage.setItem('dochi-tutorial-completed', 'true');
-    onClose(); // 이제 onClose에서 ChatTitleModal을 열어줄 것
+    onClose();
   };
 
   if (!isOpen) return null;
