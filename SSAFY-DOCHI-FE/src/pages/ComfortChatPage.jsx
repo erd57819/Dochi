@@ -762,7 +762,7 @@ const ComfortChatPage = () => {
           // 기존 채팅 화면
           <>
         {/* 채팅 도구바 */}
-        {!showTutorial && (
+        {!showTutorial && !showTimeline && !showManhwa && !showTitleModal &&(
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 shadow-sm" 
              style={{ 
                backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -1158,8 +1158,8 @@ const ComfortChatPage = () => {
       </div>
 
       {/* 타임라인 모달 */}
-      {showTimeline && !showTutorial && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
+      {showTimeline && !showTutorial && !showManhwa && !showTitleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200]" style={{ backdropFilter: 'blur(5px)' }}>
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl" 
                style={{ 
                  backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1213,8 +1213,8 @@ const ComfortChatPage = () => {
       )}
 
       {/* 네컷만화 모달 */}
-      {showManhwa && !showTutorial && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
+      {showManhwa && !showTutorial && !showTimeline && !showTitleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200]" style={{ backdropFilter: 'blur(5px)' }}>
           <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl" 
                style={{ 
                  backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1326,7 +1326,7 @@ const ComfortChatPage = () => {
       )}
 
       <ChatTitleModal
-        isOpen={showTitleModal && !showTutorial}
+        isOpen={showTitleModal && !showTutorial && !showTimeline && !showManhwa}
         onClose={() => setShowTitleModal(false)}
         onConfirm={handleCreateWithTitle}
         mode="create"
