@@ -5,7 +5,6 @@ import useAuthStore from '../../stores/AuthStore';
 import apiClient from '../../config/axios';
 import { useSTT } from '../../hooks/useSTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
-import { useKafkaMetrics } from '../../hooks/useKafkaMetrics';
 
 const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 인증 스토어에서 토큰과 사용자 정보 가져오기
@@ -486,14 +485,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     sendAccumulatedEmotionsToFastAPI, analyzeConflictLevel, generateEmotionAdvice,
     sendFinalEmotionData
   } = emotionHook;
-
-  // Kafka 메트릭 훅 (기존 기능에 영향 없는 확장성 데모)
-  const {
-    metricsEnabled,
-    sentCount,
-    sendRoomMetrics,
-    sendUserActivity
-  } = useKafkaMetrics(actualRoomId, isConnected, participants);
 
   // 사용자 정보 변경 감지하여 participantName 업데이트
   useEffect(() => {
@@ -1330,7 +1321,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         <div className="bg-[#FEFCF8] rounded-lg shadow-xl max-w-4xl w-full border border-[#5C351A]">
           <div className="p-6 border-b border-[#5C351A]">
             <h2 className="text-2xl font-bold text-[#2A2A2A] mb-2">카메라 및 마이크 테스트</h2>
-            <p className="text-[#4A4A4A]">통화를 시작하기 전에 카메라와 마이크가 제대로 작동하는지 확인해주세요.(크롬 브라우저 권장)</p>
+            <p className="text-[#4A4A4A]">통화를 시작하기 전에 카메라와 마이크가 제대로 작동하는지 확인해주세요.</p>
           </div>
 
           <div className="p-6 grid md:grid-cols-2 gap-6">
