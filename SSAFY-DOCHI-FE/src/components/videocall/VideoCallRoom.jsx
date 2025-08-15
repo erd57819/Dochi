@@ -1179,7 +1179,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#8B4513'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#bf7d2c'}
               >
-                🎤📹 미디어 테스트
+                미디어 테스트
               </button>
               <button
                 onClick={() => window.location.href = '/'}
