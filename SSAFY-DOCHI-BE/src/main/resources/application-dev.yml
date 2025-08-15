@@ -82,3 +82,23 @@ management:
     web:
       exposure:
         include: health,info
+
+# Kafka 설정 (확장성 데모용 - 옵셔널)
+kafka:
+  enabled: ${KAFKA_ENABLED:false}  # 기본값 false로 안전하게
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  
+spring.kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  producer:
+    key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    acks: 1
+    retries: 3
+    batch-size: 16384
+    linger-ms: 10
+  consumer:
+    group-id: dochi-consumer-group
+    auto-offset-reset: latest
+    key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

@@ -268,6 +268,7 @@ public class ConflictService {
         if (obj == null) return null;
         if (obj instanceof String) return (String) obj;
         if (obj instanceof Map || obj instanceof List) {
+            
             // JSON 객체/배열인 경우 문자열로 변환
             try {
                 return obj.toString(); // 간단한 변환
