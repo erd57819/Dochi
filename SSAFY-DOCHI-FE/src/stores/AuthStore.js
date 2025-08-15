@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 const useAuthStore = create(
   persist(
     (set, get) => ({
-      isLoggedIn: false,
+      isLoggedIn: !!localStorage.getItem('accessToken'),
       user: null,
       get token() {
         // localStorage에서 실시간으로 토큰을 가져옴
