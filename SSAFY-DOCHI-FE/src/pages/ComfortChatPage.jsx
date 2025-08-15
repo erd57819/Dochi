@@ -9,7 +9,7 @@ import todakImg from '../assets/todak.png';
 
 const ComfortChatPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, isLoggedIn } = useAuthStore();
   const messagesEndRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [showTitleModal, setShowTitleModal] = useState(false);
@@ -90,6 +90,20 @@ const ComfortChatPage = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">로그인 페이지로 이동 중...</div>
+      </div>
+    );
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
