@@ -212,11 +212,15 @@ const MyPage = () => {
 
         {/* 헤더 - 제목과 통계 */}
         <div className="max-w-[1200px] mx-auto px-4 lg:px-8 mb-8">
-          <div className="flex justify-between items-center mb-4">
+          {/* 갈등 기록 통계 - 완전히 가운데 정렬 */}
+          <div className="text-center mb-4">
             <p className="text-gray-600 text-lg">
               지금까지 <span className="text-orange-600 font-bold">{conflictCount}개</span>의 갈등을 기록하셨어요
             </p>
-            
+          </div>
+          
+          {/* 편집 모드 버튼 - 오른쪽 정렬 */}
+          <div className="flex justify-end items-center mb-4">
             {/* 편집 모드 버튼 */}
             {conflicts.length > 0 && (
               <div className="flex items-center gap-4">
@@ -228,7 +232,7 @@ const MyPage = () => {
                     
                     <button
                       onClick={selectAllConflicts}
-                      className="px-3 py-2 rounded-lg font-medium bg-[#fff8e1] text-[#bf7d2c] hover:bg-[#fff3d4] border border-[#f8d6b3] transition-all text-sm"
+                      className="font-bold text-orange-700 hover:text-orange-900 transition-all cursor-pointer"
                     >
                       {selectedConflicts.length === conflicts.length ? '전체 해제' : '전체 선택'}
                     </button>
@@ -247,10 +251,10 @@ const MyPage = () => {
                 
                 <button
                   onClick={handleEditModeToggle}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-4 py-2 font-bold transition-all cursor-pointer ${
                     isEditMode 
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                      : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                      ? 'text-red-700 hover:text-red-900' 
+                      : 'text-orange-700 hover:text-orange-900'
                   }`}
                 >
                   {isEditMode ? '편집 완료' : '편집'}
