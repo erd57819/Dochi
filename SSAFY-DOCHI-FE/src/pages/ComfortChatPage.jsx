@@ -49,7 +49,10 @@ const ComfortChatPage = () => {
     setShowTutorial, // 튜토리얼 제어 함수 추가
     checkFirstVisit // 첫 방문자 감지 함수 추가
   } = useComfortStore();
-
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   useEffect(() => {
     loadChatRooms().catch(() => {
       console.log('채팅방 목록 로드 실패, 새 세션 생성으로 진행');
@@ -105,9 +108,6 @@ const ComfortChatPage = () => {
     );
   }
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
