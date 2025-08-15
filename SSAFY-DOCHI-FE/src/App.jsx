@@ -14,8 +14,6 @@ import CreatePostPage from './pages/CreatePostPage';
 import EditPostPage from './pages/EditPostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
-import ConflictResultPage from './pages/ConflictResultPage';
-import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
 import ComfortChatPage from './pages/ComfortChatPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
 import GamePage from './pages/GamePage';
