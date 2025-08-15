@@ -10,8 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Kafka Producer 서비스
@@ -48,21 +47,17 @@ public class KafkaProducerService {
             String partitionKey = dto.getRoomId();
             
             // 파티션 키 기반 전송
-            ListenableFuture<SendResult<String, String>> future = 
+            CompletableFuture<SendResult<String, String>> future = 
                 kafkaTemplate.send(ROOM_METRICS_TOPIC, partitionKey, message);
                 
             // 비동기 콜백 설정
-            future.addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
-                @Override
-                public void onSuccess(SendResult<String, String> result) {
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
                     int partition = result.getRecordMetadata().partition();
                     long offset = result.getRecordMetadata().offset();
                     log.info("[방 메트릭 전송 성공] {}번 방 → P{} offset:{}", 
                         dto.getRoomId(), partition, offset);
-                }
-                
-                @Override
-                public void onFailure(Throwable ex) {
+                } else {
                     log.error("[방 메트릭 전송 실패] {}번 방: {}", dto.getRoomId(), ex.getMessage());
                 }
             });
@@ -80,19 +75,15 @@ public class KafkaProducerService {
             String message = objectMapper.writeValueAsString(dto);
             String partitionKey = dto.getRoomId(); // 같은 방의 활동은 같은 파티션으로
             
-            ListenableFuture<SendResult<String, String>> future = 
+            CompletableFuture<SendResult<String, String>> future = 
                 kafkaTemplate.send(USER_ACTIVITY_TOPIC, partitionKey, message);
                 
-            future.addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
-                @Override
-                public void onSuccess(SendResult<String, String> result) {
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
                     log.debug("[사용자 활동 전송] {}({}) in {} → P{}", 
                         dto.getActivityType(), dto.getUserId(), dto.getRoomId(),
                         result.getRecordMetadata().partition());
-                }
-                
-                @Override
-                public void onFailure(Throwable ex) {
+                } else {
                     log.warn("[사용자 활동 전송 실패] {}: {}", dto.getUserId(), ex.getMessage());
                 }
             });
