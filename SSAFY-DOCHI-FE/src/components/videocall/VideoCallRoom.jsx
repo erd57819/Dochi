@@ -471,7 +471,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // STT 훅 사용 (실제 방 ID 사용)
   const sttHook = useSTT(actualRoomId, participantName, room);
   const {
-    sttEnabled, aiMediationEnabled, conversations, currentSpeech,
+    sttEnabled, aiMediationEnabled, conversations,
     recognitionRef, speechTimeoutRef, conversationLogRef,
     toggleSTT, toggleAIMediation, stopSTT, startSTT, handleSpeechResult, sendSTTToFastAPI
   } = sttHook;
@@ -1695,17 +1695,6 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-              {/* 현재 음성 */}
-              {currentSpeech.text && (
-                <div className="bg-gradient-to-r from-[#F8F5F0] to-[#F2EDE2] p-3 rounded-lg shadow-lg border-l-4 border-[#5C351A] animate-pulse">
-                  <p className="text-[#5C351A] text-sm font-bold flex items-center">
-                    <span className="mr-2">🎙️</span>{currentSpeech.speaker} 
-                    <span className="ml-2 px-2 py-1 bg-[#5C351A] text-white text-xs rounded-full">실시간</span>
-                  </p>
-                  <p className="text-[#2A2A2A] font-medium mt-1">{currentSpeech.text}</p>
-                </div>
-              )}
-
               {/* 대화 기록 */}
               {conversations.slice().reverse().map((conv) => {
                 // AI 코칭 메시지인지 확인
