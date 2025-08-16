@@ -277,7 +277,7 @@ const ComfortChatPage = () => {
         .map(msg => `${msg.sender.toUpperCase()}: ${msg.content}`)
         .join('\n');
       
-      const prompt = `다음 대화를 바탕으로 타임라인을 생성해주세요:\n\n${conversationHistory}`;
+      const prompt = `다음 대화를 바탕으로 타임라인을 생성해주세요. 마크다운 문법(**굵게**, *이탤릭* 등)을 사용하지 말고 일반 텍스트로만 답변해주세요:\n\n${conversationHistory}`;
 
       try {
         const response = await comfortService.sendMessage(currentSessionId, prompt, 'TIMELINE');
@@ -447,25 +447,25 @@ const ComfortChatPage = () => {
   };
 
   const parseTimelineResponse = (text) => {
-    const lines = text.split('\n').filter(line => line.trim());
-    const timeline = [];
-    
-    lines.forEach((line, index) => {
-      if (line.includes(':') || line.includes('.')) {
-        const parts = line.split(/[:.]/);
-        if (parts.length >= 2) {
-          timeline.push({
-            time: parts[0].trim(),
-            content: parts.slice(1).join(':').trim(),
-            color: ['orange', 'blue', 'green', 'purple'][index % 4]
-          });
-        }
+  const lines = text.split('\n').filter(line => line.trim());
+  const timeline = [];
+  
+  lines.forEach((line, index) => {
+  if (line.includes(':') || line.includes('.')) {
+    const parts = line.split(/[:.]/); 
+    if (parts.length >= 2) {
+      timeline.push({
+          time: parts[0].trim(),
+          content: parts.slice(1).join(':').trim(),
+          color: ['orange', 'blue', 'green', 'purple'][index % 4]
+        });
       }
-    });
-    
-    return timeline.length > 0 ? timeline : [
-      { time: 'AI 분석 결과', content: text, color: 'blue' }
-    ];
+  }
+  });
+  
+  return timeline.length > 0 ? timeline : [
+  { time: 'AI 분석 결과', content: text, color: 'blue' }
+  ];
   };
 
   const renderMessage = (message) => {
