@@ -299,7 +299,7 @@ class CoachingService:
     def _create_coaching_prompt(self, context_text: str, trigger_info: Dict) -> str:
         """트리거 타입별 코칭 프롬프트를 생성합니다."""
         
-        base_instruction = """당신은 팀 내 갈등 해결을 돕는 전문 코치입니다. 
+        base_instruction = """당신은 갈등 해결을 돕는 전문 코치입니다. 
 다음 대화 상황에서 건설적이고 실용적인 조언을 해주세요.
 - 50자 이내로 간결하게 답변하세요
 - 비난하지 말고 해결 방향을 제시하세요  
@@ -345,7 +345,7 @@ class CoachingService:
     def _create_coaching_prompt_with_emotions(self, conversation_with_emotions: List[Dict], trigger_info: Dict) -> str:
         """감정 정보가 포함된 트리거별 코칭 프롬프트를 생성합니다."""
         
-        base_instruction = """당신은 팀 내 갈등 해결을 돕는 전문 코치입니다. 
+        base_instruction = """당신은 갈등 해결을 돕는 전문 코치입니다. 
 다음 대화 상황에서 건설적이고 실용적인 조언을 해주세요.
 - 50자 이내로 간결하게 답변하세요
 - 비난하지 말고 해결 방향을 제시하세요  
