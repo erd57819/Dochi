@@ -106,7 +106,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     const id = room?.name || roomName;
     console.log('actualRoomId 계산:', id, { roomName, roomObjectName: room?.name });
     return id;
-  }, [roomName, room?.name]); // room 전체 대신 room?.name만 의존성으로 사용
+  }, [room, roomName]); // room?.name 대신 room 전체를 의존성으로 사용
 
   // LiveKit 방 연결 함수 
   const connectToRoom = async (overrideSettings = null) => {
@@ -519,10 +519,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     // 자동 연결 제거 - 수동 연결 버튼 방식으로 변경
 
     return () => {
-      // 컴포넌트가 실제로 언마운트될 때만 정리
       handleLeaveRoom();
     };
-  }, [isLoggedIn, isGuestMode]); // room 제거하여 무한루프 방지
+  }, [isLoggedIn, isGuestMode, room]);
 
   // 페이지 언마운트시 정리 (브라우저 이벤트)
   useEffect(() => {
@@ -571,39 +570,21 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       const mediaStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
       localVideoRef.current.srcObject = mediaStream;
       localVideoRef.current.muted = true;
+      localVideoRef.current.play().catch(console.error);
       
       // 비디오 메타데이터가 로드되면 표정 분석 시작
       const handleLoadedMetadata = async () => {
         console.log('✅ 비디오 메타데이터 로드됨, 표정 분석 시작');
-        try {
-          await startEmotionDetection(localVideoRef.current);
-        } catch (error) {
-          console.error('표정 분석 시작 실패:', error);
-        }
+        await startEmotionDetection(localVideoRef.current);
       };
       
-      // 중복 이벤트 리스너 방지
-      localVideoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
       localVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
       
-      // play 시도 (한 번만)
-      localVideoRef.current.play().catch(error => {
-        if (error.name === 'AbortError') {
-          console.warn('비디오 재생이 중단됨 (정상):', error.message);
-        } else {
-          console.error('비디오 재생 실패:', error);
-        }
-      });
-      
-      // 강제 감정 인식 시작을 위한 타이머 (중복 방지)
+      // 강제로 감정 인식 시작 (메타데이터 로드 대기하지 않고)
       const emotionStartTimer = setTimeout(async () => {
         if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
           console.log('🚀 강제 감정 인식 시작');
-          try {
-            await startEmotionDetection(localVideoRef.current);
-          } catch (error) {
-            console.error('강제 감정 인식 시작 실패:', error);
-          }
+          await startEmotionDetection(localVideoRef.current);
         }
       }, 3000);
       
@@ -618,7 +599,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       localVideoRef.current.srcObject = null;
       console.log('로컬 비디오 트랙 정리됨');
     }
-  }, [localVideoTrack]); // startEmotionDetection 제거하여 무한루프 방지
+  }, [localVideoTrack, startEmotionDetection]);
 
   // 표정 분석 정리 (컴포넌트 언마운트시)
   useEffect(() => {
@@ -635,33 +616,30 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     if (!isMicOn && sttEnabled) {
       console.log('❌ 마이크 꺼짐 - STT 자동 중지');
       stopSTT();
-    } else if (isMicOn && !sttEnabled) {
+    } else {
       console.log('⏸️ STT는 수동으로 켜주세요 (하단 STT 버튼 클릭)');
     }
-  }, [isMicOn, sttEnabled]); // actualRoomId, participantName 제거하여 무한루프 방지
+  }, [isMicOn, sttEnabled, stopSTT]);
 
   // 자동 STT 시작 비활성화 - 사용자가 수동으로 STT 버튼을 클릭해야 함
   useEffect(() => {
     if (isConnected && actualRoomId && participantName) {
       console.log('🔧 연결 완료! STT를 사용하려면 하단의 STT 버튼(🎙️)을 클릭하세요.');
     }
-  }, [isConnected]); // actualRoomId, participantName 제거하여 무한루프 방지
+  }, [isConnected, actualRoomId, participantName]);
 
-  // 미디어 테스트 초기화
+  // 미디어 테스트 초기화 및 상태 변경 감지
   useEffect(() => {
     if (showMediaTest) {
-      const initializeMedia = async () => {
-        if (!mediaDevices.cameras.length && !mediaDevices.microphones.length) {
-          // 디바이스 목록이 없으면 먼저 가져오기
-          await getMediaDevices();
+      if (!mediaDevices.cameras.length && !mediaDevices.microphones.length) {
+        // 디바이스 목록이 없으면 먼저 가져오기
+        getMediaDevices().then(() => {
           startTestStream();
-        } else {
-          // 디바이스 목록이 있으면 바로 스트림 시작
-          startTestStream();
-        }
-      };
-      
-      initializeMedia();
+        });
+      } else {
+        // 디바이스 목록이 있으면 바로 스트림 시작
+        startTestStream();
+      }
     }
 
     return () => {
@@ -669,15 +647,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         stopTestStream();
       }
     };
-  }, [showMediaTest]); // testVideoEnabled, testAudioEnabled 제거하여 무한루프 방지
+  }, [showMediaTest, testVideoEnabled, testAudioEnabled]); // 미디어 상태 변경도 감지
 
   // 갈등 레벨 분석 (감정 점수 변화 감지)
   useEffect(() => {
-    // 감정 점수가 실제로 변경되었을 때만 분석 실행
-    if (emotionScores && Object.keys(emotionScores).length > 0) {
-      analyzeConflictLevel(emotionScores);
-    }
-  }, [emotionScores]); // analyzeConflictLevel 제거하여 무한루프 방지
+    analyzeConflictLevel(emotionScores);
+  }, [emotionScores]);
 
   // 타이머 업데이트 및 30분 제한
   useEffect(() => {

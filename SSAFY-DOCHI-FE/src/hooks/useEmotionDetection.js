@@ -330,16 +330,10 @@ export const useEmotionDetection = (roomName, participantName) => {
     }
   };
 
-  // 초기화 - 단 한 번만 실행
+  // 초기화
   useEffect(() => {
-    if (!isModelLoaded) {
-      loadFaceApiModels().then(success => {
-        if (success) {
-          setIsModelLoaded(true);
-        }
-      });
-    }
-  }, []); // 빈 의존성 배열로 한 번만 실행
+    loadFaceApiModels();
+  }, []);
 
   return {
     // 상태
