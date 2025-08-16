@@ -136,7 +136,9 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         ? '/ai/speech/process-conflict-chunk'  // 로컬 개발 (vite proxy 사용)
         : 'https://i13c209.p.ssafy.io/ai/speech/process-conflict-chunk';  // 배포 환경 (직접 연결)
       
-      await fetch(apiUrl, {
+      console.log('[STT] 전송 URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -144,10 +146,19 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         body: JSON.stringify(payload)
       });
       
-      console.log('[STT] FastAPI 전송 성공');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('[STT] FastAPI 전송 성공:', result);
       
     } catch (error) {
       console.error('[STT] FastAPI 전송 실패:', error);
+      console.error('[STT] 에러 상세:', {
+        message: error.message,
+        stack: error.stack
+      });
     }
   };
 

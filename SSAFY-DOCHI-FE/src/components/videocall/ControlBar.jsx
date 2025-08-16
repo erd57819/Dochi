@@ -9,6 +9,7 @@ const ControlBar = ({
   toggleMicrophone,
   toggleVideo,
   toggleNoiseSuppression,
+  toggleSTT,
   handleLeaveRoom
 }) => {
   return (
@@ -67,6 +68,25 @@ const ControlBar = ({
           title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
         >
           {noiseSuppressionEnabled ? '🔇' : '🔊'}
+        </button>
+
+        <button
+          onClick={toggleSTT}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg border-2`}
+          style={{
+            backgroundColor: sttEnabled ? '#10b981' : '#fed7aa',
+            borderColor: sttEnabled ? '#059669' : '#fdba74',
+            color: 'white'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = sttEnabled ? '#059669' : '#fdba74';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = sttEnabled ? '#10b981' : '#fed7aa';
+          }}
+          title={sttEnabled ? 'STT ON' : 'STT OFF'}
+        >
+          {sttEnabled ? '🎙️' : '🎯'}
         </button>
 
         <button
