@@ -21,6 +21,11 @@ const LoadingSpinner = ({
           src={loadingGif} 
           alt="Loading..." 
           className={sizeClasses[size]}
+          style={{ 
+            imageRendering: 'pixelated',
+            filter: 'contrast(1.1) brightness(1.1)',
+            animationDuration: '0.5s'
+          }}
         />
         {text && <span className="text-sm" style={{ color }}>{text}</span>}
       </div>
