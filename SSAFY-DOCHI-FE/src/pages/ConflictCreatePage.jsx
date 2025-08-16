@@ -6,6 +6,7 @@ import ProgressIndicator from '../components/conflict/ProgressIndicator';
 import Step1ConflictType from '../components/conflict/Step1ConflictType';
 import Step2ConflictDetail from '../components/conflict/Step2ConflictDetail';
 import Step4EmotionState from '../components/conflict/Step4EmotionState';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import hedgehogImg from '../assets/conflict.png';
 
 const ConflictCreatePage = () => {
@@ -369,47 +370,18 @@ const ConflictCreatePage = () => {
           {/* Step 4: AI 분석 로딩 화면 */}
           {currentStep === 4 && (
             <div className="flex flex-col items-center justify-center min-h-[500px] text-center">
-              {/* 고슴도치 챗바퀴 애니메이션 */}
-              <div className="relative mb-8">
-                {/* 외부 챗바퀴 (회전하는 원) */}
-                <div className="w-32 h-32 border-8 border-orange-200 border-t-orange-500 rounded-full animate-spin" 
-                     style={{ animationDuration: '1.5s' }}></div>
-                
-                {/* 내부 챗바퀴 (역방향 회전) */}
-                <div className="absolute inset-2 w-24 h-24 border-4 border-orange-100 border-b-orange-400 rounded-full animate-spin" 
-                     style={{ animationDuration: '2s', animationDirection: 'reverse' }}></div>
-                
-                {/* 고슴도치 이미지 (중앙에 고정) */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <img 
-                    src={hedgehogImg} 
-                    alt="도치" 
-                    className="w-16 h-16 object-contain animate-pulse" 
-                    style={{ animationDuration: '2s' }}
-                  />
-                </div>
+              {/* 로딩 스피너 */}
+              <div className="mb-8">
+                <LoadingSpinner type="gif" size="xlarge" />
               </div>
               
               {/* 로딩 메시지 */}
               <h3 className="text-2xl font-bold text-gray-800 mb-4">
                 <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-                  AI가 갈등을 분석하고 있어요
+                  참견도치가 갈등을 분석하고 있어요
                 </span>
               </h3>
-              
-              <p className="text-gray-600 mb-2">잠시만 기다려주세요...</p>
-              <p className="text-sm text-gray-500">
-                🔍 갈등 상황 파악 중<br/>
-                🧠 해결방안 생성 중<br/>
-                📊 관계 분석 중
-              </p>
-              
-              {/* 진행 상황 표시 점들 */}
-              <div className="flex space-x-2 mt-6">
-                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
-                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-              </div>
+                            
             </div>
           )}
         </div>
