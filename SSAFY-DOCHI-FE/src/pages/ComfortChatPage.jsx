@@ -272,7 +272,12 @@ const ComfortChatPage = () => {
       setLoading(true);
       setShowTimeline(true);
 
-      const prompt = "타임라인을 생성해주세요";
+      // ✅ 현재 프론트엔드에 있는 대화 내용을 직접 백엔드에 전달
+      const conversationHistory = messages
+        .map(msg => `${msg.sender.toUpperCase()}: ${msg.content}`)
+        .join('\n');
+      
+      const prompt = `다음 대화를 바탕으로 타임라인을 생성해주세요:\n\n${conversationHistory}`;
 
       try {
         const response = await comfortService.sendMessage(currentSessionId, prompt, 'TIMELINE');
@@ -1093,7 +1098,7 @@ const ComfortChatPage = () => {
                     </div>
                     <span className="text-sm text-gray-600">
                       {selectedMode === 'NORMAL' ? '정리도치' :
-                       selectedMode === 'COMFORT_ONLY' ? '편들기도치' :
+                       selectedMode === 'COMFORT_ONLY' ? '내편도치' :
                        selectedMode === 'TIMELINE' ? '분석도치' : '그림도치'}
                     </span>
                   </div>
