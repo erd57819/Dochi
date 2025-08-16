@@ -23,7 +23,6 @@ import PasswordChangePage from './pages/PasswordChangePage';
 import RoadmapPage from './pages/RoadmapPage';
 import ExpertMatchingPage from './pages/ExpertMatchingPage';
 import ConflictReportPage from './pages/ConflictReportPage';
-import DebugReportPage from './pages/DebugReportPage';
 import './App.css';
 import VideoCallRoom from './components/videocall/VideoCallRoom';
 
@@ -55,7 +54,6 @@ const App = () => {
             <Route path="/conflicts/create" element={<ConflictCreatePage />} />
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/conflict-report/:roomId" element={<ConflictReportPage />} />
-            <Route path="/debug-report" element={<DebugReportPage />} />
             <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
             <Route path="/comfort" element={<ComfortChatPage />} />
             <Route path="/comfort/chat" element={<ComfortChatPage />} />

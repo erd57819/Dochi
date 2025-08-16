@@ -1,74 +1,57 @@
 import React from 'react';
 
 const VideoGrid = ({ 
-  participants, 
-  localVideoRef,
-  participantName,
-  isMicOn,
-  isCameraOn,
-  isLocalSpeaking,
-  emotionScores,
-  speakingParticipants,
-  createParticipantVideoRef,
-  createParticipantAudioRef
+  localVideoRef, 
+  remoteParticipants, 
+  isVideoEnabled, 
+  isLoading 
 }) => {
   return (
-    <div className="flex-1 relative">
-      <div className={`h-full grid gap-2 p-4 ${
-        participants.length === 0 ? 'grid-cols-1' : 'grid-cols-2'
-      }`}>
-        
-        {/* 로컬 비디오 */}
-        <div className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] shadow-lg">
+    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+      {/* 로컬 비디오 */}
+      <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video">
+        <video
+          ref={localVideoRef}
+          autoPlay
+          muted
+          playsInline
+          className={`w-full h-full object-cover ${!isVideoEnabled ? 'hidden' : ''}`}
+        />
+        {!isVideoEnabled && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <div className="text-white text-center">
+              <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+              </div>
+              <span className="text-sm">나 (비디오 꺼짐)</span>
+            </div>
+          </div>
+        )}
+        <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+          나 {isLoading ? '(연결 중...)' : ''}
+        </div>
+      </div>
+
+      {/* 원격 참가자들 */}
+      {remoteParticipants.map((participant) => (
+        <div key={participant.sid} className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video">
           <video
-            ref={localVideoRef}
+            ref={(el) => {
+              if (el && participant.videoTrack) {
+                participant.videoTrack.attach(el);
+              }
+            }}
             autoPlay
-            muted
             playsInline
             className="w-full h-full object-cover"
           />
-          <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
-            나 {isMicOn ? '🎤' : '🔇'} {isCameraOn ? '📹' : '📷'}
-            {isLocalSpeaking && ' 🗣️'}
+          <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+            {participant.identity}
           </div>
-          
-          {/* 감정 표시 */}
-          {emotionScores[participantName] && (
-            <div className="absolute top-2 right-2 bg-[#F8F5F0] bg-opacity-90 text-[#5C351A] px-2 py-1 rounded text-xs shadow-lg border border-[#5C351A]">
-              {Object.entries(emotionScores[participantName])
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 1)
-                .map(([emotion, score]) => (
-                  <span key={emotion}>
-                    {emotion}: {score}%
-                  </span>
-                ))}
-            </div>
-          )}
         </div>
-
-        {/* 원격 참가자 비디오 */}
-        {participants.map((participant) => (
-          <div key={participant.sid} className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] shadow-lg">
-            <video
-              ref={createParticipantVideoRef(participant.sid)}
-              autoPlay
-              playsInline
-              className="w-full h-full object-cover"
-            />
-            <audio
-              ref={createParticipantAudioRef(participant.sid)}
-              autoPlay
-            />
-            <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
-              {participant.name} 
-              {participant.isAudioEnabled ? '🎤' : '🔇'} 
-              {participant.isVideoEnabled ? '📹' : '📷'}
-              {speakingParticipants.has(participant.sid) && ' 🗣️'}
-            </div>
-          </div>
-        ))}
-      </div>
+      ))}
     </div>
   );
 };

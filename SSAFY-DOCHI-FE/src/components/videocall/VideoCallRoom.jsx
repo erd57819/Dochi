@@ -5,15 +5,6 @@ import useAuthStore from '../../stores/AuthStore';
 import apiClient from '../../config/axios';
 import { useSTT } from '../../hooks/useSTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
-import MediaTestScreen from './MediaTestScreen';
-import GuestModal from './GuestModal';
-import ConnectionSetupScreen from './ConnectionSetupScreen';
-import LoadingScreen from './LoadingScreen';
-import ErrorScreen from './ErrorScreen';
-import VideoGrid from './VideoGrid';
-import ConversationSidebar from './ConversationSidebar';
-import ControlBar from './ControlBar';
-import TimerDisplay from './TimerDisplay';
 
 const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 인증 스토어에서 토큰과 사용자 정보 가져오기
@@ -106,7 +97,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     const id = room?.name || roomName;
     console.log('actualRoomId 계산:', id, { roomName, roomObjectName: room?.name });
     return id;
-  }, [room, roomName]); // room?.name 대신 room 전체를 의존성으로 사용
+  }, [room?.name, roomName]);
 
   // LiveKit 방 연결 함수 
   const connectToRoom = async (overrideSettings = null) => {
@@ -430,31 +421,32 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     });
   };
 
-  // ✅ 수정된 코드 (Video)
+  // 참가자 비디오 참조 생성
   const createParticipantVideoRef = (participantSid) => {
     if (!remoteVideoRefs.current.has(participantSid)) {
       remoteVideoRefs.current.set(participantSid, React.createRef());
       
+      // 대기 중인 비디오 트랙이 있으면 연결
       const pendingVideoTrack = pendingVideoTracks.current.get(participantSid);
       if (pendingVideoTrack) {
         setTimeout(() => {
           const videoRef = remoteVideoRefs.current.get(participantSid);
           if (videoRef?.current) {
             pendingVideoTrack.attach(videoRef.current);
-            // ✅ attach 성공 후 여기서 삭제해야 합니다.
-            pendingVideoTracks.current.delete(participantSid); 
           }
         }, 100);
+        pendingVideoTracks.current.delete(participantSid);
       }
     }
     return remoteVideoRefs.current.get(participantSid);
   };
 
-  // ✅ 수정된 코드 (Audio)
+  // 참가자 오디오 참조 생성
   const createParticipantAudioRef = (participantSid) => {
     if (!remoteAudioRefs.current.has(participantSid)) {
       remoteAudioRefs.current.set(participantSid, React.createRef());
       
+      // 대기 중인 오디오 트랙이 있으면 연결
       const pendingAudioTrack = pendingAudioTracks.current.get(participantSid);
       if (pendingAudioTrack) {
         setTimeout(() => {
@@ -462,15 +454,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           if (audioRef?.current) {
             pendingAudioTrack.attach(audioRef.current);
             console.log('[오디오 연결] pending 오디오 트랙 연결 완료:', participantSid);
+            // 오디오 엘리먼트 설정 확인
             if (audioRef.current.muted) {
               audioRef.current.muted = false;
               console.log('[오디오 연결] muted 해제:', participantSid);
             }
             audioRef.current.play().catch(e => console.log('[오디오 연결] 자동재생 실패 (정상):', e));
-            // ✅ attach 성공 후 여기서 삭제해야 합니다.
-            pendingAudioTracks.current.delete(participantSid); 
           }
-        }, 500);
+        }, 500); // 더 긴 지연시간으로 변경
+        pendingAudioTracks.current.delete(participantSid);
       }
     }
     return remoteAudioRefs.current.get(participantSid);
@@ -564,10 +556,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   }, []);
 
-  // 표정 분석 시작 상태 추가
-  const [emotionDetectionStarted, setEmotionDetectionStarted] = useState(false);
-
-  // 로컬 비디오 연결 및 표정 분석 시작
+  // 로컬 비디오 연결 (백업 파일 방식)
   useEffect(() => {
     if (localVideoTrack && localVideoRef.current) {
       const mediaStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
@@ -575,28 +564,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       localVideoRef.current.muted = true;
       localVideoRef.current.play().catch(console.error);
       
-      // 비디오 메타데이터가 로드되면 표정 분석 시작 (한 번만)
+      // 비디오 메타데이터가 로드되면 표정 분석 시작
       const handleLoadedMetadata = async () => {
-        if (!emotionDetectionStarted) {
-          console.log('✅ 비디오 메타데이터 로드됨, 표정 분석 시작');
-          await startEmotionDetection(localVideoRef.current);
-          setEmotionDetectionStarted(true);
-        }
+        console.log('비디오 메타데이터 로드됨, 표정 분석 시작');
+        await startEmotionDetection(localVideoRef.current);
       };
       
       localVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
       
-      // 강제로 감정 인식 시작 (메타데이터 로드 대기하지 않고) - 한 번만
-      const emotionStartTimer = setTimeout(async () => {
-        if (localVideoRef.current && localVideoRef.current.videoWidth > 0 && !emotionDetectionStarted) {
-          console.log('🚀 강제 감정 인식 시작');
-          await startEmotionDetection(localVideoRef.current);
-          setEmotionDetectionStarted(true);
-        }
-      }, 3000);
-      
       return () => {
-        clearTimeout(emotionStartTimer);
         if (localVideoRef.current) {
           localVideoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
         }
@@ -604,10 +580,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     } else if (!localVideoTrack && localVideoRef.current) {
       // 비디오 트랙이 없을 때 비디오 엘리먼트 정리
       localVideoRef.current.srcObject = null;
-      setEmotionDetectionStarted(false);
       console.log('로컬 비디오 트랙 정리됨');
     }
-  }, [localVideoTrack, startEmotionDetection, emotionDetectionStarted]);
+  }, [localVideoTrack]);
 
   // 표정 분석 정리 (컴포넌트 언마운트시)
   useEffect(() => {
@@ -616,21 +591,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   }, []);
 
-  // 마이크 상태에 따른 STT 자동 연동 - 비활성화 (수동 제어만)
+  // 마이크 상태에 따른 STT 자동 연동
   useEffect(() => {
-    // 마이크 꺼지면 STT 중지 (안전을 위해)
-    if (!isMicOn && sttEnabled) {
-      console.log('❌ 마이크 꺼짐 - STT 자동 중지');
+    if (isMicOn && !sttEnabled) {
+      // 마이크가 켜지면 STT도 자동으로 시작
+      console.log('마이크 켜짐 - STT 자동 시작');
+      startSTT();
+    } else if (!isMicOn && sttEnabled) {
+      // 마이크가 꺼지면 STT도 자동으로 중지
+      console.log('마이크 꺼짐 - STT 자동 중지');
       stopSTT();
     }
-  }, [isMicOn, sttEnabled, stopSTT]);
-
-  // 자동 STT 시작 비활성화 - 사용자가 수동으로 STT 버튼을 클릭해야 함
-  useEffect(() => {
-    if (isConnected && actualRoomId && participantName) {
-      console.log('🔧 연결 완료! STT를 사용하려면 하단의 STT 버튼(🎙️)을 클릭하세요.');
-    }
-  }, [isConnected, actualRoomId, participantName]);
+  }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
   // 미디어 테스트 초기화 및 상태 변경 감지
   useEffect(() => {
@@ -721,21 +693,37 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   };
 
   // 미디어 테스트 완료 후 실제 연결
-  const handleMediaTestComplete = async (settings) => {
-    console.log('=== 테스트 설정 적용 ===', settings);
+  const handleMediaTestComplete = async () => {
+    console.log('=== 테스트 설정 적용 ===', {
+      camera: selectedCamera,
+      microphone: selectedMicrophone,
+      noiseSuppression: noiseSuppressionEnabled,
+      videoEnabled: testVideoEnabled,
+      audioEnabled: testAudioEnabled,
+      cameraDeviceName: mediaDevices.cameras.find(c => c.deviceId === selectedCamera)?.label || 'Unknown',
+      microphoneDeviceName: mediaDevices.microphones.find(m => m.deviceId === selectedMicrophone)?.label || 'Unknown'
+    });
     
+    // 테스트 스트림 정리
+    stopTestStream();
     setShowMediaTest(false);
     setCallStartTime(Date.now());
     
     // 상태 업데이트
-    setIsCameraOn(settings.cameraEnabled);
-    setIsMicOn(settings.micEnabled);
-    setActiveCamera(settings.cameraDeviceId);
-    setActiveMicrophone(settings.micDeviceId);
-    setActiveNoiseSuppression(settings.noiseSuppression);
+    setIsCameraOn(testVideoEnabled);
+    setIsMicOn(testAudioEnabled);
+    setActiveCamera(selectedCamera);
+    setActiveMicrophone(selectedMicrophone);
+    setActiveNoiseSuppression(noiseSuppressionEnabled);
     
-    // 연결 실행
-    await connectToRoom(settings);
+    // 테스트 설정을 직접 전달하여 상태 비동기 문제 해결
+    await connectToRoom({
+      cameraEnabled: testVideoEnabled,
+      micEnabled: testAudioEnabled,
+      cameraDeviceId: selectedCamera,
+      micDeviceId: selectedMicrophone,
+      noiseSuppression: noiseSuppressionEnabled
+    });
   };
 
   // 미디어 디바이스 목록 가져오기
@@ -1229,88 +1217,317 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
   const handleLeaveRoom = async (isEndCall = false) => {
-    console.log(`[방 나가기] 시작 - isEndCall: ${isEndCall}, actualRoomId: ${actualRoomId}`);
-    
     // STT 정리
-    console.log('[방 나가기] STT 정리 중...');
     stopSTT();
 
     // 표정 분석 정리
-    console.log('[방 나가기] 표정 분석 정리 중...');
     stopEmotionDetection();
 
     // Room 연결 해제
     if (room) {
-      console.log('[방 나가기] 최종 감정 데이터 전송 중...');
       await sendFinalEmotionData();
-      console.log('[방 나가기] Room 연결 해제 중...');
       room.disconnect();
       setRoom(null);
       setIsConnected(false);
-      console.log('[방 나가기] Room 연결 해제 완료');
     }
 
     // 종료 버튼 클릭 시에만 갈등 레포트로 이동
     if (isEndCall) {
-      console.log(`[방 나가기] 갈등 레포트로 이동: /conflict-report/${actualRoomId}`);
       if (onEndCall) {
         onEndCall();
       } else {
         // onEndCall이 없으면 직접 갈등 레포트로 이동 (실제 방 ID 사용)
         navigate(`/conflict-report/${actualRoomId}`);
       }
-    } else {
-      console.log('[방 나가기] 단순 리소스 정리만 수행');
     }
     // 뒤로가기나 페이지 이탈 시에는 단순히 리소스만 정리
   };
 
+  // 게스트 모달 컴포넌트
+  const GuestModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#FEFCF8] rounded-lg p-6 max-w-md w-full border border-[#5C351A]">
+        <h2 className="text-2xl font-bold mb-4 text-[#2A2A2A]">화상채팅 참여</h2>
+        <p className="text-[#4A4A4A] mb-6">
+          게스트로 참여하거나 로그인하여 참여할 수 있습니다.
+        </p>
 
-  // 렌더링 로직 시작
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="guestNickname" className="block text-sm font-medium text-[#2A2A2A] mb-2">
+              닉네임
+            </label>
+            <input
+              type="text"
+              id="guestNickname"
+              value={guestNickname}
+              onChange={(e) => setGuestNickname(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleGuestJoin();
+                }
+              }}
+              placeholder="닉네임을 입력하세요"
+              className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              onClick={handleGuestJoin}
+              className="flex-1 bg-[#5C351A] hover:bg-[#4D280E] text-white py-2 px-4 rounded-lg transition-colors"
+            >
+              게스트로 참여
+            </button>
+            <button
+              onClick={handleLogin}
+              className="flex-1 bg-[#4D280E] hover:bg-[#3E1F0A] text-white py-2 px-4 rounded-lg transition-colors"
+            >
+              로그인
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 로딩 및 에러 처리
   if (showGuestModal) {
-    return (
-      <GuestModal
-        guestNickname={guestNickname}
-        setGuestNickname={setGuestNickname}
-        onGuestJoin={handleGuestJoin}
-        onLogin={handleLogin}
-      />
-    );
+    return <GuestModal />;
   }
 
   if (error) {
-    return <ErrorScreen error={error} />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">연결 오류</h2>
+          <p className="text-[#4A4A4A] mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-[#5C351A] text-white rounded-lg hover:bg-[#4D280E] shadow-lg border border-[#3E1F0A]"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // 미디어 테스트 화면
   if (showMediaTest) {
     return (
-      <MediaTestScreen
-        onTestComplete={handleMediaTestComplete}
-        onCancel={() => {
-          setShowMediaTest(false);
-          setShowConnectButton(true);
-        }}
-        initialCameraEnabled={true}
-        initialAudioEnabled={true}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center p-4">
+        <div className="bg-[#FEFCF8] rounded-lg shadow-xl max-w-4xl w-full border border-[#5C351A]">
+          <div className="p-6 border-b border-[#5C351A]">
+            <h2 className="text-2xl font-bold text-[#2A2A2A] mb-2">카메라 및 마이크 테스트</h2>
+            <p className="text-[#4A4A4A]">통화를 시작하기 전에 카메라와 마이크가 제대로 작동하는지 확인해주세요.</p>
+          </div>
+
+          <div className="p-6 grid md:grid-cols-2 gap-6">
+            {/* 비디오 프리뷰 */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-[#2A2A2A]">카메라 테스트</h3>
+              <div className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] aspect-video">
+                {testVideoEnabled ? (
+                  <video
+                    ref={testVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#4A4A4A]">
+                    <div className="text-center">
+                      <span className="text-4xl mb-2 block">📷</span>
+                      <p>카메라가 꺼져있습니다</p>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute bottom-2 right-2">
+                  <button
+                    onClick={toggleTestVideo}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${
+                      testVideoEnabled ? 'bg-[#5C351A] hover:bg-[#4D280E]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7]'
+                    }`}
+                  >
+                    {testVideoEnabled ? '📹' : '📷'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 카메라 선택 */}
+              {mediaDevices.cameras.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">카메라 선택</label>
+                  <select
+                    value={selectedCamera}
+                    onChange={(e) => handleDeviceChange('camera', e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+                  >
+                    {mediaDevices.cameras.map((camera) => (
+                      <option key={camera.deviceId} value={camera.deviceId}>
+                        {camera.label || `카메라 ${camera.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* 오디오 테스트 */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-[#2A2A2A]">마이크 테스트</h3>
+              
+              {/* 마이크 레벨 표시 */}
+              <div className="p-4 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-[#4A4A4A]">음성 레벨</span>
+                  <span className="text-sm text-[#5C351A] font-medium">{audioLevel}%</span>
+                </div>
+                <div className="w-full bg-[#D6CDB8] rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all duration-150 ${
+                      audioLevel > 50 ? 'bg-green-500' :
+                      audioLevel > 20 ? 'bg-yellow-500' : 'bg-[#CCC2A7]'
+                    }`}
+                    style={{ width: `${Math.min(audioLevel, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-[#4A4A4A] mt-1">
+                  마이크에 대고 말씀해보세요. 막대가 움직이면 정상입니다.
+                </p>
+              </div>
+
+              {/* 마이크 토글 */}
+              <button
+                onClick={toggleTestAudio}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                  testAudioEnabled 
+                    ? 'bg-[#5C351A] hover:bg-[#4D280E] text-white' 
+                    : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] text-[#4A4A4A]'
+                }`}
+              >
+                {testAudioEnabled ? '🎤 마이크 켜짐' : '🔇 마이크 꺼짐'}
+              </button>
+
+              {/* 마이크 선택 */}
+              {mediaDevices.microphones.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2A2A2A] mb-2">마이크 선택</label>
+                  <select
+                    value={selectedMicrophone}
+                    onChange={(e) => handleDeviceChange('microphone', e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D6CDB8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C351A]"
+                  >
+                    {mediaDevices.microphones.map((mic) => (
+                      <option key={mic.deviceId} value={mic.deviceId}>
+                        {mic.label || `마이크 ${mic.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* 소음 억제 설정 */}
+              <div className="flex items-center justify-between p-3 bg-[#F8F5F0] rounded-lg border border-[#5C351A]">
+                <span className="text-sm text-[#4A4A4A]">소음 억제</span>
+                <button
+                  onClick={toggleNoiseSuppression}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    noiseSuppressionEnabled ? 'bg-[#5C351A] text-white' : 'bg-[#D6CDB8] text-[#4A4A4A]'
+                  }`}
+                >
+                  {noiseSuppressionEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 현재 설정 요약 */}
+          <div className="px-6 py-4 bg-[#F8F5F0] border-t border-[#5C351A]">
+            <h4 className="text-sm font-medium text-[#2A2A2A] mb-2">통화 시작 시 적용될 설정:</h4>
+            <div className="flex gap-4 text-sm text-[#4A4A4A]">
+              <span className={`flex items-center gap-1 ${testVideoEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                {testVideoEnabled ? '📹' : '📷'} 카메라: {testVideoEnabled ? 'ON' : 'OFF'}
+              </span>
+              <span className={`flex items-center gap-1 ${testAudioEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                {testAudioEnabled ? '🎤' : '🔇'} 마이크: {testAudioEnabled ? 'ON' : 'OFF'}
+              </span>
+              <span className={`flex items-center gap-1 ${noiseSuppressionEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
+                🔧 소음억제: {noiseSuppressionEnabled ? 'ON' : 'OFF'}
+              </span>
+            </div>
+          </div>
+
+          {/* 하단 버튼 */}
+          <div className="p-6 border-t border-[#5C351A] flex justify-between">
+            <button
+              onClick={() => {
+                stopTestStream();
+                setShowMediaTest(false);
+                setShowConnectButton(true);
+              }}
+              className="px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors"
+            >
+              뒤로 가기
+            </button>
+            <button
+              onClick={() => {
+                stopTestStream();
+                handleMediaTestComplete();
+              }}
+              className="px-8 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg"
+            >
+              이 설정으로 통화 시작
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
-
+  // 연결 버튼 표시 조건
   if (showConnectButton && !isConnected && !isLoading) {
     return (
-      <ConnectionSetupScreen
-        roomName={roomName}
-        participantName={participantName}
-        isGuestMode={isGuestMode}
-        onStartConnection={handleStartConnection}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
+        <div className="bg-[#FEFCF8] p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-[#5C351A]">
+          <h2 className="text-2xl font-bold text-[#2A2A2A] mb-4">화상 회의 준비</h2>
+          <div className="mb-6">
+            <p className="text-[#4A4A4A] mb-2">룸: <span className="font-semibold text-[#5C351A]">{roomName}</span></p>
+            <p className="text-[#4A4A4A]">
+              참가자: <span className="font-semibold text-[#5C351A]">{isGuestMode ? `게스트 ${participantName}` : participantName}</span>
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={handleStartConnection}
+              className="w-full px-6 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
+            >
+              🎤📹 미디어 테스트
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors shadow border border-[#C2B596]"
+            >
+              나가기
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (!isConnected) {
-    return <LoadingScreen />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#5C351A] mx-auto mb-4"></div>
+          <p className="text-[#2A2A2A] text-xl font-medium">연결 중...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1327,7 +1544,18 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           
           {/* 타이머 표시 */}
           {isConnected && (
-            <TimerDisplay elapsedTime={elapsedTime} formatTime={formatTime} />
+            <div className="text-center px-4">
+              <div className="text-2xl font-bold text-[#5C351A]">
+                {formatTime(elapsedTime).elapsed}
+              </div>
+              <div className={`text-sm ${
+                elapsedTime >= 25 * 60 * 1000 ? 'text-red-500 animate-pulse' : 
+                elapsedTime >= 20 * 60 * 1000 ? 'text-[#5C351A]' : 
+                'text-[#4A4A4A]'
+              }`}>
+                {formatTime(elapsedTime).remaining}
+              </div>
+            </div>
           )}
           
           <div className="flex-1 text-right">
@@ -1342,42 +1570,252 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
       {/* 메인 비디오 영역 */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        <VideoGrid
-          participants={participants}
-          localVideoRef={localVideoRef}
-          participantName={participantName}
-          isMicOn={isMicOn}
-          isCameraOn={isCameraOn}
-          isLocalSpeaking={isLocalSpeaking}
-          emotionScores={emotionScores}
-          speakingParticipants={speakingParticipants}
-          createParticipantVideoRef={createParticipantVideoRef}
-          createParticipantAudioRef={createParticipantAudioRef}
-        />
+        {/* 비디오 그리드 */}
+        <div className="flex-1 relative">
+          <div className={`h-full grid gap-2 p-4 ${
+            participants.length === 0 ? 'grid-cols-1' : 'grid-cols-2'
+          }`}>
+            
+            {/* 로컬 비디오 */}
+            <div className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] shadow-lg">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
+                나 {isMicOn ? '🎤' : '🔇'} {isCameraOn ? '📹' : '📷'}
+                {isLocalSpeaking && ' 🗣️'}
+              </div>
+              
+              {/* 감정 표시 */}
+              {emotionScores[participantName] && (
+                <div className="absolute top-2 right-2 bg-[#F8F5F0] bg-opacity-90 text-[#5C351A] px-2 py-1 rounded text-xs shadow-lg border border-[#5C351A]">
+                  {Object.entries(emotionScores[participantName])
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 1)
+                    .map(([emotion, score]) => (
+                      <span key={emotion}>
+                        {emotion}: {score}%
+                      </span>
+                    ))}
+                </div>
+              )}
+            </div>
 
-        <ConversationSidebar
-          emotionScores={emotionScores}
-          conflictLevel={conflictLevel}
-          conversations={conversations}
-          sttEnabled={sttEnabled}
-          aiMediationEnabled={aiMediationEnabled}
-          toggleSTT={toggleSTT}
-          toggleAIMediation={toggleAIMediation}
-        />
+            {/* 원격 참가자 비디오 */}
+            {participants.map((participant) => (
+              <div key={participant.sid} className="relative bg-[#F2EDE2] rounded-lg overflow-hidden border border-[#5C351A] shadow-lg">
+                <video
+                  ref={createParticipantVideoRef(participant.sid)}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <audio
+                  ref={createParticipantAudioRef(participant.sid)}
+                  autoPlay
+                />
+                <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
+                  {participant.name} 
+                  {participant.isAudioEnabled ? '🎤' : '🔇'} 
+                  {participant.isVideoEnabled ? '📹' : '📷'}
+                  {speakingParticipants.has(participant.sid) && ' 🗣️'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 사이드바 - AI 대화코치 */}
+        <div className="w-80 bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
+          {/* 감정 및 갈등 레벨 표시 */}
+          <div className="p-3 border-b border-[#5C351A] flex-shrink-0 max-h-48 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+            <h3 className="text-[#2A2A2A] font-bold mb-2 flex items-center">
+              <span className="mr-2">🤖</span>AI 감정 분석
+            </h3>
+            <div className="mb-2">
+              <div className="flex justify-between text-sm text-[#5C351A] font-medium">
+                <span>갈등 레벨</span>
+                <span>{Math.round(conflictLevel)}%</span>
+              </div>
+              <div className="w-full bg-[#D6CDB8] rounded-full h-2 shadow-inner">
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    conflictLevel > 70 ? 'bg-red-500' :
+                    conflictLevel > 40 ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${conflictLevel}%` }}
+                />
+              </div>
+            </div>
+            
+            {Object.entries(emotionScores).map(([name, scores]) => (
+              <div key={name} className="mb-2 bg-[#FEFCF8] bg-opacity-70 p-2 rounded shadow-sm">
+                <p className="text-xs text-[#5C351A] font-semibold">{name}</p>
+                <div className="grid grid-cols-3 gap-1 text-xs mt-1">
+                  {Object.entries(scores).map(([emotion, score]) => (
+                    <div key={emotion} className="text-center">
+                      <div className={`${score > 50 ? 'text-red-600 font-semibold' : 'text-[#4A4A4A]'} text-xs`}>
+                        {emotion}: {score}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 대화 내용 */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="p-3 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+              <h3 className="text-[#2A2A2A] font-bold flex items-center">
+                <span className="mr-2">💬</span>참견도치
+              </h3>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={toggleSTT}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    sttEnabled ? 'bg-green-500 text-white shadow-lg' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
+                  }`}
+                >
+                  STT {sttEnabled ? 'ON' : 'OFF'}
+                </button>
+                <button
+                  onClick={toggleAIMediation}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    aiMediationEnabled ? 'bg-[#5C351A] text-white shadow-lg border-2 border-[#4D280E]' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
+                  }`}
+                >
+                  AI 중재 {aiMediationEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+              {/* 대화 기록 */}
+              {conversations.slice().reverse().map((conv) => {
+                // AI 코칭 메시지인지 확인
+                const isCoachingMessage = conv.isCoachingMessage || conv.speaker === '참견도치';
+                
+                return (
+                  <div key={conv.id} className={`p-2 rounded-lg shadow border mb-2 ${
+                    isCoachingMessage 
+                      ? 'bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] border-[#5C351A] border-2 shadow-lg'
+                      : 'bg-[#FEFCF8] bg-opacity-80 border-[#5C351A]'
+                  }`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className={`text-sm font-semibold flex items-center ${
+                        isCoachingMessage ? 'text-[#4D280E]' : 'text-[#5C351A]'
+                      }`}>
+                        {isCoachingMessage ? (
+                          <>
+                            <span className="mr-2">🤖</span>
+                            <span className="bg-[#5C351A] text-white px-2 py-1 rounded-full text-xs mr-2">참견중</span>
+                            {conv.speaker}
+                          </>
+                        ) : (
+                          <>
+                            <span className="mr-2">👤</span>
+                            {conv.speaker}
+                          </>
+                        )}
+                      </span>
+                      <span className="text-[#4A4A4A] text-xs">
+                        {conv.timestamp}
+                      </span>
+                    </div>
+                    <p className={`text-sm ${
+                      isCoachingMessage ? 'text-[#3E1F0A] font-medium' : 'text-[#2A2A2A]'
+                    }`}>
+                      {conv.text}
+                    </p>
+                    {conv.aiSuggestion && (
+                      <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
+                        <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✨</span>
+                        </div>
+                        <p className="text-white text-xs font-bold flex items-center mb-1">
+                          <span className="mr-1">🤖</span> 참견도치 조언
+                        </p>
+                        <p className="text-white text-sm font-medium leading-relaxed">{conv.aiSuggestion}</p>
+                        <div className="mt-2 text-right">
+                          <span className="text-[#F8F5F0] text-xs opacity-80">powered by AI</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <ControlBar
-        isMicOn={isMicOn}
-        isCameraOn={isCameraOn}
-        noiseSuppressionEnabled={noiseSuppressionEnabled}
-        sttEnabled={sttEnabled}
-        aiMediationEnabled={aiMediationEnabled}
-        toggleMicrophone={toggleMicrophone}
-        toggleVideo={toggleVideo}
-        toggleNoiseSuppression={toggleNoiseSuppression}
-        toggleSTT={toggleSTT}
-        handleLeaveRoom={handleLeaveRoom}
-      />
+      {/* 하단 컨트롤 바 */}
+      <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-t border-[#5C351A]">
+        <div className="flex justify-center items-center space-x-4">
+          {/* 마이크 토글 */}
+          <button
+            onClick={toggleMicrophone}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
+              isMicOn ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
+            }`}
+            title={isMicOn ? '마이크 끄기' : '마이크 켜기'}
+          >
+            {isMicOn ? '🎤' : '🔇'}
+          </button>
+
+          {/* 비디오 토글 */}
+          <button
+            onClick={toggleVideo}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
+              isCameraOn ? 'bg-[#4D280E] hover:bg-[#3E1F0A] border-2 border-[#2A2A2A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
+            }`}
+            title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
+          >
+            {isCameraOn ? '📹' : '📷'}
+          </button>
+
+          {/* 소음 억제 토글 */}
+          <button
+            onClick={toggleNoiseSuppression}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
+              noiseSuppressionEnabled
+                ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A] text-white'
+                : 'bg-[#F8F5F0] hover:bg-[#F2EDE2] border-2 border-[#E8DCC0] text-[#5C351A]'
+            }`}
+            title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
+          >
+            {noiseSuppressionEnabled ? '🔇' : '🔊'}
+          </button>
+
+          {/* 나가기 버튼 */}
+          <button
+            onClick={() => handleLeaveRoom(true)}
+            className="w-12 h-12 rounded-full bg-[#5C351A] hover:bg-[#4D280E] flex items-center justify-center text-white transition-colors shadow-lg border-2 border-[#3E1F0A]"
+          >
+            📞
+          </button>
+        </div>
+
+        {/* 상태 표시 */}
+        <div className="flex justify-center mt-2 text-sm text-[#4A4A4A] font-medium">
+          <span>마이크: {isMicOn ? 'ON' : 'OFF'}</span>
+          <span className="mx-2">|</span>
+          <span>카메라: {isCameraOn ? 'ON' : 'OFF'}</span>
+          <span className="mx-2">|</span>
+          <span>STT: {sttEnabled ? 'ON' : 'OFF'}</span>
+          {aiMediationEnabled && (
+            <>
+              <span className="mx-2">|</span>
+              <span>AI 중재: ON</span>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

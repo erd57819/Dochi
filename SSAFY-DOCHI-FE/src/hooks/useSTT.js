@@ -136,9 +136,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         ? '/ai/speech/process-conflict-chunk'  // 로컬 개발 (vite proxy 사용)
         : 'https://i13c209.p.ssafy.io/ai/speech/process-conflict-chunk';  // 배포 환경 (직접 연결)
       
-      console.log('[STT] 전송 URL:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
+      await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -146,19 +144,9 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         body: JSON.stringify(payload)
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      console.log('[STT] FastAPI 전송 성공:', result);
-      
+      console.log('[STT] FastAPI 전송 성공');
     } catch (error) {
       console.error('[STT] FastAPI 전송 실패:', error);
-      console.error('[STT] 에러 상세:', {
-        message: error.message,
-        stack: error.stack
-      });
     }
   };
 
@@ -629,9 +617,47 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         interimResults: recognition.interimResults
       });
       
-      // 자동 재시작 비활성화 - 사용자가 수동으로 켜야 함
-      console.log('⚠️ STT 자동 재시작 비활성화됨. 수동으로 다시 켜주세요.');
-      setSttEnabled(false);
+      // recognitionRef.current가 존재하면 재시작 (STT가 켜진 상태)
+      if (recognitionRef.current) {
+        console.log('1초 후 재시작 시도...');
+        setTimeout(() => {
+          try {
+            // 재시작 전에 recognitionRef 존재 여부 다시 확인
+            if (recognitionRef.current) {
+              console.log('재시작 시도 전 상태:', {
+                sttEnabled,
+                readyState: recognition.readyState
+              });
+              recognition.start();
+              console.log('음성 인식을 다시 시작합니다.');
+            } else {
+              console.log('재시작 조건이 맞지 않음 - recognitionRef 없음');
+            }
+          } catch (error) {
+            console.error('음성 인식 재시작 실패:', error);
+            console.error('에러 상세:', {
+              name: error.name,
+              message: error.message,
+              code: error.code
+            });
+            
+            // InvalidStateError가 발생한 경우 완전 재초기화
+            if (error.name === 'InvalidStateError') {
+              console.log('STT 완전 재초기화 시도...');
+              setTimeout(() => {
+                if (recognitionRef.current) {
+                  stopSTT();
+                  setTimeout(() => {
+                    startSTT();
+                  }, 500);
+                }
+              }, 1000);
+            }
+          }
+        }, 1000);
+      } else {
+        console.log('STT가 비활성화되어 재시작하지 않습니다. (recognitionRef 없음)');
+      }
     };
 
     // WebRTC speaking 감지 이벤트 리스너
@@ -651,65 +677,25 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
   };
 
   // STT 시작
-  const startSTT = async () => {
-    console.log('[STT 시작] 요청됨', { 
-      sttEnabled, 
-      roomName, 
-      participantName,
-      hasRecognition: !!recognitionRef.current,
-      recognitionState: recognitionRef.current?.readyState || 'none'
-    });
-    
+  const startSTT = () => {
     if (sttEnabled) {
-      console.log('[STT] ⚠️ 이미 STT가 활성화되어 있습니다.');
+      console.log('[STT] 이미 STT가 활성화되어 있습니다.');
       return;
     }
 
-    // 기존 recognition이 실행 중이면 먼저 중지
-    if (recognitionRef.current) {
-      try {
-        console.log('[STT] 기존 recognition 중지 시도...');
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 대기
-      } catch (error) {
-        console.log('[STT] 기존 recognition 중지 중 에러:', error);
-      }
-    }
-
-    // 마이크 권한 확인
-    try {
-      console.log('[STT] 마이크 권한 확인 중...');
-      const permission = await navigator.permissions.query({ name: 'microphone' });
-      console.log('[STT] 마이크 권한 상태:', permission.state);
-      
-      if (permission.state === 'denied') {
-        console.error('[STT] 마이크 권한이 거부되었습니다.');
-        alert('마이크 권한을 허용해주세요. 브라우저 주소창 옆의 마이크 아이콘을 클릭하세요.');
-        return;
-      }
-    } catch (error) {
-      console.log('[STT] 권한 확인 실패 (구형 브라우저):', error);
-    }
-
-    // 새로운 recognition 초기화
-    if (!initSTT()) {
-      console.error('[STT] 초기화 실패');
+    if (!recognitionRef.current && !initSTT()) {
       return;
     }
 
     try {
-      console.log('✅ [STT] 시작 시도...', {
+      console.log('STT 시작 시도...', {
         continuous: recognitionRef.current.continuous,
         interimResults: recognitionRef.current.interimResults,
-        lang: recognitionRef.current.lang,
-        roomName,
-        participantName
+        lang: recognitionRef.current.lang
       });
-      
       recognitionRef.current.start();
       setSttEnabled(true);
-      console.log('🎉 [STT] 음성 인식 시작 성공!');
+      console.log('음성 인식 시작 성공');
       
       // LiveKit Data Channel 초기화
       initLivekitDataChannel();
@@ -719,16 +705,10 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
       lastSentTimeRef.current = 0;
       processingRef.current = false;
     } catch (error) {
-      console.error('❌ [STT] 음성 인식 시작 실패:', error);
-      console.error('[STT] 에러 상세:', {
-        name: error.name,
-        message: error.message,
-        code: error.code
-      });
-      
-      // InvalidStateError는 이미 시작된 상태를 의미
-      if (error.name === 'InvalidStateError' && error.message.includes('already started')) {
-        console.log('⚡ [STT] 이미 시작된 상태로 감지 - 상태만 업데이트');
+      console.error('음성 인식 시작 실패:', error);
+      // 이미 시작된 상태라면 에러를 무시
+      if (error.message && error.message.includes('already started')) {
+        console.log('[STT] 이미 시작된 상태입니다.');
         setSttEnabled(true);
         // LiveKit Data Channel 초기화
         initLivekitDataChannel();
