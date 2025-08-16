@@ -26,6 +26,42 @@ export const useSSESTT = (roomName, participantName, livekitRoom = null) => {
   const lastCoachingTimeRef = useRef(0);
   const lastSpeechTimeRef = useRef(Date.now());
 
+  // 중복 방지를 위한 메시지 캐시
+  const messageCache = useRef(new Set());
+  const lastMessageTime = useRef(new Map());
+
+  // 메시지 중복 체크 함수
+  const isDuplicateMessage = (speaker, text, source) => {
+    const messageKey = `${speaker}:${text}`;
+    const now = Date.now();
+    
+    // 같은 메시지가 2초 내에 왔으면 중복
+    if (messageCache.current.has(messageKey)) {
+      const lastTime = lastMessageTime.current.get(messageKey) || 0;
+      if (now - lastTime < 2000) {
+        console.log(`[중복 방지] ${source}에서 중복 메시지 감지:`, text);
+        return true;
+      }
+    }
+    
+    // 새 메시지로 등록
+    messageCache.current.add(messageKey);
+    lastMessageTime.current.set(messageKey, now);
+    
+    // 캐시 정리 (100개 이상이면 오래된 것 삭제)
+    if (messageCache.current.size > 100) {
+      const oldEntries = Array.from(lastMessageTime.current.entries())
+        .filter(([_, time]) => now - time > 60000); // 1분 이상 된 것
+      
+      oldEntries.forEach(([key, _]) => {
+        messageCache.current.delete(key);
+        lastMessageTime.current.delete(key);
+      });
+    }
+    
+    return false;
+  };
+
   // SSE 연결 초기화
   useEffect(() => {
     if (!roomName) return;
@@ -53,11 +89,16 @@ export const useSSESTT = (roomName, participantName, livekitRoom = null) => {
         if (data.type === 'stt_result') {
           const isMyMessage = data.speaker === participantName;
           
-          // 내 메시지는 이미 로컬에서 처리했으므로 중복 방지
+          // 내 메시지는 이미 로컬에서 처리했으므로 스킵
           if (!isMyMessage) {
+            // 중복 체크
+            if (isDuplicateMessage(data.speaker, data.text, 'SSE')) {
+              return;
+            }
+            
             console.log('[SSE STT] 상대방 메시지 추가:', data);
             const remoteMessage = {
-              id: Date.now() + Math.random(),
+              id: `sse_${Date.now()}_${Math.random()}`,
               speaker: data.speaker,
               text: data.text,
               timestamp: new Date(data.timestamp).toLocaleTimeString('ko-KR', {
@@ -69,22 +110,7 @@ export const useSSESTT = (roomName, participantName, livekitRoom = null) => {
               source: 'sse'
             };
             
-            setConversations(prev => {
-              // 중복 체크
-              const exists = prev.some(conv => 
-                conv.speaker === data.speaker && 
-                conv.text === data.text && 
-                Math.abs(Date.now() - new Date(conv.timestamp).getTime()) < 5000
-              );
-              
-              if (!exists) {
-                console.log('[SSE STT] 새 메시지 추가');
-                return [...prev, remoteMessage];
-              }
-              console.log('[SSE STT] 중복 메시지 무시');
-              return prev;
-            });
-            
+            setConversations(prev => [...prev, remoteMessage]);
             conversationLogRef.current.push(remoteMessage);
           }
         }
