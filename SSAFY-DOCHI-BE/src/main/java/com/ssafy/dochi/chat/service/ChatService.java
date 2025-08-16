@@ -234,21 +234,21 @@ public class ChatService {
             You must create a **4-panel comic scenario** STRICTLY based on the conversation below.
 
             RULES:
-            - Use ONLY people, places, events, and emotions explicitly mentioned in the conversation.
+            - Use ONLY people, places, events, and situations explicitly mentioned in the conversation.
             - Do NOT add fictional details or generic scenarios.
             - If something is not mentioned, leave it out — do NOT invent.
-            - Preserve the exact emotional flow and setting.
+            - Focus on the factual sequence of events and situations.
 
             STEP 1 — Extract key facts as a table:
-            | Step | Exact Event | People Involved | Location | Emotion |
-            |------|-------------|-----------------|----------|---------|
+            | Step | Exact Event | People Involved | Location | Situation |
+            |------|-------------|-----------------|----------|-----------|
             (Fill from conversation, only exact words used by user)
 
             STEP 2 — Write the scenario in this format:
             Panel 1: (Describe initial situation based ONLY on table)
-            Panel 2: (Describe the specific event/conflict)
-            Panel 3: (Describe the strongest emotion moment)
-            Panel 4: (Describe the current state or resolution)
+            Panel 2: (Describe the specific event/conflict situation)
+            Panel 3: (Describe the key situation moment)
+            Panel 4: (Describe the current state or resolution situation)
 
             Conversation:
             %s
