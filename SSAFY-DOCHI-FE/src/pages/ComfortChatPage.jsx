@@ -272,7 +272,12 @@ const ComfortChatPage = () => {
       setLoading(true);
       setShowTimeline(true);
 
-      const prompt = "타임라인을 생성해주세요";
+      // ✅ 현재 프론트엔드에 있는 대화 내용을 직접 백엔드에 전달
+      const conversationHistory = messages
+        .map(msg => `${msg.sender.toUpperCase()}: ${msg.content}`)
+        .join('\n');
+      
+      const prompt = `다음 대화를 바탕으로 타임라인을 생성해주세요:\n\n${conversationHistory}`;
 
       try {
         const response = await comfortService.sendMessage(currentSessionId, prompt, 'TIMELINE');
