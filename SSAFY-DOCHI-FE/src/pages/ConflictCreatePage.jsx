@@ -120,9 +120,19 @@ const ConflictCreatePage = () => {
       }
 
       const tempResult = JSON.parse(tempResponseText);
-      const conflictId = tempResult.data || tempResult.response?.response || tempResult.id;
+      console.log('=== 서버 응답 전체 구조 ===', tempResult);
+      console.log('tempResult.data:', tempResult.data);
+      console.log('tempResult.response?.response:', tempResult.response?.response);
+      console.log('tempResult.id:', tempResult.id);
+      
+      let conflictId = tempResult.data || tempResult.response?.response || tempResult.id;
+      
+      // 백엔드에서 "userId_timestamp" 형태로 반환하는 tempConflictId는
+      // 실제 DB에 저장될 때 Long 타입의 실제 conflictId로 변환됨
+      // 하지만 현재는 tempConflictId를 그대로 사용해야 함
+      console.log('Original conflictId from server:', conflictId);
+      
       setTempConflictId(conflictId);
-
       console.log('Generated Conflict ID:', conflictId);
 
       // 2단계: 고급 AI 분석 요청 (재시도 로직 포함)
@@ -204,8 +214,47 @@ const ConflictCreatePage = () => {
         sessionStorage.setItem('tempAiSolutions', '서버 응답 지연으로 인해 해결방안을 생성할 수 없습니다. 갈등 상세 페이지에서 다시 확인해주세요.');
       }
 
-      // AI 분석 완료 후 ConflictDetailPage로 이동
-      navigate(`/conflicts/${conflictId}`);
+      // 3단계: 실제 DB에 갈등 저장 및 실제 conflictId 반환
+      console.log('📝 3단계: 갈등을 실제 DB에 저장 중...');
+      
+      let finalConflictId = conflictId; // 기본값은 tempConflictId
+      
+      try {
+        const saveResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${conflictId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        console.log('Save Response Status:', saveResponse.status);
+        
+        if (saveResponse.ok) {
+          const saveResult = await saveResponse.json();
+          console.log('Save Response Body:', saveResult);
+          
+          // 실제 conflictId 추출 (Long 타입)
+          const actualConflictId = saveResult.data?.id || saveResult.data?.conflictId;
+          if (actualConflictId) {
+            finalConflictId = actualConflictId;
+            console.log('✅ 실제 갈등 저장 완료, conflictId:', finalConflictId);
+          } else {
+            console.warn('⚠️ 실제 conflictId를 찾을 수 없음, tempConflictId 사용');
+          }
+        } else {
+          console.warn('⚠️ 갈등 저장 실패, tempConflictId로 계속 진행');
+          const saveError = await saveResponse.text();
+          console.log('Save Error:', saveError);
+        }
+      } catch (saveError) {
+        console.warn('⚠️ 갈등 저장 중 오류 발생, tempConflictId로 계속 진행');
+        console.error('Save Error Details:', saveError);
+      }
+
+      // 최종 conflictId로 ConflictDetailPage 이동
+      console.log('🔄 최종 conflictId로 이동:', finalConflictId);
+      navigate(`/conflicts/${finalConflictId}`);
 
     } catch (error) {
       console.error('갈등 분석 오류:', error);
