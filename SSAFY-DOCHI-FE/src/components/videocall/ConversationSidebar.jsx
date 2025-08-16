@@ -1,19 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const ConversationSidebar = ({ 
   emotionScores,
   conflictLevel,
-  allConversations,
-  myCoachings,
-  conversations, // 기존 호환성 유지
+  conversations,
   sttEnabled,
   aiMediationEnabled,
-  coachingEnabled,
   toggleSTT,
-  toggleAIMediation,
-  toggleCoaching
+  toggleAIMediation
 }) => {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' 또는 'coaching'
   return (
     <div className="w-80 bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
       {/* 감정 및 갈등 레벨 표시 */}
@@ -55,38 +50,11 @@ const ConversationSidebar = ({
 
       {/* 대화 내용 */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 탭 헤더 및 컨트롤 */}
         <div className="p-3 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
-          <h3 className="text-[#2A2A2A] font-bold flex items-center mb-3">
+          <h3 className="text-[#2A2A2A] font-bold flex items-center">
             <span className="mr-2">💬</span>참견도치
           </h3>
-          
-          {/* 탭 버튼 */}
-          <div className="flex gap-1 mb-3">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                activeTab === 'all' 
-                  ? 'bg-[#5C351A] text-white shadow-lg' 
-                  : 'bg-[#D6CDB8] text-[#4A4A4A] hover:bg-[#CCC2A7]'
-              }`}
-            >
-              전체 대화 ({allConversations?.length || 0})
-            </button>
-            <button
-              onClick={() => setActiveTab('coaching')}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                activeTab === 'coaching' 
-                  ? 'bg-[#5C351A] text-white shadow-lg' 
-                  : 'bg-[#D6CDB8] text-[#4A4A4A] hover:bg-[#CCC2A7]'
-              }`}
-            >
-              내 코칭 ({myCoachings?.length || 0})
-            </button>
-          </div>
-          
-          {/* 컨트롤 버튼 */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-2">
             <button
               onClick={toggleSTT}
               className={`px-3 py-1 rounded text-sm font-medium ${
@@ -103,107 +71,63 @@ const ConversationSidebar = ({
             >
               AI 중재 {aiMediationEnabled ? 'ON' : 'OFF'}
             </button>
-            {toggleCoaching && (
-              <button
-                onClick={toggleCoaching}
-                className={`px-3 py-1 rounded text-sm font-medium ${
-                  coachingEnabled ? 'bg-[#4D280E] text-white shadow-lg' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
-                }`}
-              >
-                코칭 {coachingEnabled ? 'ON' : 'OFF'}
-              </button>
-            )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-          {/* 탭별 대화 기록 */}
-          {(() => {
-            const displayConversations = activeTab === 'all' 
-              ? (allConversations || conversations || [])
-              : (myCoachings || []);
+          {/* 대화 기록 */}
+          {conversations.slice().reverse().map((conv) => {
+            const isCoachingMessage = conv.isCoachingMessage || conv.speaker === '참견도치';
             
-            if (displayConversations.length === 0) {
-              return (
-                <div className="text-center p-4 text-[#4A4A4A]">
-                  <p className="text-sm">
-                    {activeTab === 'all' ? '아직 대화가 없습니다.' : '아직 코칭 메시지가 없습니다.'}
-                  </p>
-                  {activeTab === 'coaching' && !coachingEnabled && (
-                    <p className="text-xs mt-2">코칭 기능을 활성화하면 실시간 조언을 받을 수 있습니다.</p>
-                  )}
-                </div>
-              );
-            }
-            
-            return displayConversations.slice().reverse().map((conv) => {
-              const isCoachingMessage = conv.isCoachingMessage || conv.speaker === '참견도치' || conv.type === 'my_coaching';
-              const isRemoteMessage = conv.isRemote || conv.source === 'sse' || conv.source === 'livekit';
-              
-              return (
-                <div key={conv.id} className={`p-2 rounded-lg shadow border mb-2 ${
-                  isCoachingMessage 
-                    ? 'bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] border-[#5C351A] border-2 shadow-lg'
-                    : 'bg-[#FEFCF8] bg-opacity-80 border-[#5C351A]'
-                }`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className={`text-sm font-semibold flex items-center ${
-                      isCoachingMessage ? 'text-[#4D280E]' : 'text-[#5C351A]'
-                    }`}>
-                      {isCoachingMessage ? (
-                        <>
-                          <span className="mr-2">🤖</span>
-                          <span className="bg-[#5C351A] text-white px-2 py-1 rounded-full text-xs mr-2">참견중</span>
-                          {conv.speaker}
-                        </>
-                      ) : (
-                        <>
-                          <span className="mr-2">{isRemoteMessage ? '🌐' : '👤'}</span>
-                          {conv.speaker}
-                          {isRemoteMessage && (
-                            <span className="ml-2 bg-blue-500 text-white px-1 py-0.5 rounded text-xs">실시간</span>
-                          )}
-                        </>
-                      )}
-                    </span>
-                    <span className="text-[#4A4A4A] text-xs">
-                      {conv.timestamp}
-                    </span>
-                  </div>
-                  <p className={`text-sm ${
-                    isCoachingMessage ? 'text-[#3E1F0A] font-medium' : 'text-[#2A2A2A]'
+            return (
+              <div key={conv.id} className={`p-2 rounded-lg shadow border mb-2 ${
+                isCoachingMessage 
+                  ? 'bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] border-[#5C351A] border-2 shadow-lg'
+                  : 'bg-[#FEFCF8] bg-opacity-80 border-[#5C351A]'
+              }`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className={`text-sm font-semibold flex items-center ${
+                    isCoachingMessage ? 'text-[#4D280E]' : 'text-[#5C351A]'
                   }`}>
-                    {conv.text}
-                  </p>
-                  
-                  {/* 코칭 정보 표시 */}
-                  {isCoachingMessage && activeTab === 'coaching' && conv.urgency && (
-                    <div className="mt-2 text-xs text-[#5C351A]">
-                      <span className="font-semibold">긴급도:</span> {conv.urgency} 
-                      {conv.triggerType && (
-                        <span className="ml-2"><span className="font-semibold">트리거:</span> {conv.triggerType}</span>
-                      )}
-                    </div>
-                  )}
-                  
-                  {conv.aiSuggestion && (
-                    <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
-                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs">✨</span>
-                      </div>
-                      <p className="text-white text-xs font-bold flex items-center mb-1">
-                        <span className="mr-1">🤖</span> 참견도치 조언
-                      </p>
-                      <p className="text-white text-sm font-medium leading-relaxed">{conv.aiSuggestion}</p>
-                      <div className="mt-2 text-right">
-                        <span className="text-[#F8F5F0] text-xs opacity-80">powered by AI</span>
-                      </div>
-                    </div>
-                  )}
+                    {isCoachingMessage ? (
+                      <>
+                        <span className="mr-2">🤖</span>
+                        <span className="bg-[#5C351A] text-white px-2 py-1 rounded-full text-xs mr-2">참견중</span>
+                        {conv.speaker}
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-2">👤</span>
+                        {conv.speaker}
+                      </>
+                    )}
+                  </span>
+                  <span className="text-[#4A4A4A] text-xs">
+                    {conv.timestamp}
+                  </span>
                 </div>
-              );
-            });
-          })()}
+                <p className={`text-sm ${
+                  isCoachingMessage ? 'text-[#3E1F0A] font-medium' : 'text-[#2A2A2A]'
+                }`}>
+                  {conv.text}
+                </p>
+                {conv.aiSuggestion && (
+                  <div className="mt-3 p-3 bg-gradient-to-br from-[#5C351A] via-[#4D280E] to-[#3E1F0A] rounded-lg shadow-xl border-2 border-[#2A2A2A] relative">
+                    <div className="absolute -top-1 -left-1 w-4 h-4 bg-[#2A2A2A] rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">✨</span>
+                    </div>
+                    <p className="text-white text-xs font-bold flex items-center mb-1">
+                      <span className="mr-1">🤖</span> 참견도치 조언
+                    </p>
+                    <p className="text-white text-sm font-medium leading-relaxed">{conv.aiSuggestion}</p>
+                    <div className="mt-2 text-right">
+                      <span className="text-[#F8F5F0] text-xs opacity-80">powered by AI</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
