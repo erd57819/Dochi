@@ -12,7 +12,7 @@ RUN npm install
 
 # 바이너리 명시적 설치 (EC2 빌드 에러 해결)
 RUN npm install @rollup/rollup-linux-x64-gnu --save-dev
-RUN npm rebuild lightningcss
+RUN npm uninstall lightningcss && npm install lightningcss --build-from-source
 
 # 소스 코드 복사
 COPY . .
