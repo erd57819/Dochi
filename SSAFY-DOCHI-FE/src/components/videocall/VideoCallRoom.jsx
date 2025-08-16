@@ -608,41 +608,25 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   }, []);
 
-  // 마이크 상태에 따른 STT 자동 연동
+  // 마이크 상태에 따른 STT 자동 연동 - 비활성화 (수동 제어만)
   useEffect(() => {
     console.log('[STT 상태 체크]', { isMicOn, sttEnabled, actualRoomId, participantName });
     
-    if (isMicOn && !sttEnabled) {
-      // 마이크가 켜지면 STT도 자동으로 시작
-      console.log('✅ 마이크 켜짐 - STT 자동 시작 시도');
-      startSTT();
-    } else if (!isMicOn && sttEnabled) {
-      // 마이크가 꺼지면 STT도 자동으로 중지
+    // 마이크 꺼지면 STT 중지 (안전을 위해)
+    if (!isMicOn && sttEnabled) {
       console.log('❌ 마이크 꺼짐 - STT 자동 중지');
       stopSTT();
     } else {
-      console.log('⏸️ STT 상태 변화 없음', { 
-        micOn: isMicOn, 
-        sttOn: sttEnabled,
-        reason: isMicOn ? (sttEnabled ? 'STT already on' : 'waiting for STT start') : 'mic off'
-      });
+      console.log('⏸️ STT는 수동으로 켜주세요 (하단 STT 버튼 클릭)');
     }
-  }, [isMicOn, sttEnabled, startSTT, stopSTT]);
+  }, [isMicOn, sttEnabled, stopSTT]);
 
-  // 강제 STT 시작 (연결 후 자동으로) - 한 번만 실행
-  const sttInitializedRef = useRef(false);
+  // 자동 STT 시작 비활성화 - 사용자가 수동으로 STT 버튼을 클릭해야 함
   useEffect(() => {
-    if (isConnected && actualRoomId && participantName && !sttEnabled && !sttInitializedRef.current) {
-      console.log('🚀 연결 완료 - 강제 STT 시작 시도');
-      sttInitializedRef.current = true; // 중복 실행 방지
-      
-      setTimeout(async () => {
-        if (!sttEnabled) { // 한 번 더 체크
-          await startSTT();
-        }
-      }, 2000); // 2초 후 자동 시작
+    if (isConnected && actualRoomId && participantName) {
+      console.log('🔧 연결 완료! STT를 사용하려면 하단의 STT 버튼(🎙️)을 클릭하세요.');
     }
-  }, [isConnected, actualRoomId, participantName, sttEnabled, startSTT]);
+  }, [isConnected, actualRoomId, participantName]);
 
   // 미디어 테스트 초기화 및 상태 변경 감지
   useEffect(() => {
