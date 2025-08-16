@@ -76,7 +76,21 @@ async def processConflictChunk(data: ConflictSTTData):
     프론트엔드에서 JSON 형태의 STT 데이터를 받습니다.
     """
     try:
-        # Kafka로 STT 데이터 전송
+        # Redis Pub/Sub으로 실시간 브로드캐스트
+        import redis
+        r = redis.Redis(host="dochi-redis", port=6379, decode_responses=True)
+        
+        pubsub_data = {
+            "speaker": data.speakerId,
+            "text": data.text,
+            "timestamp": data.timestamp,
+            "type": "stt_result"
+        }
+        r.publish(f"room:{data.roomId}:stt", json.dumps(pubsub_data, ensure_ascii=False))
+        print(f"[Redis Pub/Sub 발행] room:{data.roomId}:stt → {pubsub_data}")
+        
+        # Kafka로 STT 데이터 전송 (저장용)
+
         kafka_payload = {
             "roomId": data.roomId,
             "speakerId": data.speakerId,
