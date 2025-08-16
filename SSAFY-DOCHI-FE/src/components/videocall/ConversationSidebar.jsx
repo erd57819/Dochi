@@ -6,10 +6,8 @@ const ConversationSidebar = ({
   conversations,
   sttEnabled,
   aiMediationEnabled,
-  coachingEnabled,
   toggleSTT,
   toggleAIMediation,
-  toggleCoaching,
   participantName
 }) => {
   const [activeTab, setActiveTab] = useState('all');
@@ -181,16 +179,6 @@ const ConversationSidebar = ({
             >
               AI 중재 {aiMediationEnabled ? 'ON' : 'OFF'}
             </button>
-            {toggleCoaching && (
-              <button
-                onClick={toggleCoaching}
-                className={`px-3 py-1 rounded text-sm font-medium ${
-                  coachingEnabled ? 'bg-[#4D280E] text-white shadow-lg' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
-                }`}
-              >
-                코칭 {coachingEnabled ? 'ON' : 'OFF'}
-              </button>
-            )}
           </div>
         </div>
 
