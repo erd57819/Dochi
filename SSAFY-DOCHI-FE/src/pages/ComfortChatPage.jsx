@@ -216,7 +216,7 @@ const ComfortChatPage = () => {
   const handleSaveAndExit = async () => {
     try {
       await exitCurrentSession();
-      navigate('/comfort');
+      navigate('/');
     } catch (error) {
       console.error('Failed to save and exit:', error);
     }
