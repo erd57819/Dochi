@@ -646,112 +646,87 @@ const ComfortChatPage = () => {
            style={{ height: 'calc(100vh - 80px)' }}>
         
         {isNewChatMode ? (
-          // 새 대화 시작 화면
-          <div className="h-full flex items-center justify-center bg-gradient-to-br from-orange-50/50 to-yellow-50/30">
-            <div className="w-full max-w-3xl px-8">
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-orange-100">
+          // 새 대화 시작 화면 - 로그인 페이지 스타일
+          <div className="h-full flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-yellow-50" style={{ zoom: '0.85' }}>
+            <div className="w-full max-w-4xl px-3 py-4">
+              <div className="bg-white rounded-xl p-12">
                 
-                {/* 헤더 섹션 */}
-                <div className="text-center mb-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="relative p-2 bg-orange-100/50 rounded-full">
+                {/* 로고 및 서비스 소개 */}
+                <div className="text-center mb-12 w-full">
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
                       <img 
                         src={todakImg} 
                         alt="참견도치" 
-                        className="w-20 h-20 object-contain"
+                        className="w-50 h-50 object-contain"
                       />
                     </div>
                   </div>
-                  <h1 className="text-3xl font-bold mb-2" style={{ color: '#8B4513' }}>
-                    참견도치
-                  </h1>
-                  <p className="text-gray-600 text-lg">
-                    갈등 상황을 이야기해보세요
-                  </p>
+                  <h2 className="text-3xl font-bold text-black mb-2">토닥토닥 챗봇</h2>
+                  <p className="text-lg text-[#666] mb-6">갈등 상황이나 고민을 자세히 입력해 주시면 참견도치가 다양한 모드로 도와드립니다</p>
                 </div>
 
-                {/* 입력 영역 */}
-                <div className="relative mb-6">
-                  <textarea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="어떤 일로 고민이신가요? 자세히 들려주세요..."
-                    className="w-full px-6 py-3 bg-gray-50/80 border-2 border-orange-200/60 rounded-2xl focus:outline-none focus:border-orange-400 text-base resize-none transition-all duration-200"
-                    style={{ 
-                      minHeight: '60px',
-                      fontFamily: 'inherit'
-                    }}
-                    rows="2"
-                    disabled={isLoading}
-                  />
-                  
-                  {/* 전송 버튼 */}
-                  <button
-                    onClick={handleStartNewChat}
-                    disabled={!inputValue.trim() || isLoading}
-                    className="absolute bottom-3 right-3 p-2 rounded-xl transition-all duration-200 disabled:cursor-not-allowed shadow-sm"
-                    style={{
-                      backgroundColor: (!inputValue.trim() || isLoading) ? '#d1d5db' : '#bf7d2c',
-                      color: 'white',
-                      transform: inputValue.trim() && !isLoading ? 'scale(1.05)' : 'scale(1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#8B4513';
-                        e.target.style.transform = 'scale(1.1)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#bf7d2c';
-                        e.target.style.transform = 'scale(1.05)';
-                      }
-                    }}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  </button>
+                {/* 입력 폼 */}
+                <div className="space-y-6 mb-8">
+                  {/* 갈등 상황 입력 */}
+                  <div>
+                    <div className="flex justify-center">
+                      <textarea
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        className="w-full max-w-2xl px-0 py-0 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-base transition-colors text-center resize-none"
+                        placeholder="이야기를 자세히 들려주세요..."
+                        style={{ 
+                          minHeight: '30px',
+                          fontFamily: 'inherit',
+                          paddingBottom: '2px'
+                        }}
+                        rows="1"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
                 </div>
-
-                {/* 하단 안내 */}
-                <div className="text-center space-y-2">
-                  <div className="text-sm text-gray-500">
-                    Enter로 전송 · Shift+Enter로 줄바꿈
+                
+                {/* 하단 버튼 및 안내 - 전체 페이지 폭 기준 */}
+                <div className="mt-6 relative w-full">
+                  {/* 안내 메시지 */}
+                  <div className="flex justify-center mb-4">
+                    <div className="text-sm text-gray-500">
+                      Enter로 전송 · Shift+Enter로 줄바꿈
+                    </div>
                   </div>
                   
-                  {/* 메인 시작 버튼 */}
-                  <button
-                    onClick={handleStartNewChat}
-                    disabled={!inputValue.trim() || isLoading}
-                    className="w-full py-3 rounded-xl font-medium transition-all duration-200 text-base shadow-lg"
-                    style={{ 
-                      backgroundColor: (!inputValue.trim() || isLoading) ? '#f3f4f6' : '#bf7d2c',
-                      color: (!inputValue.trim() || isLoading) ? '#9ca3af' : 'white',
-                      border: 'none',
-                      transform: inputValue.trim() && !isLoading ? 'translateY(-1px)' : 'translateY(0)',
-                      boxShadow: inputValue.trim() && !isLoading ? '0 10px 25px rgba(191, 125, 44, 0.3)' : '0 4px 10px rgba(0, 0, 0, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#8B4513';
-                        e.target.style.transform = 'translateY(-2px)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#bf7d2c';
-                        e.target.style.transform = 'translateY(-1px)';
-                      }
-                    }}
-                  >
-                    {isLoading ? (
-                      <LoadingSpinner size="small" text="대화 시작 중..." color="white" />
-                    ) : (
-                      '상담 시작하기'
-                    )}
-                  </button>
+                  {/* 상담 시작 버튼 - 전체 페이지 가운데 */}
+                  <div className="flex justify-center mb-4">
+                    <button
+                      onClick={handleStartNewChat}
+                      disabled={!inputValue.trim() || isLoading}
+                      className="px-8 py-3 rounded-lg font-medium transition-colors text-base"
+                      style={{ 
+                        backgroundColor: (!inputValue.trim() || isLoading) ? '#f3f4f6' : '#bf7d2c',
+                        color: (!inputValue.trim() || isLoading) ? '#9ca3af' : 'white',
+                        border: 'none'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (inputValue.trim() && !isLoading) {
+                          e.target.style.backgroundColor = '#8B4513';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (inputValue.trim() && !isLoading) {
+                          e.target.style.backgroundColor = '#bf7d2c';
+                        }
+                      }}
+                    >
+                      {isLoading ? (
+                        <LoadingSpinner size="small" text="대화 시작 중..." color="white" />
+                      ) : (
+                        '상담 시작하기'
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
