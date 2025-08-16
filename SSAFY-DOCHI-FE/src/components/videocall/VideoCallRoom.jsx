@@ -574,11 +574,19 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       
       // 비디오 메타데이터가 로드되면 표정 분석 시작
       const handleLoadedMetadata = async () => {
-        console.log('비디오 메타데이터 로드됨, 표정 분석 시작');
+        console.log('✅ 비디오 메타데이터 로드됨, 표정 분석 시작');
         await startEmotionDetection(localVideoRef.current);
       };
       
       localVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+      
+      // 강제로 감정 인식 시작 (메타데이터 로드 대기하지 않고)
+      setTimeout(async () => {
+        if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
+          console.log('🚀 강제 감정 인식 시작');
+          await startEmotionDetection(localVideoRef.current);
+        }
+      }, 3000);
       
       return () => {
         if (localVideoRef.current) {
@@ -590,7 +598,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       localVideoRef.current.srcObject = null;
       console.log('로컬 비디오 트랙 정리됨');
     }
-  }, [localVideoTrack]);
+  }, [localVideoTrack, startEmotionDetection]);
 
   // 표정 분석 정리 (컴포넌트 언마운트시)
   useEffect(() => {
@@ -619,6 +627,16 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       });
     }
   }, [isMicOn, sttEnabled, startSTT, stopSTT]);
+
+  // 강제 STT 시작 (연결 후 자동으로)
+  useEffect(() => {
+    if (isConnected && actualRoomId && participantName && !sttEnabled) {
+      console.log('🚀 연결 완료 - 강제 STT 시작 시도');
+      setTimeout(() => {
+        startSTT();
+      }, 2000); // 2초 후 자동 시작
+    }
+  }, [isConnected, actualRoomId, participantName, sttEnabled, startSTT]);
 
   // 미디어 테스트 초기화 및 상태 변경 감지
   useEffect(() => {

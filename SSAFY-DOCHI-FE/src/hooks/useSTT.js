@@ -689,25 +689,45 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
   };
 
   // STT 시작
-  const startSTT = () => {
+  const startSTT = async () => {
+    console.log('[STT 시작] 요청됨', { sttEnabled, roomName, participantName });
+    
     if (sttEnabled) {
       console.log('[STT] 이미 STT가 활성화되어 있습니다.');
       return;
     }
 
+    // 마이크 권한 확인
+    try {
+      console.log('[STT] 마이크 권한 확인 중...');
+      const permission = await navigator.permissions.query({ name: 'microphone' });
+      console.log('[STT] 마이크 권한 상태:', permission.state);
+      
+      if (permission.state === 'denied') {
+        console.error('[STT] 마이크 권한이 거부되었습니다.');
+        alert('마이크 권한을 허용해주세요. 브라우저 주소창 옆의 마이크 아이콘을 클릭하세요.');
+        return;
+      }
+    } catch (error) {
+      console.log('[STT] 권한 확인 실패 (구형 브라우저):', error);
+    }
+
     if (!recognitionRef.current && !initSTT()) {
+      console.error('[STT] 초기화 실패');
       return;
     }
 
     try {
-      console.log('STT 시작 시도...', {
+      console.log('✅ [STT] 시작 시도...', {
         continuous: recognitionRef.current.continuous,
         interimResults: recognitionRef.current.interimResults,
-        lang: recognitionRef.current.lang
+        lang: recognitionRef.current.lang,
+        roomName,
+        participantName
       });
       recognitionRef.current.start();
       setSttEnabled(true);
-      console.log('음성 인식 시작 성공');
+      console.log('🎉 [STT] 음성 인식 시작 성공!');
       
       // LiveKit Data Channel 초기화
       initLivekitDataChannel();
@@ -717,7 +737,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
       lastSentTimeRef.current = 0;
       processingRef.current = false;
     } catch (error) {
-      console.error('음성 인식 시작 실패:', error);
+      console.error('❌ [STT] 음성 인식 시작 실패:', error);
       // 이미 시작된 상태라면 에러를 무시
       if (error.message && error.message.includes('already started')) {
         console.log('[STT] 이미 시작된 상태입니다.');
