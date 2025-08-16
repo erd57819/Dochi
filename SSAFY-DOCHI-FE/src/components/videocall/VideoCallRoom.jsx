@@ -564,7 +564,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     };
   }, []);
 
-  // 로컬 비디오 연결 (백업 파일 방식)
+  // 표정 분석 시작 상태 추가
+  const [emotionDetectionStarted, setEmotionDetectionStarted] = useState(false);
+
+  // 로컬 비디오 연결 및 표정 분석 시작
   useEffect(() => {
     if (localVideoTrack && localVideoRef.current) {
       const mediaStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
@@ -572,19 +575,23 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       localVideoRef.current.muted = true;
       localVideoRef.current.play().catch(console.error);
       
-      // 비디오 메타데이터가 로드되면 표정 분석 시작
+      // 비디오 메타데이터가 로드되면 표정 분석 시작 (한 번만)
       const handleLoadedMetadata = async () => {
-        console.log('✅ 비디오 메타데이터 로드됨, 표정 분석 시작');
-        await startEmotionDetection(localVideoRef.current);
+        if (!emotionDetectionStarted) {
+          console.log('✅ 비디오 메타데이터 로드됨, 표정 분석 시작');
+          await startEmotionDetection(localVideoRef.current);
+          setEmotionDetectionStarted(true);
+        }
       };
       
       localVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
       
-      // 강제로 감정 인식 시작 (메타데이터 로드 대기하지 않고)
+      // 강제로 감정 인식 시작 (메타데이터 로드 대기하지 않고) - 한 번만
       const emotionStartTimer = setTimeout(async () => {
-        if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
+        if (localVideoRef.current && localVideoRef.current.videoWidth > 0 && !emotionDetectionStarted) {
           console.log('🚀 강제 감정 인식 시작');
           await startEmotionDetection(localVideoRef.current);
+          setEmotionDetectionStarted(true);
         }
       }, 3000);
       
@@ -597,9 +604,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     } else if (!localVideoTrack && localVideoRef.current) {
       // 비디오 트랙이 없을 때 비디오 엘리먼트 정리
       localVideoRef.current.srcObject = null;
+      setEmotionDetectionStarted(false);
       console.log('로컬 비디오 트랙 정리됨');
     }
-  }, [localVideoTrack, startEmotionDetection]);
+  }, [localVideoTrack, startEmotionDetection, emotionDetectionStarted]);
 
   // 표정 분석 정리 (컴포넌트 언마운트시)
   useEffect(() => {
@@ -610,14 +618,10 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 마이크 상태에 따른 STT 자동 연동 - 비활성화 (수동 제어만)
   useEffect(() => {
-    console.log('[STT 상태 체크]', { isMicOn, sttEnabled, actualRoomId, participantName });
-    
     // 마이크 꺼지면 STT 중지 (안전을 위해)
     if (!isMicOn && sttEnabled) {
       console.log('❌ 마이크 꺼짐 - STT 자동 중지');
       stopSTT();
-    } else {
-      console.log('⏸️ STT는 수동으로 켜주세요 (하단 STT 버튼 클릭)');
     }
   }, [isMicOn, sttEnabled, stopSTT]);
 
