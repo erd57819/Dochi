@@ -13,6 +13,30 @@ export const conflictReportApi = {
     return response.json();
   },
 
+  // 대화 히스토리와 함께 레포트 생성 요청
+  async getFullReportWithData(roomId, conversationData = null, emotionData = null) {
+    const requestBody = {
+      roomId,
+      conversationData,
+      emotionData
+    };
+
+    console.log('[레포트 API] 데이터와 함께 요청:', requestBody);
+
+    const response = await fetch(`${API_BASE_URL}/conflict-report/${roomId}/with-data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
   // 요약 정보만 가져오기
   async getSummary(roomId) {
     const response = await fetch(`${API_BASE_URL}/conflict-report/${roomId}/summary`);

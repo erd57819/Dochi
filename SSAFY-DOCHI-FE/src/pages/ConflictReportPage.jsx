@@ -65,10 +65,36 @@ const ConflictReportPage = () => {
     try {
       setLoading(true);
       console.log('[갈등 레포트] API 호출 시작, roomId:', roomId);
+      console.log('[갈등 레포트] API URL:', `${window.location.hostname === 'localhost' ? '/ai' : 'https://i13c209.p.ssafy.io/ai'}/conflict-report/${roomId}`);
+      
+      // 먼저 localStorage에서 대화 및 감정 데이터 확인
+      const conversationKey = `conversation_backup_${roomId}`;
+      const emotionKey = `emotion_history_${roomId}`;
+      const conversationData = localStorage.getItem(conversationKey);
+      const emotionData = localStorage.getItem(emotionKey);
+      
+      console.log('[로컬 데이터 확인]', {
+        hasConversation: !!conversationData,
+        hasEmotion: !!emotionData,
+        conversationLines: conversationData ? JSON.parse(conversationData).length : 0,
+        emotionSpeakers: emotionData ? Object.keys(JSON.parse(emotionData)).length : 0
+      });
       
       const data = await conflictReportApi.getFullReport(roomId);
       console.log('[갈등 레포트] API 응답 받음:', data);
+      console.log('[레포트 구조] data:', data);
       console.log('[레포트 구조] sections:', Object.keys(data?.sections || {}));
+      
+      // 전체 데이터 구조 확인
+      if (data) {
+        console.log('[레포트 전체 구조]', {
+          hasData: !!data,
+          hasSections: !!data.sections,
+          keys: Object.keys(data),
+          generatedAt: data.generated_at,
+          roomId: data.room_id
+        });
+      }
       
       // summary 섹션 상세 로그
       if (data?.sections?.summary) {
@@ -91,10 +117,36 @@ const ConflictReportPage = () => {
         console.log('[경고] Action Plans 섹션이 없음!');
       }
       
+      // emotion_analysis 섹션 확인
+      if (data?.sections?.emotion_analysis) {
+        console.log('[Emotion Analysis 섹션]', data.sections.emotion_analysis);
+      } else {
+        console.log('[경고] Emotion Analysis 섹션이 없음!');
+      }
+      
+      // full_transcript 섹션 확인
+      if (data?.sections?.full_transcript) {
+        console.log('[Full Transcript 섹션]', data.sections.full_transcript);
+      } else {
+        console.log('[경고] Full Transcript 섹션이 없음!');
+      }
+      
       setReportData(data);
     } catch (err) {
       console.error('레포트 로딩 실패:', err);
-      setError('레포트를 불러오는데 실패했습니다.');
+      console.error('에러 상세:', {
+        message: err.message,
+        status: err.status,
+        stack: err.stack
+      });
+      
+      if (err.message?.includes('404')) {
+        setError('해당 방의 갈등 레포트를 찾을 수 없습니다. 통화 중에 충분한 대화와 감정 데이터가 수집되었는지 확인해주세요.');
+      } else if (err.message?.includes('500')) {
+        setError('서버에서 레포트를 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setError('레포트를 불러오는데 실패했습니다: ' + err.message);
+      }
     } finally {
       setLoading(false);
     }

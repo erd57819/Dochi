@@ -145,6 +145,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
       });
       
       console.log('[STT] FastAPI 전송 성공');
+      
     } catch (error) {
       console.error('[STT] FastAPI 전송 실패:', error);
     }
