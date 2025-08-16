@@ -629,47 +629,9 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         interimResults: recognition.interimResults
       });
       
-      // recognitionRef.current가 존재하면 재시작 (STT가 켜진 상태)
-      if (recognitionRef.current) {
-        console.log('1초 후 재시작 시도...');
-        setTimeout(() => {
-          try {
-            // 재시작 전에 recognitionRef 존재 여부 다시 확인
-            if (recognitionRef.current) {
-              console.log('재시작 시도 전 상태:', {
-                sttEnabled,
-                readyState: recognition.readyState
-              });
-              recognition.start();
-              console.log('음성 인식을 다시 시작합니다.');
-            } else {
-              console.log('재시작 조건이 맞지 않음 - recognitionRef 없음');
-            }
-          } catch (error) {
-            console.error('음성 인식 재시작 실패:', error);
-            console.error('에러 상세:', {
-              name: error.name,
-              message: error.message,
-              code: error.code
-            });
-            
-            // InvalidStateError가 발생한 경우 완전 재초기화
-            if (error.name === 'InvalidStateError') {
-              console.log('STT 완전 재초기화 시도...');
-              setTimeout(() => {
-                if (recognitionRef.current) {
-                  stopSTT();
-                  setTimeout(() => {
-                    startSTT();
-                  }, 500);
-                }
-              }, 1000);
-            }
-          }
-        }, 1000);
-      } else {
-        console.log('STT가 비활성화되어 재시작하지 않습니다. (recognitionRef 없음)');
-      }
+      // 자동 재시작 비활성화 - 사용자가 수동으로 켜야 함
+      console.log('⚠️ STT 자동 재시작 비활성화됨. 수동으로 다시 켜주세요.');
+      setSttEnabled(false);
     };
 
     // WebRTC speaking 감지 이벤트 리스너
