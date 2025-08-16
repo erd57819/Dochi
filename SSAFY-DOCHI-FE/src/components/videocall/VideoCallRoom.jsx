@@ -167,7 +167,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       setIsConnected(true);
 
       // 기존 참가자들 처리 
-      const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
+      const remoteParticipants = Array.from(newRoom.remoteParticipants.values()).map(participant => ({
+        ...participant,
+        isAudioEnabled: participant.audioTrackPublications.size > 0 && 
+                       Array.from(participant.audioTrackPublications.values()).some(pub => pub.isMuted === false),
+        isVideoEnabled: participant.videoTrackPublications.size > 0 && 
+                       Array.from(participant.videoTrackPublications.values()).some(pub => pub.isMuted === false)
+      }));
       setParticipants(remoteParticipants);
 
       // 기존 참가자 join
@@ -311,6 +317,22 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     }
   };
 
+  // 참가자 상태 업데이트 함수
+  const updateParticipantStatus = (participant) => {
+    setParticipants(prev => prev.map(p => {
+      if (p.sid === participant.sid) {
+        return {
+          ...p,
+          isAudioEnabled: participant.audioTrackPublications.size > 0 && 
+                         Array.from(participant.audioTrackPublications.values()).some(pub => pub.isMuted === false),
+          isVideoEnabled: participant.videoTrackPublications.size > 0 && 
+                         Array.from(participant.videoTrackPublications.values()).some(pub => pub.isMuted === false)
+        };
+      }
+      return p;
+    }));
+  };
+
   // 방 이벤트 리스너 설정
   const setupRoomEventListeners = (room) => {
     room.on(RoomEvent.ParticipantConnected, (participant) => {
@@ -327,7 +349,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         return;
       }
       
-      setParticipants(prev => [...prev, participant]);
+      const participantWithStatus = {
+        ...participant,
+        isAudioEnabled: participant.audioTrackPublications.size > 0 && 
+                       Array.from(participant.audioTrackPublications.values()).some(pub => pub.isMuted === false),
+        isVideoEnabled: participant.videoTrackPublications.size > 0 && 
+                       Array.from(participant.videoTrackPublications.values()).some(pub => pub.isMuted === false)
+      };
+      setParticipants(prev => [...prev, participantWithStatus]);
     });
 
     room.on(RoomEvent.ParticipantDisconnected, (participant) => {
@@ -377,6 +406,17 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       console.log('트랙 구독 해제됨:', track.kind, participant.identity);
+    });
+
+    // 트랙 Mute/Unmute 이벤트 처리
+    room.on(RoomEvent.TrackMuted, (publication, participant) => {
+      console.log('트랙 음소거됨:', publication.kind, participant.identity);
+      updateParticipantStatus(participant);
+    });
+
+    room.on(RoomEvent.TrackUnmuted, (publication, participant) => {
+      console.log('트랙 음소거 해제됨:', publication.kind, participant.identity);
+      updateParticipantStatus(participant);
     });
 
     // Speaking 감지를 위한 AudioLevelChanged 이벤트
@@ -472,9 +512,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // SSE STT 훅 사용 (실제 방 ID 사용)
   const sttHook = useSSESTT(actualRoomId, participantName, room);
   const {
-    sttEnabled, aiMediationEnabled, coachingEnabled, conversations,
+    sttEnabled, aiMediationEnabled, conversations,
     recognitionRef, speechTimeoutRef, conversationLogRef,
-    toggleSTT, toggleAIMediation, toggleCoaching, stopSTT, startSTT, handleSpeechResult, sendSTTToFastAPI
+    toggleSTT, toggleAIMediation, stopSTT, startSTT, handleSpeechResult, sendSTTToFastAPI
   } = sttHook;
 
   // 감정인식 훅 사용 (실제 방 ID 사용)
@@ -1622,7 +1662,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
                   {participant.name} 
                   {participant.isAudioEnabled ? '🎤' : '🔇'} 
-                  {participant.isVideoEnabled ? '📹' : '📷'}
+                  {participant.isVideoEnabled ? '📹' : '📵'}
                   {speakingParticipants.has(participant.sid) && ' 🗣️'}
                 </div>
               </div>
@@ -1637,10 +1677,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           conversations={conversations}
           sttEnabled={sttEnabled}
           aiMediationEnabled={aiMediationEnabled}
-          coachingEnabled={coachingEnabled}
           toggleSTT={toggleSTT}
           toggleAIMediation={toggleAIMediation}
-          toggleCoaching={toggleCoaching}
           participantName={participantName}
         />
       </div>
