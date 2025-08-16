@@ -10,6 +10,9 @@ COPY package*.json ./
 # 의존성 설치
 RUN npm install
 
+# Rollup 바이너리 명시적 설치 (EC2 빌드 에러 해결)
+RUN npm install @rollup/rollup-linux-x64-gnu --save-dev
+
 # 소스 코드 복사
 COPY . .
 
