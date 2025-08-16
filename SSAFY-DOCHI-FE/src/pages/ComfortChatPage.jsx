@@ -61,7 +61,30 @@ const ComfortChatPage = () => {
     
     // 첫 방문자 감지 및 튜토리얼 자동 표시
     checkFirstVisit();
+    
+    // 갈등 데이터 자동 전송 확인
+    checkConflictData();
   }, []);
+
+  // 갈등 데이터 확인 및 자동 전송
+  const checkConflictData = async () => {
+    try {
+      const conflictData = sessionStorage.getItem('comfortConflictData');
+      if (conflictData) {
+        const parsedData = JSON.parse(conflictData);
+        
+        if (parsedData.autoSend && parsedData.message) {
+          // 항상 새로운 세션 생성하여 갈등 상담 시작
+          await createNewSessionWithFirstMessage(parsedData.message);
+          
+          // 사용한 데이터 삭제
+          sessionStorage.removeItem('comfortConflictData');
+        }
+      }
+    } catch (error) {
+      console.error('갈등 데이터 처리 중 오류:', error);
+    }
+  };
 
   useEffect(() => {
     const handleBeforeUnload = () => {

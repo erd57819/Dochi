@@ -17,6 +17,7 @@ const ConflictCard = ({
   title = "집안일 분담\n관련 갈등",
   buttonText = "자세히 보기",
   onButtonClick = () => {},
+  onComfortClick = null, // 토닥토닥 서비스 클릭 핸들러
   isSelected = false,
   isEditMode = false
 }) => {
@@ -77,7 +78,7 @@ const ConflictCard = ({
       </div>
       
       {/* 버튼 */}
-      <div className="mt-auto mb-[40px]">
+      <div className="mt-auto mb-[40px] flex flex-col gap-2">
         <button 
           onClick={onButtonClick}
           className="px-5 py-2 rounded-full text-sm font-medium transition-colors shadow-lg text-white"
@@ -91,6 +92,26 @@ const ConflictCard = ({
         >
           {buttonText}
         </button>
+        
+        {/* 토닥토닥 서비스 버튼 - 일반 갈등 카드이고 편집 모드가 아닐 때만 표시 */}
+        {!isEmptyCard && !isEditMode && onComfortClick && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation(); // 카드 클릭 이벤트 방지
+              onComfortClick();
+            }}
+            className="px-4 py-1.5 rounded-full text-xs font-medium transition-colors shadow-md text-white"
+            style={{ 
+              fontFamily: 'Pretendard-Medium, Helvetica',
+              background: '#7F5539',
+              border: 'none'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#6d4a31'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#7F5539'}
+          >
+            토닥토닥 서비스
+          </button>
+        )}
       </div>
       
     </div>
