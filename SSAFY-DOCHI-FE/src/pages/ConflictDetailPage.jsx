@@ -148,6 +148,20 @@ const ConflictDetailPage = () => {
     return types[type] || '기타';
   };
 
+  const getConflictTypeImage = (type) => {
+    const images = {
+      WORK: '/images/companyDochi.png',
+      FAMILY: '/images/familyDochi.png',
+      FRIEND: '/images/friendDochi.png',
+      COUPLE: '/images/loveDochi.png',
+      NEIGHBOR: '/images/soundDochi.png',
+      FINANCIAL: '/images/moneyDochi.png',
+      ONLINE: '/images/onlineDochi.png',
+      ETC: '/images/guitarDochi.png'
+    };
+    return images[type] || '/images/guitarDochi.png';
+  };
+
   const getPriorityText = (priority) => {
     const texts = {
       RELATIONSHIP: '관계 유지',
@@ -444,21 +458,20 @@ const ConflictDetailPage = () => {
   return (
     <div className="relative min-h-screen">
       {/* 상단 버튼들 */}
-      <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center">
+      <div className="absolute top-8 left-4 right-4 z-50 flex justify-between items-center">
         {/* 뒤로 가기 버튼 */}
         <button
           onClick={() => navigate('/mypage')}
-          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          className="text-gray-600 hover:text-gray-800 transition-colors font-medium cursor-pointer"
         >
-          <span className="text-xl">←</span>
+          ← 뒤로 가기
         </button>
         
         {/* 갈등 삭제 버튼 */}
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium shadow-lg"
+          className="text-red-500 hover:text-red-700 transition-colors font-medium cursor-pointer"
         >
-          <span>🗑️</span>
           갈등 삭제
         </button>
       </div>
@@ -479,7 +492,7 @@ const ConflictDetailPage = () => {
         <main className="max-w-5xl mx-auto px-4 py-12 relative z-10">
           {/* 상단 메시지 */}
           <div className="text-center mb-6">
-            <h2 className="text-4xl font-bold mb-4" style={{ 
+            <h2 className="text-5xl font-bold mb-4" style={{ 
               background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -506,9 +519,13 @@ const ConflictDetailPage = () => {
                     style={{ background: 'linear-gradient(135deg, #E8E8E8, #D0D0D0)' }}
                   >
                     <img 
-                      src={hedgehogImg} 
-                      alt="갈등도치" 
+                      src={getConflictTypeImage(conflict?.conflictType || 'ETC')} 
+                      alt={`${getConflictTypeText(conflict?.conflictType || 'ETC')} 도치`} 
                       className="w-44 h-44 object-contain"
+                      onError={(e) => {
+                        // 이미지 로드 실패 시 기본 이미지로 대체
+                        e.target.src = hedgehogImg;
+                      }}
                     />
                   </div>
                   <h4 className="text-2xl font-bold" style={{ color: '#333333' }}>
@@ -517,13 +534,13 @@ const ConflictDetailPage = () => {
                 </div>
 
                 {/* 갈등 분석 */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8">
-                  <h4 className="text-xl font-bold text-purple-800 mb-6 flex items-center gap-3">
-                    <span className="text-2xl">⚡</span> 갈등 분석
+                <div className="bg-white p-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                    갈등 분석
                   </h4>
                   <div 
-                    className="text-purple-700"
-                    style={{ lineHeight: '1.8' }}
+                    className="text-gray-700"
+                    style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
                     dangerouslySetInnerHTML={{
                       __html: renderAnalysisData(
                         analysisResult?.conflictAnalysis || analysisResult?.conflict_analysis ||
@@ -535,15 +552,15 @@ const ConflictDetailPage = () => {
               </div>
 
 
-              {/* 입장 정리 - 감정/갈등 분석 아래로 */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+              {/* 입장 정리 - 갈등 분석 아래로 */}
+              <div className="bg-white p-6">
                 <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span>📝</span> 입장 정리
+                  <span className="text-gray-600">•</span> 입장 정리
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg p-4">
+                  <div className="bg-gray-50 p-4">
                     <div className="mb-3">
-                      <span className="font-medium text-blue-700">내 입장 (AI 분석):</span>
+                      <span className="font-medium text-amber-700">내 입장 (AI 분석):</span>
                       <div 
                         className="mt-1 text-gray-700"
                         style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
@@ -556,9 +573,9 @@ const ConflictDetailPage = () => {
                       />
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg p-4">
+                  <div className="bg-gray-50 p-4">
                     <div>
-                      <span className="font-medium text-red-700">상대방 입장 (AI 추정):</span>
+                      <span className="font-medium text-amber-800">상대방 입장 (AI 추정):</span>
                       <div 
                         className="mt-1 text-gray-700"
                         style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}
@@ -590,36 +607,16 @@ const ConflictDetailPage = () => {
         ></div>
         
         <main className="max-w-5xl mx-auto px-4 relative z-10">
-          {/* 하단 메시지 - 강조된 스타일 */}
+          {/* 하단 메시지 - 간단한 스타일 */}
           <div className="text-center mb-16 pt-12">
-            <div className="relative inline-block">
-              {/* 배경 어쿨트 */}
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-2xl transform rotate-1 opacity-70"></div>
-              <div className="relative bg-white rounded-2xl p-8 border-2 border-orange-300 shadow-lg">
-                <h2 className="text-4xl font-bold mb-2" style={{ 
-                  background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  리포트를 기반으로
-                </h2>
-                <h2 className="text-5xl font-black" style={{ 
-                  background: 'linear-gradient(45deg, #D2691E, #FF8C00)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  '맞춤 해결책' 제안해드릴게요!
-                </h2>
-                <div className="mt-4">
-                  <span className="text-2xl">🎆</span>
-                  <span className="ml-2 text-xl text-orange-600 font-medium">당신에게 최적화된 솔루션</span>
-                  <span className="ml-2 text-2xl">🎆</span>
-                </div>
-              </div>
-            </div>
+            <h2 className="text-5xl font-bold" style={{ 
+              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              리포트를 기반으로 '맞춤 해결책'을 제안해드릴게요
+            </h2>
           </div>
 
           {/* 서비스 카드들 */}

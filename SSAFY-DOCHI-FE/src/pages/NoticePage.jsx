@@ -363,8 +363,8 @@ const NoticePage = () => {
             
             {/* 공지사항 가이드 */}
             <div className="bg-white rounded p-5">
-              <h4 className="font-bold text-lg mb-3" style={{ color: '#8B4513' }}>📰 공지사항 가이드</h4>
-              <ul className="space-y-2" style={{ color: '#666666' }}>
+              <h4 className="font-bold text-sm mb-3" style={{ color: '#8B4513' }}>📰 공지사항 가이드</h4>
+              <ul className="space-y-2 text-xs" style={{ color: '#666666' }}>
                 <li className="flex items-center gap-2">
                   <span style={{ color: '#BF7D2C' }}>•</span>
                   중요한 업데이트 확인

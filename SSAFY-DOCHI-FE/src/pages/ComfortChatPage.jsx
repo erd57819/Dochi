@@ -5,11 +5,12 @@ import useComfortStore from '../stores/ComfortStore.js';
 import comfortService from '../services/comfortService.js';
 import ChatTitleModal from '../components/ChatTitleModal.jsx';
 import TutorialModal from '../components/TutorialModal.jsx';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import todakImg from '../assets/todak.png';
 
 const ComfortChatPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, isLoggedIn } = useAuthStore();
   const messagesEndRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [showTitleModal, setShowTitleModal] = useState(false);
@@ -49,7 +50,10 @@ const ComfortChatPage = () => {
     setShowTutorial, // 튜토리얼 제어 함수 추가
     checkFirstVisit // 첫 방문자 감지 함수 추가
   } = useComfortStore();
-
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   useEffect(() => {
     loadChatRooms().catch(() => {
       console.log('채팅방 목록 로드 실패, 새 세션 생성으로 진행');
@@ -91,9 +95,20 @@ const ComfortChatPage = () => {
     };
   }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">로그인 페이지로 이동 중...</div>
+      </div>
+    );
+  }
+
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -202,7 +217,7 @@ const ComfortChatPage = () => {
   const handleSaveAndExit = async () => {
     try {
       await exitCurrentSession();
-      navigate('/comfort');
+      navigate('/');
     } catch (error) {
       console.error('Failed to save and exit:', error);
     }
@@ -689,115 +704,87 @@ const ComfortChatPage = () => {
            style={{ height: 'calc(100vh - 80px)' }}>
         
         {isNewChatMode ? (
-          // 새 대화 시작 화면
-          <div className="h-full flex items-center justify-center bg-gradient-to-br from-orange-50/50 to-yellow-50/30">
-            <div className="w-full max-w-3xl px-8">
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-orange-100">
+          // 새 대화 시작 화면 - 로그인 페이지 스타일
+          <div className="h-full flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-yellow-50" style={{ zoom: '0.85' }}>
+            <div className="w-full max-w-4xl px-3 py-4">
+              <div className="bg-white rounded-xl p-12">
                 
-                {/* 헤더 섹션 */}
-                <div className="text-center mb-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="relative p-2 bg-orange-100/50 rounded-full">
+                {/* 로고 및 서비스 소개 */}
+                <div className="text-center mb-12 w-full">
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
                       <img 
                         src={todakImg} 
                         alt="참견도치" 
-                        className="w-20 h-20 object-contain"
+                        className="w-50 h-50 object-contain"
                       />
                     </div>
                   </div>
-                  <h1 className="text-3xl font-bold mb-2" style={{ color: '#8B4513' }}>
-                    참견도치
-                  </h1>
-                  <p className="text-gray-600 text-lg">
-                    갈등 상황을 이야기해보세요
-                  </p>
+                  <h2 className="text-3xl font-bold text-black mb-2">토닥토닥 챗봇</h2>
+                  <p className="text-lg text-[#666] mb-6">갈등 상황이나 고민을 자세히 입력해 주시면 참견도치가 다양한 모드로 도와드립니다</p>
                 </div>
 
-                {/* 입력 영역 */}
-                <div className="relative mb-6">
-                  <textarea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="어떤 일로 고민이신가요? 자세히 들려주세요..."
-                    className="w-full px-6 py-3 bg-gray-50/80 border-2 border-orange-200/60 rounded-2xl focus:outline-none focus:border-orange-400 text-base resize-none transition-all duration-200"
-                    style={{ 
-                      minHeight: '60px',
-                      fontFamily: 'inherit'
-                    }}
-                    rows="2"
-                    disabled={isLoading}
-                  />
-                  
-                  {/* 전송 버튼 */}
-                  <button
-                    onClick={handleStartNewChat}
-                    disabled={!inputValue.trim() || isLoading}
-                    className="absolute bottom-3 right-3 p-2 rounded-xl transition-all duration-200 disabled:cursor-not-allowed shadow-sm"
-                    style={{
-                      backgroundColor: (!inputValue.trim() || isLoading) ? '#d1d5db' : '#bf7d2c',
-                      color: 'white',
-                      transform: inputValue.trim() && !isLoading ? 'scale(1.05)' : 'scale(1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#8B4513';
-                        e.target.style.transform = 'scale(1.1)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#bf7d2c';
-                        e.target.style.transform = 'scale(1.05)';
-                      }
-                    }}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  </button>
+                {/* 입력 폼 */}
+                <div className="space-y-6 mb-8">
+                  {/* 갈등 상황 입력 */}
+                  <div>
+                    <div className="flex justify-center">
+                      <textarea
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        className="w-full max-w-2xl px-0 py-0 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-base transition-colors text-center resize-none"
+                        placeholder="이야기를 자세히 들려주세요..."
+                        style={{ 
+                          minHeight: '30px',
+                          fontFamily: 'inherit',
+                          paddingBottom: '2px'
+                        }}
+                        rows="1"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
                 </div>
-
-                {/* 하단 안내 */}
-                <div className="text-center space-y-2">
-                  <div className="text-sm text-gray-500">
-                    Enter로 전송 · Shift+Enter로 줄바꿈
+                
+                {/* 하단 버튼 및 안내 - 전체 페이지 폭 기준 */}
+                <div className="mt-6 relative w-full">
+                  {/* 안내 메시지 */}
+                  <div className="flex justify-center mb-4">
+                    <div className="text-sm text-gray-500">
+                      Enter로 전송 · Shift+Enter로 줄바꿈
+                    </div>
                   </div>
                   
-                  {/* 메인 시작 버튼 */}
-                  <button
-                    onClick={handleStartNewChat}
-                    disabled={!inputValue.trim() || isLoading}
-                    className="w-full py-3 rounded-xl font-medium transition-all duration-200 text-base shadow-lg"
-                    style={{ 
-                      backgroundColor: (!inputValue.trim() || isLoading) ? '#f3f4f6' : '#bf7d2c',
-                      color: (!inputValue.trim() || isLoading) ? '#9ca3af' : 'white',
-                      border: 'none',
-                      transform: inputValue.trim() && !isLoading ? 'translateY(-1px)' : 'translateY(0)',
-                      boxShadow: inputValue.trim() && !isLoading ? '0 10px 25px rgba(191, 125, 44, 0.3)' : '0 4px 10px rgba(0, 0, 0, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#8B4513';
-                        e.target.style.transform = 'translateY(-2px)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (inputValue.trim() && !isLoading) {
-                        e.target.style.backgroundColor = '#bf7d2c';
-                        e.target.style.transform = 'translateY(-1px)';
-                      }
-                    }}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                        대화 시작 중...
-                      </div>
-                    ) : (
-                      '상담 시작하기'
-                    )}
-                  </button>
+                  {/* 상담 시작 버튼 - 전체 페이지 가운데 */}
+                  <div className="flex justify-center mb-4">
+                    <button
+                      onClick={handleStartNewChat}
+                      disabled={!inputValue.trim() || isLoading}
+                      className="px-8 py-3 rounded-lg font-medium transition-colors text-base"
+                      style={{ 
+                        backgroundColor: (!inputValue.trim() || isLoading) ? '#f3f4f6' : '#bf7d2c',
+                        color: (!inputValue.trim() || isLoading) ? '#9ca3af' : 'white',
+                        border: 'none'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (inputValue.trim() && !isLoading) {
+                          e.target.style.backgroundColor = '#8B4513';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (inputValue.trim() && !isLoading) {
+                          e.target.style.backgroundColor = '#bf7d2c';
+                        }
+                      }}
+                    >
+                      {isLoading ? (
+                        <LoadingSpinner size="small" text="대화 시작 중..." color="white" />
+                      ) : (
+                        '상담 시작하기'
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -806,6 +793,7 @@ const ComfortChatPage = () => {
           // 기존 채팅 화면
           <>
         {/* 채팅 도구바 */}
+        {!showTutorial && !showTimeline && !showManhwa && !showTitleModal &&(
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 shadow-sm" 
              style={{ 
                backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -928,10 +916,7 @@ const ComfortChatPage = () => {
               }}
             >
               {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                  생성중...
-                </>
+                <LoadingSpinner size="small" text="생성중..." />
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -974,10 +959,7 @@ const ComfortChatPage = () => {
               }}
             >
               {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                  분석중...
-                </>
+                <LoadingSpinner size="small" text="분석중..." />
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" style={{ stroke: '#bf7d2c' }}>
@@ -988,9 +970,43 @@ const ComfortChatPage = () => {
               )}
             </button>
 
+            {/* 도움말 버튼 */}
+            <button
+              onClick={() => {
+                // 다른 모달들 닫기
+                setShowTimeline(false);
+                setShowManhwa(false);
+                setShowTitleModal(false);
+                // 튜토리얼 열기
+                setShowTutorial(true);
+              }}
+              className="px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border"
+              style={{ 
+                backgroundColor: 'transparent',
+                borderColor: '#8B4513',
+                color: '#8B4513'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#8B4513';
+                e.target.style.color = 'white';
+                e.target.style.borderColor = '#8B4513';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#8B4513';
+                e.target.style.borderColor = '#8B4513';
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              도움말
+            </button>
+
             {/* 저장 후 종료 버튼 */}
             <button
               onClick={handleSaveAndExit}
+              title="저장하지 않으면 대화가 사라져요"
               className="px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border"
               style={{ 
                 backgroundColor: 'transparent',
@@ -1015,6 +1031,7 @@ const ComfortChatPage = () => {
             </button>
           </div>
         </div>
+        )}
 
         {/* 메시지 영역 */}
         <div className="relative"
@@ -1093,19 +1110,17 @@ const ComfortChatPage = () => {
                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
                      backdropFilter: 'blur(10px)'
                    }}>
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {selectedMode === 'COMIC' ? '만화를 그리고 있어요...' :
-                     selectedMode === 'TIMELINE' ? '타임라인을 분석하고 있어요...' :
-                     selectedMode === 'COMFORT_ONLY' ? '당신의 편에서 생각하고 있어요...' :
-                     '입장을 정리하고 있어요...'}
-                  </span>
-                </div>
+                <LoadingSpinner 
+                  type="dots" 
+                  size="small" 
+                  color="#8B4513"
+                  text={
+                    selectedMode === 'COMIC' ? '만화를 그리고 있어요...' :
+                    selectedMode === 'TIMELINE' ? '타임라인을 분석하고 있어요...' :
+                    selectedMode === 'COMFORT_ONLY' ? '당신의 편에서 생각하고 있어요...' :
+                    '입장을 정리하고 있어요...'
+                  }
+                />
               </div>
             </div>
           )}
@@ -1113,6 +1128,7 @@ const ComfortChatPage = () => {
         </div>
 
         {/* 입력 영역 */}
+        {!showTutorial && (
         <div className="border-t" 
              style={{ 
                backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1160,16 +1176,14 @@ const ComfortChatPage = () => {
             </button>
           </div>
         </div>
+        )}
         </>
         )}
       </div>
 
       {/* 타임라인 모달 */}
-      {showTimeline && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center" style={{ 
-          backdropFilter: 'blur(3px)',
-          zIndex: 9999 
-        }}>
+      {showTimeline && !showTutorial && !showManhwa && !showTitleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200]" style={{ backdropFilter: 'blur(5px)' }}>
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl" 
                style={{ 
                  backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1236,11 +1250,8 @@ const ComfortChatPage = () => {
       )}
 
       {/* 네컷만화 모달 */}
-      {showManhwa && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center" style={{ 
-          backdropFilter: 'blur(3px)',
-          zIndex: 9999 
-        }}>
+      {showManhwa && !showTutorial && !showTimeline && !showTitleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200]" style={{ backdropFilter: 'blur(5px)' }}>
           <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl" 
                style={{ 
                  backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -1324,7 +1335,7 @@ const ComfortChatPage = () => {
                       }
                     }}
                   >
-                    {isLoading ? '생성중...' : '다시 생성하기'}
+                    {isLoading ? <LoadingSpinner size="small" text="생성중..." color="white" /> : '다시 생성하기'}
                   </button>
                 </div>
               </div>
@@ -1352,10 +1363,7 @@ const ComfortChatPage = () => {
                   }}
                 >
                   {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                      생성중...
-                    </>
+                    <LoadingSpinner size="small" text="생성중..." color="white" />
                   ) : (
                     '네컷만화 생성하기'
                   )}
@@ -1367,7 +1375,7 @@ const ComfortChatPage = () => {
       )}
 
       <ChatTitleModal
-        isOpen={showTitleModal}
+        isOpen={showTitleModal && !showTutorial && !showTimeline && !showManhwa}
         onClose={() => setShowTitleModal(false)}
         onConfirm={handleCreateWithTitle}
         mode="create"
@@ -1375,7 +1383,15 @@ const ComfortChatPage = () => {
       
       <TutorialModal
         isOpen={showTutorial}
-        onClose={() => setShowTutorial(false)}
+        onClose={() => {
+          setShowTutorial(false);
+          // 첫 방문자인 경우에만 ChatTitleModal 표시
+          const hasSeenTutorial = localStorage.getItem('dochi-tutorial-completed');
+          if (!hasSeenTutorial) {
+            localStorage.setItem('dochi-tutorial-completed', 'true');
+            setShowTitleModal(true);
+          }
+        }}
       />
     </div>
   );

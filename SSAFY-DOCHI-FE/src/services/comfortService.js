@@ -1,38 +1,4 @@
-import axios from 'axios';
-
-// 환경에 따라 다른 방식 사용
-const getApiConfig = () => {
-  if (window.location.hostname === 'localhost') {
-    // 로컬: vite 프록시 사용 (/dochi)
-    return {
-      baseURL: '/dochi',
-    };
-  } else {
-    // 배포: nginx 프록시 사용 (/dochi)  
-    return {
-      baseURL: '/dochi',
-    };
-  }
-};
-
-// axios 인터셉터로 토큰 자동 추가
-const apiClient = axios.create({
-  ...getApiConfig(),
-  timeout: 180000, // 3분 타임아웃 (만화 생성은 시간이 오래 걸릴 수 있음)
-});
-
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+import apiClient from '../config/axios.js';
 
 const comfortService = {
   // 채팅방 생성
@@ -82,12 +48,22 @@ const comfortService = {
   // 메시지 전송 (핵심 기능)
   sendMessage: async (sessionId, message, mode = 'NORMAL') => {
     try {
-      const response = await apiClient.post('/chat', {
-        sessionId,
-        message, 
-        mode // NORMAL, COMFORT_ONLY, TIMELINE, COMIC
-      });
-      return response.data;
+      if (mode === 'COMIC') {
+        console.log('🎨 COMIC 모드 요청: 타임아웃을 180초로 설정합니다.');
+        const response = await apiClient.post('/chat', {
+          sessionId,
+          message, 
+          mode
+        }, { timeout: 180000 });
+        return response.data;
+      } else {
+        const response = await apiClient.post('/chat', {
+          sessionId,
+          message, 
+          mode
+        });
+        return response.data;
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;

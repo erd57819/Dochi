@@ -6,6 +6,7 @@ import ProgressIndicator from '../components/conflict/ProgressIndicator';
 import Step1ConflictType from '../components/conflict/Step1ConflictType';
 import Step2ConflictDetail from '../components/conflict/Step2ConflictDetail';
 import Step4EmotionState from '../components/conflict/Step4EmotionState';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import hedgehogImg from '../assets/conflict.png';
 
 const ConflictCreatePage = () => {
@@ -120,9 +121,19 @@ const ConflictCreatePage = () => {
       }
 
       const tempResult = JSON.parse(tempResponseText);
-      const conflictId = tempResult.data || tempResult.response?.response || tempResult.id;
+      console.log('=== 서버 응답 전체 구조 ===', tempResult);
+      console.log('tempResult.data:', tempResult.data);
+      console.log('tempResult.response?.response:', tempResult.response?.response);
+      console.log('tempResult.id:', tempResult.id);
+      
+      let conflictId = tempResult.data || tempResult.response?.response || tempResult.id;
+      
+      // 백엔드에서 "userId_timestamp" 형태로 반환하는 tempConflictId는
+      // 실제 DB에 저장될 때 Long 타입의 실제 conflictId로 변환됨
+      // 하지만 현재는 tempConflictId를 그대로 사용해야 함
+      console.log('Original conflictId from server:', conflictId);
+      
       setTempConflictId(conflictId);
-
       console.log('Generated Conflict ID:', conflictId);
 
       // 2단계: 고급 AI 분석 요청 (재시도 로직 포함)
@@ -204,8 +215,47 @@ const ConflictCreatePage = () => {
         sessionStorage.setItem('tempAiSolutions', '서버 응답 지연으로 인해 해결방안을 생성할 수 없습니다. 갈등 상세 페이지에서 다시 확인해주세요.');
       }
 
-      // AI 분석 완료 후 ConflictAnalysisResultPage로 이동
-      navigate(`/conflicts/analysis/${conflictId}`);
+      // 3단계: 실제 DB에 갈등 저장 및 실제 conflictId 반환
+      console.log('📝 3단계: 갈등을 실제 DB에 저장 중...');
+      
+      let finalConflictId = conflictId; // 기본값은 tempConflictId
+      
+      try {
+        const saveResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${conflictId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        console.log('Save Response Status:', saveResponse.status);
+        
+        if (saveResponse.ok) {
+          const saveResult = await saveResponse.json();
+          console.log('Save Response Body:', saveResult);
+          
+          // 실제 conflictId 추출 (Long 타입)
+          const actualConflictId = saveResult.data?.id || saveResult.data?.conflictId;
+          if (actualConflictId) {
+            finalConflictId = actualConflictId;
+            console.log('✅ 실제 갈등 저장 완료, conflictId:', finalConflictId);
+          } else {
+            console.warn('⚠️ 실제 conflictId를 찾을 수 없음, tempConflictId 사용');
+          }
+        } else {
+          console.warn('⚠️ 갈등 저장 실패, tempConflictId로 계속 진행');
+          const saveError = await saveResponse.text();
+          console.log('Save Error:', saveError);
+        }
+      } catch (saveError) {
+        console.warn('⚠️ 갈등 저장 중 오류 발생, tempConflictId로 계속 진행');
+        console.error('Save Error Details:', saveError);
+      }
+
+      // 최종 conflictId로 ConflictDetailPage 이동
+      console.log('🔄 최종 conflictId로 이동:', finalConflictId);
+      navigate(`/conflicts/${finalConflictId}`);
 
     } catch (error) {
       console.error('갈등 분석 오류:', error);
@@ -320,47 +370,18 @@ const ConflictCreatePage = () => {
           {/* Step 4: AI 분석 로딩 화면 */}
           {currentStep === 4 && (
             <div className="flex flex-col items-center justify-center min-h-[500px] text-center">
-              {/* 고슴도치 챗바퀴 애니메이션 */}
-              <div className="relative mb-8">
-                {/* 외부 챗바퀴 (회전하는 원) */}
-                <div className="w-32 h-32 border-8 border-orange-200 border-t-orange-500 rounded-full animate-spin" 
-                     style={{ animationDuration: '1.5s' }}></div>
-                
-                {/* 내부 챗바퀴 (역방향 회전) */}
-                <div className="absolute inset-2 w-24 h-24 border-4 border-orange-100 border-b-orange-400 rounded-full animate-spin" 
-                     style={{ animationDuration: '2s', animationDirection: 'reverse' }}></div>
-                
-                {/* 고슴도치 이미지 (중앙에 고정) */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <img 
-                    src={hedgehogImg} 
-                    alt="도치" 
-                    className="w-16 h-16 object-contain animate-pulse" 
-                    style={{ animationDuration: '2s' }}
-                  />
-                </div>
+              {/* 로딩 스피너 */}
+              <div className="mb-8">
+                <LoadingSpinner type="gif" size="xlarge" />
               </div>
               
               {/* 로딩 메시지 */}
               <h3 className="text-2xl font-bold text-gray-800 mb-4">
                 <span className="bg-[linear-gradient(108deg,rgba(191,125,44,1)_0%,rgba(139,69,19,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent]">
-                  AI가 갈등을 분석하고 있어요
+                  참견도치가 갈등을 분석하고 있어요
                 </span>
               </h3>
-              
-              <p className="text-gray-600 mb-2">잠시만 기다려주세요...</p>
-              <p className="text-sm text-gray-500">
-                🔍 갈등 상황 파악 중<br/>
-                🧠 해결방안 생성 중<br/>
-                📊 관계 분석 중
-              </p>
-              
-              {/* 진행 상황 표시 점들 */}
-              <div className="flex space-x-2 mt-6">
-                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
-                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-              </div>
+                            
             </div>
           )}
         </div>

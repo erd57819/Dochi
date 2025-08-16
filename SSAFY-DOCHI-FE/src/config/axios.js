@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { API_BASE_URL } from './api';
+import { handleApiError, showError } from '../utils/errorHandler';
 
 // Axios 인스턴스 생성
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -63,7 +64,7 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         } catch (refreshError) {
           // 리프레시 실패 시 팝업 표시 후 로그아웃 처리
-          alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+          showError('세션이 만료되었습니다. 다시 로그인해주세요.');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           window.location.href = '/login';
@@ -71,10 +72,18 @@ apiClient.interceptors.response.use(
         }
       } else {
         // 리프레시 토큰이 없는 경우
-        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        showError('로그인이 필요한 서비스입니다.');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         window.location.href = '/login';
+      }
+    }
+    
+    // 다른 모든 오류 - 서버 메시지 기반 처리
+    else {
+      const errorMessage = handleApiError(error);
+      if (errorMessage) {
+        showError(errorMessage);
       }
     }
     

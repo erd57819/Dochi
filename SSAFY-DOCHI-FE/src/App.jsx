@@ -14,8 +14,6 @@ import CreatePostPage from './pages/CreatePostPage';
 import EditPostPage from './pages/EditPostPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ConflictCreatePage from './pages/ConflictCreatePage';
-import ConflictResultPage from './pages/ConflictResultPage';
-import ConflictAnalysisResultPage from './pages/ConflictAnalysisResultPage';
 import ComfortChatPage from './pages/ComfortChatPage';
 import ConflictDetailPage from './pages/ConflictDetailPage';
 import GamePage from './pages/GamePage';
@@ -39,7 +37,7 @@ const App = () => {
         </div>
         <main className="pt-16 lg:pt-20">
           <Routes>
-            {/* three.js 완성되면주석 해제 예정 */}
+            {/* three.js 완성되면 주석 해제 예정 */}
             {/* <Route path="/" element={<PrePage />} />
             <Route path="/main" element={<MainPage />} /> */}
             <Route path="/" element={<MainPage />} />
@@ -54,9 +52,6 @@ const App = () => {
             <Route path="/community/post/:postId" element={<PostDetailPage />} />
             <Route path="/service" element={<ConflictCreatePage />} />
             <Route path="/conflicts/create" element={<ConflictCreatePage />} />
-            <Route path="/conflicts/result/:id" element={<ConflictResultPage />} />
-            <Route path="/conflicts/analysis/:tempId" element={<ConflictAnalysisResultPage />} />
-            {/* <Route path="/conflicts" element={<ConflictListPage />} /> */}
             <Route path="/conflicts/:conflictId" element={<ConflictDetailPage />} />
             <Route path="/conflict-report/:roomId" element={<ConflictReportPage />} />
             <Route path="/video-call/:roomCode" element={<VideoCallRoom />} />
