@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import faceRouter, speechRouter, summary, apiRouter, conflictReportRouter, websocketRouter
+from routers import faceRouter, speechRouter, summary, apiRouter, conflictReportRouter, websocketRouter, sseRouter
 from services.kafkaService import init_kafka_producer, close_kafka_producer
 from core.config import settings
 # 실제 사용되는 Consumer들만 import
@@ -37,6 +37,7 @@ app.include_router(summary.router)
 app.include_router(faceRouter.router)
 app.include_router(conflictReportRouter.router)
 app.include_router(websocketRouter.router)
+app.include_router(sseRouter.router)
 
 @app.get("/")
 def read_root():
