@@ -48,19 +48,22 @@ const comfortService = {
   // 메시지 전송 (핵심 기능)
   sendMessage: async (sessionId, message, mode = 'NORMAL') => {
     try {
-      const config = {};
-
       if (mode === 'COMIC') {
-        config.timeout = 180000; // 3분 (180,000 밀리초)
-        console.log(`🎨 'COMIC' 모드 요청: 타임아웃을 ${config.timeout / 1000}초로 설정합니다.`);
+        console.log('🎨 COMIC 모드 요청: 타임아웃을 180초로 설정합니다.');
+        const response = await apiClient.post('/chat', {
+          sessionId,
+          message, 
+          mode
+        }, { timeout: 180000 });
+        return response.data;
+      } else {
+        const response = await apiClient.post('/chat', {
+          sessionId,
+          message, 
+          mode
+        });
+        return response.data;
       }
-
-      const response = await apiClient.post('/chat', {
-        sessionId,
-        message, 
-        mode // NORMAL, COMFORT_ONLY, TIMELINE, COMIC
-      }, config);
-      return response.data;
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;
