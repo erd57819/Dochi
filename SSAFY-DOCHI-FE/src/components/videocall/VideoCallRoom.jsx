@@ -106,7 +106,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     const id = room?.name || roomName;
     console.log('actualRoomId 계산:', id, { roomName, roomObjectName: room?.name });
     return id;
-  }, [room?.name, roomName]);
+  }, [room, roomName]); // room?.name 대신 room 전체를 의존성으로 사용
 
   // LiveKit 방 연결 함수 
   const connectToRoom = async (overrideSettings = null) => {
@@ -430,32 +430,31 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     });
   };
 
-  // 참가자 비디오 참조 생성
+  // ✅ 수정된 코드 (Video)
   const createParticipantVideoRef = (participantSid) => {
     if (!remoteVideoRefs.current.has(participantSid)) {
       remoteVideoRefs.current.set(participantSid, React.createRef());
       
-      // 대기 중인 비디오 트랙이 있으면 연결
       const pendingVideoTrack = pendingVideoTracks.current.get(participantSid);
       if (pendingVideoTrack) {
         setTimeout(() => {
           const videoRef = remoteVideoRefs.current.get(participantSid);
           if (videoRef?.current) {
             pendingVideoTrack.attach(videoRef.current);
+            // ✅ attach 성공 후 여기서 삭제해야 합니다.
+            pendingVideoTracks.current.delete(participantSid); 
           }
         }, 100);
-        pendingVideoTracks.current.delete(participantSid);
       }
     }
     return remoteVideoRefs.current.get(participantSid);
   };
 
-  // 참가자 오디오 참조 생성
+  // ✅ 수정된 코드 (Audio)
   const createParticipantAudioRef = (participantSid) => {
     if (!remoteAudioRefs.current.has(participantSid)) {
       remoteAudioRefs.current.set(participantSid, React.createRef());
       
-      // 대기 중인 오디오 트랙이 있으면 연결
       const pendingAudioTrack = pendingAudioTracks.current.get(participantSid);
       if (pendingAudioTrack) {
         setTimeout(() => {
@@ -463,15 +462,15 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           if (audioRef?.current) {
             pendingAudioTrack.attach(audioRef.current);
             console.log('[오디오 연결] pending 오디오 트랙 연결 완료:', participantSid);
-            // 오디오 엘리먼트 설정 확인
             if (audioRef.current.muted) {
               audioRef.current.muted = false;
               console.log('[오디오 연결] muted 해제:', participantSid);
             }
             audioRef.current.play().catch(e => console.log('[오디오 연결] 자동재생 실패 (정상):', e));
+            // ✅ attach 성공 후 여기서 삭제해야 합니다.
+            pendingAudioTracks.current.delete(participantSid); 
           }
-        }, 500); // 더 긴 지연시간으로 변경
-        pendingAudioTracks.current.delete(participantSid);
+        }, 500);
       }
     }
     return remoteAudioRefs.current.get(participantSid);
@@ -702,37 +701,21 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   };
 
   // 미디어 테스트 완료 후 실제 연결
-  const handleMediaTestComplete = async () => {
-    console.log('=== 테스트 설정 적용 ===', {
-      camera: selectedCamera,
-      microphone: selectedMicrophone,
-      noiseSuppression: noiseSuppressionEnabled,
-      videoEnabled: testVideoEnabled,
-      audioEnabled: testAudioEnabled,
-      cameraDeviceName: mediaDevices.cameras.find(c => c.deviceId === selectedCamera)?.label || 'Unknown',
-      microphoneDeviceName: mediaDevices.microphones.find(m => m.deviceId === selectedMicrophone)?.label || 'Unknown'
-    });
+  const handleMediaTestComplete = async (settings) => {
+    console.log('=== 테스트 설정 적용 ===', settings);
     
-    // 테스트 스트림 정리
-    stopTestStream();
     setShowMediaTest(false);
     setCallStartTime(Date.now());
     
     // 상태 업데이트
-    setIsCameraOn(testVideoEnabled);
-    setIsMicOn(testAudioEnabled);
-    setActiveCamera(selectedCamera);
-    setActiveMicrophone(selectedMicrophone);
-    setActiveNoiseSuppression(noiseSuppressionEnabled);
+    setIsCameraOn(settings.cameraEnabled);
+    setIsMicOn(settings.micEnabled);
+    setActiveCamera(settings.cameraDeviceId);
+    setActiveMicrophone(settings.micDeviceId);
+    setActiveNoiseSuppression(settings.noiseSuppression);
     
-    // 테스트 설정을 직접 전달하여 상태 비동기 문제 해결
-    await connectToRoom({
-      cameraEnabled: testVideoEnabled,
-      micEnabled: testAudioEnabled,
-      cameraDeviceId: selectedCamera,
-      micDeviceId: selectedMicrophone,
-      noiseSuppression: noiseSuppressionEnabled
-    });
+    // 연결 실행
+    await connectToRoom(settings);
   };
 
   // 미디어 디바이스 목록 가져오기
@@ -1226,28 +1209,38 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
   const handleLeaveRoom = async (isEndCall = false) => {
+    console.log(`[방 나가기] 시작 - isEndCall: ${isEndCall}, actualRoomId: ${actualRoomId}`);
+    
     // STT 정리
+    console.log('[방 나가기] STT 정리 중...');
     stopSTT();
 
     // 표정 분석 정리
+    console.log('[방 나가기] 표정 분석 정리 중...');
     stopEmotionDetection();
 
     // Room 연결 해제
     if (room) {
+      console.log('[방 나가기] 최종 감정 데이터 전송 중...');
       await sendFinalEmotionData();
+      console.log('[방 나가기] Room 연결 해제 중...');
       room.disconnect();
       setRoom(null);
       setIsConnected(false);
+      console.log('[방 나가기] Room 연결 해제 완료');
     }
 
     // 종료 버튼 클릭 시에만 갈등 레포트로 이동
     if (isEndCall) {
+      console.log(`[방 나가기] 갈등 레포트로 이동: /conflict-report/${actualRoomId}`);
       if (onEndCall) {
         onEndCall();
       } else {
         // onEndCall이 없으면 직접 갈등 레포트로 이동 (실제 방 ID 사용)
         navigate(`/conflict-report/${actualRoomId}`);
       }
+    } else {
+      console.log('[방 나가기] 단순 리소스 정리만 수행');
     }
     // 뒤로가기나 페이지 이탈 시에는 단순히 리소스만 정리
   };
