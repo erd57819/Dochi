@@ -82,3 +82,7 @@ management:
     web:
       exposure:
         include: health,info
+
+# 카프카 설정 (기본적으로 비활성화)
+kafka:
+  enabled: false  # true로 변경하면 카프카 기능 활성화

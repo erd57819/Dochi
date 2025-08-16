@@ -49,6 +49,14 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
 
+# 카프카 설정 (활성화)
+kafka:
+  enabled: true
+  
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:dochi-kafka:9092}
+
 # 카카오 OAuth 설정  
 kakao:
   rest:

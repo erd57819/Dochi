@@ -1,0 +1,67 @@
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:dochi-kafka:9092}
+    
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: 1  # 리더 확인만
+      retries: 3
+      batch-size: 16384
+      linger-ms: 10
+      buffer-memory: 33554432
+      compression-type: snappy
+      
+    consumer:
+      group-id: video-call-processor
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: latest
+      enable-auto-commit: false  # 수동 커밋
+      max-poll-records: 500
+      fetch-min-bytes: 1
+      fetch-max-wait-ms: 500
+      properties:
+        spring.json.trusted.packages: "com.ssafy.dochi.kafka.dto"
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+    
+    listener:
+      concurrency: 10  # 파티션당 1개 스레드
+      ack-mode: manual  # 수동 확인
+      
+    admin:
+      properties:
+        request.timeout.ms: 30000
+
+# 카프카 토픽 설정
+kafka:
+  topics:
+    video-call-events:
+      name: video-call-events
+      partitions: 10
+      replicas: 1
+      retention-ms: 86400000  # 1일
+      
+    priority-video-calls:
+      name: priority-video-calls  
+      partitions: 3  # VIP 전용
+      replicas: 1
+      
+    video-call-metrics:
+      name: video-call-metrics
+      partitions: 5
+      replicas: 1
+
+# 메트릭 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: dochi-kafka-system
