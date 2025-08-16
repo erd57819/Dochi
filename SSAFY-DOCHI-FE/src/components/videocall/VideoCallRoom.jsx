@@ -581,7 +581,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       localVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
       
       // 강제로 감정 인식 시작 (메타데이터 로드 대기하지 않고)
-      setTimeout(async () => {
+      const emotionStartTimer = setTimeout(async () => {
         if (localVideoRef.current && localVideoRef.current.videoWidth > 0) {
           console.log('🚀 강제 감정 인식 시작');
           await startEmotionDetection(localVideoRef.current);
@@ -589,6 +589,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
       }, 3000);
       
       return () => {
+        clearTimeout(emotionStartTimer);
         if (localVideoRef.current) {
           localVideoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
         }
@@ -628,12 +629,17 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     }
   }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
-  // 강제 STT 시작 (연결 후 자동으로)
+  // 강제 STT 시작 (연결 후 자동으로) - 한 번만 실행
+  const sttInitializedRef = useRef(false);
   useEffect(() => {
-    if (isConnected && actualRoomId && participantName && !sttEnabled) {
+    if (isConnected && actualRoomId && participantName && !sttEnabled && !sttInitializedRef.current) {
       console.log('🚀 연결 완료 - 강제 STT 시작 시도');
-      setTimeout(() => {
-        startSTT();
+      sttInitializedRef.current = true; // 중복 실행 방지
+      
+      setTimeout(async () => {
+        if (!sttEnabled) { // 한 번 더 체크
+          await startSTT();
+        }
       }, 2000); // 2초 후 자동 시작
     }
   }, [isConnected, actualRoomId, participantName, sttEnabled, startSTT]);

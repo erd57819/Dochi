@@ -690,11 +690,29 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
 
   // STT 시작
   const startSTT = async () => {
-    console.log('[STT 시작] 요청됨', { sttEnabled, roomName, participantName });
+    console.log('[STT 시작] 요청됨', { 
+      sttEnabled, 
+      roomName, 
+      participantName,
+      hasRecognition: !!recognitionRef.current,
+      recognitionState: recognitionRef.current?.readyState || 'none'
+    });
     
     if (sttEnabled) {
-      console.log('[STT] 이미 STT가 활성화되어 있습니다.');
+      console.log('[STT] ⚠️ 이미 STT가 활성화되어 있습니다.');
       return;
+    }
+
+    // 기존 recognition이 실행 중이면 먼저 중지
+    if (recognitionRef.current) {
+      try {
+        console.log('[STT] 기존 recognition 중지 시도...');
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 대기
+      } catch (error) {
+        console.log('[STT] 기존 recognition 중지 중 에러:', error);
+      }
     }
 
     // 마이크 권한 확인
@@ -712,7 +730,8 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
       console.log('[STT] 권한 확인 실패 (구형 브라우저):', error);
     }
 
-    if (!recognitionRef.current && !initSTT()) {
+    // 새로운 recognition 초기화
+    if (!initSTT()) {
       console.error('[STT] 초기화 실패');
       return;
     }
@@ -725,6 +744,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
         roomName,
         participantName
       });
+      
       recognitionRef.current.start();
       setSttEnabled(true);
       console.log('🎉 [STT] 음성 인식 시작 성공!');
@@ -738,9 +758,15 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
       processingRef.current = false;
     } catch (error) {
       console.error('❌ [STT] 음성 인식 시작 실패:', error);
-      // 이미 시작된 상태라면 에러를 무시
-      if (error.message && error.message.includes('already started')) {
-        console.log('[STT] 이미 시작된 상태입니다.');
+      console.error('[STT] 에러 상세:', {
+        name: error.name,
+        message: error.message,
+        code: error.code
+      });
+      
+      // InvalidStateError는 이미 시작된 상태를 의미
+      if (error.name === 'InvalidStateError' && error.message.includes('already started')) {
+        console.log('⚡ [STT] 이미 시작된 상태로 감지 - 상태만 업데이트');
         setSttEnabled(true);
         // LiveKit Data Channel 초기화
         initLivekitDataChannel();
