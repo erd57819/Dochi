@@ -5,6 +5,7 @@ import useComfortStore from '../stores/ComfortStore.js';
 import comfortService from '../services/comfortService.js';
 import ChatTitleModal from '../components/ChatTitleModal.jsx';
 import TutorialModal from '../components/TutorialModal.jsx';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import todakImg from '../assets/todak.png';
 
 const ComfortChatPage = () => {
@@ -746,10 +747,7 @@ const ComfortChatPage = () => {
                     }}
                   >
                     {isLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                        대화 시작 중...
-                      </div>
+                      <LoadingSpinner size="small" text="대화 시작 중..." color="white" />
                     ) : (
                       '상담 시작하기'
                     )}
@@ -885,10 +883,7 @@ const ComfortChatPage = () => {
               }}
             >
               {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                  생성중...
-                </>
+                <LoadingSpinner size="small" text="생성중..." />
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -931,10 +926,7 @@ const ComfortChatPage = () => {
               }}
             >
               {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                  분석중...
-                </>
+                <LoadingSpinner size="small" text="분석중..." />
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" style={{ stroke: '#bf7d2c' }}>
@@ -1085,19 +1077,17 @@ const ComfortChatPage = () => {
                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
                      backdropFilter: 'blur(10px)'
                    }}>
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {selectedMode === 'COMIC' ? '만화를 그리고 있어요...' :
-                     selectedMode === 'TIMELINE' ? '타임라인을 분석하고 있어요...' :
-                     selectedMode === 'COMFORT_ONLY' ? '당신의 편에서 생각하고 있어요...' :
-                     '입장을 정리하고 있어요...'}
-                  </span>
-                </div>
+                <LoadingSpinner 
+                  type="dots" 
+                  size="small" 
+                  color="#8B4513"
+                  text={
+                    selectedMode === 'COMIC' ? '만화를 그리고 있어요...' :
+                    selectedMode === 'TIMELINE' ? '타임라인을 분석하고 있어요...' :
+                    selectedMode === 'COMFORT_ONLY' ? '당신의 편에서 생각하고 있어요...' :
+                    '입장을 정리하고 있어요...'
+                  }
+                />
               </div>
             </div>
           )}
@@ -1284,7 +1274,7 @@ const ComfortChatPage = () => {
                       }
                     }}
                   >
-                    {isLoading ? '생성중...' : '다시 생성하기'}
+                    {isLoading ? <LoadingSpinner size="small" text="생성중..." color="white" /> : '다시 생성하기'}
                   </button>
                 </div>
               </div>
@@ -1312,10 +1302,7 @@ const ComfortChatPage = () => {
                   }}
                 >
                   {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                      생성중...
-                    </>
+                    <LoadingSpinner size="small" text="생성중..." color="white" />
                   ) : (
                     '네컷만화 생성하기'
                   )}
