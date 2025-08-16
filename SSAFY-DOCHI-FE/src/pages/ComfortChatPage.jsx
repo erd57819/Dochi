@@ -1045,7 +1045,7 @@ const ComfortChatPage = () => {
                     </div>
                     <span className="text-sm text-gray-600">
                       {selectedMode === 'NORMAL' ? '정리도치' :
-                       selectedMode === 'COMFORT_ONLY' ? '편들기도치' :
+                       selectedMode === 'COMFORT_ONLY' ? '내편도치' :
                        selectedMode === 'TIMELINE' ? '분석도치' : '그림도치'}
                     </span>
                   </div>
