@@ -36,7 +36,7 @@ public class KafkaMonitoringController {
      */
     @GetMapping("/metrics")
     @Operation(summary = "시스템 메트릭 조회", description = "카프카 시스템 전체 메트릭을 조회합니다")
-    public ApiResponse<KafkaMetricsService.SystemMetrics> getSystemMetrics() {
+    public ApiResponse<ApiResponse.SuccessCustomBody<KafkaMetricsService.SystemMetrics>> getSystemMetrics() {
         KafkaMetricsService.SystemMetrics metrics = metricsService.getSystemMetrics();
         return ApiResponseGenerator.success(metrics, HttpStatus.OK);
     }
@@ -46,7 +46,7 @@ public class KafkaMonitoringController {
      */
     @GetMapping("/partitions/stats")
     @Operation(summary = "파티션별 통계", description = "각 파티션의 처리량 통계를 조회합니다")
-    public ApiResponse<Map<String, Object>> getPartitionStats() {
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> getPartitionStats() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("partitionProcessingCount", eventConsumer.getPartitionStats());
         stats.put("systemMetrics", metricsService.getSystemMetrics().getPartitionLoadDistribution());
@@ -59,7 +59,7 @@ public class KafkaMonitoringController {
      */
     @PostMapping("/test/massive-load")
     @Operation(summary = "대규모 부하 테스트", description = "지정된 수의 방을 동시에 생성하여 부하 테스트를 수행합니다")
-    public ApiResponse<Map<String, Object>> startMassiveLoadTest(
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> startMassiveLoadTest(
             @RequestParam(defaultValue = "1000") int roomCount,
             @RequestParam(defaultValue = "5") int durationMinutes) {
         
@@ -82,7 +82,7 @@ public class KafkaMonitoringController {
      */
     @PostMapping("/test/gradual-load")
     @Operation(summary = "점진적 부하 테스트", description = "점진적으로 부하를 증가시키며 테스트합니다")
-    public ApiResponse<Map<String, Object>> startGradualLoadTest(
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> startGradualLoadTest(
             @RequestParam(defaultValue = "500") int maxRooms,
             @RequestParam(defaultValue = "50") int incrementStep,
             @RequestParam(defaultValue = "10") int intervalSeconds) {
@@ -103,7 +103,7 @@ public class KafkaMonitoringController {
      */
     @PostMapping("/test/spike")
     @Operation(summary = "스파이크 테스트", description = "갑작스런 부하 증가를 시뮬레이션합니다")
-    public ApiResponse<Map<String, Object>> startSpikeTest(
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> startSpikeTest(
             @RequestParam(defaultValue = "100") int normalLoad,
             @RequestParam(defaultValue = "1000") int spikeLoad,
             @RequestParam(defaultValue = "30") int spikeDurationSeconds) {
@@ -124,7 +124,7 @@ public class KafkaMonitoringController {
      */
     @GetMapping("/test/status")
     @Operation(summary = "테스트 상태 조회", description = "현재 진행 중인 부하 테스트의 상태를 조회합니다")
-    public ApiResponse<LoadTestSimulator.SimulationStatus> getTestStatus() {
+    public ApiResponse<ApiResponse.SuccessCustomBody<LoadTestSimulator.SimulationStatus>> getTestStatus() {
         LoadTestSimulator.SimulationStatus status = loadTestSimulator.getCurrentStatus();
         return ApiResponseGenerator.success(status, HttpStatus.OK);
     }
@@ -134,7 +134,7 @@ public class KafkaMonitoringController {
      */
     @PostMapping("/test/stop")
     @Operation(summary = "테스트 중지", description = "진행 중인 부하 테스트를 중지합니다")
-    public ApiResponse<Map<String, String>> stopTest() {
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, String>>> stopTest() {
         loadTestSimulator.stopSimulation();
         
         Map<String, String> response = new HashMap<>();
@@ -149,7 +149,7 @@ public class KafkaMonitoringController {
      */
     @GetMapping("/dashboard")
     @Operation(summary = "대시보드 데이터", description = "실시간 모니터링 대시보드용 데이터를 조회합니다")
-    public ApiResponse<Map<String, Object>> getDashboardData() {
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, Object>>> getDashboardData() {
         Map<String, Object> dashboard = new HashMap<>();
         
         KafkaMetricsService.SystemMetrics metrics = metricsService.getSystemMetrics();
@@ -173,7 +173,7 @@ public class KafkaMonitoringController {
      */
     @GetMapping("/health")
     @Operation(summary = "카프카 헬스체크", description = "카프카 시스템의 상태를 확인합니다")
-    public ApiResponse<Map<String, String>> healthCheck() {
+    public ApiResponse<ApiResponse.SuccessCustomBody<Map<String, String>>> healthCheck() {
         Map<String, String> health = new HashMap<>();
         health.put("status", "UP");
         health.put("service", "Kafka Multi-Room Partitioning System");
