@@ -67,6 +67,35 @@ const DebugReportPage = () => {
     });
   };
 
+  const testBackendConnectivity = async () => {
+    try {
+      setLoading(true);
+      const apiUrl = window.location.hostname === 'localhost'
+        ? '/ai/speech/health'
+        : 'https://i13c209.p.ssafy.io/ai/speech/health';
+      
+      console.log('[백엔드 연결 테스트] URL:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      
+      setResult({
+        type: 'backend_connectivity',
+        data: data,
+        summary: `백엔드 서버 상태: ${data.status || 'unknown'}`
+      });
+    } catch (error) {
+      console.error('[백엔드 연결 실패]', error);
+      setResult({
+        type: 'backend_connectivity',
+        data: { error: error.message },
+        summary: `백엔드 서버 연결 실패: ${error.message}`
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const clearAllData = () => {
     // 해당 roomId 관련 모든 localStorage 데이터 삭제
     const keys = Object.keys(localStorage).filter(key => key.includes(roomId));
@@ -117,6 +146,13 @@ const DebugReportPage = () => {
             className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
           >
             대화 히스토리 확인
+          </button>
+          
+          <button
+            onClick={testBackendConnectivity}
+            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+          >
+            백엔드 연결 테스트
           </button>
           
           <button

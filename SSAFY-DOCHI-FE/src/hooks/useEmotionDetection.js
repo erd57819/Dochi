@@ -183,14 +183,22 @@ export const useEmotionDetection = (roomName, participantName) => {
         ? '/ai/emotion/face'  // 로컬 개발 (vite proxy 사용)
         : 'https://i13c209.p.ssafy.io/ai/emotion/face';  // 배포 환경 (직접 연결)
       
-      await fetch(faceApiUrl, {
+      console.log('[표정] 전송 URL:', faceApiUrl);
+      
+      const response = await fetch(faceApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
-      console.log('[표정] FastAPI 전송 성공');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('[표정] FastAPI 전송 성공:', result);
       
       // 누적 데이터 초기화
       emotionAccumulatorRef.current[participantName] = [];

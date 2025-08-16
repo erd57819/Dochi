@@ -601,14 +601,22 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 마이크 상태에 따른 STT 자동 연동
   useEffect(() => {
+    console.log('[STT 상태 체크]', { isMicOn, sttEnabled, actualRoomId, participantName });
+    
     if (isMicOn && !sttEnabled) {
       // 마이크가 켜지면 STT도 자동으로 시작
-      console.log('마이크 켜짐 - STT 자동 시작');
+      console.log('✅ 마이크 켜짐 - STT 자동 시작 시도');
       startSTT();
     } else if (!isMicOn && sttEnabled) {
       // 마이크가 꺼지면 STT도 자동으로 중지
-      console.log('마이크 꺼짐 - STT 자동 중지');
+      console.log('❌ 마이크 꺼짐 - STT 자동 중지');
       stopSTT();
+    } else {
+      console.log('⏸️ STT 상태 변화 없음', { 
+        micOn: isMicOn, 
+        sttOn: sttEnabled,
+        reason: isMicOn ? (sttEnabled ? 'STT already on' : 'waiting for STT start') : 'mic off'
+      });
     }
   }, [isMicOn, sttEnabled, startSTT, stopSTT]);
 
@@ -1355,6 +1363,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         toggleMicrophone={toggleMicrophone}
         toggleVideo={toggleVideo}
         toggleNoiseSuppression={toggleNoiseSuppression}
+        toggleSTT={toggleSTT}
         handleLeaveRoom={handleLeaveRoom}
       />
     </div>
