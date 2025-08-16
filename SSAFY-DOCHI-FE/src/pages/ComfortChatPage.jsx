@@ -216,7 +216,7 @@ const ComfortChatPage = () => {
   const handleSaveAndExit = async () => {
     try {
       await exitCurrentSession();
-      navigate('/comfort');
+      navigate('/');
     } catch (error) {
       console.error('Failed to save and exit:', error);
     }
@@ -981,6 +981,7 @@ const ComfortChatPage = () => {
             {/* 저장 후 종료 버튼 */}
             <button
               onClick={handleSaveAndExit}
+              title="저장하지 않으면 대화가 사라져요"
               className="px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border"
               style={{ 
                 backgroundColor: 'transparent',

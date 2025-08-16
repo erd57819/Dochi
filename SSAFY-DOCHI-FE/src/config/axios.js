@@ -5,7 +5,7 @@ import { handleApiError, showError } from '../utils/errorHandler';
 // Axios 인스턴스 생성
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },
