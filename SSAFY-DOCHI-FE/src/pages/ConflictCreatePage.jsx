@@ -204,8 +204,8 @@ const ConflictCreatePage = () => {
         sessionStorage.setItem('tempAiSolutions', '서버 응답 지연으로 인해 해결방안을 생성할 수 없습니다. 갈등 상세 페이지에서 다시 확인해주세요.');
       }
 
-      // AI 분석 완료 후 ConflictAnalysisResultPage로 이동
-      navigate(`/conflicts/analysis/${conflictId}`);
+      // AI 분석 완료 후 ConflictDetailPage로 이동
+      navigate(`/conflicts/${conflictId}`);
 
     } catch (error) {
       console.error('갈등 분석 오류:', error);
