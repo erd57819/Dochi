@@ -31,7 +31,7 @@ export const useSTT = (roomName, participantName, livekitRoom = null) => {
     if (livekitRoom && sttEnabled) {
       initLivekitDataChannel();
     }
-  }, [livekitRoom, sttEnabled]);
+  }, [livekitRoom?.name, sttEnabled]); // livekitRoom 전체 대신 name만 의존성으로 사용
 
   // LiveKit Data Channel 설정
   const initLivekitDataChannel = () => {
