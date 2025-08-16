@@ -60,6 +60,21 @@ const ComfortChatPage = () => {
     
     // 첫 방문자 감지 및 튜토리얼 자동 표시
     checkFirstVisit();
+    
+    // 갈등 내용 자동 전송 (마이페이지에서 온 경우)
+    const initialConflictMessage = sessionStorage.getItem('initialConflictMessage');
+    if (initialConflictMessage) {
+      // 약간의 딜레이 후 자동으로 새 대화 시작 및 메시지 전송
+      setTimeout(async () => {
+        try {
+          await createNewSessionWithFirstMessage(initialConflictMessage);
+          // 사용 후 세션 스토리지에서 제거
+          sessionStorage.removeItem('initialConflictMessage');
+        } catch (error) {
+          console.error('갈등 내용 자동 전송 실패:', error);
+        }
+      }, 500); // 0.5초 딜레이
+    }
   }, []);
 
   useEffect(() => {
@@ -272,6 +287,22 @@ const ComfortChatPage = () => {
     }
   };
 
+  const saveChatToDatabase = async () => {
+    const { currentChatRoomId, currentSessionId, messages } = useComfortStore.getState();
+    
+    if (!currentSessionId || !currentChatRoomId || !messages || messages.length === 0) {
+      alert('저장할 대화 내용이 없습니다.');
+      return;
+    }
+    
+    try {
+      await comfortService.saveToDatabase(currentChatRoomId, currentSessionId);
+      alert('대화가 성공적으로 저장되었습니다!');
+    } catch (error) {
+      console.error('대화 저장 실패:', error);
+      alert('대화 저장에 실패했습니다.');
+    }
+  };
   const handleManhwaButtonClick = () => {
     setShowManhwa(true);
   };
@@ -945,6 +976,32 @@ const ComfortChatPage = () => {
               )}
             </button>
 
+            {/* 저장 버튼 */}
+            <button
+              onClick={saveChatToDatabase}
+              className="px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border"
+              style={{ 
+                backgroundColor: 'transparent',
+                borderColor: '#bf7d2c',
+                color: '#bf7d2c'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#bf7d2c';
+                e.target.style.color = 'white';
+                e.target.style.borderColor = '#bf7d2c';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#bf7d2c';
+                e.target.style.borderColor = '#bf7d2c';
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              저장
+            </button>
+
             {/* 도움말 버튼 */}
             <button
               onClick={() => {
@@ -1002,8 +1059,9 @@ const ComfortChatPage = () => {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              저장 후 종료
+              나가기
             </button>
+
           </div>
         </div>
         )}
