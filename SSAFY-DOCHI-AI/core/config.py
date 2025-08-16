@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     google_cloud_project: str = Field(default="", alias="GOOGLE_CLOUD_PROJECT")
 
     kafka_bootstrap_servers: str = Field(default="localhost:9092", alias="KAFKA_BOOTSTRAP_SERVERS")
-    use_kafka: bool = Field(default=False, alias="USE_KAFKA")  # Kafka 사용 여부
+    use_kafka: bool = Field(default=True, alias="USE_KAFKA")  # Kafka 사용 여부
 
 # 설정 로딩 시 디버깅 정보 출력
 settings = Settings()

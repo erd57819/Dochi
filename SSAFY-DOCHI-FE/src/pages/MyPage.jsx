@@ -4,6 +4,7 @@ import MyPageNavigation from "../components/MyPageNavigation";
 import ConflictCard from "../components/ConflictCard";
 import myPageApi from "../services/myPageApi";
 import useAuthStore from "../stores/AuthStore.js";
+import useComfortStore from "../stores/ComfortStore.js";
 
 const MyPage = () => {
   const navigate = useNavigate();
