@@ -47,25 +47,65 @@ const comfortService = {
 
   // 메시지 전송 (핵심 기능)
   sendMessage: async (sessionId, message, mode = 'NORMAL') => {
+    const requestStartTime = Date.now();
+    const requestId = `req_${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log(`🚀 [${requestId}] API 요청 시작:`, {
+      sessionId,
+      mode,
+      messageLength: message?.length || 0,
+      timestamp: new Date().toISOString(),
+      url: '/chat'
+    });
+    
     try {
+      const requestConfig = {
+        sessionId,
+        message, 
+        mode
+      };
+      
+      const axiosConfig = mode === 'COMIC' ? { timeout: 180000 } : {};
+      
       if (mode === 'COMIC') {
-        console.log('🎨 COMIC 모드 요청: 타임아웃을 180초로 설정합니다.');
-        const response = await apiClient.post('/chat', {
-          sessionId,
-          message, 
-          mode
-        }, { timeout: 180000 });
-        return response.data;
-      } else {
-        const response = await apiClient.post('/chat', {
-          sessionId,
-          message, 
-          mode
-        });
-        return response.data;
+        console.log(`⏱️ [${requestId}] COMIC 모드: 타임아웃 180초 설정`);
       }
+      
+      console.log(`📤 [${requestId}] 요청 전송 중...`);
+      const response = await apiClient.post('/chat', requestConfig, axiosConfig);
+      
+      const requestDuration = Date.now() - requestStartTime;
+      console.log(`✅ [${requestId}] API 응답 성공:`, {
+        status: response.status,
+        duration: `${requestDuration}ms`,
+        responseSize: JSON.stringify(response.data).length,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (mode === 'COMIC' && response.data?.message?.startsWith('COMIC_GENERATING:')) {
+        const comicId = response.data.message.replace('COMIC_GENERATING:', '');
+        console.log(`🎨 [${requestId}] 만화 생성 시작됨: comicId=${comicId}`);
+      }
+      
+      return response.data;
     } catch (error) {
-      console.error('Failed to send message:', error);
+      const requestDuration = Date.now() - requestStartTime;
+      console.error(`❌ [${requestId}] API 요청 실패:`, {
+        error: error.message,
+        duration: `${requestDuration}ms`,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (error.code === 'ECONNABORTED') {
+        console.error(`⏰ [${requestId}] 타임아웃 발생! ${requestDuration}ms 후 중단됨`);
+      } else if (error.response?.status >= 500) {
+        console.error(`🔥 [${requestId}] 서버 오류 발생: ${error.response.status}`);
+      } else if (!error.response) {
+        console.error(`🌐 [${requestId}] 네트워크 오류: 서버 연결 실패`);
+      }
+      
       throw error;
     }
   },
@@ -105,6 +145,19 @@ const comfortService = {
       return response.data;
     } catch (error) {
       console.error('Failed to exit session:', error);
+      throw error;
+    }
+  },
+
+  // 만화 생성 상태 확인
+  checkComicStatus: async (comicId) => {
+    try {
+      console.log(`🔍 만화 상태 확인: comicId=${comicId}`);
+      const response = await apiClient.get(`/chat/comic/status/${comicId}`);
+      console.log(`✅ 만화 상태 응답:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to check comic status:', error);
       throw error;
     }
   },
