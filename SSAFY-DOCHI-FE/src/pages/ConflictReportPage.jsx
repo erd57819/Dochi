@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { conflictReportApi } from '../services/conflictReportApi';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import consultantDochiImg from '../assets/consultantdochi.png';
 
 // Chart.js 설정
@@ -102,11 +103,32 @@ const ConflictReportPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-[#f0f4ff]">
-        <div className="flex items-center justify-center h-[80vh]">
+      <div className="min-h-screen relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#F8D6B3',
+            opacity: 0.14,
+            zIndex: 1
+          }}
+        ></div>
+        
+        <div className="flex items-center justify-center h-[80vh] relative z-10">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#bf7d2c] mx-auto mb-4"></div>
-            <p className="text-lg text-gray-600">갈등 분석 레포트를 생성중입니다...</p>
+            <LoadingSpinner type="gif" size="xlarge" />
+            <p 
+              className="text-lg mt-4"
+              style={{ 
+                color: '#333333',
+                background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
+              갈등 분석 레포트를 생성중입니다...
+            </p>
           </div>
         </div>
       </div>
@@ -115,24 +137,56 @@ const ConflictReportPage = () => {
 
   if (error || !hasAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex items-center justify-center">
-        <div className="bg-[#FEFCF8] p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border border-[#5C351A]">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-[#5C351A] rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">🔒</span>
+      <div className="min-h-screen relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#F8D6B3',
+            opacity: 0.14,
+            zIndex: 1
+          }}
+        ></div>
+        
+        <div className="flex items-center justify-center min-h-screen relative z-10">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border" style={{ borderColor: '#BF7D2C' }}>
+            <div className="mb-6">
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: '#BF7D2C' }}
+              >
+                <span className="text-white text-2xl">🔒</span>
+              </div>
+              <h2 
+                className="text-2xl font-semibold mb-4"
+                style={{
+                  background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
+              >
+                접근 권한 없음
+              </h2>
+              <p className="mb-6" style={{ color: '#333333' }}>
+                {error || '이 레포트에 접근할 권한이 없습니다.'}
+              </p>
             </div>
-            <h2 className="text-2xl font-['Pretendard-SemiBold'] font-semibold text-[#2A2A2A] mb-4">접근 권한 없음</h2>
-            <p className="text-[#4A4A4A] mb-6 font-['Pretendard-Regular'] font-normal">
-              {error || '이 레포트에 접근할 권한이 없습니다.'}
-            </p>
-          </div>
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/')}
-              className="w-full px-6 py-3 bg-[#5C351A] text-white font-['Pretendard-SemiBold'] font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
-            >
-              홈으로 돌아가기
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/')}
+                className="w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors shadow-lg"
+                style={{ backgroundColor: '#BF7D2C' }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#8B4513';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#BF7D2C';
+                }}
+              >
+                홈으로 돌아가기
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -181,7 +235,7 @@ const ConflictReportPage = () => {
                 AI가 분석한 갈등의 깊이와 해결책을 만나보세요
               </p>
               <p className="text-[#8B7B7B] text-sm mt-4 font-['Pretendard-Regular'] font-normal">
-                생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR')}
+                생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
               </p>
             </div>
           </div>
