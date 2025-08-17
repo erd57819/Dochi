@@ -98,7 +98,7 @@ public class NoticeServiceImpl implements NoticeService {
         params.put("limit", size);
 
         // 데이터 조회
-        List<NoticeResDto> content = noticeDao.findAll(params);
+        List<NoticeResDto> content = noticeDao.findAllWithPaging(params);
 
         // 페이징 응답 생성
         return new NoticePageResDto<>(

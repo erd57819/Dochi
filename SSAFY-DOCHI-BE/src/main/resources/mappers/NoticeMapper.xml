@@ -71,7 +71,7 @@
     </select>
 
     <!-- 페이징된 공지사항 조회 -->
-    <select id="findAll" parameterType="map" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
+    <select id="findAllWithPaging" parameterType="map" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
         SELECT
         id,
         title,
