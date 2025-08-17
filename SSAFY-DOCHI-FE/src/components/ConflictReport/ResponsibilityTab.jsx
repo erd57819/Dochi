@@ -52,7 +52,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
           {/* 상세 분석 */}
           <div className="space-y-4">
             {Object.entries(responsibilityData.responsibility_analysis || {}).map(([key, speaker]) => (
-              <div key={key} className="border-l-4 border-[#bf7d2c] pl-4">
+              <div key={key} className="pl-4">
                 <h4 className="font-semibold text-gray-800">
                   {speaker.name} ({speaker.responsibility_percentage}%)
                 </h4>
@@ -109,7 +109,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
           갈등관리 유형별 특징
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-orange-50 p-4 rounded-lg border" style={{ borderColor: '#D2691E' }}>
+          <div className="bg-orange-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#D2691E' }}></span>
               <h4 className="font-medium" style={{ color: '#8B4513' }}>경쟁형 (Competing)</h4>
@@ -117,7 +117,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
             <p className="text-sm" style={{ color: '#A0522D' }}>자신의 목표를 우선시하며 상대방과의 협력보다는 승부를 중시</p>
           </div>
           
-          <div className="bg-amber-50 p-4 rounded-lg border" style={{ borderColor: '#B8860B' }}>
+          <div className="bg-amber-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#B8860B' }}></span>
               <h4 className="font-medium" style={{ color: '#654321' }}>수용형 (Accommodating)</h4>
@@ -125,7 +125,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
             <p className="text-sm" style={{ color: '#8B6914' }}>관계 유지를 위해 자신의 욕구를 포기하고 상대방을 우선시</p>
           </div>
           
-          <div className="bg-stone-50 p-4 rounded-lg border" style={{ borderColor: '#8D6E63' }}>
+          <div className="bg-stone-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#8D6E63' }}></span>
               <h4 className="font-medium" style={{ color: '#5D4037' }}>회피형 (Avoiding)</h4>
@@ -133,7 +133,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
             <p className="text-sm" style={{ color: '#6D4C41' }}>갈등 상황 자체를 피하거나 늦추려는 경향</p>
           </div>
           
-          <div className="bg-yellow-50 p-4 rounded-lg border" style={{ borderColor: '#CD853F' }}>
+          <div className="bg-yellow-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#CD853F' }}></span>
               <h4 className="font-medium" style={{ color: '#8B4513' }}>타협형 (Compromising)</h4>
@@ -141,7 +141,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
             <p className="text-sm" style={{ color: '#A0522D' }}>양측이 어느 정도 양보하여 중간 지점에서 해결책 모색</p>
           </div>
           
-          <div className="bg-emerald-50 p-4 rounded-lg border" style={{ borderColor: '#8FBC8F' }}>
+          <div className="bg-emerald-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#8FBC8F' }}></span>
               <h4 className="font-medium" style={{ color: '#556B2F' }}>협력형 (Collaborating)</h4>
@@ -157,7 +157,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
           <h3 className="text-lg font-semibold text-red-800 mb-3">갈등 고조 지점</h3>
           <div className="space-y-3">
             {responsibilityData.escalation_points.map((point, idx) => (
-              <div key={idx} className="border-l-2 border-red-300 pl-4">
+              <div key={idx} className="pl-4">
                 <p className="text-gray-700">{point.description}</p>
                 <p className="text-sm text-gray-600 mt-1">
                   책임: {point.responsible_party}

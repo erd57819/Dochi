@@ -30,7 +30,7 @@ const TranscriptTab = ({ transcriptData }) => {
               const text = textParts.join(':');
               
               return (
-                <div key={idx} className="border-l-2 border-gray-300 pl-4 py-2">
+                <div key={idx} className="pl-4 py-2">
                   <span className="font-semibold text-[#7f5539]">{speaker}:</span>
                   <span className="text-gray-700 ml-2">{text}</span>
                 </div>

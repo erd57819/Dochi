@@ -30,10 +30,9 @@ const SummaryTab = ({ summary }) => {
         {/* 핵심 이슈 */}
         {summary.key_issues && summary.key_issues.length > 0 && (
           <div 
-            className="rounded-lg p-6 border-2"
+            className="rounded-lg p-6"
             style={{ 
               background: 'linear-gradient(135deg, #F8D6B3, #FFE4CC)',
-              borderColor: '#BF7D2C',
               boxShadow: '0 4px 6px rgba(191, 125, 44, 0.1)'
             }}
           >
@@ -57,10 +56,9 @@ const SummaryTab = ({ summary }) => {
         {/* 즉시 실행 항목 */}
         {summary.immediate_actions && summary.immediate_actions.length > 0 && (
           <div 
-            className="rounded-lg p-6 border-2"
+            className="rounded-lg p-6"
             style={{ 
               background: 'linear-gradient(135deg, #E8D5C6, #F0E3D6)',
-              borderColor: '#8B4513',
               boxShadow: '0 4px 6px rgba(139, 69, 19, 0.1)'
             }}
           >
@@ -87,10 +85,9 @@ const SummaryTab = ({ summary }) => {
         {/* 전문가 도움 필요 여부 */}
         {summary.professional_help_needed && (
           <div 
-            className="border-l-4 p-4 rounded-r-lg"
+            className="p-4 rounded-lg"
             style={{ 
-              backgroundColor: 'rgba(139, 69, 19, 0.1)',
-              borderColor: '#8B4513'
+              backgroundColor: 'rgba(139, 69, 19, 0.1)'
             }}
           >
             <p 
