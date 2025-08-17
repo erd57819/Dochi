@@ -1641,9 +1641,27 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 playsInline
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
-                나 {isMicOn ? '🎤' : '🔇'} {isCameraOn ? '📷' : '🚫'}
-                {isLocalSpeaking && ' 🗣️'}
+              <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A] flex items-center space-x-1">
+                <span>나</span>
+                <svg className={`w-3 h-3 ${isMicOn ? 'text-green-600' : 'text-red-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                  {isMicOn ? (
+                    <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                  ) : (
+                    <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v4a1 1 0 01-1.707.707L6.586 7H4a1 1 0 010-2h2.586l1.707-1.707a1 1 0 011.09-.217zM12 6a1 1 0 112 0v2a1 1 0 11-2 0V6zm-4 8a1 1 0 100 2h8a1 1 0 100-2H8z" clipRule="evenodd" />
+                  )}
+                </svg>
+                <svg className={`w-3 h-3 ${isCameraOn ? 'text-green-600' : 'text-red-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                  {isCameraOn ? (
+                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v2.586A2 2 0 0113.414 8l3.293-3.293a1 1 0 011.414 1.414l-3 3a2 2 0 000 2.828l3 3a1 1 0 01-1.414 1.414L13.414 12A2 2 0 0112 11.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                  ) : (
+                    <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A2 2 0 0018 13.414V9.586a2 2 0 00-.586-1.414L14.828 5.586A2 2 0 0013.414 5H11a1 1 0 000 2h2.414l2 2v4.414l-2-2H9.414L3.707 2.293zM4 7a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 001.032-.276L4 7z" clipRule="evenodd" />
+                  )}
+                </svg>
+                {isLocalSpeaking && (
+                  <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                  </svg>
+                )}
               </div>
               
               {/* 감정 표시 */}
@@ -1674,11 +1692,27 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                   ref={createParticipantAudioRef(participant.sid)}
                   autoPlay
                 />
-                <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
-                  {participant.name} 
-                  {participant.isAudioEnabled ? '🎤' : '🔇'} 
-                  {participant.isVideoEnabled ? '📷' : '🚫'}
-                  {speakingParticipants.has(participant.sid) && ' 🗣️'}
+                <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A] flex items-center space-x-1">
+                  <span>{participant.name}</span>
+                  <svg className={`w-3 h-3 ${participant.isAudioEnabled ? 'text-green-600' : 'text-red-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                    {participant.isAudioEnabled ? (
+                      <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                    ) : (
+                      <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v4a1 1 0 01-1.707.707L6.586 7H4a1 1 0 010-2h2.586l1.707-1.707a1 1 0 011.09-.217zM12 6a1 1 0 112 0v2a1 1 0 11-2 0V6zm-4 8a1 1 0 100 2h8a1 1 0 100-2H8z" clipRule="evenodd" />
+                    )}
+                  </svg>
+                  <svg className={`w-3 h-3 ${participant.isVideoEnabled ? 'text-green-600' : 'text-red-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                    {participant.isVideoEnabled ? (
+                      <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v2.586A2 2 0 0113.414 8l3.293-3.293a1 1 0 011.414 1.414l-3 3a2 2 0 000 2.828l3 3a1 1 0 01-1.414 1.414L13.414 12A2 2 0 0112 11.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                    ) : (
+                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A2 2 0 0018 13.414V9.586a2 2 0 00-.586-1.414L14.828 5.586A2 2 0 0013.414 5H11a1 1 0 000 2h2.414l2 2v4.414l-2-2H9.414L3.707 2.293zM4 7a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 001.032-.276L4 7z" clipRule="evenodd" />
+                    )}
+                  </svg>
+                  {speakingParticipants.has(participant.sid) && (
+                    <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </div>
               </div>
             ))}
@@ -1704,44 +1738,65 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           {/* 마이크 토글 */}
           <button
             onClick={toggleMicrophone}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isMicOn ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
+            className={`p-3 rounded-full transition-colors shadow-lg ${
+              isMicOn ? 'bg-[#BF7D2C] hover:bg-[#8B4513] text-white' : 'bg-red-600 hover:bg-red-700 text-white'
             }`}
             title={isMicOn ? '마이크 끄기' : '마이크 켜기'}
           >
-            {isMicOn ? '🎤' : '🔇'}
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              {isMicOn ? (
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              ) : (
+                <path d="M10.8 4.9c0-.66.54-1.2 1.2-1.2s1.2.54 1.2 1.2l-.01 3.91L15 10.6V5c0-1.66-1.34-3-3-3-1.54 0-2.79 1.16-2.96 2.65l1.76 1.76V4.9zM19 11h-1.7c0 .58-.1 1.13-.27 1.64l1.27 1.27c.44-.88.7-1.87.7-2.91zM4.41 2.86L3 4.27l6 6V11c0 1.66 1.34 3 3 3 .23 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.24-5.3-5H5.3c0 3.53 2.61 6.43 6 6.93V21h2v-3.07c.98-.07 1.91-.37 2.72-.84L21 22.14l1.41-1.41L4.41 2.86z"/>
+              )}
+            </svg>
           </button>
 
           {/* 비디오 토글 */}
           <button
             onClick={toggleVideo}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg ${
-              isCameraOn ? 'bg-[#4D280E] hover:bg-[#3E1F0A] border-2 border-[#2A2A2A]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] border-2 border-[#C2B596]'
+            className={`p-3 rounded-full transition-colors shadow-lg ${
+              isCameraOn ? 'bg-[#BF7D2C] hover:bg-[#8B4513] text-white' : 'bg-red-600 hover:bg-red-700 text-white'
             }`}
             title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
           >
-            {isCameraOn ? '📷' : '🚫'}
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              {isCameraOn ? (
+                <path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>
+              ) : (
+                <path d="M21 6.5l-4 4V7a1 1 0 0 0-1-1H9.5l8 8V10.5l4 4v-8zM3.4 1.7L2 3.1 4.9 6H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.9l1.9 1.9 1.4-1.4L3.4 1.7z"/>
+              )}
+            </svg>
           </button>
 
           {/* 소음 억제 토글 */}
           <button
             onClick={toggleNoiseSuppression}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
+            className={`p-3 rounded-full transition-colors shadow-lg ${
               noiseSuppressionEnabled
-                ? 'bg-[#5C351A] hover:bg-[#4D280E] border-2 border-[#3E1F0A] text-white'
-                : 'bg-[#F8F5F0] hover:bg-[#F2EDE2] border-2 border-[#E8DCC0] text-[#5C351A]'
+                ? 'bg-[#BF7D2C] hover:bg-[#8B4513] text-white'
+                : 'bg-gray-500 hover:bg-gray-600 text-white'
             }`}
             title={noiseSuppressionEnabled ? '소음 제거 ON' : '소음 제거 OFF'}
           >
-            {noiseSuppressionEnabled ? '🔇' : '🔊'}
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              {noiseSuppressionEnabled ? (
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+              ) : (
+                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+              )}
+            </svg>
           </button>
 
           {/* 나가기 버튼 */}
           <button
             onClick={() => handleLeaveRoom(true)}
-            className="w-12 h-12 rounded-full bg-[#5C351A] hover:bg-[#4D280E] flex items-center justify-center text-white transition-colors shadow-lg border-2 border-[#3E1F0A]"
+            className="p-3 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors shadow-lg"
+            title="통화 종료"
           >
-            📞
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1 0-1.41L2.77 9.19c.18-.18.43-.29.71-.29.27 0 .52.1.7.28.79.73 1.68 1.36 2.66 1.85.33.16.56.51.56.9v3.1c1.45.47 3 .72 4.6.72s3.15-.25 4.6-.72v-3.1c0-.39.23-.74.56-.9.98-.49 1.87-1.12 2.66-1.85.18-.18.43-.28.7-.28.28 0 .53.11.71.29l2.48 2.48c.39.39.39 1.02 0 1.41L21.71 15.56c-.18.18-.43.29-.71.29-.27 0-.52-.1-.7-.28-.79-.73-1.68-1.36-2.66-1.85-.33-.16-.56-.51-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/>
+            </svg>
           </button>
         </div>
 
