@@ -5,7 +5,7 @@
 > WebRTC 실시간 대화 코칭, AI 챗봇, 커뮤니티, 게임 요소(룰렛, 사다리타기 등)까지 결합하여 사용자 친화적인 갈등 해결 환경을 제공합니다.
 
 🔗 **배포 URL** : [https://i13c209.p.ssafy.io/](https://i13c209.p.ssafy.io/)
-
+🔗 **노션 URL** : [https://www.notion.so/AI-2510b21b2383808a8c44f46de4a68507/](https://www.notion.so/AI-2510b21b2383808a8c44f46de4a68507/)
 ---
 
 ## 프로젝트 개요
