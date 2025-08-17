@@ -78,9 +78,14 @@ const ConflictReportPage = () => {
       setReportData(data);
       
       // 시간 디버깅
-      console.log('[시간 디버깅] generated_at 원본:', data?.generated_at);
-      console.log('[시간 디버깅] 변환된 시간:', new Date(data?.generated_at));
-      console.log('[시간 디버깅] 한국시간:', new Date(data?.generated_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
+      if (data?.generated_at) {
+        const utcDate = new Date(data.generated_at);
+        const koreaTime = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+        console.log('[시간 디버깅] generated_at 원본:', data.generated_at);
+        console.log('[시간 디버깅] UTC 시간:', utcDate.toString());
+        console.log('[시간 디버깅] 한국시간 (+9h):', koreaTime.toString());
+        console.log('[시간 디버깅] 한국시간 포맷:', koreaTime.toLocaleString('ko-KR'));
+      }
     } catch (err) {
       console.error('레포트 로딩 실패:', err);
       setError('레포트를 불러오는데 실패했습니다.');
@@ -240,16 +245,20 @@ const ConflictReportPage = () => {
               </p>
               <p className="text-gray-500 text-sm mt-4 font-normal">
                 생성 시간: {reportData?.generated_at ? 
-                  new Date(reportData.generated_at).toLocaleString('ko-KR', { 
-                    timeZone: 'Asia/Seoul',
-                    year: 'numeric',
-                    month: '2-digit', 
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false
-                  }) : '시간 정보 없음'
+                  (() => {
+                    // UTC 시간을 한국시간으로 강제 변환 (+9시간)
+                    const utcDate = new Date(reportData.generated_at);
+                    const koreaTime = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+                    return koreaTime.toLocaleString('ko-KR', {
+                      year: 'numeric',
+                      month: '2-digit', 
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false
+                    });
+                  })() : '시간 정보 없음'
                 }
               </p>
             </div>
