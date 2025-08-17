@@ -289,16 +289,16 @@ const WhackAMoleGame = ({ onBack }) => {
       <div className="bg-white p-8">
         {/* 게임 정보 */}
         <div className="flex flex-wrap justify-center items-center gap-8 mb-8">
-          <div className="text-center px-6 py-3" style={{ backgroundColor: '#fff7ed' }}>
+          <div className="text-center px-6 py-3 bg-orange-50">
             <div className="text-3xl font-bold" style={{ color: '#bf7d2c' }}>{score}</div>
             <div className="text-sm mt-1" style={{ color: '#666666' }}>점수</div>
           </div>
-          <div className="text-center px-6 py-3" style={{ backgroundColor: '#eff6ff' }}>
-            <div className="text-3xl font-bold" style={{ color: '#2563eb' }}>{timeLeft}초</div>
+          <div className="text-center px-6 py-3 bg-orange-50">
+            <div className="text-3xl font-bold" style={{ color: '#bf7d2c' }}>{timeLeft}초</div>
             <div className="text-sm mt-1" style={{ color: '#666666' }}>남은 시간</div>
           </div>
-          <div className="text-center px-6 py-3" style={{ backgroundColor: '#f0fdf4' }}>
-            <div className="text-3xl font-bold" style={{ color: '#16a34a' }}>{highScore}</div>
+          <div className="text-center px-6 py-3 bg-orange-50">
+            <div className="text-3xl font-bold" style={{ color: '#bf7d2c' }}>{highScore}</div>
             <div className="text-sm mt-1" style={{ color: '#666666' }}>최고 기록</div>
           </div>
         </div>
@@ -429,8 +429,7 @@ const WhackAMoleGame = ({ onBack }) => {
               onMouseLeave={(e) => (e.target.style.backgroundColor = '#bf7d2c')}
             >
               <span className="flex items-center gap-3">
-                게임 시작! 
-                <span className="text-3xl group-hover:animate-bounce">🎮</span>
+                게임 시작
               </span>
             </button>
           )}
@@ -482,11 +481,11 @@ const WhackAMoleGame = ({ onBack }) => {
 
         {/* 게임 설명 */}
         {!isPlaying && (
-          <div className="mt-8 p-6 text-center" style={{ backgroundColor: '#eff6ff' }}>
-            <h4 className="font-bold text-lg mb-3 text-gray-800">🎮 게임 방법</h4>
+          <div className="mt-8 p-6 text-center bg-orange-50">
+            <h4 className="font-bold text-lg mb-3 text-gray-800">게임 방법</h4>
             <div className="space-y-2 text-gray-600">
               <p>1. 구멍에서 빠르게 나오는 고슴도치를 클릭하세요!</p>
-              <p>2. 고슴도치를 클릭하면 눈물을 흘리며 점수를 얻습니다 😢</p>
+              <p>2. 고슴도치를 클릭하면 눈물을 흘리며 점수를 얻습니다</p>
               <p>3. 난이도가 높을수록 여러 마리가 동시에 나타납니다!</p>
               <p className="text-sm text-gray-500 mt-3">
                 💡 팁: 어려움 모드는 최대 4마리가 동시에 나타나요!

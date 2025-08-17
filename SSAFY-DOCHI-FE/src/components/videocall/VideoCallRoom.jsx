@@ -1269,6 +1269,16 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
     // 표정 분석 정리
     stopEmotionDetection();
 
+    // 로컬 미디어 트랙 정리
+    if (localVideoRef.current && localVideoRef.current.srcObject) {
+      const stream = localVideoRef.current.srcObject;
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log('[미디어 정리] 트랙 중지:', track.kind);
+      });
+      localVideoRef.current.srcObject = null;
+    }
+
     // Room 연결 해제
     if (room) {
       await sendFinalEmotionData();

@@ -59,27 +59,64 @@ const GamePage = () => {
           {games.map((game) => (
             <div
               key={game.id}
+              className="bg-white cursor-pointer transition-all duration-300 hover:bg-orange-50 p-8"
               onClick={() => setSelectedGame(game)}
-              className="bg-white cursor-pointer transition-all duration-300 hover:bg-orange-50"
             >
-              {/* 카드 헤더 */}
-              <div className="h-32 flex items-center justify-center" style={{ backgroundColor: game.color }}>
+              {/* 카드 헤더 - 더 큰 아이콘 */}
+              <div className="text-center mb-6">
+                <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center rounded-full" style={{ backgroundColor: game.color }}>
+                  <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="55" r="25" fill="white" opacity="0.9"/>
+                    <circle cx="50" cy="35" r="15" fill="white" opacity="0.8"/>
+                    <circle cx="45" cy="32" r="2" fill="black"/>
+                    <circle cx="55" cy="32" r="2" fill="black"/>
+                    <circle cx="50" cy="38" r="1" fill="black"/>
+                    <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="white" strokeWidth="2" fill="none" opacity="0.8"/>
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold mb-3" style={{ color: '#333333' }}>{game.title}</h3>
               </div>
               
-              {/* 카드 내용 */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-3" style={{ color: '#333333' }}>{game.title}</h3>
-                <p className="text-sm leading-relaxed mb-4" style={{ color: '#666666' }}>{game.description}</p>
-                <div className="flex justify-center">
-                  <button 
-                    className="px-6 py-2 text-white font-medium transition-colors duration-200"
-                    style={{ backgroundColor: '#bf7d2c' }}
-                    onMouseEnter={(e) => (e.target.style.backgroundColor = '#a66a25')}
-                    onMouseLeave={(e) => (e.target.style.backgroundColor = '#bf7d2c')}
-                  >
-                    게임 시작
-                  </button>
+              {/* 게임 소개 */}
+              <div className="text-center mb-8">
+                <p className="text-base leading-relaxed mb-6" style={{ color: '#666666' }}>{game.description}</p>
+                
+                {/* 게임별 상세 소개 */}
+                <div className="bg-orange-50 p-4 rounded-lg mb-6">
+                  {game.id === 'roulette' && (
+                    <div className="space-y-2 text-sm" style={{ color: '#666666' }}>
+                      <p>• 여러 고민 중 우선순위를 정해보세요</p>
+                      <p>• 룰렛이 공정하게 선택해드립니다</p>
+                      <p>• 참견도치의 조언도 함께!</p>
+                    </div>
+                  )}
+                  {game.id === 'ladder' && (
+                    <div className="space-y-2 text-sm" style={{ color: '#666666' }}>
+                      <p>• 공정한 선택이 필요할 때</p>
+                      <p>• 참가자와 상품을 설정하세요</p>
+                      <p>• 투명하고 재미있는 결정!</p>
+                    </div>
+                  )}
+                  {game.id === 'whack' && (
+                    <div className="space-y-2 text-sm" style={{ color: '#666666' }}>
+                      <p>• 스트레스 해소에 완벽!</p>
+                      <p>• 3가지 난이도로 도전하세요</p>
+                      <p>• 최고 기록을 세워보세요!</p>
+                    </div>
+                  )}
                 </div>
+              </div>
+              
+              {/* 게임 시작 버튼 */}
+              <div className="text-center">
+                <button 
+                  className="w-full py-4 text-white font-bold text-lg transition-colors duration-200 rounded-lg"
+                  style={{ backgroundColor: '#bf7d2c' }}
+                  onMouseEnter={(e) => (e.target.style.backgroundColor = '#a66a25')}
+                  onMouseLeave={(e) => (e.target.style.backgroundColor = '#bf7d2c')}
+                >
+                  게임 시작하기
+                </button>
               </div>
             </div>
           ))}
