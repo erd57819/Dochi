@@ -6,6 +6,7 @@ import apiClient from '../../config/axios';
 import { useSSESTT } from '../../hooks/useSSESTT';
 import { useEmotionDetection } from '../../hooks/useEmotionDetection';
 import ConversationSidebar from './ConversationSidebar';
+import LoadingSpinner from '../LoadingSpinner';
 
 const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 인증 스토어에서 토큰과 사용자 정보 가져오기
@@ -48,6 +49,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // 타이머 관련 상태
   const [callStartTime, setCallStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  
+  // 레포트 생성 중 상태
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const timerInterval = useRef(null);
   const maxCallDuration = 30 * 60 * 1000; // 30분 (밀리초)
 
@@ -1263,6 +1267,11 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   // 통합 룸 나가기 함수 (isEndCall: 종료버튼 클릭 여부)
   const handleLeaveRoom = async (isEndCall = false) => {
+    // 종료 버튼 클릭 시 로딩 상태 시작
+    if (isEndCall) {
+      setIsGeneratingReport(true);
+    }
+
     // STT 정리
     stopSTT();
 
@@ -1289,6 +1298,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
     // 종료 버튼 클릭 시에만 갈등 레포트로 이동
     if (isEndCall) {
+      // 데이터 처리를 위한 지연 시간 추가 (4초)
+      console.log('[레포트 생성] 데이터 처리 대기 중...');
+      await new Promise(resolve => setTimeout(resolve, 4000)); // 4초 대기
+      console.log('[레포트 생성] 대기 완료, 레포트 페이지로 이동');
+      
+      setIsGeneratingReport(false); // 로딩 상태 종료
+      
       if (onEndCall) {
         onEndCall();
       } else {
@@ -1588,6 +1604,19 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
   return (
     <div className="h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] bg-gradient-to-br from-[#F5F2ED] via-[#E8DCC0] to-[#D6CDB8] flex flex-col overflow-hidden">
+      {/* 로딩 오버레이 */}
+      {isGeneratingReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 text-center">
+            <LoadingSpinner 
+              size="large" 
+              text="갈등 레포트 생성 중..." 
+              type="gif"
+            />
+          </div>
+        </div>
+      )}
+
       {/* 헤더 */}
       <div className="bg-[#FEFCF8] shadow-lg p-4 flex-shrink-0 border-b border-[#5C351A]"> 
         <div className="flex justify-between items-center">
@@ -1739,7 +1768,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           {/* 나가기 버튼 */}
           <button
             onClick={() => handleLeaveRoom(true)}
-            className="w-12 h-12 rounded-full bg-[#5C351A] hover:bg-[#4D280E] flex items-center justify-center text-white transition-colors shadow-lg border-2 border-[#3E1F0A]"
+            disabled={isGeneratingReport}
+            className="w-12 h-12 rounded-full bg-[#5C351A] hover:bg-[#4D280E] flex items-center justify-center text-white transition-colors shadow-lg border-2 border-[#3E1F0A] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             📞
           </button>
