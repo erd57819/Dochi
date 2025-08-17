@@ -1396,7 +1396,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[#4A4A4A]">
                     <div className="text-center">
-                      <span className="text-4xl mb-2 block">📷</span>
+                      <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A2 2 0 0018 13.414V9.586a2 2 0 00-.586-1.414L14.828 5.586A2 2 0 0013.414 5H11a1 1 0 000 2h2.414l2 2v4.414l-2-2H9.414L3.707 2.293zM4 7a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 001.032-.276L4 7z" clipRule="evenodd" />
+                      </svg>
                       <p>카메라가 꺼져있습니다</p>
                     </div>
                   </div>
@@ -1404,11 +1406,17 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 <div className="absolute bottom-2 right-2">
                   <button
                     onClick={toggleTestVideo}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${
-                      testVideoEnabled ? 'bg-[#5C351A] hover:bg-[#4D280E]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7]'
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                      testVideoEnabled ? 'bg-[#BF7D2C] hover:bg-[#8B4513] text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'
                     }`}
                   >
-                    {testVideoEnabled ? '📷' : '🚫'}
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      {testVideoEnabled ? (
+                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v2.586A2 2 0 0113.414 8l3.293-3.293a1 1 0 011.414 1.414l-3 3a2 2 0 000 2.828l3 3a1 1 0 01-1.414 1.414L13.414 12A2 2 0 0112 11.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                      ) : (
+                        <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A2 2 0 0018 13.414V9.586a2 2 0 00-.586-1.414L14.828 5.586A2 2 0 0013.414 5H11a1 1 0 000 2h2.414l2 2v4.414l-2-2H9.414L3.707 2.293zM4 7a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 001.032-.276L4 7z" clipRule="evenodd" />
+                      )}
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -1459,13 +1467,20 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
               {/* 마이크 토글 */}
               <button
                 onClick={toggleTestAudio}
-                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                className={`w-full py-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
                   testAudioEnabled 
-                    ? 'bg-[#5C351A] hover:bg-[#4D280E] text-white' 
-                    : 'bg-[#D6CDB8] hover:bg-[#CCC2A7] text-[#4A4A4A]'
+                    ? 'bg-[#BF7D2C] hover:bg-[#8B4513] text-white' 
+                    : 'bg-gray-500 hover:bg-gray-600 text-white'
                 }`}
               >
-                {testAudioEnabled ? '🎤 마이크 켜짐' : '🔇 마이크 꺼짐'}
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  {testAudioEnabled ? (
+                    <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                  ) : (
+                    <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v4a1 1 0 01-1.707.707L6.586 7H4a1 1 0 010-2h2.586l1.707-1.707a1 1 0 011.09-.217zM12 6a1 1 0 112 0v2a1 1 0 11-2 0V6zm-4 8a1 1 0 100 2h8a1 1 0 100-2H8z" clipRule="evenodd" />
+                  )}
+                </svg>
+                <span>{testAudioEnabled ? '마이크 켜짐' : '마이크 꺼짐'}</span>
               </button>
 
               {/* 마이크 선택 */}
@@ -1492,7 +1507,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 <button
                   onClick={toggleNoiseSuppression}
                   className={`px-3 py-1 rounded text-sm font-medium ${
-                    noiseSuppressionEnabled ? 'bg-[#5C351A] text-white' : 'bg-[#D6CDB8] text-[#4A4A4A]'
+                    noiseSuppressionEnabled ? 'bg-[#BF7D2C] text-white' : 'bg-gray-400 text-white'
                   }`}
                 >
                   {noiseSuppressionEnabled ? 'ON' : 'OFF'}
@@ -1505,14 +1520,31 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <div className="px-6 py-4 bg-[#F8F5F0] border-t border-[#5C351A]">
             <h4 className="text-sm font-medium text-[#2A2A2A] mb-2">통화 시작 시 적용될 설정:</h4>
             <div className="flex gap-4 text-sm text-[#4A4A4A]">
-              <span className={`flex items-center gap-1 ${testVideoEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
-                {testVideoEnabled ? '📷' : '🚫'} 카메라: {testVideoEnabled ? 'ON' : 'OFF'}
+              <span className={`flex items-center gap-2 ${testVideoEnabled ? 'text-[#BF7D2C] font-medium' : ''}`}>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  {testVideoEnabled ? (
+                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v2.586A2 2 0 0113.414 8l3.293-3.293a1 1 0 011.414 1.414l-3 3a2 2 0 000 2.828l3 3a1 1 0 01-1.414 1.414L13.414 12A2 2 0 0112 11.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                  ) : (
+                    <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A2 2 0 0018 13.414V9.586a2 2 0 00-.586-1.414L14.828 5.586A2 2 0 0013.414 5H11a1 1 0 000 2h2.414l2 2v4.414l-2-2H9.414L3.707 2.293zM4 7a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 001.032-.276L4 7z" clipRule="evenodd" />
+                  )}
+                </svg>
+                카메라: {testVideoEnabled ? 'ON' : 'OFF'}
               </span>
-              <span className={`flex items-center gap-1 ${testAudioEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
-                {testAudioEnabled ? '🎤' : '🔇'} 마이크: {testAudioEnabled ? 'ON' : 'OFF'}
+              <span className={`flex items-center gap-2 ${testAudioEnabled ? 'text-[#BF7D2C] font-medium' : ''}`}>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  {testAudioEnabled ? (
+                    <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                  ) : (
+                    <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v4a1 1 0 01-1.707.707L6.586 7H4a1 1 0 010-2h2.586l1.707-1.707a1 1 0 011.09-.217zM12 6a1 1 0 112 0v2a1 1 0 11-2 0V6zm-4 8a1 1 0 100 2h8a1 1 0 100-2H8z" clipRule="evenodd" />
+                  )}
+                </svg>
+                마이크: {testAudioEnabled ? 'ON' : 'OFF'}
               </span>
-              <span className={`flex items-center gap-1 ${noiseSuppressionEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
-                🔧 소음억제: {noiseSuppressionEnabled ? 'ON' : 'OFF'}
+              <span className={`flex items-center gap-2 ${noiseSuppressionEnabled ? 'text-[#BF7D2C] font-medium' : ''}`}>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
+                </svg>
+                소음억제: {noiseSuppressionEnabled ? 'ON' : 'OFF'}
               </span>
             </div>
           </div>
@@ -1525,7 +1557,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 setShowMediaTest(false);
                 setShowConnectButton(true);
               }}
-              className="px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors"
+              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
             >
               뒤로 가기
             </button>
@@ -1534,7 +1566,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 stopTestStream();
                 handleMediaTestComplete();
               }}
-              className="px-8 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg"
+              className="px-8 py-3 bg-[#BF7D2C] text-white font-semibold rounded-lg hover:bg-[#8B4513] transition-colors shadow-lg"
             >
               이 설정으로 통화 시작
             </button>
@@ -1559,13 +1591,19 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           <div className="space-y-3">
             <button
               onClick={handleStartConnection}
-              className="w-full px-6 py-3 bg-[#5C351A] text-white font-semibold rounded-lg hover:bg-[#4D280E] transition-colors shadow-lg border-2 border-[#3E1F0A]"
+              className="w-full px-6 py-3 bg-[#BF7D2C] text-white font-semibold rounded-lg hover:bg-[#8B4513] transition-colors shadow-lg flex items-center justify-center space-x-2"
             >
-              🎤📹 미디어 테스트
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+              </svg>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v2.586A2 2 0 0113.414 8l3.293-3.293a1 1 0 011.414 1.414l-3 3a2 2 0 000 2.828l3 3a1 1 0 01-1.414 1.414L13.414 12A2 2 0 0112 11.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+              </svg>
+              <span>미디어 테스트</span>
             </button>
             <button
               onClick={() => window.location.href = '/'}
-              className="w-full px-6 py-3 bg-[#D6CDB8] text-[#2A2A2A] rounded-lg hover:bg-[#CCC2A7] transition-colors shadow border border-[#C2B596]"
+              className="w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors shadow"
             >
               나가기
             </button>
