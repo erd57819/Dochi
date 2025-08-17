@@ -39,106 +39,125 @@ const ResponsibilityTab = ({ responsibilityData }) => {
 
     chartRoot.setThemes([am5themes_Animated.new(chartRoot)]);
 
-    // 각 참가자별로 게이지 차트 생성
-    const gaugeContainer = chartRoot.container.children.push(
-      am5.Container.new(chartRoot, {
-        layout: chartRoot.gridLayout,
+    // 하나의 게이지 차트로 모든 참가자 표시
+    const chart = chartRoot.container.children.push(
+      am5radar.RadarChart.new(chartRoot, {
+        panX: false,
+        panY: false,
+        wheelX: "none",
+        wheelY: "none",
+        innerRadius: am5.percent(20),
         width: am5.percent(100),
         height: am5.percent(100)
       })
     );
 
-    chartData.forEach((participant, index) => {
-      // 게이지 차트 생성
-      const chart = gaugeContainer.children.push(
-        am5radar.RadarChart.new(chartRoot, {
-          panX: false,
-          panY: false,
-          wheelX: "none",
-          wheelY: "none",
-          innerRadius: am5.percent(40),
-          width: am5.percent(50),
-          height: am5.percent(50)
-        })
-      );
-
-      // 원형 축 생성 (0-100%)
-      const xRenderer = am5radar.AxisRendererCircular.new(chartRoot, {
-        minGridDistance: 50
-      });
-      
-      xRenderer.grid.template.setAll({
-        strokeOpacity: 0.1
-      });
-
-      const xAxis = chart.xAxes.push(
-        am5xy.ValueAxis.new(chartRoot, {
-          maxZoomCount: 1,
-          min: 0,
-          max: 100,
-          strictMinMax: true,
-          renderer: xRenderer
-        })
-      );
-
-      // Y축 (반지름 방향)
-      const yRenderer = am5radar.AxisRendererRadial.new(chartRoot, {
-        minGridDistance: 20
-      });
-
-      yRenderer.labels.template.setAll({
-        centerX: am5.p100,
-        fontWeight: "500",
-        fontSize: "8px"
-      });
-
-      const yAxis = chart.yAxes.push(
-        am5xy.CategoryAxis.new(chartRoot, {
-          categoryField: "category",
-          renderer: yRenderer
-        })
-      );
-
-      // 시리즈 생성
-      const series = chart.series.push(
-        am5radar.RadarColumnSeries.new(chartRoot, {
-          xAxis: xAxis,
-          yAxis: yAxis,
-          valueXField: "value",
-          categoryYField: "category"
-        })
-      );
-
-      // 컬럼 스타일링
-      series.columns.template.setAll({
-        strokeOpacity: 0,
-        fill: am5.color(participant.color),
-        cornerRadiusTL: 3,
-        cornerRadiusTR: 3
-      });
-
-      // 데이터 설정
-      const data = [{ category: "책임비중", value: participant.value }];
-      series.data.setAll(data);
-      yAxis.data.setAll(data);
-
-      // 중앙 라벨 (이름과 퍼센트)
-      const centerLabel = chart.plotContainer.children.push(
-        am5.Label.new(chartRoot, {
-          text: `${participant.name}\n${participant.value}%`,
-          centerX: am5.p50,
-          centerY: am5.p50,
-          textAlign: "center",
-          fontSize: "12px",
-          fontWeight: "600",
-          fill: am5.color("#333333")
-        })
-      );
-
-      // 애니메이션
-      series.appear(1000);
-      chart.appear(1000, 100);
+    // 원형 축 생성 (0-100%)
+    const xRenderer = am5radar.AxisRendererCircular.new(chartRoot, {
+      minGridDistance: 30
     });
+    
+    xRenderer.grid.template.setAll({
+      strokeOpacity: 0.1
+    });
+
+    xRenderer.labels.template.setAll({
+      fontSize: "10px",
+      fontWeight: "500"
+    });
+
+    const xAxis = chart.xAxes.push(
+      am5xy.ValueAxis.new(chartRoot, {
+        maxZoomCount: 1,
+        min: 0,
+        max: 100,
+        strictMinMax: true,
+        renderer: xRenderer
+      })
+    );
+
+    // Y축 (반지름 방향) - 각 참가자별로
+    const yRenderer = am5radar.AxisRendererRadial.new(chartRoot, {
+      minGridDistance: 15
+    });
+
+    yRenderer.labels.template.setAll({
+      centerX: am5.p100,
+      fontWeight: "600",
+      fontSize: "11px"
+    });
+
+    const yAxis = chart.yAxes.push(
+      am5xy.CategoryAxis.new(chartRoot, {
+        categoryField: "name",
+        renderer: yRenderer
+      })
+    );
+
+    // 시리즈 생성
+    const series = chart.series.push(
+      am5radar.RadarColumnSeries.new(chartRoot, {
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueXField: "value",
+        categoryYField: "name"
+      })
+    );
+
+    // 컬럼 스타일링 - 각 참가자별 색상
+    series.columns.template.setAll({
+      strokeOpacity: 0,
+      cornerRadiusTL: 2,
+      cornerRadiusTR: 2,
+      width: am5.percent(60)
+    });
+
+    // 각 컬럼에 다른 색상 적용
+    series.columns.template.adapters.add("fill", (fill, target) => {
+      const dataItem = target.dataItem;
+      if (dataItem) {
+        const index = series.dataItems.indexOf(dataItem);
+        return am5.color(chartData[index]?.color || "#8B4513");
+      }
+      return fill;
+    });
+
+    // 데이터 설정
+    series.data.setAll(chartData);
+    yAxis.data.setAll(chartData);
+
+    // 중앙에 총합 표시
+    const centerLabel = chart.plotContainer.children.push(
+      am5.Label.new(chartRoot, {
+        text: "책임 비중\n분석",
+        centerX: am5.p50,
+        centerY: am5.p50,
+        textAlign: "center",
+        fontSize: "14px",
+        fontWeight: "700",
+        fill: am5.color("#333333")
+      })
+    );
+
+    // 범례 추가
+    const legend = chart.children.push(
+      am5.Legend.new(chartRoot, {
+        centerX: am5.p50,
+        x: am5.p50,
+        marginTop: 20,
+        layout: chartRoot.horizontalLayout
+      })
+    );
+
+    // 범례 데이터 설정
+    legend.data.setAll(chartData.map(item => ({
+      name: `${item.name}: ${item.value}%`,
+      color: am5.color(item.color)
+    })));
+
+    // 애니메이션
+    series.appear(1000);
+    chart.appear(1000, 100);
 
     return () => {
       chartRoot.dispose();
