@@ -86,7 +86,7 @@ const ActionPlanTab = ({ actionPlans }) => {
         <div 
           className="rounded-lg p-8"
           style={{
-            background: 'linear-gradient(135deg, #D4B896, #E2CCA8)',
+            background: 'linear-gradient(135deg, #F5F1EC, #F8F5F0)',
             boxShadow: '0 4px 6px rgba(160, 116, 60, 0.1)'
           }}
         >
@@ -112,8 +112,8 @@ const ActionPlanTab = ({ actionPlans }) => {
                   <span 
                     className="text-sm font-semibold px-3 py-1 rounded-full mr-4"
                     style={{ 
-                      backgroundColor: 'rgba(160, 116, 60, 0.2)',
-                      color: '#654321'
+                      backgroundColor: 'rgba(160, 116, 60, 0.1)',
+                      color: '#8B4513'
                     }}
                   >
                     {idx + 1}
