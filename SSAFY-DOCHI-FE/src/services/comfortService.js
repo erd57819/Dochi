@@ -107,7 +107,8 @@ const comfortService = {
       console.error('Failed to exit session:', error);
       throw error;
     }
-  }
+  },
+
 };
 
 export default comfortService;

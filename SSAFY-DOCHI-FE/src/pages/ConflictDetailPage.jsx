@@ -697,16 +697,28 @@ const ConflictDetailPage = () => {
                 className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
                 style={{ background: '#7F5539' }}
                 onClick={() => {
-                  // 갈등 데이터를 토닥토닥 서비스로 전달
-                  const conflictSummary = `갈등 상황: ${conflict?.description || '상세 정보가 없습니다.'}\n갈등 유형: ${getConflictTypeText(conflict?.conflictType)}\n갈등 강도: ${conflict?.intensity || 0}/10\n주된 감정: ${getEmotionText(conflict?.initialEmotion)}`;
+                  // 상세한 갈등 데이터를 토닥토닥 서비스로 전달
+                  const detailedConflictMessage = `갈등 제목: ${conflict?.title || '제목 없음'}
+갈등 유형: ${getConflictTypeText(conflict?.conflictType)}
+갈등 상황: ${conflict?.description || '설명 없음'}
+갈등 강도: ${conflict?.intensity || '설정 없음'}/10
+주된 감정: ${getEmotionText(conflict?.initialEmotion)}
+원하는 결과: ${conflict?.desiredOutcome || '해결 방안을 찾고 싶어요'}
+우선순위: ${getPriorityText(conflict?.priority)}
+대화 의지: ${getTalkWillingnessText(conflict?.talkWillingness)}
+
+위 갈등 상황에 대해 상담하고 싶어요. 도와주세요.`.trim();
                   
-                  // ComfortStore에 갈등 데이터 설정
-                  sessionStorage.setItem('comfortConflictData', JSON.stringify({
-                    message: conflictSummary,
+                  // AI 분석 결과도 포함
+                  const enrichedData = {
+                    message: detailedConflictMessage,
                     conflictId: conflict?.id,
+                    conflictDetail: conflict,
+                    analysisResult: analysisResult,
                     autoSend: true
-                  }));
+                  };
                   
+                  sessionStorage.setItem('comfortConflictData', JSON.stringify(enrichedData));
                   navigate('/comfort');
                 }}
               >
