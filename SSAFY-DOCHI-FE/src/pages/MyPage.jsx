@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MyPageNavigation from "../components/MyPageNavigation";
 import ConflictCard from "../components/ConflictCard";
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import myPageApi from "../services/myPageApi";
 import useAuthStore from "../stores/AuthStore.js";
 import useComfortStore from "../stores/ComfortStore.js";
@@ -184,7 +185,7 @@ const MyPage = () => {
         <div className="w-full max-w-[1440px] bg-white">
           <MyPageNavigation />
           <div className="flex justify-center items-center py-20">
-            <div className="text-xl text-[#999999]">로딩 중...</div>
+            <LoadingSpinner type="gif" size="large" />
           </div>
         </div>
       </div>

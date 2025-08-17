@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { noticeApi } from '../services/noticeApi';
 import useAuthStore from '../stores/AuthStore';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import hedgehogImg from '../assets/conflict.png';
 
 const NoticePage = () => {
@@ -249,25 +250,7 @@ const NoticePage = () => {
         
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="relative w-16 h-16 mx-auto mb-4">
-              <img 
-                src={hedgehogImg} 
-                alt="갈등도치" 
-                className="w-16 h-16 animate-spin"
-                style={{
-                  filter: 'drop-shadow(0 0 20px rgba(139, 69, 19, 0.5))'
-                }}
-              />
-              <div 
-                className="absolute inset-0 rounded-full animate-ping"
-                style={{
-                  background: 'radial-gradient(circle, rgba(139, 69, 19, 0.2) 0%, transparent 70%)'
-                }}
-              />
-            </div>
-            <p className="text-xl font-bold animate-pulse" style={{ color: '#8B4513' }}>
-              공지사항을 불러오는 중...
-            </p>
+            <LoadingSpinner type="gif" size="xlarge" />
           </div>
         </div>
       </div>
