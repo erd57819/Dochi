@@ -297,7 +297,12 @@ const ConflictReportPage = () => {
           {/* 감정 분석 섹션 */}
           <div className="mb-16">
             <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold" style={{ color: '#333333' }}>
+              <h3 className="text-3xl font-bold" style={{
+                background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
                 감정 분석
               </h3>
               <p className="text-gray-600 text-lg mt-4">대화 속 숨겨진 감정의 흐름</p>
@@ -329,7 +334,12 @@ const ConflictReportPage = () => {
           {/* 책임 분석 섹션 */}
           <div className="mb-16">
             <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold" style={{ color: '#333333' }}>
+              <h3 className="text-3xl font-bold" style={{
+                background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
                 책임 분석
               </h3>
               <p className="text-gray-600 text-lg mt-4">갈등의 원인과 각자의 역할</p>
@@ -359,7 +369,12 @@ const ConflictReportPage = () => {
           {/* 액션 플랜 섹션 */}
           <div className="mb-16">
             <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold" style={{ color: '#333333' }}>
+              <h3 className="text-3xl font-bold" style={{
+                background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
                 액션 플랜
               </h3>
               <p className="text-gray-600 text-lg mt-4">구체적인 해결 방안과 실행 계획</p>
@@ -390,7 +405,12 @@ const ConflictReportPage = () => {
           {/* 대화 내용 섹션 */}
           <div className="mb-16">
             <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold" style={{ color: '#333333' }}>
+              <h3 className="text-3xl font-bold" style={{
+                background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
                 대화 내용
               </h3>
               <p className="text-gray-600 text-lg mt-4">실제 대화의 전체 기록</p>
