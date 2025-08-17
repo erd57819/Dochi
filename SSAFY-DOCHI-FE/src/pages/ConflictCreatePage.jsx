@@ -117,7 +117,21 @@ const ConflictCreatePage = () => {
       console.log('Create Response Body:', createResponseText);
 
       if (!createResponse.ok) {
-        throw new Error(`갈등 데이터 저장 실패: ${createResponse.status} - ${createResponseText}`);
+        // 서버 에러 메시지를 파싱해서 표시
+        let errorMessage = '갈등 등록 중 오류가 발생했습니다.';
+        try {
+          const errorData = JSON.parse(createResponseText);
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (createResponseText.includes('AI 분석')) {
+            errorMessage = 'AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.';
+          } else if (createResponseText.includes('저장')) {
+            errorMessage = '갈등 저장에 실패했습니다. 다시 시도해주세요.';
+          }
+        } catch (e) {
+          // JSON 파싱 실패 시 기본 메시지 사용
+        }
+        throw new Error(errorMessage);
       }
 
       const createResult = JSON.parse(createResponseText);
