@@ -39,7 +39,7 @@ const ConversationSidebar = ({
               <span className="text-[#4D280E] font-semibold text-sm">{message.speaker}</span>
               <span className="ml-auto text-[#4A4A4A] text-xs">{message.timestamp}</span>
             </div>
-            <p className="text-[#3E1F0A] font-medium text-sm">{message.text}</p>
+            <p className="text-[#3E1F0A] font-medium text-sm md:text-base">{message.text}</p>
             {message.urgency && (
               <div className="mt-2 text-xs text-[#5C351A]">
                 <span className="font-semibold">긴급도:</span> {message.urgency}
@@ -71,7 +71,7 @@ const ConversationSidebar = ({
               ? 'bg-[#5C351A] text-white rounded-br-md' 
               : 'bg-[#F8F5F0] text-[#2A2A2A] border border-[#D6CDB8] rounded-bl-md'
           }`}>
-            <p className="text-sm leading-relaxed">{message.text}</p>
+            <p className="text-sm md:text-base leading-relaxed">{message.text}</p>
           </div>
           
           {/* 시간 */}
@@ -91,7 +91,7 @@ const ConversationSidebar = ({
   };
 
   return (
-    <div className="w-80 bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
+    <div className="w-80 md:w-96 lg:w-[25vw] xl:w-[20vw] bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
       {/* 감정 및 갈등 레벨 표시 */}
       <div className="p-3 border-b border-[#5C351A] flex-shrink-0 max-h-48 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
         <h3 className="text-[#2A2A2A] font-bold mb-2 flex items-center">
