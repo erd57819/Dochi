@@ -37,7 +37,6 @@ const ResponsibilityTab = ({ responsibilityData }) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">갈등 책임 분석</h2>
       
       {/* 책임 비중 차트와 상세 분석 */}
       {getChartData() && (

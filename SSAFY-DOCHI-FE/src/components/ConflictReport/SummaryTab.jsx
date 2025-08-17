@@ -15,17 +15,6 @@ const SummaryTab = ({ summary }) => {
       ></div>
       
       <div className="space-y-6 relative z-10">
-        <h2 
-          className="text-2xl font-bold mb-4"
-          style={{
-            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}
-        >
-          종합 분석 요약
-        </h2>
         
         {/* 핵심 이슈 */}
         {summary.key_issues && summary.key_issues.length > 0 && (

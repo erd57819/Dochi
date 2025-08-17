@@ -18,23 +18,6 @@ const ActionPlanTab = ({ actionPlans }) => {
       ></div>
       
       <div className="space-y-8 relative z-10">
-        <div className="text-center mb-8">
-          <h2 
-            className="text-3xl font-light mb-2"
-            style={{
-              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}
-          >
-            맞춤형 액션 플랜
-          </h2>
-          <div 
-            className="w-16 h-0.5 mx-auto"
-            style={{ backgroundColor: '#BF7D2C' }}
-          ></div>
-        </div>
       
       {/* 우선순위별 행동계획 */}
       {actionPlans?.priority_actions && actionPlans.priority_actions.length > 0 && (
