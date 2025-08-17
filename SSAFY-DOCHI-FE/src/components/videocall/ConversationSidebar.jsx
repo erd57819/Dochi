@@ -32,10 +32,12 @@ const ConversationSidebar = ({
     if (isCoaching) {
       return (
         <div className="w-full mb-3">
-          <div className="bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] border-[#5C351A] border-2 rounded-lg p-3 shadow-lg">
+          <div className="bg-gradient-to-r from-[#E8DCC0] to-[#F2EDE2] rounded-lg p-3">
             <div className="flex items-center mb-2">
-              <span className="mr-2">🤖</span>
-              <span className="bg-[#5C351A] text-white px-2 py-1 rounded-full text-xs mr-2">AI 코칭</span>
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+              </svg>
+              <span className="bg-[#BF7D2C] text-white px-2 py-1 rounded-full text-xs mr-2">AI 코칭</span>
               <span className="text-[#4D280E] font-semibold text-sm">{message.speaker}</span>
               <span className="ml-auto text-[#4A4A4A] text-xs">{message.timestamp}</span>
             </div>
@@ -60,16 +62,24 @@ const ConversationSidebar = ({
           <div className={`text-xs mb-1 ${isMe ? 'text-right' : 'text-left'}`}>
             <span className="text-[#4A4A4A] font-medium">
               {message.speaker}
-              {isRemote && <span className="ml-1 text-blue-500">🌐</span>}
-              {isMe && <span className="ml-1 text-green-500">👤</span>}
+              {isRemote && (
+                <svg className="inline w-3 h-3 ml-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.083 9h1.946c.089-1.546.383-2.97.837-4.118A6.004 6.004 0 004.083 9zM10 2a8 8 0 100 16 8 8 0 000-16zm0 2c-.076 0-.232.032-.465.262-.238.234-.497.623-.737 1.182-.389.907-.673 2.142-.766 3.556h3.936c-.093-1.414-.377-2.649-.766-3.556-.24-.56-.5-.948-.737-1.182C10.232 4.032 10.076 4 10 4zm3.971 5c-.089-1.546-.383-2.97-.837-4.118A6.004 6.004 0 0115.917 9h-1.946zm-2.003 2H8.032c.093 1.414.377 2.649.766 3.556.24.56.5.948.737 1.182.233.23.389.262.465.262.076 0 .232-.032.465-.262.238-.234.498-.623.737-1.182.389-.907.673-2.142.766-3.556zm1.166 4.118c.454-1.147.748-2.572.837-4.118h1.946a6.004 6.004 0 01-2.783 4.118zm-6.268 0C6.412 13.97 6.118 12.546 6.03 11H4.083a6.004 6.004 0 002.783 4.118z" clipRule="evenodd" />
+                </svg>
+              )}
+              {isMe && (
+                <svg className="inline w-3 h-3 ml-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+              )}
             </span>
           </div>
           
           {/* 메시지 버블 */}
-          <div className={`px-4 py-3 rounded-2xl shadow-sm ${
+          <div className={`px-4 py-3 rounded-2xl ${
             isMe 
-              ? 'bg-[#5C351A] text-white rounded-br-md' 
-              : 'bg-[#F8F5F0] text-[#2A2A2A] border border-[#D6CDB8] rounded-bl-md'
+              ? 'bg-[#BF7D2C] text-white rounded-br-md' 
+              : 'bg-[#F8F5F0] text-[#2A2A2A] rounded-bl-md'
           }`}>
             <p className="text-sm md:text-base leading-relaxed">{message.text}</p>
           </div>
@@ -79,9 +89,21 @@ const ConversationSidebar = ({
             <span className="text-[#4A4A4A] opacity-70">{message.timestamp}</span>
             {message.source && (
               <span className="ml-1 text-[#4A4A4A] opacity-50">
-                {message.source === 'sse' && '📡'}
-                {message.source === 'local' && '💬'}
-                {message.source === 'livekit' && '⚡'}
+                {message.source === 'sse' && (
+                  <svg className="inline w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+                  </svg>
+                )}
+                {message.source === 'local' && (
+                  <svg className="inline w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {message.source === 'livekit' && (
+                  <svg className="inline w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                  </svg>
+                )}
               </span>
             )}
           </div>
@@ -91,50 +113,17 @@ const ConversationSidebar = ({
   };
 
   return (
-    <div className="w-80 md:w-96 lg:w-[25vw] xl:w-[20vw] bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden border-l-4 border-[#5C351A] shadow-xl">
-      {/* 감정 및 갈등 레벨 표시 */}
-      <div className="p-3 border-b border-[#5C351A] flex-shrink-0 max-h-48 overflow-y-auto bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
-        <h3 className="text-[#2A2A2A] font-bold mb-2 flex items-center">
-          <span className="mr-2">🤖</span>AI 감정 분석
-        </h3>
-        <div className="mb-2">
-          <div className="flex justify-between text-sm text-[#5C351A] font-medium">
-            <span>갈등 레벨</span>
-            <span>{Math.round(conflictLevel)}%</span>
-          </div>
-          <div className="w-full bg-[#D6CDB8] rounded-full h-2 shadow-inner">
-            <div
-              className={`h-2 rounded-full transition-all duration-300 ${
-                conflictLevel > 70 ? 'bg-red-500' :
-                conflictLevel > 40 ? 'bg-yellow-500' : 'bg-green-500'
-              }`}
-              style={{ width: `${conflictLevel}%` }}
-            />
-          </div>
-        </div>
-        
-        {Object.entries(emotionScores).map(([name, scores]) => (
-          <div key={name} className="mb-2 bg-[#FEFCF8] bg-opacity-70 p-2 rounded shadow-sm">
-            <p className="text-xs text-[#5C351A] font-semibold">{name}</p>
-            <div className="grid grid-cols-3 gap-1 text-xs mt-1">
-              {Object.entries(scores).map(([emotion, score]) => (
-                <div key={emotion} className="text-center">
-                  <div className={`${score > 50 ? 'text-red-600 font-semibold' : 'text-[#4A4A4A]'} text-xs`}>
-                    {emotion}: {score}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="w-80 md:w-96 lg:w-[30vw] xl:w-[25vw] bg-gradient-to-b from-[#F8F5F0] to-[#F2EDE2] flex flex-col h-full overflow-hidden shadow-xl">
 
       {/* 대화 내용 */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 탭 헤더 및 컨트롤 */}
-        <div className="p-3 border-b border-[#5C351A] flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2 shadow-sm">
+        <div className="p-3 flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2">
           <h3 className="text-[#2A2A2A] font-bold flex items-center mb-3">
-            <span className="mr-2">💬</span>참견도치 채팅
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+            </svg>
+            참견도치 채팅
           </h3>
           
           {/* 탭 버튼 */}
@@ -143,8 +132,8 @@ const ConversationSidebar = ({
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 activeTab === 'all' 
-                  ? 'bg-[#5C351A] text-white shadow-lg' 
-                  : 'bg-[#D6CDB8] text-[#4A4A4A] hover:bg-[#CCC2A7]'
+                  ? 'bg-[#BF7D2C] text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               전체 대화 ({conversations?.length || 0})
@@ -153,8 +142,8 @@ const ConversationSidebar = ({
               onClick={() => setActiveTab('coaching')}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 activeTab === 'coaching' 
-                  ? 'bg-[#5C351A] text-white shadow-lg' 
-                  : 'bg-[#D6CDB8] text-[#4A4A4A] hover:bg-[#CCC2A7]'
+                  ? 'bg-[#BF7D2C] text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               AI 코칭 ({coachingMessages?.length || 0})
@@ -166,7 +155,7 @@ const ConversationSidebar = ({
             <button
               onClick={toggleSTT}
               className={`px-3 py-1 rounded text-sm font-medium ${
-                sttEnabled ? 'bg-green-500 text-white shadow-lg' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
+                sttEnabled ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
               }`}
             >
               STT {sttEnabled ? 'ON' : 'OFF'}
@@ -174,7 +163,7 @@ const ConversationSidebar = ({
             <button
               onClick={toggleAIMediation}
               className={`px-3 py-1 rounded text-sm font-medium ${
-                aiMediationEnabled ? 'bg-[#5C351A] text-white shadow-lg border-2 border-[#4D280E]' : 'bg-[#D6CDB8] text-[#4A4A4A] shadow'
+                aiMediationEnabled ? 'bg-[#BF7D2C] text-white' : 'bg-gray-400 text-white'
               }`}
             >
               AI 중재 {aiMediationEnabled ? 'ON' : 'OFF'}
@@ -183,7 +172,7 @@ const ConversationSidebar = ({
         </div>
 
         {/* 메신저 스타일 채팅 영역 */}
-        <div className="flex-1 overflow-y-auto p-3 bg-[#FEFCF8] bg-opacity-30 min-h-0">
+        <div className="flex-1 overflow-y-auto p-3 bg-[#FEFCF8] bg-opacity-30 min-h-0 mx-2 rounded-lg">
           {(() => {
             const displayConversations = activeTab === 'all' ? conversations : coachingMessages;
             
@@ -191,7 +180,9 @@ const ConversationSidebar = ({
               return (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-[#4A4A4A]">
-                    <div className="text-4xl mb-3">💬</div>
+                    <svg className="w-12 h-12 mx-auto mb-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                    </svg>
                     <p className="text-sm">
                       {activeTab === 'all' ? '대화를 시작해보세요!' : '아직 AI 코칭이 없습니다.'}
                     </p>
