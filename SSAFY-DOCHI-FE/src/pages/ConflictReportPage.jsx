@@ -258,7 +258,12 @@ const ConflictReportPage = () => {
 
           {/* 종합 요약 */}
           <div className="p-12 mb-12">
-            <h3 className="text-3xl font-bold text-center mb-12" style={{ color: '#333333' }}>
+            <h3 className="text-3xl font-bold text-center mb-12" style={{
+              background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
               종합 분석 요약
             </h3>
             
