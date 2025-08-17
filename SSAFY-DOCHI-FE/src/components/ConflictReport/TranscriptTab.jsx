@@ -20,7 +20,6 @@ const TranscriptTab = ({ transcriptData }) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">전체 대화 내용</h2>
       
       <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto">
         {uniqueData.length > 0 ? (

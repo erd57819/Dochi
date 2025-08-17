@@ -236,17 +236,6 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
       ></div>
       
       <div className="space-y-6 relative z-10">
-        <h2 
-          className="text-2xl font-bold mb-4"
-          style={{
-            background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}
-        >
-          감정 변화 분석
-        </h2>
       
       {/* 데이터 없음 메시지 */}
       {speakers.length === 0 && (
