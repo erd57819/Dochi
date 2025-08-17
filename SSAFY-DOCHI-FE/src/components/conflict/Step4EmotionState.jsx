@@ -83,10 +83,9 @@ const Step4EmotionState = ({ formData, onChange, onNext, onPrev, isLoading }) =>
             {[
               { value: 'NONE', label: '상관없음', emoji: '🤷' },
               { value: 'RELATIONSHIP', label: '관계회복이 중요', emoji: '🤝' },
-              { value: 'PROBLEM_SOLVING', label: '문제 해결이 중요', emoji: '🛠️' },
-              { value: 'INNER_PEACE', label: '내 마음의 평화가 중요', emoji: '🧘' },
-              { value: 'PREVENTION', label: '재발 방지가 중요', emoji: '🛡️' },
-              { value: 'COMMUNICATION', label: '소통 개선이 중요', emoji: '💬' }
+              { value: 'SOLUTION', label: '문제 해결이 중요', emoji: '🛠️' },
+              { value: 'SELF_CARE', label: '내 마음의 평화가 중요', emoji: '🧘' },
+              { value: 'PREVENTION', label: '재발 방지가 중요', emoji: '🛡️' }
             ].map((option) => {
               const isSelected = Array.isArray(formData.desiredOutcome) 
                 ? formData.desiredOutcome.includes(option.value)

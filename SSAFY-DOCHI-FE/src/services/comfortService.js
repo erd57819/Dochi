@@ -83,6 +83,19 @@ const comfortService = {
     }
   },
 
+  // 세션 저장 (Redis → DB 저장)
+  saveSession: async (sessionId, chatRoomId) => {
+    try {
+      const response = await apiClient.post('/chat/save', null, {
+        params: { sessionId, chatRoomId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to save session:', error);
+      throw error;
+    }
+  },
+
   // 세션 종료 (Redis → DB 저장)
   exitSession: async (sessionId, chatRoomId) => {
     try {

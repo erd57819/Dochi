@@ -41,6 +41,14 @@ public class ChatController {
         return ApiResponseGenerator.success(response, HttpStatus.OK);
     }
 
+    @PostMapping("/save")
+    public ApiResponse<?> save(@AuthenticationPrincipal CustomUserDetails user,
+                               @RequestParam String sessionId,
+                               @RequestParam Long chatRoomId) {
+        chatService.saveToDatabase(user.getId(), sessionId, chatRoomId);
+        return ApiResponseGenerator.success(HttpStatus.OK);
+    }
+
     @PostMapping("/exit")
     public ApiResponse<?> exit(@AuthenticationPrincipal CustomUserDetails user,
                                @RequestParam String sessionId,

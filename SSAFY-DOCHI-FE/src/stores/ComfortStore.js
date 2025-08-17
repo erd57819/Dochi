@@ -349,6 +349,31 @@ const useComfortStore = create(
         }
       },
 
+      // 대화 저장 (Redis → DB 저장, 세션은 유지)
+      saveToDatabase: async (chatRoomId, sessionId) => {
+        try {
+          const { messages } = get();
+          
+          // ID가 유효한지 확인
+          if (sessionId && chatRoomId && sessionId.startsWith('session_')) {
+            // 사용자가 보낸 메시지가 하나라도 있는지 확인
+            const hasUserMessages = messages.some(msg => msg.sender === 'user');
+
+            if (hasUserMessages) {
+              console.log(`대화 저장 요청: sessionId=${sessionId}, chatRoomId=${chatRoomId}`);
+              await comfortService.saveSession(sessionId, chatRoomId);
+              return true;
+            } else {
+              console.log('사용자 메시지가 없어 저장하지 않습니다.');
+              return false;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to save to database:', error);
+          throw error;
+        }
+      },
+
       // 세션 종료 (페이지 떠날 때 호출)
       exitCurrentSession: async () => {
         try {

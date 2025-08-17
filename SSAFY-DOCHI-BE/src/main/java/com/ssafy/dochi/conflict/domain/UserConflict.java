@@ -61,6 +61,6 @@ public class UserConflict {
     }
 
     public enum InitialEmotion {
-        ANGER, SADNESS, FRUSTRATION, ETC
+        ANGER, SADNESS, FRUSTRATION, ANXIETY, DISAPPOINTMENT, JEALOUSY, FEAR, ETC
     }
 }
