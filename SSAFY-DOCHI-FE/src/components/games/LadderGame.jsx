@@ -11,6 +11,10 @@ const LadderGame = ({ onBack }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [results, setResults] = useState([]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [editingPlayer, setEditingPlayer] = useState(null);
+  const [editingReward, setEditingReward] = useState(null);
+  const [editPlayerValue, setEditPlayerValue] = useState('');
+  const [editRewardValue, setEditRewardValue] = useState('');
 
   // 사다리 생성
   const generateLadder = () => {
@@ -127,6 +131,52 @@ const LadderGame = ({ onBack }) => {
     }
   };
 
+  // 참가자 편집 시작
+  const startEditingPlayer = (index) => {
+    setEditingPlayer(index);
+    setEditPlayerValue(players[index]);
+  };
+
+  // 참가자 편집 저장
+  const savePlayerEdit = (index) => {
+    if (editPlayerValue.trim()) {
+      const newPlayers = [...players];
+      newPlayers[index] = editPlayerValue.trim();
+      setPlayers(newPlayers);
+    }
+    setEditingPlayer(null);
+    setEditPlayerValue('');
+  };
+
+  // 참가자 편집 취소
+  const cancelPlayerEdit = () => {
+    setEditingPlayer(null);
+    setEditPlayerValue('');
+  };
+
+  // 상품 편집 시작
+  const startEditingReward = (index) => {
+    setEditingReward(index);
+    setEditRewardValue(rewards[index]);
+  };
+
+  // 상품 편집 저장
+  const saveRewardEdit = (index) => {
+    if (editRewardValue.trim()) {
+      const newRewards = [...rewards];
+      newRewards[index] = editRewardValue.trim();
+      setRewards(newRewards);
+    }
+    setEditingReward(null);
+    setEditRewardValue('');
+  };
+
+  // 상품 편집 취소
+  const cancelRewardEdit = () => {
+    setEditingReward(null);
+    setEditRewardValue('');
+  };
+
   // 게임 리셋
   const resetGame = () => {
     setIsPlaying(false);
@@ -179,14 +229,62 @@ const LadderGame = ({ onBack }) => {
               <div className="space-y-2">
                 {players.map((player, index) => (
                   <div key={index} className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
-                    <span className="font-medium text-blue-800">{player}</span>
-                    {players.length > 2 && (
-                      <button
-                        onClick={() => removePlayer(index)}
-                        className="text-red-500 hover:text-red-700 font-bold text-lg"
-                      >
-                        ×
-                      </button>
+                    {editingPlayer === index ? (
+                      // 편집 모드
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="text"
+                          value={editPlayerValue}
+                          onChange={(e) => setEditPlayerValue(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              savePlayerEdit(index);
+                            }
+                            if (e.key === 'Escape') {
+                              cancelPlayerEdit();
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => savePlayerEdit(index)}
+                          className="text-green-600 hover:text-green-800 font-bold text-sm px-2"
+                          title="저장"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={cancelPlayerEdit}
+                          className="text-gray-500 hover:text-gray-700 font-bold text-sm px-2"
+                          title="취소"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      // 보기 모드
+                      <>
+                        <span className="font-medium text-blue-800 flex-1">{player}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEditingPlayer(index)}
+                            className="text-blue-500 hover:text-blue-700 text-sm px-2 py-1"
+                            title="수정"
+                          >
+                            ✏️
+                          </button>
+                          {players.length > 2 && (
+                            <button
+                              onClick={() => removePlayer(index)}
+                              className="text-red-500 hover:text-red-700 font-bold text-lg px-2"
+                              title="삭제"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 ))}
@@ -221,14 +319,62 @@ const LadderGame = ({ onBack }) => {
               <div className="space-y-2">
                 {rewards.map((reward, index) => (
                   <div key={index} className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                    <span className="font-medium text-green-800">{reward}</span>
-                    {rewards.length > 2 && (
-                      <button
-                        onClick={() => removeReward(index)}
-                        className="text-red-500 hover:text-red-700 font-bold text-lg"
-                      >
-                        ×
-                      </button>
+                    {editingReward === index ? (
+                      // 편집 모드
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="text"
+                          value={editRewardValue}
+                          onChange={(e) => setEditRewardValue(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              saveRewardEdit(index);
+                            }
+                            if (e.key === 'Escape') {
+                              cancelRewardEdit();
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => saveRewardEdit(index)}
+                          className="text-green-600 hover:text-green-800 font-bold text-sm px-2"
+                          title="저장"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={cancelRewardEdit}
+                          className="text-gray-500 hover:text-gray-700 font-bold text-sm px-2"
+                          title="취소"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      // 보기 모드
+                      <>
+                        <span className="font-medium text-green-800 flex-1">{reward}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEditingReward(index)}
+                            className="text-green-500 hover:text-green-700 text-sm px-2 py-1"
+                            title="수정"
+                          >
+                            ✏️
+                          </button>
+                          {rewards.length > 2 && (
+                            <button
+                              onClick={() => removeReward(index)}
+                              className="text-red-500 hover:text-red-700 font-bold text-lg px-2"
+                              title="삭제"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 ))}
