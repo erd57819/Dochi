@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 
 export const useSSESTT = (roomName, participantName, livekitRoom = null) => {
-  // STT 관련 상태
-  const [sttEnabled, setSttEnabled] = useState(false);
-  const [aiMediationEnabled, setAiMediationEnabled] = useState(false);
+  // STT 관련 상태 (기본값 true로 변경)
+  const [sttEnabled, setSttEnabled] = useState(true);
+  const [aiMediationEnabled, setAiMediationEnabled] = useState(true);
   const [coachingEnabled, setCoachingEnabled] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [currentSpeech, setCurrentSpeech] = useState({ speaker: null, text: '' });
