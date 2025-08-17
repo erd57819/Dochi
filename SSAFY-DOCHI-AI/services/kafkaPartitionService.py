@@ -1,6 +1,6 @@
 # services/kafkaPartitionService.py
 from confluent_kafka import Producer, Consumer
-from confluent_kafka.admin import AdminClient, ConfigResource, ConfigResourceType, NewTopic
+from confluent_kafka.admin import AdminClient, NewTopic
 from core.config import settings
 import hashlib
 import json
