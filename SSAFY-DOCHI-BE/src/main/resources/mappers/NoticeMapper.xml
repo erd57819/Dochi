@@ -70,38 +70,38 @@
         ORDER BY publish_date DESC
     </select>
 
-<!--    &lt;!&ndash; 페이징된 공지사항 조회 &ndash;&gt;-->
-<!--    <select id="findAll" parameterType="map" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">-->
-<!--        SELECT-->
-<!--        id,-->
-<!--        title,-->
-<!--        content,-->
-<!--        user_id as userId,-->
-<!--        category,-->
-<!--        is_important as isImportant,-->
-<!--        is_popup as isPopup,-->
-<!--        DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,-->
-<!--        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,-->
-<!--        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,-->
-<!--        view_count as viewCount-->
-<!--        FROM notices-->
-<!--        <where>-->
-<!--            <if test="search != null and search != ''">-->
-<!--                AND (title LIKE CONCAT('%', #{search}, '%')-->
-<!--                OR content LIKE CONCAT('%', #{search}, '%'))-->
-<!--            </if>-->
-<!--            <if test="category != null and category != ''">-->
-<!--                AND category = #{category}-->
-<!--            </if>-->
-<!--            <if test="isImportant != null">-->
-<!--                AND is_important = #{isImportant}-->
-<!--            </if>-->
-<!--        </where>-->
-<!--        ORDER BY-->
-<!--        is_important DESC,-->
-<!--        publish_date DESC-->
-<!--        LIMIT #{limit} OFFSET #{offset}-->
-<!--    </select>-->
+    <!-- 페이징된 공지사항 조회 -->
+    <select id="findAll" parameterType="map" resultType="com.ssafy.dochi.notice.dto.response.NoticeResDto">
+        SELECT
+        id,
+        title,
+        content,
+        user_id as userId,
+        category,
+        is_important as isImportant,
+        is_popup as isPopup,
+        DATE_FORMAT(publish_date, '%Y-%m-%d %H:%i:%s') as publishDate,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') as updatedAt,
+        view_count as viewCount
+        FROM notices
+        <where>
+            <if test="search != null and search != ''">
+                AND (title LIKE CONCAT('%', #{search}, '%')
+                OR content LIKE CONCAT('%', #{search}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="isImportant != null">
+                AND is_important = #{isImportant}
+            </if>
+        </where>
+        ORDER BY
+        is_important DESC,
+        publish_date DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
 
     <!-- 전체 개수 조회 -->
     <select id="getTotalCount" parameterType="map" resultType="int">
