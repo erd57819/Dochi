@@ -76,6 +76,11 @@ const ConflictReportPage = () => {
       }
       
       setReportData(data);
+      
+      // 시간 디버깅
+      console.log('[시간 디버깅] generated_at 원본:', data?.generated_at);
+      console.log('[시간 디버깅] 변환된 시간:', new Date(data?.generated_at));
+      console.log('[시간 디버깅] 한국시간:', new Date(data?.generated_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
     } catch (err) {
       console.error('레포트 로딩 실패:', err);
       setError('레포트를 불러오는데 실패했습니다.');
@@ -234,7 +239,18 @@ const ConflictReportPage = () => {
                 AI가 분석한 갈등의 깊이와 해결책을 만나보세요
               </p>
               <p className="text-gray-500 text-sm mt-4 font-normal">
-                생성 시간: {new Date(reportData?.generated_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+                생성 시간: {reportData?.generated_at ? 
+                  new Date(reportData.generated_at).toLocaleString('ko-KR', { 
+                    timeZone: 'Asia/Seoul',
+                    year: 'numeric',
+                    month: '2-digit', 
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                  }) : '시간 정보 없음'
+                }
               </p>
             </div>
           </div>
