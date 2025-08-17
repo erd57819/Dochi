@@ -22,8 +22,6 @@ const LoadingSpinner = ({
           alt="Loading..." 
           className={sizeClasses[size]}
           style={{ 
-            imageRendering: 'pixelated',
-            filter: 'contrast(1.1) brightness(1.1)',
             animationDuration: '0.5s'
           }}
         />

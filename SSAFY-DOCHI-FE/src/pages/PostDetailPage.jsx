@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { communityApi, commentApi, likeApi } from '../services/communityApi';
 import useAuthStore from '../stores/AuthStore';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import hedgehogImg from '../assets/image-21.png'; // 도치 이미지 추가
 import thumbUp from '@/assets/thumb_up.png';
 import thumbDown from '@/assets/thumb_down.png';
@@ -640,8 +641,7 @@ const PostDetailPage = () => {
         
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <img src={hedgehogImg} alt="갈등도치" className="w-16 h-16 mx-auto mb-4 animate-bounce" />
-            <p className="text-xl" style={{ color: '#8B4513' }}>게시글을 불러오는 중...</p>
+            <LoadingSpinner type="gif" size="xlarge" />
           </div>
         </div>
       </div>
