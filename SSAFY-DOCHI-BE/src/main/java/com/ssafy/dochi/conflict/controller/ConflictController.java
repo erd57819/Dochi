@@ -75,6 +75,18 @@ public class ConflictController {
     }
     
     
+    // AI 서비스 연결 테스트
+    @GetMapping("/ai-health")
+    public ApiResponse<?> checkAiHealth() {
+        try {
+            // 간단한 AI 분석 테스트
+            conflictService.testAiConnection();
+            return ApiResponseGenerator.success("AI 서비스 연결 정상", HttpStatus.OK);
+        } catch (Exception e) {
+            return ApiResponseGenerator.fail("AI 서비스 연결 실패: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
+        }
+    }
+    
     // 기존 방식 유지 (호환성)
     @PostMapping("/create")
     public ApiResponse<ApiResponse.SuccessCustomBody<ConflictResDto>> createConflict(

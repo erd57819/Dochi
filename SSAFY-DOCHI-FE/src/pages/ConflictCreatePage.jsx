@@ -102,8 +102,8 @@ const ConflictCreatePage = () => {
 
       console.log("📤 갈등 생성 데이터:", JSON.stringify(payload, null, 2));
 
-      // 1단계: Redis에 임시 저장
-      const tempResponse = await fetch(`${API_BASE_URL}/conflict/temp`, {
+      // MySQL에 직접 저장 (AI 분석은 백엔드에서 처리)
+      const createResponse = await fetch(`${API_BASE_URL}/conflict/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,150 +112,44 @@ const ConflictCreatePage = () => {
         body: JSON.stringify(payload)
       });
 
-      console.log('Temp Response Status:', tempResponse.status);
-      const tempResponseText = await tempResponse.text();
-      console.log('Temp Response Body:', tempResponseText);
+      console.log('Create Response Status:', createResponse.status);
+      const createResponseText = await createResponse.text();
+      console.log('Create Response Body:', createResponseText);
 
-      if (!tempResponse.ok) {
-        throw new Error(`갈등 데이터 임시 저장 실패: ${tempResponse.status} - ${tempResponseText}`);
-      }
-
-      const tempResult = JSON.parse(tempResponseText);
-      console.log('=== 서버 응답 전체 구조 ===', tempResult);
-      console.log('tempResult.data:', tempResult.data);
-      console.log('tempResult.response?.response:', tempResult.response?.response);
-      console.log('tempResult.id:', tempResult.id);
-      
-      let conflictId = tempResult.data || tempResult.response?.response || tempResult.id;
-      
-      // 백엔드에서 "userId_timestamp" 형태로 반환하는 tempConflictId는
-      // 실제 DB에 저장될 때 Long 타입의 실제 conflictId로 변환됨
-      // 하지만 현재는 tempConflictId를 그대로 사용해야 함
-      console.log('Original conflictId from server:', conflictId);
-      
-      setTempConflictId(conflictId);
-      console.log('Generated Conflict ID:', conflictId);
-
-      // 2단계: 고급 AI 분석 요청 (재시도 로직 포함)
-      let advancedRetryCount = 0;
-      const maxAdvancedRetries = 2; // AI 분석 재시도 횟수 증가
-      
-      let analysisData = null;
-      
-      while (advancedRetryCount <= maxAdvancedRetries && !analysisData) {
+      if (!createResponse.ok) {
+        // 서버 에러 메시지를 파싱해서 표시
+        let errorMessage = '갈등 등록 중 오류가 발생했습니다.';
         try {
-          const advancedController = new AbortController();
-          const advancedTimeoutId = setTimeout(() => advancedController.abort(), 30000); // 30초 타임아웃
-          
-          console.log(`AI 분석 시도 ${advancedRetryCount + 1}/${maxAdvancedRetries + 1}...`);
-          
-          const advancedResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/${conflictId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-            },
-            signal: advancedController.signal
-          });
-          
-          clearTimeout(advancedTimeoutId);
-          console.log('AI Analysis Response Status:', advancedResponse.status);
-
-          if (advancedResponse.ok) {
-            try {
-              const analysisResult = await advancedResponse.json();
-              console.log('✅ AI 분석 완료:', analysisResult);
-              analysisData = analysisResult.data || analysisResult.response?.response || analysisResult;
-              
-              // AI 분석 결과 sessionStorage에 저장
-              const aiSummary = analysisData.summary || analysisData.conflict_analysis || '분석을 생성할 수 없습니다.';
-              const aiSolutions = analysisData.solutions || analysisData.recommended_actions || '해결방안을 생성할 수 없습니다.';
-              
-              sessionStorage.setItem('tempAiSummary', aiSummary);
-              sessionStorage.setItem('tempAiSolutions', aiSolutions);
-              break;
-            } catch (jsonError) {
-              console.log(`⚠️ AI 분석 JSON 파싱 실패 (시도 ${advancedRetryCount + 1}):`, jsonError);
-              advancedRetryCount++;
-              if (advancedRetryCount <= maxAdvancedRetries) {
-                console.log('3초 후 재시도...');
-                await new Promise(resolve => setTimeout(resolve, 3000));
-              }
-            }
-          } else if (advancedResponse.status === 504) {
-            console.log(`⏰ AI 분석 504 타임아웃 (시도 ${advancedRetryCount + 1})`);
-            advancedRetryCount++;
-            if (advancedRetryCount <= maxAdvancedRetries) {
-              console.log('3초 후 재시도...');
-              await new Promise(resolve => setTimeout(resolve, 3000));
-            }
-          } else {
-            const analysisError = await advancedResponse.text();
-            console.log('AI Analysis Error:', analysisError);
-            throw new Error(`AI 분석 실패: ${advancedResponse.status}`);
+          const errorData = JSON.parse(createResponseText);
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (createResponseText.includes('AI 분석')) {
+            errorMessage = 'AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.';
+          } else if (createResponseText.includes('저장')) {
+            errorMessage = '갈등 저장에 실패했습니다. 다시 시도해주세요.';
           }
-        } catch (error) {
-          if (error.name === 'AbortError') {
-            console.log(`⏰ AI 분석 타임아웃 (시도 ${advancedRetryCount + 1})`);
-            advancedRetryCount++;
-            if (advancedRetryCount <= maxAdvancedRetries) {
-              console.log('3초 후 재시도...');
-              await new Promise(resolve => setTimeout(resolve, 3000));
-            }
-          } else {
-            throw error;
-          }
+        } catch (e) {
+          // JSON 파싱 실패 시 기본 메시지 사용
         }
-      }
-      
-      // 모든 재시도 실패 시 기본값 설정
-      if (!analysisData) {
-        console.log('⚠️ AI 분석 모든 시도 실패 - 기본값 사용');
-        sessionStorage.setItem('tempAiSummary', '서버 응답 지연으로 인해 분석을 완료할 수 없습니다. 잠시 후 다시 시도해주세요.');
-        sessionStorage.setItem('tempAiSolutions', '서버 응답 지연으로 인해 해결방안을 생성할 수 없습니다. 갈등 상세 페이지에서 다시 확인해주세요.');
+        throw new Error(errorMessage);
       }
 
-      // 3단계: 실제 DB에 갈등 저장 및 실제 conflictId 반환
-      console.log('📝 3단계: 갈등을 실제 DB에 저장 중...');
+      const createResult = JSON.parse(createResponseText);
+      console.log('=== 서버 응답 전체 구조 ===', createResult);
       
-      let finalConflictId = conflictId; // 기본값은 tempConflictId
+      // 실제 conflictId 추출
+      const conflictId = createResult.data?.id || createResult.data?.conflictId;
       
-      try {
-        const saveResponse = await fetch(`${API_BASE_URL}/conflict/analyze/advanced/save/${conflictId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        });
-        
-        console.log('Save Response Status:', saveResponse.status);
-        
-        if (saveResponse.ok) {
-          const saveResult = await saveResponse.json();
-          console.log('Save Response Body:', saveResult);
-          
-          // 실제 conflictId 추출 (Long 타입)
-          const actualConflictId = saveResult.data?.id || saveResult.data?.conflictId;
-          if (actualConflictId) {
-            finalConflictId = actualConflictId;
-            console.log('✅ 실제 갈등 저장 완료, conflictId:', finalConflictId);
-          } else {
-            console.warn('⚠️ 실제 conflictId를 찾을 수 없음, tempConflictId 사용');
-          }
-        } else {
-          console.warn('⚠️ 갈등 저장 실패, tempConflictId로 계속 진행');
-          const saveError = await saveResponse.text();
-          console.log('Save Error:', saveError);
-        }
-      } catch (saveError) {
-        console.warn('⚠️ 갈등 저장 중 오류 발생, tempConflictId로 계속 진행');
-        console.error('Save Error Details:', saveError);
+      if (!conflictId) {
+        throw new Error('서버에서 갈등 ID를 반환하지 않았습니다.');
       }
+      
+      console.log('✅ 갈등 저장 완료, conflictId:', conflictId);
+      setTempConflictId(conflictId);
 
-      // 최종 conflictId로 ConflictDetailPage 이동
-      console.log('🔄 최종 conflictId로 이동:', finalConflictId);
-      navigate(`/conflicts/${finalConflictId}`);
+      // 갈등 상세 페이지로 이동
+      console.log('🔄 갈등 상세 페이지로 이동:', conflictId);
+      navigate(`/conflicts/${conflictId}`);
 
     } catch (error) {
       console.error('갈등 분석 오류:', error);

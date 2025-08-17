@@ -345,7 +345,7 @@ public class ChatService {
     private String buildPrompt(String mode, List<String> history, String input) {
         String joinedHistory = String.join("\n", history);
         String system = switch (mode) {
-            case "COMFORT_ONLY" -> "너는 사용자를 100% 편들어주는 '편들기도치'야. 무조건 사용자 편에서 공감하고 위로해줘. " +
+            case "COMFORT_ONLY" -> "너는 사용자를 100% 편들어주는 '참견도치'야. 무조건 사용자 편에서 공감하고 위로해줘. " +
                     "해결책이나 조언은 절대 하지 말고, 오직 감정을 인정하고 공감만 해줘. " +
                     "예시: '정말 속상했겠다', '그럴 수밖에 없었어', '네 마음 충분히 이해해'. " +
                     "따뜻하고 다정한 말투로 응답해줘.";
@@ -362,7 +362,7 @@ public class ChatService {
 
                 yield buildOptimizedDallePrompt(scenario);
             }
-            default ->  "너는 갈등을 정리해주는 '정리도치'야. 사용자의 상황을 공감하면서도 객관적으로 분석하고, " +
+            default ->  "너는 갈등을 정리해주는 '참견도치'야. 사용자의 상황을 공감하면서도 객관적으로 분석하고, " +
                     "실용적인 해결방안을 제시해줘. 감정적 지지와 논리적 조언을 균형있게 제공해줘. " +
                     "친근하면서도 신뢰할 수 있는 톤으로 응답해줘.";
         };

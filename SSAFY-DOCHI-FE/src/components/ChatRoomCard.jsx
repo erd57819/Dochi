@@ -5,7 +5,7 @@ import ConflictCard from './ConflictCard';
  * ChatRoomCard – ComfortPage 전용 래퍼
  *   - type: 'normal' | 'empty'
  *   - title, date, onOpen, onCreate props
- *   - 내부적으로 ConflictCard UI 재사용하여 코드 중복 최소화
+ *   - 내부적으로 ConflictCard UI 재사용하여 코드 중복 최소화asfdasfsafsafsd
  */
 const ChatRoomCard = ({
   type = 'normal',

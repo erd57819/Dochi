@@ -4,6 +4,8 @@ import { API_BASE_URL } from '../config/api.js';
 import useAuthStore from '../stores/AuthStore.js';
 import { videoCallApi } from '../services/videoCallApi.js';
 import hedgehogImg from '../assets/conflict.png';
+import useComfortStore from '../stores/ComfortStore.js';
+import comfortService from '../services/comfortService.js';
 
 const ConflictDetailPage = () => {
   const { conflictId } = useParams();
@@ -16,6 +18,53 @@ const ConflictDetailPage = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview'); // overview, analysis, roadmap
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // 대화 저장 함수 (ComfortChatPage에서 가져온 함수)
+  const saveChatToDatabase = async (currentChatRoomId, currentSessionId) => {
+    if (!currentSessionId || !currentChatRoomId) {
+      return;
+    }
+    
+    try {
+      await comfortService.exitSession(currentSessionId, currentChatRoomId);
+      console.log('대화가 성공적으로 저장되었습니다!');
+    } catch (error) {
+      console.error('대화 저장 실패:', error);
+      throw error;
+    }
+  };
+
+  // 토닥토닥 서비스로 갈등 내용 전달하여 이동
+  const handleComfortWithConflict = async () => {
+    try {
+      // 현재 대화가 있다면 자동으로 저장
+      const { currentChatRoomId, currentSessionId, messages } = useComfortStore.getState();
+      
+      if (currentSessionId && currentChatRoomId && messages && messages.length > 0) {
+        const hasUserMessages = messages.some(msg => msg.sender === 'user');
+        if (hasUserMessages) {
+          await saveChatToDatabase(currentChatRoomId, currentSessionId);
+        }
+      }
+      
+      if (conflict) {
+        // 갈등 내용을 요약하여 세션 스토리지에 저장
+        const conflictSummary = `갈등 상황: ${conflict.conflictSituation || conflict.description || '갈등 상황'}\n` +
+                                `상대방: ${conflict.opponentName || conflict.opponent || conflict.partnerName || '상대방'}\n` +
+                                `관계: ${conflict.relationship || getConflictTypeText(conflict.conflictType)}\n` +
+                                `갈등 내용: ${conflict.conflictContent || conflict.description || '갈등 내용'}`;
+        
+        sessionStorage.setItem('initialConflictMessage', conflictSummary);
+        navigate('/comfort');
+      } else {
+        navigate('/comfort');
+      }
+    } catch (error) {
+      console.error('토닥토닥 서비스 이동 중 오류:', error);
+      // 오류가 발생해도 페이지 이동은 진행
+      navigate('/comfort');
+    }
+  };
 
   // 분석 데이터 렌더링 헬퍼 함수 (최적화됨)
   const renderAnalysisData = (data) => {
