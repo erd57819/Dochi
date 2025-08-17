@@ -14,7 +14,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,8 +32,12 @@ public class AiSummaryService {
     public AiSummaryService(AiAnalysisResultDao aiAnalysisResultDao, GmsAiClient gmsAiClient) {
         this.aiAnalysisResultDao = aiAnalysisResultDao;
         this.gmsAiClient = gmsAiClient;
-        this.restTemplate = new RestTemplate();
-        // AI 서비스 호출에 대한 타임아웃 설정은 별도로 구성하지 않음 (기본값 사용)
+        
+        // AI 서비스 호출에 대한 타임아웃 설정 (AI 분석 시간을 고려하여 늘림)
+        this.restTemplate = new RestTemplateBuilder()
+            .setConnectTimeout(Duration.ofSeconds(10))
+            .setReadTimeout(Duration.ofSeconds(60))
+            .build();
     }
     
     @Value("${ai.service.url:http://localhost:8002}")
