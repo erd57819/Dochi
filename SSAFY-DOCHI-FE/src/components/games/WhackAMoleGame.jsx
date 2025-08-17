@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import hedgehogImg from '../../assets/image-65.png';
 
 const WhackAMoleGame = ({ onBack }) => {
   const [score, setScore] = useState(0);
@@ -356,14 +357,11 @@ const WhackAMoleGame = ({ onBack }) => {
       {/* 헤더 */}
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
-          <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none">
-            <circle cx="50" cy="55" r="25" fill="#8B4513"/>
-            <circle cx="50" cy="35" r="15" fill="#D2691E"/>
-            <circle cx="45" cy="32" r="2" fill="black"/>
-            <circle cx="55" cy="32" r="2" fill="black"/>
-            <circle cx="50" cy="38" r="1" fill="black"/>
-            <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="#654321" strokeWidth="2" fill="none"/>
-          </svg>
+          <img 
+            src={hedgehogImg} 
+            alt="고슴도치" 
+            className="w-24 h-24 object-contain"
+          />
         </div>
         <h1 className="text-4xl font-bold mb-2" style={{ color: '#333333' }}>
           고슴도치 잡기
