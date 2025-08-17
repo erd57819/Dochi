@@ -39,10 +39,9 @@ const ActionPlanTab = ({ actionPlans }) => {
       {/* 우선순위별 행동계획 */}
       {actionPlans?.priority_actions && actionPlans.priority_actions.length > 0 && (
         <div 
-          className="rounded-lg p-8 border-l-4"
+          className="rounded-lg p-8"
           style={{
             background: 'linear-gradient(135deg, #F8D6B3, #FFE4CC)',
-            borderColor: '#BF7D2C',
             boxShadow: '0 4px 6px rgba(191, 125, 44, 0.1)'
           }}
         >
@@ -59,9 +58,8 @@ const ActionPlanTab = ({ actionPlans }) => {
             {actionPlans.priority_actions.map((action, idx) => (
               <div 
                 key={idx} 
-                className="bg-white rounded-lg p-4 border-l-2"
+                className="bg-white rounded-lg p-4"
                 style={{ 
-                  borderColor: '#BF7D2C',
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                 }}
               >
@@ -86,10 +84,9 @@ const ActionPlanTab = ({ actionPlans }) => {
       {/* 소통 개선 팁 */}
       {actionPlans?.communication_tips && actionPlans.communication_tips.length > 0 && (
         <div 
-          className="rounded-lg p-8 border-l-4"
+          className="rounded-lg p-8"
           style={{
             background: 'linear-gradient(135deg, #D4B896, #E2CCA8)',
-            borderColor: '#A0743C',
             boxShadow: '0 4px 6px rgba(160, 116, 60, 0.1)'
           }}
         >
@@ -106,9 +103,8 @@ const ActionPlanTab = ({ actionPlans }) => {
             {actionPlans.communication_tips.map((tip, idx) => (
               <div 
                 key={idx} 
-                className="bg-white rounded-lg p-4 border-l-2"
+                className="bg-white rounded-lg p-4"
                 style={{ 
-                  borderColor: '#A0743C',
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                 }}
               >
@@ -133,10 +129,9 @@ const ActionPlanTab = ({ actionPlans }) => {
       {/* 장기적 제안 */}
       {actionPlans?.long_term_suggestions && actionPlans.long_term_suggestions.length > 0 && (
         <div 
-          className="rounded-lg p-8 border-l-4"
+          className="rounded-lg p-8"
           style={{
             background: 'linear-gradient(135deg, #C6A876, #D9C499)',
-            borderColor: '#936B3A',
             boxShadow: '0 4px 6px rgba(147, 107, 58, 0.1)'
           }}
         >
@@ -153,9 +148,8 @@ const ActionPlanTab = ({ actionPlans }) => {
             {actionPlans.long_term_suggestions.map((suggestion, idx) => (
               <div 
                 key={idx} 
-                className="bg-white rounded-lg p-4 border-l-2"
+                className="bg-white rounded-lg p-4"
                 style={{ 
-                  borderColor: '#936B3A',
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                 }}
               >
