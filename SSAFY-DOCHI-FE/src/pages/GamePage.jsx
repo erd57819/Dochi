@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import RouletteGame from '../components/games/RouletteGame.jsx';
 import LadderGame from '../components/games/LadderGame.jsx';
 import WhackAMoleGame from '../components/games/WhackAMoleGame.jsx';
+import roulettedochi from '../assets/roulettedochi.png';
+import ladderdochi from '../assets/ladderdochi.png';
+import mangchidochi from '../assets/mangchidochi.png';
 
 const GamePage = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -12,21 +15,24 @@ const GamePage = () => {
       title: '참견도치 룰렛',
       description: '고민거리를 룰렛으로 선택해보세요!',
       color: '#83673f',
-      component: RouletteGame
+      component: RouletteGame,
+      image: roulettedochi
     },
     {
       id: 'ladder',
       title: '사다리타기',
       description: '공정한 선택을 위한 사다리타기!',
       color: '#cd9f6e',
-      component: LadderGame
+      component: LadderGame,
+      image: ladderdochi
     },
     {
       id: 'whack',
       title: '고슴도치 잡기',
-      description: '빠르게 나타나는 고슴도치를 잡아보세요!',
+      description: '고슴도치를 잡아보세요!',
       color: '#EE9278',
-      component: WhackAMoleGame
+      component: WhackAMoleGame,
+      image: mangchidochi
     }
   ];
 
@@ -62,17 +68,14 @@ const GamePage = () => {
               className="bg-white cursor-pointer transition-all duration-300 hover:bg-orange-50 p-8"
               onClick={() => setSelectedGame(game)}
             >
-              {/* 카드 헤더 - 더 큰 아이콘 */}
+              {/* 카드 헤더 - 게임별 이미지 */}
               <div className="text-center mb-6">
-                <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center rounded-full" style={{ backgroundColor: game.color }}>
-                  <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none">
-                    <circle cx="50" cy="55" r="25" fill="white" opacity="0.9"/>
-                    <circle cx="50" cy="35" r="15" fill="white" opacity="0.8"/>
-                    <circle cx="45" cy="32" r="2" fill="black"/>
-                    <circle cx="55" cy="32" r="2" fill="black"/>
-                    <circle cx="50" cy="38" r="1" fill="black"/>
-                    <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="white" strokeWidth="2" fill="none" opacity="0.8"/>
-                  </svg>
+                <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                  <img 
+                    src={game.image} 
+                    alt={game.title}
+                    className="w-24 h-24 object-contain"
+                  />
                 </div>
                 <h3 className="text-2xl font-bold mb-3" style={{ color: '#333333' }}>{game.title}</h3>
               </div>
@@ -120,40 +123,6 @@ const GamePage = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* 게임 설명 */}
-        <div className="mt-16 bg-white p-8">
-          <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: '#333333' }}>게임 소개</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="mb-4">
-              </div>
-              <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>참견도치 룰렛</h3>
-              <p className="text-sm" style={{ color: '#666666' }}>
-                여러 고민 중에서 어떤 것부터 해결할지 모르겠을 때! 
-                룰렛을 돌려서 참견도치가 선택해드릴게요.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mb-4">
-              </div>
-              <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>사다리타기</h3>
-              <p className="text-sm" style={{ color: '#666666' }}>
-                공정한 선택이 필요할 때 사용하세요! 
-                참가자와 상품을 설정하고 사다리를 타보세요.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mb-4">
-              </div>
-              <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>고슴도치 잡기</h3>
-              <p className="text-sm" style={{ color: '#666666' }}>
-                스트레스 해소가 필요할 때! 
-                빠르게 나타나는 고슴도치를 잡아서 점수를 쌓아보세요.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
