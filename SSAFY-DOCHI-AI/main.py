@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import faceRouter, speechRouter, summary, apiRouter, conflictReportRouter, websocketRouter, sseRouter
+from routers import faceRouter, speechRouter, summary, apiRouter, conflictReportRouter, websocketRouter, sseRouter, partitionRouter
 from services.kafkaService import init_kafka_producer, close_kafka_producer
+from services.kafkaPartitionService import init_partition_kafka, close_partition_kafka
 from core.config import settings
 # 실제 사용되는 Consumer들만 import
 from consumers.sttConsumer import STTConsumer
@@ -38,6 +39,7 @@ app.include_router(faceRouter.router)
 app.include_router(conflictReportRouter.router)
 app.include_router(websocketRouter.router)
 app.include_router(sseRouter.router)
+app.include_router(partitionRouter.router)
 
 @app.get("/")
 def read_root():
@@ -73,6 +75,14 @@ def startup_event():
     try:
         init_kafka_producer()
         print("[Startup] Kafka producer initialized successfully")
+        
+        # 파티션 시스템 초기화 (선택적)
+        try:
+            init_partition_kafka()
+            print("[Startup] Kafka partition system initialized successfully")
+        except Exception as e:
+            print(f"[Startup Warning] Partition system initialization failed: {e}")
+            print("[Startup] Continuing with standard Kafka only")
         
         # Consumer들 초기화 및 실행 (안전 모드)
         if settings.use_kafka:
@@ -112,3 +122,10 @@ def shutdown_event():
             print(f"[Shutdown Error] Failed to close {consumer.__class__.__name__}: {e}")
     
     close_kafka_producer()
+    
+    # 파티션 시스템 종료
+    try:
+        close_partition_kafka()
+        print("[Shutdown] Partition system closed successfully")
+    except Exception as e:
+        print(f"[Shutdown Warning] Partition system shutdown failed: {e}")
