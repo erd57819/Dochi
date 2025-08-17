@@ -1,39 +1,98 @@
-import React from 'react';
-import { Doughnut } from 'react-chartjs-2';
+import React, { useRef, useLayoutEffect } from 'react';
+import * as am5 from '@amcharts/amcharts5';
+import * as am5percent from '@amcharts/amcharts5/percent';
+import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 
 const ResponsibilityTab = ({ responsibilityData }) => {
   // 백엔드에서 받은 데이터 확인
   console.log('ResponsibilityTab received:', responsibilityData);
+  const chartRef = useRef(null);
+  const root = useRef(null);
   
   const getChartData = () => {
-    if (!responsibilityData?.responsibility_analysis) return null;
+    if (!responsibilityData?.responsibility_analysis) return [];
 
     const respAnalysis = responsibilityData.responsibility_analysis;
     const speakers = Object.keys(respAnalysis);
-    const percentages = speakers.map(speaker => 
-      respAnalysis[speaker].responsibility_percentage || 0
-    );
-    const names = speakers.map(speaker => 
-      respAnalysis[speaker].name || speaker
+    const colors = ['#7f5539', '#cd9f6e', '#f8d6b3', '#83673f'];
+    
+    return speakers.map((speaker, index) => ({
+      name: respAnalysis[speaker].name || speaker,
+      value: respAnalysis[speaker].responsibility_percentage || 0,
+      color: colors[index % colors.length]
+    }));
+  };
+
+  // amCharts 설정 및 정리
+  useLayoutEffect(() => {
+    const chartData = getChartData();
+    if (!chartData.length || !chartRef.current) return;
+
+    // 기존 차트 정리
+    if (root.current) {
+      root.current.dispose();
+    }
+
+    const chartRoot = am5.Root.new(chartRef.current);
+    root.current = chartRoot;
+
+    chartRoot.setThemes([am5themes_Animated.new(chartRoot)]);
+
+    const chart = chartRoot.container.children.push(
+      am5percent.PieChart.new(chartRoot, {
+        layout: chartRoot.verticalLayout,
+        innerRadius: am5.percent(50)
+      })
     );
 
-    return {
-      labels: names,
-      datasets: [{
-        data: percentages,
-        backgroundColor: ['#7f5539', '#cd9f6e', '#f8d6b3', '#83673f'],
-        borderWidth: 0,
-      }],
+    const series = chart.series.push(
+      am5percent.PieSeries.new(chartRoot, {
+        valueField: "value",
+        categoryField: "name",
+        alignLabels: false
+      })
+    );
+
+    series.slices.template.setAll({
+      strokeWidth: 2,
+      stroke: am5.color("#ffffff")
+    });
+
+    series.labels.template.setAll({
+      textType: "circular",
+      centerX: 0,
+      centerY: 0
+    });
+
+    // 커스텀 색상 적용
+    series.slices.template.adapters.add("fill", (fill, target) => {
+      const dataItem = target.dataItem;
+      if (dataItem) {
+        const data = dataItem.dataContext;
+        return am5.color(data.color);
+      }
+      return fill;
+    });
+
+    const legend = chart.children.push(
+      am5.Legend.new(chartRoot, {
+        centerX: am5.p50,
+        x: am5.p50,
+        marginTop: 15,
+        marginBottom: 15
+      })
+    );
+
+    legend.data.setAll(series.dataItems);
+
+    series.data.setAll(chartData);
+
+    series.appear(1000, 100);
+
+    return () => {
+      chartRoot.dispose();
     };
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom' },
-    },
-  };
+  }, [responsibilityData]);
 
   return (
     <div className="space-y-6">
@@ -43,9 +102,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">책임 비중 분포</h3>
-            <div style={{ height: '250px' }}>
-              <Doughnut data={getChartData()} options={chartOptions} />
-            </div>
+            <div ref={chartRef} style={{ height: '250px', width: '100%' }}></div>
           </div>
 
           {/* 상세 분석 */}

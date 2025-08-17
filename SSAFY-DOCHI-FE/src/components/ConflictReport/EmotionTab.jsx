@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Line, Doughnut } from 'react-chartjs-2';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import * as am5 from '@amcharts/amcharts5';
+import * as am5xy from '@amcharts/amcharts5/xy';
+import * as am5percent from '@amcharts/amcharts5/percent';
+import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 
 const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
   const { roomId } = useParams();
@@ -253,7 +256,7 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
       
 
       {/* 감정 그래프 - 라인 차트와 파이 차트 */}
-      {selectedSpeaker && getChartData() && (
+      {selectedSpeaker && getLineChartData().length > 0 && (
         <div className="bg-gray-50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-6">
             {selectedSpeaker}님의 감정 분석
@@ -262,18 +265,14 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
             {/* 감정 변화 추이 (라인 차트) */}
             <div>
               <h4 className="text-md font-medium text-gray-700 mb-4">실시간 감정 변화 추이</h4>
-              <div style={{ height: '350px' }}>
-                <Line data={getChartData()} options={chartOptions} />
-              </div>
+              <div ref={lineChartRef} style={{ height: '350px', width: '100%' }}></div>
             </div>
             
             {/* 감정 분포 (파이 차트) */}
-            {emotionSummary && getPieChartData() && (
+            {emotionSummary && getPieChartData().length > 0 && (
               <div>
                 <h4 className="text-md font-medium text-gray-700 mb-4">전체 감정 분포</h4>
-                <div style={{ height: '350px' }}>
-                  <Doughnut data={getPieChartData()} options={pieChartOptions} />
-                </div>
+                <div ref={pieChartRef} style={{ height: '350px', width: '100%' }}></div>
               </div>
             )}
           </div>

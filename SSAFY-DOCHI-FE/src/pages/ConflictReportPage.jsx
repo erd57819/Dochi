@@ -4,23 +4,6 @@ import { conflictReportApi } from '../services/conflictReportApi';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import consultantDochiImg from '../assets/consultantdochi.png';
 
-// Chart.js 설정
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
-
-ChartJS.register(
-  CategoryScale, LinearScale, PointElement, LineElement,
-  Title, Tooltip, Legend, ArcElement
-);
 
 // 컴포넌트 임포트
 import ReportSummaryCards from '../components/ConflictReport/ReportSummaryCards';
