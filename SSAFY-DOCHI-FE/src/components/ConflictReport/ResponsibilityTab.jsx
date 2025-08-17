@@ -65,14 +65,14 @@ const ResponsibilityTab = ({ responsibilityData }) => {
                       speaker.conflict_management_type === '수용형' ? 'bg-amber-100' :
                       speaker.conflict_management_type === '회피형' ? 'bg-stone-100' :
                       speaker.conflict_management_type === '타협형' ? 'bg-yellow-100' :
-                      speaker.conflict_management_type === '협력형' ? 'bg-emerald-100' :
+                      speaker.conflict_management_type === '협력형' ? 'bg-orange-100' :
                       'bg-brown-100'
                     }`} style={{
                       color: speaker.conflict_management_type === '경쟁형' ? '#8B4513' :
                       speaker.conflict_management_type === '수용형' ? '#654321' :
                       speaker.conflict_management_type === '회피형' ? '#5D4037' :
                       speaker.conflict_management_type === '타협형' ? '#8B4513' :
-                      speaker.conflict_management_type === '협력형' ? '#556B2F' :
+                      speaker.conflict_management_type === '협력형' ? '#8B4513' :
                       '#6D4C41'
                     }}>
                       <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -109,44 +109,54 @@ const ResponsibilityTab = ({ responsibilityData }) => {
           갈등관리 유형별 특징
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-orange-50 p-4 rounded-lg">
+          <div className="bg-orange-50 p-4">
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#D2691E' }}></span>
+              <svg className="w-3 h-3 mr-2" style={{ color: '#8B4513' }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
               <h4 className="font-medium" style={{ color: '#8B4513' }}>경쟁형 (Competing)</h4>
             </div>
             <p className="text-sm" style={{ color: '#A0522D' }}>자신의 목표를 우선시하며 상대방과의 협력보다는 승부를 중시</p>
           </div>
           
-          <div className="bg-amber-50 p-4 rounded-lg">
+          <div className="bg-amber-50 p-4">
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#B8860B' }}></span>
+              <svg className="w-3 h-3 mr-2" style={{ color: '#654321' }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
               <h4 className="font-medium" style={{ color: '#654321' }}>수용형 (Accommodating)</h4>
             </div>
             <p className="text-sm" style={{ color: '#8B6914' }}>관계 유지를 위해 자신의 욕구를 포기하고 상대방을 우선시</p>
           </div>
           
-          <div className="bg-stone-50 p-4 rounded-lg">
+          <div className="bg-stone-50 p-4">
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#8D6E63' }}></span>
+              <svg className="w-3 h-3 mr-2" style={{ color: '#5D4037' }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
               <h4 className="font-medium" style={{ color: '#5D4037' }}>회피형 (Avoiding)</h4>
             </div>
             <p className="text-sm" style={{ color: '#6D4C41' }}>갈등 상황 자체를 피하거나 늦추려는 경향</p>
           </div>
           
-          <div className="bg-yellow-50 p-4 rounded-lg">
+          <div className="bg-yellow-50 p-4">
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#CD853F' }}></span>
+              <svg className="w-3 h-3 mr-2" style={{ color: '#8B4513' }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
               <h4 className="font-medium" style={{ color: '#8B4513' }}>타협형 (Compromising)</h4>
             </div>
             <p className="text-sm" style={{ color: '#A0522D' }}>양측이 어느 정도 양보하여 중간 지점에서 해결책 모색</p>
           </div>
           
-          <div className="bg-emerald-50 p-4 rounded-lg">
+          <div className="bg-orange-100 p-4">
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#8FBC8F' }}></span>
-              <h4 className="font-medium" style={{ color: '#556B2F' }}>협력형 (Collaborating)</h4>
+              <svg className="w-3 h-3 mr-2" style={{ color: '#8B4513' }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+              <h4 className="font-medium" style={{ color: '#8B4513' }}>협력형 (Collaborating)</h4>
             </div>
-            <p className="text-sm" style={{ color: '#6B8E23' }}>양방 모두가 만족할 수 있는 창의적 해결책 추구</p>
+            <p className="text-sm" style={{ color: '#A0522D' }}>양방 모두가 만족할 수 있는 창의적 해결책 추구</p>
           </div>
         </div>
       </div>
