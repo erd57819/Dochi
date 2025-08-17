@@ -277,7 +277,7 @@ const ComfortChatPage = () => {
         .map(msg => `${msg.sender.toUpperCase()}: ${msg.content}`)
         .join('\n');
       
-      const prompt = `다음 대화를 바탕으로 타임라인을 생성해주세요. 마크다운 문법(**굵게**, *이탤릭* 등)을 사용하지 말고 일반 텍스트로만 답변해주세요:\n\n${conversationHistory}`;
+      const prompt = `다음 대화를 바탕으로 타임라인을 생성해주세요:\n\n${conversationHistory}`;
 
       try {
         const response = await comfortService.sendMessage(currentSessionId, prompt, 'TIMELINE');
@@ -1233,7 +1233,7 @@ const ComfortChatPage = () => {
                 >
                   새로고침
                 </button>
-                <button
+                {/* <button
                   onClick={() => saveChatToDatabase()}
                   className="px-3 py-1 text-white text-sm rounded transition-colors"
                   style={{ backgroundColor: '#10B981' }}
@@ -1245,7 +1245,7 @@ const ComfortChatPage = () => {
                   }}
                 >
                   대화저장
-                </button>
+                </button> */}
                 <button onClick={() => setShowTimeline(false)} className="text-gray-500 hover:text-gray-700">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1288,7 +1288,7 @@ const ComfortChatPage = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">오늘의 네컷만화</h3>
               <div className="flex gap-2">
-                <button
+                {/* <button
                   onClick={() => downloadManhwaImage()}
                   className="px-3 py-1 text-white text-sm rounded transition-colors"
                   style={{ backgroundColor: '#3B82F6' }}
@@ -1300,7 +1300,7 @@ const ComfortChatPage = () => {
                   }}
                 >
                   다운로드
-                </button>
+                </button> */}
                 <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
