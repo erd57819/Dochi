@@ -73,6 +73,7 @@
 ---
 
 ## 프로젝트 구조
+```
 SSAFY-DOCHI/
 ├── SSAFY-DOCHI-FE/ # React Frontend
 │ ├── components/ # 재사용 컴포넌트
@@ -91,7 +92,7 @@ SSAFY-DOCHI/
 ├── services/ # AI 서비스
 ├── models/ # 분석 모델
 └── core/ # 설정
-
+```
 
 ---
 
