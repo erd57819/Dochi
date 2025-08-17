@@ -32,8 +32,7 @@ const SummaryTab = ({ summary }) => {
           <div 
             className="rounded-lg p-6"
             style={{ 
-              background: 'linear-gradient(135deg, #F8D6B3, #FFE4CC)',
-              boxShadow: '0 4px 6px rgba(191, 125, 44, 0.1)'
+              background: 'linear-gradient(135deg, #FCF1E8, #FEF7F0)'
             }}
           >
             <h3 
@@ -58,8 +57,7 @@ const SummaryTab = ({ summary }) => {
           <div 
             className="rounded-lg p-6"
             style={{ 
-              background: 'linear-gradient(135deg, #E8D5C6, #F0E3D6)',
-              boxShadow: '0 4px 6px rgba(139, 69, 19, 0.1)'
+              background: 'linear-gradient(135deg, #F5F1EC, #F8F5F0)'
             }}
           >
             <h3 
@@ -87,7 +85,7 @@ const SummaryTab = ({ summary }) => {
           <div 
             className="p-4 rounded-lg"
             style={{ 
-              backgroundColor: 'rgba(139, 69, 19, 0.1)'
+              backgroundColor: 'rgba(139, 69, 19, 0.05)'
             }}
           >
             <p 
