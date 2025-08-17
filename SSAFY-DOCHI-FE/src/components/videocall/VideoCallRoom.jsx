@@ -34,8 +34,13 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   const getUserIdentifier = () => {
     if (!isLoggedIn || !user) return '게스트';
     
+    console.log('[getUserIdentifier] user 객체:', user);
+    
     // userId (ssafysy) 사용 - 갈등 레포트에서 누가 말했는지 명확하게 표시
-    return user.userId || user.username || user.loginId || `user-${user.id}`;
+    const identifier = user.userId || user.username || user.loginId || user.nickname || user.email ;
+    console.log('[getUserIdentifier] 반환값:', identifier);
+    
+    return identifier;
   };
   
   const [participantName, setParticipantName] = useState(getUserIdentifier());
@@ -152,6 +157,23 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         }
       });
 
+      // 참가자 트랙 상태 업데이트 함수
+      const updateParticipantTrackStatus = (participantSid, trackKind, enabled) => {
+        setParticipants(prev => prev.map(participant => {
+          if (participant.sid === participantSid) {
+            const updated = { ...participant };
+            if (trackKind === 'video') {
+              updated.isVideoEnabled = enabled;
+            } else if (trackKind === 'audio') {
+              updated.isAudioEnabled = enabled;
+            }
+            console.log(`참가자 ${participant.identity} ${trackKind} 상태 업데이트:`, enabled);
+            return updated;
+          }
+          return participant;
+        }));
+      };
+
       await newRoom.connect(LIVEKIT_URL, accessToken);
       
       // 참가자 수 체크 (나 + 상대방 = 최대 2명)
@@ -168,7 +190,12 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
       // 기존 참가자들 처리 
       const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
-      setParticipants(remoteParticipants);
+      const participantsWithStatus = remoteParticipants.map(participant => ({
+        ...participant,
+        isAudioEnabled: !participant.audioTrackPublications.values().next().value?.isMuted ?? true,
+        isVideoEnabled: !participant.videoTrackPublications.values().next().value?.isMuted ?? true
+      }));
+      setParticipants(participantsWithStatus);
 
       // 기존 참가자 join
       remoteParticipants.forEach(participant => {
@@ -327,7 +354,14 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
         return;
       }
       
-      setParticipants(prev => [...prev, participant]);
+      // 참가자 초기 트랙 상태 설정
+      const participantWithStatus = {
+        ...participant,
+        isAudioEnabled: !participant.audioTrackPublications.values().next().value?.isMuted ?? true,
+        isVideoEnabled: !participant.videoTrackPublications.values().next().value?.isMuted ?? true
+      };
+      
+      setParticipants(prev => [...prev, participantWithStatus]);
     });
 
     room.on(RoomEvent.ParticipantDisconnected, (participant) => {
@@ -377,6 +411,17 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
 
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       console.log('트랙 구독 해제됨:', track.kind, participant.identity);
+    });
+
+    // 트랙 음소거/음소거 해제 이벤트
+    room.on(RoomEvent.TrackMuted, (publication, participant) => {
+      console.log('트랙 음소거됨:', publication.kind, participant.identity);
+      updateParticipantTrackStatus(participant.sid, publication.kind, false);
+    });
+
+    room.on(RoomEvent.TrackUnmuted, (publication, participant) => {
+      console.log('트랙 음소거 해제됨:', publication.kind, participant.identity);
+      updateParticipantTrackStatus(participant.sid, publication.kind, true);
     });
 
     // Speaking 감지를 위한 AudioLevelChanged 이벤트
@@ -472,9 +517,9 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
   // SSE STT 훅 사용 (실제 방 ID 사용)
   const sttHook = useSSESTT(actualRoomId, participantName, room);
   const {
-    sttEnabled, aiMediationEnabled, coachingEnabled, conversations,
+    sttEnabled, aiMediationEnabled, conversations,
     recognitionRef, speechTimeoutRef, conversationLogRef,
-    toggleSTT, toggleAIMediation, toggleCoaching, stopSTT, startSTT, handleSpeechResult, sendSTTToFastAPI
+    toggleSTT, toggleAIMediation, stopSTT, startSTT, handleSpeechResult, sendSTTToFastAPI
   } = sttHook;
 
   // 감정인식 훅 사용 (실제 방 ID 사용)
@@ -1353,7 +1398,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                       testVideoEnabled ? 'bg-[#5C351A] hover:bg-[#4D280E]' : 'bg-[#D6CDB8] hover:bg-[#CCC2A7]'
                     }`}
                   >
-                    {testVideoEnabled ? '📹' : '📷'}
+                    {testVideoEnabled ? '📷' : '🚫'}
                   </button>
                 </div>
               </div>
@@ -1451,7 +1496,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             <h4 className="text-sm font-medium text-[#2A2A2A] mb-2">통화 시작 시 적용될 설정:</h4>
             <div className="flex gap-4 text-sm text-[#4A4A4A]">
               <span className={`flex items-center gap-1 ${testVideoEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
-                {testVideoEnabled ? '📹' : '📷'} 카메라: {testVideoEnabled ? 'ON' : 'OFF'}
+                {testVideoEnabled ? '📷' : '🚫'} 카메라: {testVideoEnabled ? 'ON' : 'OFF'}
               </span>
               <span className={`flex items-center gap-1 ${testAudioEnabled ? 'text-[#5C351A] font-medium' : ''}`}>
                 {testAudioEnabled ? '🎤' : '🔇'} 마이크: {testAudioEnabled ? 'ON' : 'OFF'}
@@ -1587,7 +1632,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
-                나 {isMicOn ? '🎤' : '🔇'} {isCameraOn ? '📹' : '📷'}
+                나 {isMicOn ? '🎤' : '🔇'} {isCameraOn ? '📷' : '🚫'}
                 {isLocalSpeaking && ' 🗣️'}
               </div>
               
@@ -1622,7 +1667,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 <div className="absolute bottom-2 left-2 bg-[#FEFCF8] bg-opacity-90 text-[#2A2A2A] px-2 py-1 rounded text-sm shadow-lg border border-[#5C351A]">
                   {participant.name} 
                   {participant.isAudioEnabled ? '🎤' : '🔇'} 
-                  {participant.isVideoEnabled ? '📹' : '📷'}
+                  {participant.isVideoEnabled ? '📷' : '🚫'}
                   {speakingParticipants.has(participant.sid) && ' 🗣️'}
                 </div>
               </div>
@@ -1637,10 +1682,8 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
           conversations={conversations}
           sttEnabled={sttEnabled}
           aiMediationEnabled={aiMediationEnabled}
-          coachingEnabled={coachingEnabled}
           toggleSTT={toggleSTT}
           toggleAIMediation={toggleAIMediation}
-          toggleCoaching={toggleCoaching}
           participantName={participantName}
         />
       </div>
@@ -1667,7 +1710,7 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
             }`}
             title={isCameraOn ? '비디오 끄기' : '비디오 켜기'}
           >
-            {isCameraOn ? '📹' : '📷'}
+            {isCameraOn ? '📷' : '🚫'}
           </button>
 
           {/* 소음 억제 토글 */}

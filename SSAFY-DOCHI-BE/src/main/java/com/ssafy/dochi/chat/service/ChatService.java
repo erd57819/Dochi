@@ -49,35 +49,61 @@ public class ChatService {
 
     public ChatResDto chat(Long userId, ChatReqDto dto) {
         String sessionId = dto.getSessionId();
-        List<String> history = getHistory(sessionId);
-        String prompt = buildPrompt(dto.getMode(), history, dto.getMessage());
-        String aiResponse;
+        String mode = dto.getMode();
         
+        // 캐시 확인 모드들
+        if ("TIMELINE_CHECK".equals(mode)) {
+            String timelineKey = "timeline_cache:" + sessionId;
+            Object timelineData = redisTemplate.opsForValue().get(timelineKey);
+            String response = timelineData != null ? timelineData.toString() : "NO_CACHE";
+            return ChatResDto.builder()
+                    .senderType("SYSTEM")
+                    .message(response)
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+        
+        if ("MANHWA_CHECK".equals(mode)) {
+            String manhwaKey = "manhwa_cache:" + sessionId;
+            Object manhwaData = redisTemplate.opsForValue().get(manhwaKey);
+            String response = manhwaData != null ? manhwaData.toString() : "NO_CACHE";
+            return ChatResDto.builder()
+                    .senderType("SYSTEM")
+                    .message(response)
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+        
+        List<String> history = getHistory(sessionId);
+        String prompt = buildPrompt(mode, history, dto.getMessage());
+        String aiResponse;
         String description = null;
         
-        if ("COMIC".equals(dto.getMode())) {
-            try {
-                log.info("🎨 네컷만화 생성 시작");
-                String imageUrl = gmsImageClient.generateImage(prompt);
-                log.info("✅ 이미지 생성 완료: {}", imageUrl);
-                
-                String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
-                description = generateComicDescription(conversationContent);
-                
-                // 이미지 URL과 설명을 반환
-                aiResponse = imageUrl;
-                
-                saveMessage(sessionId, "USER", dto.getMessage());
-                saveMessage(sessionId, "BOT", aiResponse);
-                
-            } catch (Exception e) {
-                log.error("❌ 만화 생성 실패", e);
-                aiResponse = "만화 생성에 실패했습니다. 다시 시도해주세요.";
-                description = "만화 생성에 실패했습니다.";
-                
-                saveMessage(sessionId, "USER", dto.getMessage());
-                saveMessage(sessionId, "BOT", aiResponse);
-            }
+        if ("COMIC".equals(mode)) {
+            String comicId = "comic_" + UUID.randomUUID().toString();
+            
+            setComicStatus(comicId, "GENERATING", "4컷 만화를 생성하고 있어요...", null);
+            
+            CompletableFuture.runAsync(() -> {
+                try {
+                    log.info("🎨 네컷만화 생성 시작");
+                    String imageUrl = gmsImageClient.generateImage(prompt);
+                    log.info("✅ 이미지 생성 완료: {}", imageUrl);
+                    
+                    String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
+                    String comicDescription = generateComicDescription(conversationContent);
+                    String finalResponse = imageUrl + "\n\n" + comicDescription;
+                    
+                    setComicStatus(comicId, "COMPLETED", comicDescription, imageUrl);
+                    
+                    saveMessage(sessionId, "BOT", finalResponse);
+                } catch (Exception e) {
+                    log.error("❌ 만화 생성 실패", e);
+                    setComicStatus(comicId, "FAILED", "만화 생성에 실패했습니다. 다시 시도해주세요.", null);
+                }
+            });
+            
+            aiResponse = "COMIC_GENERATING:" + comicId;
         } else {
             aiResponse = gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
             saveMessage(sessionId, "USER", dto.getMessage());
@@ -93,20 +119,56 @@ public class ChatService {
     }
 
     public void saveToDatabase(Long userId, String sessionId, Long chatRoomId) {
-        List<String> history = getHistory(sessionId);
-        for (String entry : history) {
-            String[] parts = entry.split(":", 2);
-            if (parts.length < 2) continue;
-            chatDao.saveChat(Chat.builder()
-                    .userId(userId)
-                    .chatRoomId(chatRoomId)
-                    .senderType(parts[0].trim())
-                    .message(parts[1].trim())
-                    .timestamp(LocalDateTime.now())
-                    .build());
+        try {
+            log.info("대화 저장 시작: userId={}, sessionId={}, chatRoomId={}", userId, sessionId, chatRoomId);
+            
+            List<String> history = getHistory(sessionId);
+            log.info("Redis에서 가져온 대화 기록 개수: {}", history.size());
+            
+            if (history.isEmpty()) {
+                log.warn("저장할 대화 내용이 없습니다. sessionId: {}", sessionId);
+                return;
+            }
+            
+            int savedCount = 0;
+            for (String entry : history) {
+                if (entry.startsWith("요약:")) {
+                    continue; // 요약은 저장하지 않음
+                }
+                
+                String[] parts = entry.split(":", 2);
+                if (parts.length < 2) {
+                    log.warn("잘못된 메시지 형식 무시: {}", entry);
+                    continue;
+                }
+                
+                try {
+                    chatDao.saveChat(Chat.builder()
+                            .userId(userId)
+                            .chatRoomId(chatRoomId)
+                            .senderType(parts[0].trim())
+                            .message(parts[1].trim())
+                            .timestamp(LocalDateTime.now())
+                            .build());
+                    savedCount++;
+                } catch (Exception e) {
+                    log.error("개별 메시지 저장 실패: {}, 에러: {}", entry, e.getMessage());
+                }
+            }
+            
+            log.info("대화 저장 완료: {}개 메시지 저장됨", savedCount);
+            
+            // 저장 성공 후 Redis에서 삭제
+            redisTemplate.delete(REDIS_PREFIX + sessionId);
+            log.info("Redis 세션 삭제 완료: {}", sessionId);
+            
+        } catch (Exception e) {
+            log.error("대화 저장 중 전체 에러 발생: userId={}, sessionId={}, chatRoomId={}, 에러: {}", 
+                     userId, sessionId, chatRoomId, e.getMessage(), e);
+            throw new RuntimeException("대화 저장에 실패했습니다: " + e.getMessage(), e);
         }
-        redisTemplate.delete(REDIS_PREFIX + sessionId);
     }
+    
 
     private void saveMessage(String sessionId, String senderType, String message) {
         String key = REDIS_PREFIX + sessionId;
@@ -159,7 +221,7 @@ public class ChatService {
             String prompt = "다음은 이전 요약이야:\n" + oldSummary + "\n\n" +
                     "그리고 다음은 새로 들어온 대화야:\n" + newContent + "\n\n" +
                     "이 둘을 합쳐서 500자 이내로 상세하게 요약해줘. 중요한 감정이나 구체적인 상황은 빠뜨리지 말고 포함해줘.";
-            return gmsAiClient.ask(prompt, "gpt-4o");
+            return gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
         } catch (Exception e) {
             log.warn("요약 실패, 이전 요약 유지", e);
             return oldSummary;
@@ -172,21 +234,21 @@ public class ChatService {
             You must create a **4-panel comic scenario** STRICTLY based on the conversation below.
 
             RULES:
-            - Use ONLY people, places, events, and emotions explicitly mentioned in the conversation.
+            - Use ONLY people, places, events, and situations explicitly mentioned in the conversation.
             - Do NOT add fictional details or generic scenarios.
             - If something is not mentioned, leave it out — do NOT invent.
-            - Preserve the exact emotional flow and setting.
+            - Focus on the factual sequence of events and situations.
 
             STEP 1 — Extract key facts as a table:
-            | Step | Exact Event | People Involved | Location | Emotion |
-            |------|-------------|-----------------|----------|---------|
+            | Step | Exact Event | People Involved | Location | Situation |
+            |------|-------------|-----------------|----------|-----------|
             (Fill from conversation, only exact words used by user)
 
             STEP 2 — Write the scenario in this format:
             Panel 1: (Describe initial situation based ONLY on table)
-            Panel 2: (Describe the specific event/conflict)
-            Panel 3: (Describe the strongest emotion moment)
-            Panel 4: (Describe the current state or resolution)
+            Panel 2: (Describe the specific event/conflict situation)
+            Panel 3: (Describe the key situation moment)
+            Panel 4: (Describe the current state or resolution situation)
 
             Conversation:
             %s
@@ -324,8 +386,17 @@ public class ChatService {
                 return redisMessages;
             }
         }
+        
         log.info("chatRoomId {}의 대화 내역을 MySQL에서 조회합니다.", chatRoomId);
-        return chatDao.findAllByChatRoomId(chatRoomId);
+        List<Chat> sqlMessages = chatDao.findAllByChatRoomId(chatRoomId);
+        
+        // SQL에서 가져온 대화가 있고 sessionId가 있다면 Redis로 복원
+        if (!sqlMessages.isEmpty() && sessionId != null && !sessionId.isBlank()) {
+            restoreSqlMessagesToRedis(sqlMessages, sessionId);
+            log.info("SQL 대화 {}개를 Redis 세션 {}으로 복원했습니다.", sqlMessages.size(), sessionId);
+        }
+        
+        return sqlMessages;
     }
 
     private List<Chat> getMessagesFromRedis(String sessionId) {
@@ -350,6 +421,55 @@ public class ChatService {
         }
         return messages;
     }
+    
+    private void restoreSqlMessagesToRedis(List<Chat> sqlMessages, String sessionId) {
+        try {
+            log.info("SQL 대화 복원 시작: {} 개 메시지를 세션 {}로 복원", sqlMessages.size(), sessionId);
+            
+            // SQL 메시지를 Redis 형식으로 변환
+            List<String> messageEntries = new ArrayList<>();
+            for (Chat chat : sqlMessages) {
+                messageEntries.add(chat.getSenderType() + ": " + chat.getMessage());
+            }
+            
+            // Redis에 저장할 데이터 구조 생성
+            Map<String, Object> toStore = new HashMap<>();
+            
+            if (messageEntries.size() > 10) {
+                log.info("메시지가 많아 요약 처리 시작: {} 개 메시지", messageEntries.size());
+                try {
+                    // 메시지가 많으면 요약 처리
+                    String toSummarize = String.join("\n", messageEntries.subList(0, messageEntries.size() - 6));
+                    String summary = summarize(toSummarize, "");
+                    List<String> recent = messageEntries.subList(messageEntries.size() - 6, messageEntries.size());
+                    
+                    toStore.put("summary", summary);
+                    toStore.put("recent", recent);
+                    log.info("요약 처리 완료");
+                } catch (Exception summaryError) {
+                    log.error("요약 처리 실패, 모든 메시지를 recent에 저장: {}", summaryError.getMessage());
+                    // 요약 실패 시 모든 메시지를 recent에 저장 (최대 10개만)
+                    toStore.put("summary", "");
+                    toStore.put("recent", messageEntries.subList(Math.max(0, messageEntries.size() - 10), messageEntries.size()));
+                }
+            } else {
+                // 메시지가 적으면 모두 recent에 저장
+                toStore.put("summary", "");
+                toStore.put("recent", messageEntries);
+                log.info("적은 메시지 수, 모두 recent에 저장: {} 개", messageEntries.size());
+            }
+            
+            // Redis에 저장
+            String key = REDIS_PREFIX + sessionId;
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(toStore), SESSION_TTL);
+            
+            log.info("SQL 대화 {}개를 Redis 세션 {}으로 복원 완료", sqlMessages.size(), sessionId);
+        } catch (Exception e) {
+            log.error("SQL 대화를 Redis로 복원하는데 실패했습니다: sessionId={}, 에러={}", sessionId, e.getMessage(), e);
+            // 복원 실패 시에도 원본 SQL 메시지는 반환되도록 예외를 다시 던지지 않음
+        }
+    }
+    
     @Transactional
     public void deleteRoom(Long chatRoomId) {
         chatDao.deleteMessagesByRoomId(chatRoomId);

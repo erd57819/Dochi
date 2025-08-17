@@ -49,6 +49,13 @@ public class ConflictService {
         
         // 캐시된 결과가 없으면 새로 분석
         ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
+        
+        // Redis에 데이터가 없는 경우 처리
+        if (conflictData == null) {
+            log.error("Redis에서 tempConflictId {}에 해당하는 데이터를 찾을 수 없습니다.", tempConflictId);
+            throw new IllegalArgumentException("임시 저장된 갈등 데이터를 찾을 수 없습니다. ID: " + tempConflictId);
+        }
+        
         Map<String, Object> analysisResult = aiSummaryService.generateAdvancedAnalysis(
             conflictData.getDescription(), conflictData.getConflictType());
         
@@ -64,6 +71,12 @@ public class ConflictService {
     public ConflictResDto analyzeAndSaveConflictAdvanced(Long userId, String tempConflictId) {
         // Redis에서 갈등 데이터 조회
         ConflictCreateReqDto conflictData = conflictRedisService.getTempConflict(tempConflictId);
+        
+        // Redis에 데이터가 없는 경우 처리
+        if (conflictData == null) {
+            log.error("Redis에서 tempConflictId {}에 해당하는 데이터를 찾을 수 없습니다.", tempConflictId);
+            throw new IllegalArgumentException("임시 저장된 갈등 데이터를 찾을 수 없습니다. ID: " + tempConflictId);
+        }
         
         // Redis에서 기존 분석 결과 조회 (있으면 재사용)
         Map<String, Object> analysisResult = conflictRedisService.getAnalysisResult(tempConflictId);
@@ -139,9 +152,56 @@ public class ConflictService {
     
     
     /**
-     * 기존 방식 유지 (호환성을 위해)
+     * AI 서비스 연결 테스트
      */
+    public void testAiConnection() {
+        try {
+            // 간단한 테스트 텍스트로 AI 서비스 연결 확인
+            aiSummaryService.generateAdvancedAnalysis("테스트", UserConflict.ConflictType.ETC);
+        } catch (Exception e) {
+            throw new RuntimeException("AI 서비스에 연결할 수 없습니다: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 갈등 생성 및 AI 분석을 한 번에 처리
+     */
+    @Transactional
     public ConflictResDto createConflict(Long userId, ConflictCreateReqDto reqDto) {
+        log.info("갈등 생성 및 AI 분석 시작 - userId: {}, title: {}", userId, reqDto.getTitle());
+        
+        // 먼저 AI 분석을 수행하고, 실패하면 갈등 저장하지 않음
+        Map<String, Object> analysisResult;
+        try {
+            log.info("AI 분석 시작 - description: {}, type: {}", reqDto.getDescription(), reqDto.getConflictType());
+            analysisResult = aiSummaryService.generateAdvancedAnalysis(
+                reqDto.getDescription(), reqDto.getConflictType());
+            log.info("AI 분석 완료");
+        } catch (Exception e) {
+            log.error("AI 분석 실패: ", e);
+            throw new RuntimeException("AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
+        
+        // 분석 결과에서 summary와 solutions 추출
+        String conflictAnalysis = convertObjectToString(analysisResult.get("conflict_analysis"));
+        String recommendedActions = convertObjectToString(analysisResult.get("recommended_actions"));
+        
+        // summary는 conflict_analysis에서 추출하거나 기본값 사용
+        String summary = conflictAnalysis != null ? conflictAnalysis : "AI가 갈등 상황을 분석했습니다.";
+        
+        // solutions는 recommended_actions에서 추출하거나 기본값 사용  
+        String solutions;
+        if (recommendedActions != null) {
+            try {
+                solutions = extractSolutionsFromRecommendedActions(recommendedActions);
+            } catch (Exception e) {
+                solutions = recommendedActions;
+            }
+        } else {
+            solutions = "AI가 추천하는 해결방안을 제공합니다.";
+        }
+        
+        // UserConflict 객체 생성 (AI 분석 결과 포함)
         UserConflict conflict = new UserConflict(
             userId,
             reqDto.getTitle(),
@@ -155,10 +215,23 @@ public class ConflictService {
             reqDto.getTalkWillingness(),
             reqDto.getInitialEmotion(),
             reqDto.getIntensity(),
-            reqDto.getAiSummary()
+            summary + "\n\n[해결방안]\n" + solutions
         );
         
-        conflictDao.save(conflict);
+        try {
+            // 갈등 데이터를 MySQL에 저장
+            conflictDao.save(conflict);
+            log.info("갈등 데이터 저장 완료 - conflictId: {}", conflict.getId());
+            
+            // 고급 AI 분석 결과를 MySQL에 저장
+            aiSummaryService.saveAdvancedAnalysisResult(conflict.getId(), userId, analysisResult);
+            log.info("AI 분석 결과 저장 완료");
+            
+        } catch (Exception e) {
+            log.error("갈등 데이터 저장 실패: ", e);
+            throw new RuntimeException("갈등 저장에 실패했습니다. 다시 시도해주세요.");
+        }
+        
         return ConflictResDto.from(conflict);
     }
     

@@ -21,7 +21,7 @@ public class ConflictRedisService {
     
     private static final String CONFLICT_TEMP_PREFIX = "temp_conflict:";
     private static final String ANALYSIS_RESULT_PREFIX = "analysis_result:";
-    private static final int TEMP_CONFLICT_EXPIRATION_HOURS = 1; // 1시간 TTL
+    private static final int TEMP_CONFLICT_EXPIRATION_HOURS = 24; // 24시간 TTL로 증가
     private static final int ANALYSIS_RESULT_EXPIRATION_HOURS = 24; // 24시간 TTL
     
     /**
@@ -53,7 +53,8 @@ public class ConflictRedisService {
             String conflictJson = (String) redisTemplate.opsForValue().get(key);
             
             if (conflictJson == null) {
-                throw new IllegalArgumentException("임시 갈등 카드를 찾을 수 없습니다. (만료되었거나 존재하지 않음)");
+                log.warn("Redis에서 임시 갈등 데이터를 찾을 수 없습니다. key: {}", key);
+                return null; // null 반환으로 변경
             }
             
             return objectMapper.readValue(conflictJson, ConflictCreateReqDto.class);

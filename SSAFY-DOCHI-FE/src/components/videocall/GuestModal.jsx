@@ -6,8 +6,8 @@ const GuestModal = ({
   onGuestJoin, 
   onLogin 
 }) => {
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.isComposing) {
       onGuestJoin();
     }
   };
@@ -30,7 +30,7 @@ const GuestModal = ({
               id="guestNickname"
               value={guestNickname}
               onChange={(e) => setGuestNickname(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="닉네임을 입력하세요"
               className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
               style={{ 

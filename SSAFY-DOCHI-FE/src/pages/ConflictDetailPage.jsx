@@ -696,7 +696,19 @@ const ConflictDetailPage = () => {
               <div 
                 className="text-white rounded-3xl p-10 relative overflow-hidden cursor-pointer hover:opacity-90 transition-all transform hover:-translate-y-2"
                 style={{ background: '#7F5539' }}
-                onClick={handleComfortWithConflict}
+                onClick={() => {
+                  // 갈등 데이터를 토닥토닥 서비스로 전달
+                  const conflictSummary = `갈등 상황: ${conflict?.description || '상세 정보가 없습니다.'}\n갈등 유형: ${getConflictTypeText(conflict?.conflictType)}\n갈등 강도: ${conflict?.intensity || 0}/10\n주된 감정: ${getEmotionText(conflict?.initialEmotion)}`;
+                  
+                  // ComfortStore에 갈등 데이터 설정
+                  sessionStorage.setItem('comfortConflictData', JSON.stringify({
+                    message: conflictSummary,
+                    conflictId: conflict?.id,
+                    autoSend: true
+                  }));
+                  
+                  navigate('/comfort');
+                }}
               >
                 <h3 className="text-2xl font-bold mb-6">토닥토닥 서비스</h3>
                 <p className="mb-8 leading-relaxed opacity-90">

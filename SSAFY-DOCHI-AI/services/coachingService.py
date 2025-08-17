@@ -299,7 +299,7 @@ class CoachingService:
     def _create_coaching_prompt(self, context_text: str, trigger_info: Dict) -> str:
         """트리거 타입별 코칭 프롬프트를 생성합니다."""
         
-        base_instruction = """당신은 팀 내 갈등 해결을 돕는 전문 코치입니다. 
+        base_instruction = """당신은 갈등 해결을 돕는 전문 코치입니다. 
 다음 대화 상황에서 건설적이고 실용적인 조언을 해주세요.
 - 50자 이내로 간결하게 답변하세요
 - 비난하지 말고 해결 방향을 제시하세요  
@@ -345,11 +345,23 @@ class CoachingService:
     def _create_coaching_prompt_with_emotions(self, conversation_with_emotions: List[Dict], trigger_info: Dict) -> str:
         """감정 정보가 포함된 트리거별 코칭 프롬프트를 생성합니다."""
         
-        base_instruction = """당신은 팀 내 갈등 해결을 돕는 전문 코치입니다. 
-다음 대화 상황에서 건설적이고 실용적인 조언을 해주세요.
-- 50자 이내로 간결하게 답변하세요
-- 비난하지 말고 해결 방향을 제시하세요  
-- 한국어 존댓말로 답변하세요"""
+        base_instruction = """당신은 실시간 대화 분석 코치입니다. 
+사용자의 실제 발언을 분석해서 표현 개선과 감정 컨트롤 조언을 제시해주세요.
+
+분석 기준:
+- 공격적이거나 상처주는 표현 사용
+- 일반화 표현 ('항상', '절대', '다시는' 등)
+- 상대방 비난이나 인격 공격
+- 감정적인 말투나 어조
+- 대화를 차단하거나 무시하는 행동
+- 감정 조절 실패 (화, 좌절, 분노 등)
+
+조언 형식:
+- 40-60자 내외로 간결하게
+- 표현 개선: "~라고 말하는 대신 ~라고 표현해보세요"
+- 감정 컨트롤: "잠깐 심호흡하고", "감정이 올라올 때는" 등
+- 구체적인 대안 표현과 감정 조절 방법 함께 제시
+- 따뜻하고 지지적인 톤으로 한국어 존댓말"""
         
         # 대화 내용과 감정 정보 포함
         context_text = ""
@@ -359,31 +371,14 @@ class CoachingService:
             context_text += f"{conv['speaker']}: {conv['text']} [감정: {conv['emotion']}, 점수: {conv['score']}, 강도: {conv['magnitude']}]\n"
             emotions_list.append(conv['emotion'])
         
-        # 트리거별 상황 설명
-        trigger_specific = ""
-        if trigger_info["type"] == "immediate":
-            trigger_specific = """강한 부정 감정이 감지되었습니다. 
-즉시 상황을 진정시키고 대화를 건설적으로 이끌 수 있는 조언을 해주세요."""
-            
-        elif trigger_info["type"] == "pattern":
-            trigger_specific = """연속된 부정적 감정 패턴이 감지되었습니다. 
-근본적인 문제 해결을 위한 구체적인 방법을 제시해주세요."""
-            
-        elif trigger_info["type"] == "escalation":
-            trigger_specific = """감정이 점점 악화되고 있습니다. 
-갈등이 더 커지기 전에 중재할 수 있는 방법을 알려주세요."""
-            
-        elif trigger_info["type"] == "silence-negative":
-            trigger_specific = """침묵 후 부정적인 감정으로 대화가 재개되었습니다.
-갈등 상황을 완화하고 건설적인 대화로 이끌 수 있는 방법을 제시해주세요."""
-
-        elif trigger_info["type"] == "long-silence":
-            trigger_specific = """대화가 장시간 중단되었습니다.
-소통을 다시 활성화하고 분위기를 개선할 수 있는 방법을 알려주세요."""
-
-        elif trigger_info["type"] == "silence-resume":
-            trigger_specific = """침묵 후 대화가 재개되었습니다.
-원활한 소통을 위한 간단한 조언을 해주세요."""
+        # 상황 설명을 일반화
+        trigger_specific = f"""
+현재 대화에서 {trigger_info.get('reason', '부정적 패턴')}이 감지되었습니다.
+최근 발언 내용을 분석해서:
+1. 구체적으로 어떤 표현을 어떻게 바꾸면 좋을지
+2. 현재 감정 상태에 맞는 감정 컨트롤 방법
+이 두 가지를 함께 조언해주세요.
+실제 발언을 인용하며 표현 개선과 감정 조절을 동시에 제안해주세요."""
         
         return f"""{base_instruction}
 

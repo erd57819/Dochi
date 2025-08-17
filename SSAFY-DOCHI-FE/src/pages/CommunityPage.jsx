@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/AuthStore.js';
 import { communityApi, likeApi } from '../services/communityApi.js';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import hedgehogImg from '../assets/conflict.png';
 import thumbUp from '@/assets/thumb_up.png';
 import thumbDown from '@/assets/thumb_down.png';
@@ -218,33 +219,10 @@ const CommunityPage = () => {
 
           <div className="relative z-10 flex items-center justify-center min-h-screen">
             <div className="text-center">
-              <div className="relative w-16 h-16 mx-auto mb-4">
-                <img 
-                  src={hedgehogImg} 
-                  alt="갈등도치" 
-                  className="w-16 h-16 animate-spin"
-                  style={{
-                    filter: 'drop-shadow(0 0 20px rgba(139, 69, 19, 0.5))'
-                  }}
-                />
-                <div 
-                  className="absolute inset-0 rounded-full animate-ping"
-                  style={{
-                    background: 'radial-gradient(circle, rgba(139, 69, 19, 0.2) 0%, transparent 70%)'
-                  }}
-                />
-              </div>
-              <p 
-                className="text-xl font-bold animate-pulse"
-                style={{ 
-                  background: 'linear-gradient(90deg, #8B4513 0%, #cd9f6e 50%, #8B4513 100%)',
-                  backgroundSize: '200% auto',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}
-              >
-                커뮤니티를 불러오는 중...
-              </p>
+              <LoadingSpinner 
+                type="gif" 
+                size="xlarge" 
+              />
             </div>
           </div>
         </div>
@@ -375,7 +353,10 @@ const CommunityPage = () => {
                 
                 {rankingLoading ? (
                   <div className="text-center py-4">
-                    <div className="text-sm text-gray-500">순위를 불러오는 중...</div>
+                    <LoadingSpinner 
+                      type="gif" 
+                      size="medium" 
+                    />
                   </div>
                 ) : (
                   <div className="space-y-2">
