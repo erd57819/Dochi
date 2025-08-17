@@ -341,7 +341,10 @@ const WhackAMoleGame = ({ onBack }) => {
       <div className="mb-6">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 text-[#bf7d2c] hover:bg-orange-50 rounded-lg transition-colors duration-200"
+          className="flex items-center gap-2 px-4 py-2 transition-colors duration-200"
+          style={{ color: '#bf7d2c' }}
+          onMouseEnter={(e) => (e.target.style.backgroundColor = '#fff7ed')}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -352,26 +355,33 @@ const WhackAMoleGame = ({ onBack }) => {
 
       {/* 헤더 */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 text-[#bf7d2c]">
-          고슴도치 잡기 🦔
+        <div className="flex justify-center mb-4">
+          <img 
+            src={hedgehogImg} 
+            alt="고슴도치" 
+            className="w-24 h-24 object-contain"
+          />
+        </div>
+        <h1 className="text-4xl font-bold mb-2" style={{ color: '#333333' }}>
+          고슴도치 잡기
         </h1>
-        <p className="text-lg text-gray-600">빠르게 튀어나오는 고슴도치를 잡아보세요! (눈물 주의 😢)</p>
+        <p className="text-lg" style={{ color: '#666666' }}>빠르게 튀어나오는 고슴도치를 잡아보세요!</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-8">
+      <div className="bg-white p-8">
         {/* 게임 정보 */}
         <div className="flex flex-wrap justify-center items-center gap-8 mb-8">
-          <div className="text-center bg-orange-50 px-6 py-3 rounded-xl">
-            <div className="text-3xl font-bold text-[#bf7d2c]">{score}</div>
-            <div className="text-sm text-gray-600 mt-1">점수</div>
+          <div className="text-center px-6 py-3" style={{ backgroundColor: '#fff7ed' }}>
+            <div className="text-3xl font-bold" style={{ color: '#bf7d2c' }}>{score}</div>
+            <div className="text-sm mt-1" style={{ color: '#666666' }}>점수</div>
           </div>
-          <div className="text-center bg-blue-50 px-6 py-3 rounded-xl">
-            <div className="text-3xl font-bold text-blue-600">{timeLeft}초</div>
-            <div className="text-sm text-gray-600 mt-1">남은 시간</div>
+          <div className="text-center px-6 py-3" style={{ backgroundColor: '#eff6ff' }}>
+            <div className="text-3xl font-bold" style={{ color: '#2563eb' }}>{timeLeft}초</div>
+            <div className="text-sm mt-1" style={{ color: '#666666' }}>남은 시간</div>
           </div>
-          <div className="text-center bg-green-50 px-6 py-3 rounded-xl">
-            <div className="text-3xl font-bold text-green-600">🏆 {highScore}</div>
-            <div className="text-sm text-gray-600 mt-1">최고 기록</div>
+          <div className="text-center px-6 py-3" style={{ backgroundColor: '#f0fdf4' }}>
+            <div className="text-3xl font-bold" style={{ color: '#16a34a' }}>{highScore}</div>
+            <div className="text-sm mt-1" style={{ color: '#666666' }}>최고 기록</div>
           </div>
         </div>
 
@@ -382,11 +392,14 @@ const WhackAMoleGame = ({ onBack }) => {
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => setDifficulty('easy')}
-                className={`px-8 py-4 rounded-xl font-bold transition-all duration-200 ${
+                className={`px-8 py-4 font-bold transition-all duration-200 ${
                   difficulty === 'easy'
-                    ? 'bg-gradient-to-r from-green-400 to-green-500 text-white shadow-lg scale-105'
+                    ? 'text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
+                style={{
+                  backgroundColor: difficulty === 'easy' ? '#10b981' : undefined
+                }}
               >
                 <div className="text-2xl mb-1">😊</div>
                 <div>쉬움</div>
@@ -395,11 +408,14 @@ const WhackAMoleGame = ({ onBack }) => {
               </button>
               <button
                 onClick={() => setDifficulty('normal')}
-                className={`px-8 py-4 rounded-xl font-bold transition-all duration-200 ${
+                className={`px-8 py-4 font-bold transition-all duration-200 ${
                   difficulty === 'normal'
-                    ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg scale-105'
+                    ? 'text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
+                style={{
+                  backgroundColor: difficulty === 'normal' ? '#f97316' : undefined
+                }}
               >
                 <div className="text-2xl mb-1">😐</div>
                 <div>보통</div>
@@ -408,11 +424,14 @@ const WhackAMoleGame = ({ onBack }) => {
               </button>
               <button
                 onClick={() => setDifficulty('hard')}
-                className={`px-8 py-4 rounded-xl font-bold transition-all duration-200 ${
+                className={`px-8 py-4 font-bold transition-all duration-200 ${
                   difficulty === 'hard'
-                    ? 'bg-gradient-to-r from-red-400 to-red-500 text-white shadow-lg scale-105'
+                    ? 'text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
+                style={{
+                  backgroundColor: difficulty === 'hard' ? '#ef4444' : undefined
+                }}
               >
                 <div className="text-2xl mb-1">😤</div>
                 <div>어려움</div>
@@ -425,7 +444,7 @@ const WhackAMoleGame = ({ onBack }) => {
 
         {/* 게임 보드 */}
         <div className="max-w-lg mx-auto mb-8">
-          <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl">
+          <div className="grid grid-cols-3 gap-4 p-6" style={{ backgroundColor: '#f0fdf4' }}>
             {moles.map((mole, index) => (
               <div
                 key={index}
@@ -437,7 +456,7 @@ const WhackAMoleGame = ({ onBack }) => {
                 <div className="absolute inset-2 bg-gradient-to-b from-amber-700 to-black rounded-full shadow-inner"></div>
                 
                 {/* 고슴도치 컨테이너 */}
-                <div className="absolute inset-0 flex items-end justify-center overflow-hidden rounded-full pb-1">
+                <div className="absolute inset-0 flex items-end justify-center overflow-hidden pb-1">
                   {mole && (
                     <div
                       className={`relative ${
@@ -491,7 +510,10 @@ const WhackAMoleGame = ({ onBack }) => {
           {!isPlaying && !gameOver && (
             <button
               onClick={startGame}
-              className="group px-12 py-5 bg-gradient-to-r from-[#bf7d2c] to-[#a66a25] text-white rounded-2xl text-2xl font-bold hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+              className="group px-12 py-5 text-white text-2xl font-bold transition-all duration-300"
+              style={{ backgroundColor: '#bf7d2c' }}
+              onMouseEnter={(e) => (e.target.style.backgroundColor = '#a66a25')}
+              onMouseLeave={(e) => (e.target.style.backgroundColor = '#bf7d2c')}
             >
               <span className="flex items-center gap-3">
                 게임 시작! 
@@ -503,7 +525,10 @@ const WhackAMoleGame = ({ onBack }) => {
           {isPlaying && (
             <button
               onClick={endGame}
-              className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl text-xl font-bold hover:shadow-xl transition-all duration-200"
+              className="px-8 py-4 text-white text-xl font-bold transition-all duration-200"
+              style={{ backgroundColor: '#ef4444' }}
+              onMouseEnter={(e) => (e.target.style.backgroundColor = '#dc2626')}
+              onMouseLeave={(e) => (e.target.style.backgroundColor = '#ef4444')}
             >
               게임 종료 🛑
             </button>
@@ -511,7 +536,7 @@ const WhackAMoleGame = ({ onBack }) => {
           
           {gameOver && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8">
+              <div className="p-8" style={{ backgroundColor: '#fdf2f8' }}>
                 <h3 className="text-3xl font-bold text-gray-800 mb-3">게임 종료! 🎊</h3>
                 <p className="text-2xl text-gray-600 mb-2">
                   최종 점수: <span className="font-bold text-[#bf7d2c] text-3xl">{score}점</span>
@@ -528,7 +553,10 @@ const WhackAMoleGame = ({ onBack }) => {
                   setScore(0);
                   setTimeLeft(gameSettings[difficulty].timeBonus);
                 }}
-                className="group px-12 py-5 bg-gradient-to-r from-[#bf7d2c] to-[#a66a25] text-white rounded-2xl text-2xl font-bold hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                className="group px-12 py-5 text-white text-2xl font-bold transition-all duration-300"
+                style={{ backgroundColor: '#bf7d2c' }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = '#a66a25')}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = '#bf7d2c')}
               >
                 <span className="flex items-center gap-3">
                   다시 도전! 
@@ -541,7 +569,7 @@ const WhackAMoleGame = ({ onBack }) => {
 
         {/* 게임 설명 */}
         {!isPlaying && (
-          <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 text-center">
+          <div className="mt-8 p-6 text-center" style={{ backgroundColor: '#eff6ff' }}>
             <h4 className="font-bold text-lg mb-3 text-gray-800">🎮 게임 방법</h4>
             <div className="space-y-2 text-gray-600">
               <p>1. 구멍에서 빠르게 나오는 고슴도치를 클릭하세요!</p>
