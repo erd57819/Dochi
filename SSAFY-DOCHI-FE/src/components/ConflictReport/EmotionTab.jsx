@@ -9,6 +9,10 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
   const { roomId } = useParams();
   const [emotionHistoryData, setEmotionHistoryData] = useState({});
   const [speakers, setSpeakers] = useState([]);
+  const lineChartRef = useRef(null);
+  const pieChartRef = useRef(null);
+  const lineRoot = useRef(null);
+  const pieRoot = useRef(null);
 
   // localStorage에서 감정 히스토리 데이터 로드
   useEffect(() => {
@@ -34,67 +38,42 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
       console.log('[감정 히스토리] 데이터 없음');
     }
   }, [roomId, selectedSpeaker, setSelectedSpeaker]);
+
+  // amCharts 정리 함수
+  useEffect(() => {
+    return () => {
+      if (lineRoot.current) {
+        lineRoot.current.dispose();
+      }
+      if (pieRoot.current) {
+        pieRoot.current.dispose();
+      }
+    };
+  }, []);
   
-  const getChartData = () => {
-    if (!emotionHistoryData[selectedSpeaker]) return null;
+  const getLineChartData = () => {
+    if (!emotionHistoryData[selectedSpeaker]) return [];
     
     const speakerData = emotionHistoryData[selectedSpeaker];
-    if (!speakerData || speakerData.length === 0) return null;
+    if (!speakerData || speakerData.length === 0) return [];
 
     // 시간 간격을 5초로 샘플링 (너무 많은 데이터포인트 방지)
     const sampledData = speakerData.filter((_, index) => index % 5 === 0);
     
-    // 시간 라벨 생성
-    const labels = sampledData.map((item, index) => {
+    return sampledData.map((item, index) => {
       const date = new Date(item.timestamp);
-      return `${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+      const timeLabel = `${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+      
+      return {
+        time: timeLabel,
+        timestamp: index,
+        angry: item.angry,
+        sad: item.sad,
+        happy: item.happy,
+        surprised: item.surprised,
+        neutral: item.neutral
+      };
     });
-
-    // 각 감정별 데이터셋 생성
-    const datasets = [
-      {
-        label: '화남',
-        data: sampledData.map(item => item.angry),
-        borderColor: '#EF4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        tension: 0.4,
-        pointRadius: 2,
-      },
-      {
-        label: '슬픔',
-        data: sampledData.map(item => item.sad),
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        pointRadius: 2,
-      },
-      {
-        label: '행복',
-        data: sampledData.map(item => item.happy),
-        borderColor: '#10B981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        tension: 0.4,
-        pointRadius: 2,
-      },
-      {
-        label: '놀람',
-        data: sampledData.map(item => item.surprised),
-        borderColor: '#F59E0B',
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        tension: 0.4,
-        pointRadius: 2,
-      },
-      {
-        label: '무표정',
-        data: sampledData.map(item => item.neutral),
-        borderColor: '#6B7280',
-        backgroundColor: 'rgba(107, 114, 128, 0.1)',
-        tension: 0.4,
-        pointRadius: 2,
-      }
-    ];
-
-    return { labels, datasets };
   };
 
   // 감정 요약 데이터 계산
@@ -141,87 +120,199 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
 
   // 파이차트 데이터 생성
   const getPieChartData = () => {
-    if (!emotionSummary) return null;
+    const emotionSummary = getEmotionSummary();
+    if (!emotionSummary) return [];
 
     const emotionNames = {
       angry: '화남', sad: '슬픔', happy: '행복', 
       surprised: '놀람', neutral: '무표정'
     };
 
-    const emotionColors = [
-      '#EF4444', // 화남
-      '#3B82F6', // 슬픔  
-      '#10B981', // 행복
-      '#F59E0B', // 놀람
-      '#6B7280', // 중립
+    const emotionColors = {
+      angry: '#EF4444',
+      sad: '#3B82F6',
+      happy: '#10B981',
+      surprised: '#F59E0B',
+      neutral: '#6B7280'
+    };
+
+    return Object.keys(emotionSummary.averages).map(emotion => ({
+      emotion: emotionNames[emotion],
+      value: emotionSummary.averages[emotion],
+      color: emotionColors[emotion]
+    }));
+  };
+
+  // amCharts 라인 차트 생성
+  useLayoutEffect(() => {
+    const chartData = getLineChartData();
+    if (!chartData.length || !lineChartRef.current) return;
+
+    // 기존 차트 정리
+    if (lineRoot.current) {
+      lineRoot.current.dispose();
+    }
+
+    const root = am5.Root.new(lineChartRef.current);
+    lineRoot.current = root;
+
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    const chart = root.container.children.push(
+      am5xy.XYChart.new(root, {
+        panX: true,
+        panY: true,
+        wheelX: "panX",
+        wheelY: "zoomX",
+        pinchZoomX: true
+      })
+    );
+
+    const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
+    cursor.lineY.set("visible", false);
+
+    const xAxis = chart.xAxes.push(
+      am5xy.CategoryAxis.new(root, {
+        categoryField: "time",
+        renderer: am5xy.AxisRendererX.new(root, {
+          cellStartLocation: 0.1,
+          cellEndLocation: 0.9
+        }),
+        tooltip: am5.Tooltip.new(root, {})
+      })
+    );
+
+    const yAxis = chart.yAxes.push(
+      am5xy.ValueAxis.new(root, {
+        min: 0,
+        max: 100,
+        renderer: am5xy.AxisRendererY.new(root, {
+          strokeDasharray: [1, 3]
+        })
+      })
+    );
+
+    const emotions = [
+      { field: 'angry', name: '화남', color: '#EF4444' },
+      { field: 'sad', name: '슬픔', color: '#3B82F6' },
+      { field: 'happy', name: '행복', color: '#10B981' },
+      { field: 'surprised', name: '놀람', color: '#F59E0B' },
+      { field: 'neutral', name: '무표정', color: '#6B7280' }
     ];
 
-    return {
-      labels: Object.keys(emotionSummary.averages).map(emotion => emotionNames[emotion]),
-      datasets: [{
-        data: Object.values(emotionSummary.averages),
-        backgroundColor: emotionColors,
-        borderWidth: 2,
-        borderColor: '#ffffff',
-      }],
-    };
-  };
+    emotions.forEach(emotion => {
+      const series = chart.series.push(
+        am5xy.LineSeries.new(root, {
+          name: emotion.name,
+          xAxis: xAxis,
+          yAxis: yAxis,
+          valueYField: emotion.field,
+          categoryXField: "time",
+          stroke: am5.color(emotion.color),
+          tooltip: am5.Tooltip.new(root, {
+            labelText: "{name}: {valueY}%"
+          })
+        })
+      );
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { 
-        display: true,
-        position: 'top',
-        labels: {
-          usePointStyle: true,
-        }
-      },
-    },
-    scales: {
-      y: { 
-        beginAtZero: true, 
-        min: 0, 
-        max: 100,
-        title: {
-          display: true,
-          text: '감정 점수 (%)'
-        }
-      },
-      x: {
-        title: {
-          display: true,
-          text: '시간 (분:초)'
-        }
-      }
-    },
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-  };
+      series.strokes.template.setAll({
+        strokeWidth: 2
+      });
 
-  const pieChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-        }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            return context.label + ': ' + context.parsed.toFixed(1) + '%';
-          }
-        }
+      series.bullets.push(() => {
+        return am5.Bullet.new(root, {
+          sprite: am5.Circle.new(root, {
+            strokeWidth: 2,
+            stroke: series.get("stroke"),
+            radius: 3,
+            fill: am5.color(emotion.color)
+          })
+        });
+      });
+
+      series.data.setAll(chartData);
+    });
+
+    const legend = chart.children.push(
+      am5.Legend.new(root, {
+        centerX: am5.p50,
+        x: am5.p50
+      })
+    );
+
+    legend.data.setAll(chart.series.values);
+
+    xAxis.data.setAll(chartData);
+
+    chart.appear(1000, 100);
+  }, [selectedSpeaker, emotionHistoryData]);
+
+  // amCharts 파이 차트 생성
+  useLayoutEffect(() => {
+    const chartData = getPieChartData();
+    if (!chartData.length || !pieChartRef.current) return;
+
+    // 기존 차트 정리
+    if (pieRoot.current) {
+      pieRoot.current.dispose();
+    }
+
+    const root = am5.Root.new(pieChartRef.current);
+    pieRoot.current = root;
+
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    const chart = root.container.children.push(
+      am5percent.PieChart.new(root, {
+        layout: root.verticalLayout,
+        innerRadius: am5.percent(50)
+      })
+    );
+
+    const series = chart.series.push(
+      am5percent.PieSeries.new(root, {
+        valueField: "value",
+        categoryField: "emotion",
+        alignLabels: false
+      })
+    );
+
+    series.slices.template.setAll({
+      strokeWidth: 2,
+      stroke: am5.color("#ffffff")
+    });
+
+    series.labels.template.setAll({
+      textType: "circular",
+      centerX: 0,
+      centerY: 0
+    });
+
+    // 커스텀 색상 적용
+    series.slices.template.adapters.add("fill", (fill, target) => {
+      const dataItem = target.dataItem;
+      if (dataItem) {
+        const data = dataItem.dataContext;
+        return am5.color(data.color);
       }
-    },
-  };
+      return fill;
+    });
+
+    const legend = chart.children.push(
+      am5.Legend.new(root, {
+        centerX: am5.p50,
+        x: am5.p50,
+        marginTop: 15,
+        marginBottom: 15
+      })
+    );
+
+    legend.data.setAll(series.dataItems);
+
+    series.data.setAll(chartData);
+
+    series.appear(1000, 100);
+  }, [selectedSpeaker, emotionHistoryData]);
 
   const emotionSummary = getEmotionSummary();
 
