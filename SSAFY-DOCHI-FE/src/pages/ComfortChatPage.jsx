@@ -400,6 +400,23 @@ const ComfortChatPage = () => {
         
         console.log('🔍 처리된 이미지 URL:', imageUrl);
 
+        // 만화 생성 중인 경우 처리
+        if (imageUrl.startsWith('COMIC_GENERATING:')) {
+          console.log('🎨 만화 생성 중:', imageUrl);
+          const manhwaData = [{ 
+            emoji: '🎨', 
+            text: '만화를 생성하고 있습니다. 잠시만 기다려주세요...', 
+            bg: 'bg-blue-100' 
+          }];
+          useComfortStore.getState().setManhwaCache(currentChatRoomId, manhwaData);
+          
+          // 3초 후 다시 시도
+          setTimeout(() => {
+            generateManhwa();
+          }, 3000);
+          return;
+        }
+
         // 더 유연한 URL 검증 로직
         const isValidUrl = imageUrl && (
           imageUrl.startsWith('http://') || 
