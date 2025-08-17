@@ -68,7 +68,7 @@ const GamePage = () => {
               className="bg-white cursor-pointer transition-all duration-300 hover:bg-orange-50 p-8"
               onClick={() => setSelectedGame(game)}
             >
-              {/* 카드 헤더 - 게임별 이미지 */}
+              {/* 카드 헤더 - 더 큰 아이콘 */}
               <div className="text-center mb-6">
                 <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center">
                   <img 
