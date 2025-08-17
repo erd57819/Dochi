@@ -392,18 +392,17 @@ const WhackAMoleGame = ({ onBack }) => {
                         alt="고슴도치"
                         className="w-16 h-16 object-contain"
                       />
-                        
-                        {/* 눈물 효과 - 눈 위치에서 나오도록 */}
-                        {mole === 'crying' && (
-                          <>
-                            <div className="absolute left-[14px] top-[28px] text-[10px] tear">💧</div>
-                            <div className="absolute right-[14px] top-[28px] text-[10px] tear" style={{animationDelay: '0.2s'}}>💧</div>
-                            <div className="absolute left-1/2 transform -translate-x-1/2 top-[35px]">
-                              <span className="text-2xl">😢</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                      
+                      {/* 눈물 효과 - 눈 위치에서 나오도록 */}
+                      {mole === 'crying' && (
+                        <>
+                          <div className="absolute left-[14px] top-[28px] text-[10px] tear">💧</div>
+                          <div className="absolute right-[14px] top-[28px] text-[10px] tear" style={{animationDelay: '0.2s'}}>💧</div>
+                          <div className="absolute left-1/2 transform -translate-x-1/2 top-[35px]">
+                            <span className="text-2xl">😢</span>
+                          </div>
+                        </>
+                      )}
                       
                       {/* 점수 표시 */}
                       {mole === 'crying' && (
