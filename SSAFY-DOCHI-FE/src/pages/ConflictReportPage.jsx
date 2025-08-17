@@ -205,7 +205,7 @@ const ConflictReportPage = () => {
 
   return (
     <div className="relative min-h-screen">
-      {/* 상단 배경 영역 - ConflictDetailPage 스타일 */}
+      {/* 첫 번째 섹션 - 상단 배경 (오버레이) */}
       <div className="w-full relative">
         {/* 배경 오버레이 */}
         <div 
@@ -269,7 +269,7 @@ const ConflictReportPage = () => {
         </main>
       </div>
 
-      {/* 하단 배경 영역 (흰색) - ConflictDetailPage 스타일 */}
+      {/* 두 번째 섹션 - 흰색 배경 */}
       <div className="w-full relative">
         {/* 배경 오버레이 */}
         <div 
@@ -281,7 +281,7 @@ const ConflictReportPage = () => {
         ></div>
         
         <main className="max-w-5xl mx-auto px-4 relative z-10">
-          {/* 하단 메시지 */}
+          {/* 상세 분석 결과 헤더 */}
           <div className="text-center mb-16 pt-12">
             <h2 className="text-5xl font-bold" style={{ 
               background: 'linear-gradient(45deg, #BF7D2C, #FFB120)',
@@ -309,7 +309,22 @@ const ConflictReportPage = () => {
               />
             </div>
           </div>
+        </main>
+      </div>
 
+      {/* 세 번째 섹션 - 오버레이 배경 */}
+      <div className="w-full relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#F8D6B3',
+            opacity: 0.14,
+            zIndex: 1
+          }}
+        ></div>
+        
+        <main className="max-w-5xl mx-auto px-4 relative z-10 py-16">
           {/* 책임 분석 섹션 */}
           <div className="mb-16">
             <div className="text-center mb-12">
@@ -325,7 +340,21 @@ const ConflictReportPage = () => {
               />
             </div>
           </div>
+        </main>
+      </div>
 
+      {/* 네 번째 섹션 - 흰색 배경 */}
+      <div className="w-full relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#FFFFFF',
+            zIndex: 1
+          }}
+        ></div>
+        
+        <main className="max-w-5xl mx-auto px-4 relative z-10 py-16">
           {/* 액션 플랜 섹션 */}
           <div className="mb-16">
             <div className="text-center mb-12">
@@ -341,7 +370,22 @@ const ConflictReportPage = () => {
               />
             </div>
           </div>
+        </main>
+      </div>
 
+      {/* 다섯 번째 섹션 - 오버레이 배경 */}
+      <div className="w-full relative">
+        {/* 배경 오버레이 */}
+        <div 
+          className="absolute inset-0" 
+          style={{ 
+            backgroundColor: '#F8D6B3',
+            opacity: 0.14,
+            zIndex: 1
+          }}
+        ></div>
+        
+        <main className="max-w-5xl mx-auto px-4 relative z-10 py-16">
           {/* 대화 내용 섹션 */}
           <div className="mb-16">
             <div className="text-center mb-12">
