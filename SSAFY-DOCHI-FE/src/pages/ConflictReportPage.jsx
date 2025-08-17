@@ -149,7 +149,7 @@ const ConflictReportPage = () => {
         ></div>
         
         <div className="flex items-center justify-center min-h-screen relative z-10">
-          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4 text-center border" style={{ borderColor: '#BF7D2C' }}>
+          <div className="bg-white p-8 rounded-lg max-w-md w-full mx-4 text-center border" style={{ borderColor: '#BF7D2C' }}>
             <div className="mb-6">
               <div 
                 className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
@@ -175,7 +175,7 @@ const ConflictReportPage = () => {
             <div className="space-y-3">
               <button
                 onClick={() => navigate('/')}
-                className="w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors shadow-lg"
+                className="w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors"
                 style={{ backgroundColor: '#BF7D2C' }}
                 onMouseEnter={(e) => {
                   e.target.style.backgroundColor = '#8B4513';
@@ -233,7 +233,7 @@ const ConflictReportPage = () => {
               <img 
                 src={consultantDochiImg} 
                 alt="컨설턴트 도치" 
-                className="w-56 h-56 object-contain drop-shadow-lg opacity-90 hover:opacity-100 transition-opacity duration-300"
+                className="w-56 h-56 object-contain opacity-90 hover:opacity-100 transition-opacity duration-300"
               />
             </div>
             
@@ -262,7 +262,7 @@ const ConflictReportPage = () => {
               종합 분석 요약
             </h3>
             
-            <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="bg-white p-6 rounded-lg">
               <SummaryTab summary={summary} />
             </div>
           </div>
@@ -303,7 +303,7 @@ const ConflictReportPage = () => {
               <p className="text-gray-600 text-lg mt-4">대화 속 숨겨진 감정의 흐름</p>
             </div>
             
-            <div className="bg-white shadow-lg p-8 rounded-lg">
+            <div className="bg-white p-8 rounded-lg">
               <EmotionTab 
                 selectedSpeaker={selectedSpeaker}
                 setSelectedSpeaker={setSelectedSpeaker}
@@ -335,7 +335,7 @@ const ConflictReportPage = () => {
               <p className="text-gray-600 text-lg mt-4">갈등의 원인과 각자의 역할</p>
             </div>
             
-            <div className="bg-white shadow-lg p-8 rounded-lg">
+            <div className="bg-white p-8 rounded-lg">
               <ResponsibilityTab 
                 responsibilityData={reportData?.sections?.responsibility_analysis?.data}
               />
@@ -365,7 +365,7 @@ const ConflictReportPage = () => {
               <p className="text-gray-600 text-lg mt-4">구체적인 해결 방안과 실행 계획</p>
             </div>
             
-            <div className="bg-white shadow-lg p-8 rounded-lg">
+            <div className="bg-white p-8 rounded-lg">
               <ActionPlanTab 
                 actionPlans={reportData?.sections?.action_plans?.data || {}}
               />
@@ -396,7 +396,7 @@ const ConflictReportPage = () => {
               <p className="text-gray-600 text-lg mt-4">실제 대화의 전체 기록</p>
             </div>
             
-            <div className="bg-white shadow-lg p-8 rounded-lg">
+            <div className="bg-white p-8 rounded-lg">
               <TranscriptTab 
                 transcriptData={reportData?.sections?.full_transcript}
               />
@@ -412,7 +412,7 @@ const ConflictReportPage = () => {
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <button
                 onClick={() => navigate('/mypage')}
-                className="px-8 py-3 text-white font-medium text-lg rounded-lg transition-colors shadow-lg"
+                className="px-8 py-3 text-white font-medium text-lg rounded-lg transition-colors"
                 style={{ backgroundColor: '#8B4513' }}
                 onMouseEnter={(e) => {
                   e.target.style.backgroundColor = '#654321';
@@ -426,7 +426,7 @@ const ConflictReportPage = () => {
               
               <button
                 onClick={() => window.print()}
-                className="px-8 py-3 text-white font-medium text-lg rounded-lg transition-colors shadow-lg"
+                className="px-8 py-3 text-white font-medium text-lg rounded-lg transition-colors"
                 style={{ backgroundColor: '#BF7D2C' }}
                 onMouseEnter={(e) => {
                   e.target.style.backgroundColor = '#A66D2A';

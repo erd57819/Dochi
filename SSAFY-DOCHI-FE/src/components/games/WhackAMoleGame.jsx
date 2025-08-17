@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-
+import hedgehogImg from '../../assets/image-65.png';
+import mangchidochi from '../../assets/mangchidochi.png';
 const WhackAMoleGame = ({ onBack }) => {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -252,89 +253,6 @@ const WhackAMoleGame = ({ onBack }) => {
         .tear {
           animation: tearDrop 0.8s ease-out forwards;
         }
-        
-        .hedgehog-body {
-          background: linear-gradient(135deg, #8B4513 0%, #654321 50%, #8B4513 100%);
-          border-radius: 50% 50% 45% 45%;
-          position: relative;
-          width: 60px;
-          height: 65px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        
-        .hedgehog-spikes {
-          position: absolute;
-          top: -5px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 70px;
-          height: 35px;
-          background: linear-gradient(to bottom, #654321, #8B4513);
-          border-radius: 50% 50% 0 0;
-          overflow: hidden;
-        }
-        
-        .hedgehog-spikes::before {
-          content: '^^^^^^';
-          position: absolute;
-          top: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          color: #4A2C17;
-          font-size: 20px;
-          letter-spacing: 2px;
-        }
-        
-        .hedgehog-face {
-          position: absolute;
-          bottom: 15px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 45px;
-          height: 30px;
-          background: #D2691E;
-          border-radius: 50%;
-        }
-        
-        .hedgehog-eyes {
-          position: absolute;
-          top: 8px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 30px;
-          display: flex;
-          justify-content: space-between;
-        }
-        
-        .hedgehog-eye {
-          width: 8px;
-          height: 10px;
-          background: black;
-          border-radius: 50%;
-          position: relative;
-        }
-        
-        .hedgehog-eye::after {
-          content: '';
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          width: 3px;
-          height: 3px;
-          background: white;
-          border-radius: 50%;
-        }
-        
-        .hedgehog-nose {
-          position: absolute;
-          bottom: 5px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 6px;
-          height: 5px;
-          background: black;
-          border-radius: 50%;
-        }
       `}</style>
 
       {/* 뒤로가기 버튼 */}
@@ -357,7 +275,7 @@ const WhackAMoleGame = ({ onBack }) => {
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
           <img 
-            src={hedgehogImg} 
+            src={mangchidochi} 
             alt="고슴도치" 
             className="w-24 h-24 object-contain"
           />
@@ -468,28 +386,23 @@ const WhackAMoleGame = ({ onBack }) => {
                         transform: mole === 'normal' ? 'scale(1)' : 'scale(0.95)'
                       }}
                     >
-                      {/* CSS로 그린 서있는 고슴도치 */}
-                      <div className="hedgehog-body">
-                        <div className="hedgehog-spikes"></div>
-                        <div className="hedgehog-face">
-                          <div className="hedgehog-eyes">
-                            <div className="hedgehog-eye"></div>
-                            <div className="hedgehog-eye"></div>
+                      {/* 고슴도치 이미지 */}
+                      <img 
+                        src={hedgehogImg} 
+                        alt="고슴도치"
+                        className="w-16 h-16 object-contain"
+                      />
+                      
+                      {/* 눈물 효과 - 눈 위치에서 나오도록 */}
+                      {mole === 'crying' && (
+                        <>
+                          <div className="absolute left-[14px] top-[28px] text-[10px] tear">💧</div>
+                          <div className="absolute right-[14px] top-[28px] text-[10px] tear" style={{animationDelay: '0.2s'}}>💧</div>
+                          <div className="absolute left-1/2 transform -translate-x-1/2 top-[35px]">
+                            <span className="text-2xl">😢</span>
                           </div>
-                          <div className="hedgehog-nose"></div>
-                        </div>
-                        
-                        {/* 눈물 효과 - 눈 위치에서 나오도록 */}
-                        {mole === 'crying' && (
-                          <>
-                            <div className="absolute left-[14px] top-[28px] text-[10px] tear">💧</div>
-                            <div className="absolute right-[14px] top-[28px] text-[10px] tear" style={{animationDelay: '0.2s'}}>💧</div>
-                            <div className="absolute left-1/2 transform -translate-x-1/2 top-[35px]">
-                              <span className="text-2xl">😢</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                        </>
+                      )}
                       
                       {/* 점수 표시 */}
                       {mole === 'crying' && (

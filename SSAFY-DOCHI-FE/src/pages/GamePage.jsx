@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import RouletteGame from '../components/games/RouletteGame.jsx';
 import LadderGame from '../components/games/LadderGame.jsx';
 import WhackAMoleGame from '../components/games/WhackAMoleGame.jsx';
-import hedgehogImg from '../assets/image-65.png';
 
 const GamePage = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -48,11 +47,6 @@ const GamePage = () => {
         {/* 헤더 섹션 */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <img 
-              src={hedgehogImg} 
-              alt="참견도치" 
-              className="w-32 h-32 object-contain"
-            />
           </div>
           <h1 className="text-4xl font-bold mb-2" style={{ color: '#333333' }}>
             참견도치 게임존
@@ -70,11 +64,6 @@ const GamePage = () => {
             >
               {/* 카드 헤더 */}
               <div className="h-32 flex items-center justify-center" style={{ backgroundColor: game.color }}>
-                <img 
-                  src={hedgehogImg} 
-                  alt={game.title} 
-                  className="w-20 h-20 object-contain"
-                />
               </div>
               
               {/* 카드 내용 */}
@@ -102,11 +91,6 @@ const GamePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="mb-4">
-                <img 
-                  src={hedgehogImg} 
-                  alt="참견도치 룰렛" 
-                  className="w-16 h-16 object-contain mx-auto"
-                />
               </div>
               <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>참견도치 룰렛</h3>
               <p className="text-sm" style={{ color: '#666666' }}>
@@ -116,11 +100,6 @@ const GamePage = () => {
             </div>
             <div className="text-center">
               <div className="mb-4">
-                <img 
-                  src={hedgehogImg} 
-                  alt="사다리타기" 
-                  className="w-16 h-16 object-contain mx-auto"
-                />
               </div>
               <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>사다리타기</h3>
               <p className="text-sm" style={{ color: '#666666' }}>
@@ -130,11 +109,6 @@ const GamePage = () => {
             </div>
             <div className="text-center">
               <div className="mb-4">
-                <img 
-                  src={hedgehogImg} 
-                  alt="고슴도치 잡기" 
-                  className="w-16 h-16 object-contain mx-auto"
-                />
               </div>
               <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>고슴도치 잡기</h3>
               <p className="text-sm" style={{ color: '#666666' }}>

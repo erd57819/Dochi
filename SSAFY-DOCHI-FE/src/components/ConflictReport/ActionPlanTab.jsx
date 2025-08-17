@@ -39,28 +39,25 @@ const ActionPlanTab = ({ actionPlans }) => {
       {/* 우선순위별 행동계획 */}
       {actionPlans?.priority_actions && actionPlans.priority_actions.length > 0 && (
         <div 
-          className="rounded-lg p-8 border-l-4"
+          className="rounded-lg p-8"
           style={{
-            background: 'linear-gradient(135deg, #F8D6B3, #FFE4CC)',
-            borderColor: '#BF7D2C',
-            boxShadow: '0 4px 6px rgba(191, 125, 44, 0.1)'
+            background: 'linear-gradient(135deg, #F8D6B3, #FFE4CC)'
           }}
         >
           <h3 
             className="text-xl font-semibold mb-6 flex items-center"
             style={{ color: '#8B4513' }}
           >
-            <span className="mr-3">🎯</span>우선순위별 행동계획
+            <svg className="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+            </svg>
+            우선순위별 행동계획
           </h3>
           <div className="space-y-4">
             {actionPlans.priority_actions.map((action, idx) => (
               <div 
                 key={idx} 
-                className="bg-white rounded-lg p-4 border-l-2"
-                style={{ 
-                  borderColor: '#BF7D2C',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                }}
+                className="bg-white rounded-lg p-4"
               >
                 <div className="flex items-start">
                   <span 
@@ -83,35 +80,32 @@ const ActionPlanTab = ({ actionPlans }) => {
       {/* 소통 개선 팁 */}
       {actionPlans?.communication_tips && actionPlans.communication_tips.length > 0 && (
         <div 
-          className="rounded-lg p-8 border-l-4"
+          className="rounded-lg p-8"
           style={{
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderColor: '#3B82F6',
-            boxShadow: '0 4px 6px rgba(59, 130, 246, 0.1)'
+            background: 'linear-gradient(135deg, #F5F1EC, #F8F5F0)'
           }}
         >
           <h3 
             className="text-xl font-semibold mb-6 flex items-center"
-            style={{ color: '#1E40AF' }}
+            style={{ color: '#654321' }}
           >
-            <span className="mr-3">💬</span>소통 개선 팁
+            <svg className="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+            </svg>
+            소통 개선 팁
           </h3>
           <div className="space-y-4">
             {actionPlans.communication_tips.map((tip, idx) => (
               <div 
                 key={idx} 
-                className="bg-white rounded-lg p-4 border-l-2"
-                style={{ 
-                  borderColor: '#3B82F6',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                }}
+                className="bg-white rounded-lg p-4"
               >
                 <div className="flex items-start">
                   <span 
                     className="text-sm font-semibold px-3 py-1 rounded-full mr-4"
                     style={{ 
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                      color: '#1E40AF'
+                      backgroundColor: 'rgba(160, 116, 60, 0.1)',
+                      color: '#8B4513'
                     }}
                   >
                     {idx + 1}
@@ -127,35 +121,32 @@ const ActionPlanTab = ({ actionPlans }) => {
       {/* 장기적 제안 */}
       {actionPlans?.long_term_suggestions && actionPlans.long_term_suggestions.length > 0 && (
         <div 
-          className="rounded-lg p-8 border-l-4"
+          className="rounded-lg p-8"
           style={{
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            borderColor: '#22C55E',
-            boxShadow: '0 4px 6px rgba(34, 197, 94, 0.1)'
+            background: 'linear-gradient(135deg, #C6A876, #D9C499)'
           }}
         >
           <h3 
             className="text-xl font-semibold mb-6 flex items-center"
-            style={{ color: '#15803D' }}
+            style={{ color: '#5D4037' }}
           >
-            <span className="mr-3">🌱</span>장기적 제안
+            <svg className="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+            장기적 제안
           </h3>
           <div className="space-y-4">
             {actionPlans.long_term_suggestions.map((suggestion, idx) => (
               <div 
                 key={idx} 
-                className="bg-white rounded-lg p-4 border-l-2"
-                style={{ 
-                  borderColor: '#22C55E',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                }}
+                className="bg-white rounded-lg p-4"
               >
                 <div className="flex items-start">
                   <span 
                     className="text-sm font-semibold px-3 py-1 rounded-full mr-4"
                     style={{ 
-                      backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                      color: '#15803D'
+                      backgroundColor: 'rgba(147, 107, 58, 0.2)',
+                      color: '#5D4037'
                     }}
                   >
                     {idx + 1}
@@ -173,7 +164,9 @@ const ActionPlanTab = ({ actionPlans }) => {
        (!actionPlans?.communication_tips || actionPlans.communication_tips.length === 0) &&
        (!actionPlans?.long_term_suggestions || actionPlans.long_term_suggestions.length === 0) && (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">💭</div>
+          <svg className="w-16 h-16 mx-auto mb-4" style={{ color: '#8B4513' }} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clipRule="evenodd" />
+          </svg>
           <p 
             className="text-lg"
             style={{ color: '#6B7280' }}

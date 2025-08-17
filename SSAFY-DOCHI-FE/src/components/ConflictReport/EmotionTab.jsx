@@ -250,7 +250,7 @@ const EmotionTab = ({ selectedSpeaker, setSelectedSpeaker }) => {
       
       {/* 데이터 없음 메시지 */}
       {speakers.length === 0 && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+        <div className="bg-yellow-50 p-4 rounded-lg">
           <div className="flex">
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
