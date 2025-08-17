@@ -58,30 +58,31 @@ const ResponsibilityTab = ({ responsibilityData }) => {
       stroke: am5.color("#ffffff")
     });
 
-    // 라벨 설정 - 작은 영역은 숨기고 범례만 표시
+    // 라벨 설정 - 모든 라벨 표시하되 겹침 방지
     series.labels.template.setAll({
       textType: "regular",
-      centerX: am5.p50,
-      centerY: am5.p50,
-      fontSize: "11px",
-      fontWeight: "400"
+      fontSize: "10px",
+      fontWeight: "500",
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 5,
+      paddingRight: 5
     });
 
-    // 10% 미만인 경우 라벨 숨기기 (책임 분석이므로 더 높은 임계값)
-    series.labels.template.adapters.add("forceHidden", (forceHidden, target) => {
-      const dataItem = target.dataItem;
-      if (dataItem) {
-        const value = dataItem.get("valuePercentTotal");
-        return value < 10; // 10% 미만이면 라벨 숨김
-      }
-      return forceHidden;
-    });
+    // 라벨 텍스트에 퍼센트 추가
+    series.labels.template.set("text", "{category}: {value}%");
 
-    // 틱 라인 설정
+    // 틱 라인 설정 - 라벨을 빈 공간으로 연결
     series.ticks.template.setAll({
-      strokeOpacity: 0.5,
-      stroke: am5.color("#999999")
+      strokeOpacity: 1,
+      stroke: am5.color("#666666"),
+      strokeWidth: 1,
+      strokeDasharray: [2, 2]
     });
+
+    // 라벨이 차트 경계를 벗어나지 않도록 설정
+    series.labels.template.set("maxWidth", 100);
+    series.labels.template.set("oversizedBehavior", "wrap");
 
     // 커스텀 색상 적용
     series.slices.template.adapters.add("fill", (fill, target) => {
