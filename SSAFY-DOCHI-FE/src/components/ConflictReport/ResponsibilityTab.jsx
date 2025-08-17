@@ -1,6 +1,7 @@
 import React, { useRef, useLayoutEffect } from 'react';
 import * as am5 from '@amcharts/amcharts5';
-import * as am5percent from '@amcharts/amcharts5/percent';
+import * as am5radar from '@amcharts/amcharts5/radar';
+import * as am5xy from '@amcharts/amcharts5/xy';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 
 const ResponsibilityTab = ({ responsibilityData }) => {
@@ -23,7 +24,7 @@ const ResponsibilityTab = ({ responsibilityData }) => {
     }));
   };
 
-  // amCharts 설정 및 정리
+  // amCharts 게이지 차트 설정
   useLayoutEffect(() => {
     const chartData = getChartData();
     if (!chartData.length || !chartRef.current) return;
@@ -38,76 +39,106 @@ const ResponsibilityTab = ({ responsibilityData }) => {
 
     chartRoot.setThemes([am5themes_Animated.new(chartRoot)]);
 
-    const chart = chartRoot.container.children.push(
-      am5percent.PieChart.new(chartRoot, {
-        layout: chartRoot.verticalLayout,
-        innerRadius: am5.percent(50)
+    // 각 참가자별로 게이지 차트 생성
+    const gaugeContainer = chartRoot.container.children.push(
+      am5.Container.new(chartRoot, {
+        layout: chartRoot.gridLayout,
+        width: am5.percent(100),
+        height: am5.percent(100)
       })
     );
 
-    const series = chart.series.push(
-      am5percent.PieSeries.new(chartRoot, {
-        valueField: "value",
-        categoryField: "name",
-        alignLabels: true
-      })
-    );
+    chartData.forEach((participant, index) => {
+      // 게이지 차트 생성
+      const chart = gaugeContainer.children.push(
+        am5radar.RadarChart.new(chartRoot, {
+          panX: false,
+          panY: false,
+          wheelX: "none",
+          wheelY: "none",
+          innerRadius: am5.percent(40),
+          width: am5.percent(50),
+          height: am5.percent(50)
+        })
+      );
 
-    series.slices.template.setAll({
-      strokeWidth: 2,
-      stroke: am5.color("#ffffff")
+      // 원형 축 생성 (0-100%)
+      const xRenderer = am5radar.AxisRendererCircular.new(chartRoot, {
+        minGridDistance: 50
+      });
+      
+      xRenderer.grid.template.setAll({
+        strokeOpacity: 0.1
+      });
+
+      const xAxis = chart.xAxes.push(
+        am5xy.ValueAxis.new(chartRoot, {
+          maxZoomCount: 1,
+          min: 0,
+          max: 100,
+          strictMinMax: true,
+          renderer: xRenderer
+        })
+      );
+
+      // Y축 (반지름 방향)
+      const yRenderer = am5radar.AxisRendererRadial.new(chartRoot, {
+        minGridDistance: 20
+      });
+
+      yRenderer.labels.template.setAll({
+        centerX: am5.p100,
+        fontWeight: "500",
+        fontSize: "8px"
+      });
+
+      const yAxis = chart.yAxes.push(
+        am5xy.CategoryAxis.new(chartRoot, {
+          categoryField: "category",
+          renderer: yRenderer
+        })
+      );
+
+      // 시리즈 생성
+      const series = chart.series.push(
+        am5radar.RadarColumnSeries.new(chartRoot, {
+          xAxis: xAxis,
+          yAxis: yAxis,
+          valueXField: "value",
+          categoryYField: "category"
+        })
+      );
+
+      // 컬럼 스타일링
+      series.columns.template.setAll({
+        strokeOpacity: 0,
+        fill: am5.color(participant.color),
+        cornerRadiusTL: 3,
+        cornerRadiusTR: 3
+      });
+
+      // 데이터 설정
+      const data = [{ category: "책임비중", value: participant.value }];
+      series.data.setAll(data);
+      yAxis.data.setAll(data);
+
+      // 중앙 라벨 (이름과 퍼센트)
+      const centerLabel = chart.plotContainer.children.push(
+        am5.Label.new(chartRoot, {
+          text: `${participant.name}\n${participant.value}%`,
+          centerX: am5.p50,
+          centerY: am5.p50,
+          textAlign: "center",
+          fontSize: "12px",
+          fontWeight: "600",
+          fill: am5.color("#333333")
+        })
+      );
+
+      // 애니메이션
+      series.appear(1000);
+      chart.appear(1000, 100);
     });
-
-    // 라벨 설정 - 모든 라벨 표시하되 겹침 방지
-    series.labels.template.setAll({
-      textType: "regular",
-      fontSize: "10px",
-      fontWeight: "500",
-      paddingTop: 0,
-      paddingBottom: 0,
-      paddingLeft: 5,
-      paddingRight: 5
-    });
-
-    // 라벨 텍스트에 퍼센트 추가
-    series.labels.template.set("text", "{category}: {value}%");
-
-    // 틱 라인 설정 - 라벨을 빈 공간으로 연결
-    series.ticks.template.setAll({
-      strokeOpacity: 1,
-      stroke: am5.color("#666666"),
-      strokeWidth: 1,
-      strokeDasharray: [2, 2]
-    });
-
-    // 라벨이 차트 경계를 벗어나지 않도록 설정
-    series.labels.template.set("maxWidth", 100);
-    series.labels.template.set("oversizedBehavior", "wrap");
-
-    // 커스텀 색상 적용
-    series.slices.template.adapters.add("fill", (fill, target) => {
-      const dataItem = target.dataItem;
-      if (dataItem) {
-        const data = dataItem.dataContext;
-        return am5.color(data.color);
-      }
-      return fill;
-    });
-
-    const legend = chart.children.push(
-      am5.Legend.new(chartRoot, {
-        centerX: am5.p50,
-        x: am5.p50,
-        marginTop: 15,
-        marginBottom: 15
-      })
-    );
-
-    legend.data.setAll(series.dataItems);
-
-    series.data.setAll(chartData);
-
-    series.appear(1000, 100);
 
     return () => {
       chartRoot.dispose();
@@ -121,8 +152,8 @@ const ResponsibilityTab = ({ responsibilityData }) => {
       {getChartData() && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-gray-50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">책임 비중 분포</h3>
-            <div ref={chartRef} style={{ height: '250px', width: '100%' }}></div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">책임 비중 게이지</h3>
+            <div ref={chartRef} style={{ height: '300px', width: '100%' }}></div>
           </div>
 
           {/* 상세 분석 */}
