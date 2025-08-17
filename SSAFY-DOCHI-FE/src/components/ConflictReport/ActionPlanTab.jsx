@@ -41,8 +41,7 @@ const ActionPlanTab = ({ actionPlans }) => {
         <div 
           className="rounded-lg p-8"
           style={{
-            background: 'linear-gradient(135deg, #F8D6B3, #FFE4CC)',
-            boxShadow: '0 4px 6px rgba(191, 125, 44, 0.1)'
+            background: 'linear-gradient(135deg, #F8D6B3, #FFE4CC)'
           }}
         >
           <h3 
@@ -59,9 +58,6 @@ const ActionPlanTab = ({ actionPlans }) => {
               <div 
                 key={idx} 
                 className="bg-white rounded-lg p-4"
-                style={{ 
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                }}
               >
                 <div className="flex items-start">
                   <span 
@@ -86,8 +82,7 @@ const ActionPlanTab = ({ actionPlans }) => {
         <div 
           className="rounded-lg p-8"
           style={{
-            background: 'linear-gradient(135deg, #F5F1EC, #F8F5F0)',
-            boxShadow: '0 4px 6px rgba(160, 116, 60, 0.1)'
+            background: 'linear-gradient(135deg, #F5F1EC, #F8F5F0)'
           }}
         >
           <h3 
@@ -104,9 +99,6 @@ const ActionPlanTab = ({ actionPlans }) => {
               <div 
                 key={idx} 
                 className="bg-white rounded-lg p-4"
-                style={{ 
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                }}
               >
                 <div className="flex items-start">
                   <span 
@@ -131,8 +123,7 @@ const ActionPlanTab = ({ actionPlans }) => {
         <div 
           className="rounded-lg p-8"
           style={{
-            background: 'linear-gradient(135deg, #C6A876, #D9C499)',
-            boxShadow: '0 4px 6px rgba(147, 107, 58, 0.1)'
+            background: 'linear-gradient(135deg, #C6A876, #D9C499)'
           }}
         >
           <h3 
@@ -149,9 +140,6 @@ const ActionPlanTab = ({ actionPlans }) => {
               <div 
                 key={idx} 
                 className="bg-white rounded-lg p-4"
-                style={{ 
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                }}
               >
                 <div className="flex items-start">
                   <span 

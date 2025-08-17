@@ -33,9 +33,6 @@ const ReportSummaryCards = ({ summary, emotionSummary }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
         <div 
           className="bg-white rounded-xl p-6"
-          style={{ 
-            boxShadow: '0 10px 25px rgba(191, 125, 44, 0.1)'
-          }}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 
@@ -53,9 +50,6 @@ const ReportSummaryCards = ({ summary, emotionSummary }) => {
 
         <div 
           className="bg-white rounded-xl p-6"
-          style={{ 
-            boxShadow: '0 10px 25px rgba(191, 125, 44, 0.1)'
-          }}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 
@@ -84,9 +78,6 @@ const ReportSummaryCards = ({ summary, emotionSummary }) => {
 
         <div 
           className="bg-white rounded-xl p-6"
-          style={{ 
-            boxShadow: '0 10px 25px rgba(191, 125, 44, 0.1)'
-          }}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 
