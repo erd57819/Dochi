@@ -51,6 +51,9 @@ public class ChatService {
         String sessionId = dto.getSessionId();
         String mode = dto.getMode();
         
+        log.info("🎯 채팅 요청 수신: userId={}, sessionId={}, mode={}, messageLength={}", 
+                 userId, sessionId, mode, dto.getMessage() != null ? dto.getMessage().length() : 0);
+        
         // 캐시 확인 모드들
         if ("TIMELINE_CHECK".equals(mode)) {
             String timelineKey = "timeline_cache:" + sessionId;
@@ -80,30 +83,65 @@ public class ChatService {
         String description = null;
         
         if ("COMIC".equals(mode)) {
-            String comicId = "comic_" + UUID.randomUUID().toString();
+            log.info("🎨 COMIC 모드 시작: sessionId={}", sessionId);
             
-            setComicStatus(comicId, "GENERATING", "4컷 만화를 생성하고 있어요...", null);
+            // 사용자 메시지 먼저 저장
+            saveMessage(sessionId, "USER", dto.getMessage());
+            log.info("✅ 사용자 메시지 저장 완료");
             
-            CompletableFuture.runAsync(() -> {
+            // 동기 방식으로 이미지 생성 (GMS 토큰 한 번만 사용)
+            try {
+                log.info("🎨 네컷만화 생성 시작: prompt length={}", prompt.length());
+                long startTime = System.currentTimeMillis();
+                
+                // 이미지 생성 시도 (동기)
+                String imageUrl = null;
                 try {
-                    log.info("🎨 네컷만화 생성 시작");
-                    String imageUrl = gmsImageClient.generateImage(prompt);
-                    log.info("✅ 이미지 생성 완료: {}", imageUrl);
+                    imageUrl = gmsImageClient.generateImage(prompt);
+                    long imageGenTime = System.currentTimeMillis() - startTime;
+                    log.info("✅ 이미지 생성 완료: imageUrl={}, 소요시간={}ms", imageUrl, imageGenTime);
+                } catch (Exception imgError) {
+                    log.error("❌ GMS 이미지 생성 실패: {}", imgError.getMessage(), imgError);
+                    // 이미지 생성 실패 시 에러 메시지 반환
+                    aiResponse = "ERROR:이미지 생성에 실패했습니다. GMS 토큰을 확인해주세요.";
+                    description = "GMS 오류: " + imgError.getMessage();
                     
-                    String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
-                    String comicDescription = generateComicDescription(conversationContent);
-                    String finalResponse = imageUrl + "\n\n" + comicDescription;
+                    // 에러도 저장
+                    saveMessage(sessionId, "BOT", aiResponse);
                     
-                    setComicStatus(comicId, "COMPLETED", comicDescription, imageUrl);
-                    
-                    saveMessage(sessionId, "BOT", finalResponse);
-                } catch (Exception e) {
-                    log.error("❌ 만화 생성 실패", e);
-                    setComicStatus(comicId, "FAILED", "만화 생성에 실패했습니다. 다시 시도해주세요.", null);
+                    return ChatResDto.builder()
+                            .senderType("BOT")
+                            .message(aiResponse)
+                            .timestamp(LocalDateTime.now().toString())
+                            .description(description)
+                            .build();
                 }
-            });
-            
-            aiResponse = "COMIC_GENERATING:" + comicId;
+                
+                // 대화 설명 생성
+                String conversationContent = String.join("\n", history) + "\n현재 질문: " + dto.getMessage();
+                String comicDescription = generateComicDescription(conversationContent);
+                log.info("📝 만화 설명 생성 완료: {}", comicDescription);
+                
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    aiResponse = imageUrl;
+                    description = comicDescription;
+                    
+                    // 성공 응답 저장
+                    String finalResponse = imageUrl + "\n\n" + comicDescription;
+                    saveMessage(sessionId, "BOT", finalResponse);
+                    log.info("✅ 만화 생성 성공 및 저장 완료");
+                } else {
+                    aiResponse = "ERROR:이미지 URL을 받지 못했습니다.";
+                    description = "이미지 생성 실패";
+                    saveMessage(sessionId, "BOT", aiResponse);
+                }
+                
+            } catch (Exception e) {
+                log.error("❌ 만화 생성 전체 실패: sessionId={}, error={}", sessionId, e.getMessage(), e);
+                aiResponse = "ERROR:만화 생성 중 오류가 발생했습니다.";
+                description = e.getMessage();
+                saveMessage(sessionId, "BOT", aiResponse);
+            }
         } else {
             aiResponse = gmsAiClient.ask(prompt, "claude-3-7-sonnet-latest");
             saveMessage(sessionId, "USER", dto.getMessage());
@@ -171,47 +209,87 @@ public class ChatService {
     
 
     private void saveMessage(String sessionId, String senderType, String message) {
-        String key = REDIS_PREFIX + sessionId;
         try {
-            Object raw = redisTemplate.opsForValue().get(key);
-            String summary = "";
-            List<String> recent = new ArrayList<>();
-
-            if (raw != null) {
-                Map<String, Object> parsed = objectMapper.readValue(raw.toString(), new TypeReference<>() {});
-                summary = (String) parsed.getOrDefault("summary", "");
-                recent = (List<String>) parsed.getOrDefault("recent", new ArrayList<>());
+            log.info("💾 메시지 저장 시도: sessionId={}, senderType={}, messageLength={}", 
+                     sessionId, senderType, message != null ? message.length() : 0);
+            
+            // sessionId로 chatRoomId 찾기
+            ChatRoom chatRoom = findChatRoomBySessionId(sessionId);
+            if (chatRoom != null) {
+                log.info("✅ 채팅방 찾기 성공: chatRoomId={}", chatRoom.getId());
+                
+                // MySQL에 직접 저장
+                Chat chat = Chat.builder()
+                        .chatRoomId(chatRoom.getId())
+                        .senderType(senderType)
+                        .message(message)
+                        .timestamp(LocalDateTime.now())
+                        .build();
+                
+                chatDao.saveChat(chat);
+                log.info("✅ 메시지 MySQL 저장 완료: sessionId={}, chatRoomId={}, senderType={}", 
+                         sessionId, chatRoom.getId(), senderType);
+            } else {
+                log.warn("❌ 세션 ID {}에 해당하는 채팅방을 찾을 수 없습니다.", sessionId);
             }
-
-            recent.add(senderType + ": " + message);
-            if (recent.size() > 10) {  // 더 많은 메시지를 유지 (6 -> 10)
-                String toSummarize = String.join("\n", recent.subList(0, recent.size() - 6));
-                summary = summarize(toSummarize, summary);
-                recent = recent.subList(recent.size() - 6, recent.size()); // 최근 6개 메시지 유지 (2 -> 6)
-            }
-
-            Map<String, Object> toStore = new HashMap<>();
-            toStore.put("summary", summary);
-            toStore.put("recent", recent);
-            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(toStore), SESSION_TTL);
         } catch (Exception e) {
-            log.error("Redis 저장 실패", e);
+            log.error("❌ MySQL 메시지 저장 실패: sessionId={}, senderType={}, error={}", 
+                     sessionId, senderType, e.getMessage(), e);
         }
+    }
+    
+    private ChatRoom findChatRoomBySessionId(String sessionId) {
+        try {
+            log.info("🔍 세션으로 채팅방 조회: sessionId={}", sessionId);
+            List<ChatRoom> allRooms = chatDao.findAllRoomsByUserId(getCurrentUserId());
+            log.info("📋 전체 채팅방 수: {}", allRooms.size());
+            
+            ChatRoom foundRoom = allRooms.stream()
+                    .filter(room -> sessionId.equals(room.getSessionId()))
+                    .findFirst()
+                    .orElse(null);
+                    
+            if (foundRoom != null) {
+                log.info("✅ 채팅방 찾기 성공: roomId={}, title={}", foundRoom.getId(), foundRoom.getTitle());
+            } else {
+                log.warn("❌ 해당 세션의 채팅방 없음: sessionId={}", sessionId);
+                // 모든 세션 ID 로깅 (디버깅용)
+                for (ChatRoom room : allRooms) {
+                    log.debug("기존 채팅방: roomId={}, sessionId={}", room.getId(), room.getSessionId());
+                }
+            }
+            
+            return foundRoom;
+        } catch (Exception e) {
+            log.error("❌ 세션 ID로 채팅방 조회 실패: sessionId={}, error={}", sessionId, e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    private Long getCurrentUserId() {
+        // 현재 인증된 사용자 ID 반환
+        // 임시로 하드코딩, 실제로는 SecurityContext에서 가져와야 함
+        return 4L; // 임시값
     }
 
     private List<String> getHistory(String sessionId) {
-        Object raw = redisTemplate.opsForValue().get(REDIS_PREFIX + sessionId);
-        if (raw == null) return new ArrayList<>();
         try {
-            Map<String, Object> parsed = objectMapper.readValue(raw.toString(), new TypeReference<>() {});
-            String summary = (String) parsed.getOrDefault("summary", "");
-            List<String> recent = (List<String>) parsed.getOrDefault("recent", new ArrayList<>());
-            List<String> full = new ArrayList<>();
-            if (!summary.isBlank()) full.add("요약: " + summary);
-            full.addAll(recent);
-            return full;
+            // MySQL에서 대화 히스토리 조회
+            List<Chat> messages = chatDao.getMessagesBySessionId(sessionId);
+            
+            List<String> history = new ArrayList<>();
+            for (Chat chat : messages) {
+                history.add(chat.getSenderType() + ": " + chat.getMessage());
+            }
+            
+            // 최근 20개 메시지만 AI 컨텍스트로 사용 (성능 최적화)
+            if (history.size() > 20) {
+                return history.subList(history.size() - 20, history.size());
+            }
+            
+            return history;
         } catch (Exception e) {
-            log.error("Redis 불러오기 실패", e);
+            log.error("MySQL 히스토리 조회 실패: sessionId={}, error={}", sessionId, e.getMessage(), e);
             return new ArrayList<>();
         }
     }
@@ -379,24 +457,29 @@ public class ChatService {
     }
 
     public List<Chat> getMessages(Long chatRoomId, String sessionId) {
-        if (sessionId != null && !sessionId.isBlank()) {
-            List<Chat> redisMessages = getMessagesFromRedis(sessionId);
-            if (!redisMessages.isEmpty()) {
-                log.info("활성 세션 {}의 대화 내역을 Redis에서조회했습니다.", sessionId);
-                return redisMessages;
+        try {
+            // sessionId가 있으면 세션 ID로 조회 시도
+            if (sessionId != null && !sessionId.isBlank()) {
+                log.info("세션 ID {}의 대화 내역을 MySQL에서 조회 시도", sessionId);
+                try {
+                    List<Chat> messages = chatDao.getMessagesBySessionId(sessionId);
+                    log.info("세션 ID {}에서 {}개의 메시지를 조회했습니다.", sessionId, messages.size());
+                    return messages;
+                } catch (Exception e) {
+                    log.warn("세션 ID로 조회 실패, chatRoomId로 fallback: {}", e.getMessage());
+                }
             }
+            
+            // sessionId 조회 실패 시 또는 sessionId가 없으면 chatRoomId로 조회
+            log.info("chatRoomId {}의 대화 내역을 MySQL에서 조회합니다.", chatRoomId);
+            List<Chat> sqlMessages = chatDao.findAllByChatRoomId(chatRoomId);
+            log.info("chatRoomId {}에서 {}개의 메시지를 조회했습니다.", chatRoomId, sqlMessages.size());
+            
+            return sqlMessages;
+        } catch (Exception e) {
+            log.error("메시지 조회 실패: chatRoomId={}, sessionId={}, error={}", chatRoomId, sessionId, e.getMessage(), e);
+            return new ArrayList<>(); // 빈 리스트 반환
         }
-        
-        log.info("chatRoomId {}의 대화 내역을 MySQL에서 조회합니다.", chatRoomId);
-        List<Chat> sqlMessages = chatDao.findAllByChatRoomId(chatRoomId);
-        
-        // SQL에서 가져온 대화가 있고 sessionId가 있다면 Redis로 복원
-        if (!sqlMessages.isEmpty() && sessionId != null && !sessionId.isBlank()) {
-            restoreSqlMessagesToRedis(sqlMessages, sessionId);
-            log.info("SQL 대화 {}개를 Redis 세션 {}으로 복원했습니다.", sqlMessages.size(), sessionId);
-        }
-        
-        return sqlMessages;
     }
 
     private List<Chat> getMessagesFromRedis(String sessionId) {

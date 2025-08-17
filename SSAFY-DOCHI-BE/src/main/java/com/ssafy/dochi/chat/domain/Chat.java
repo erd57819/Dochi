@@ -11,6 +11,7 @@ public class Chat {
     private Long id;
     private Long chatRoomId;
     private Long userId;
+    private String sessionId; // 세션 ID 추가
     private String senderType; // USER, BOT
     private String message;
     private LocalDateTime timestamp;

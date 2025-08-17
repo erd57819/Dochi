@@ -345,29 +345,70 @@ const ComfortChatPage = () => {
       const manhwaData = manhwaCache[currentChatRoomId];
       const imagePanel = manhwaData.find(panel => panel.type === 'image');
       
-      if (!imagePanel) {
+      if (!imagePanel || !imagePanel.url) {
         alert('다운로드할 이미지가 없습니다.');
         return;
       }
       
-      // 이미지 다운로드
-      const response = await fetch(imagePanel.url);
-      const blob = await response.blob();
+      console.log('이미지 다운로드 시작:', imagePanel.url);
       
-      // 다운로드 링크 생성
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `네컷만화_${new Date().getTime()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // 이미지 다운로드 시도
+      try {
+        const response = await fetch(imagePanel.url, {
+          mode: 'cors',
+          headers: {
+            'Accept': 'image/*'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        console.log('Blob 생성 완료:', blob.type, blob.size);
+        
+        // 다운로드 링크 생성
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // 파일명 생성 (타임스탬프와 함께)
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const extension = blob.type.includes('png') ? 'png' : 
+                         blob.type.includes('jpeg') || blob.type.includes('jpg') ? 'jpg' : 
+                         'png';
+        link.download = `네컷만화_${timestamp}.${extension}`;
+        
+        // 다운로드 실행
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('다운로드 완료');
+        alert('네컷만화 이미지가 다운로드되었습니다!');
+        
+      } catch (fetchError) {
+        console.error('Fetch 실패, 대체 방법 시도:', fetchError);
+        
+        // 대체 방법: 새 창에서 이미지 열기
+        const link = document.createElement('a');
+        link.href = imagePanel.url;
+        link.target = '_blank';
+        link.download = `네컷만화_${new Date().getTime()}.png`;
+        link.rel = 'noopener noreferrer';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert('이미지가 새 창에서 열렸습니다. 우클릭하여 "이미지 저장"을 선택해주세요.');
+      }
       
-      alert('네컷만화 이미지가 다운로드되었습니다!');
     } catch (error) {
-      console.error('이미지 다운로드 실패:', error);
-      alert('이미지 다운로드에 실패했습니다.');
+      console.error('이미지 다운로드 전체 실패:', error);
+      alert('이미지 다운로드에 실패했습니다. 네트워크 연결을 확인해주세요.');
     }
   };
   const handleManhwaButtonClick = () => {
@@ -377,27 +418,115 @@ const ComfortChatPage = () => {
   const generateManhwa = async () => {
     try {
       const { currentChatRoomId, currentSessionId, messages } = useComfortStore.getState();
+      
+      // 1. 세션 ID 문제 디버깅 - 세션 상태 상세 추적
+      console.log('🎨 네컷만화 생성 시작 - 세션 상태 점검:', {
+        currentChatRoomId,
+        currentSessionId,
+        messagesCount: messages?.length,
+        timestamp: new Date().toISOString(),
+        sessionType: typeof currentSessionId,
+        sessionValid: !!currentSessionId,
+        roomType: typeof currentChatRoomId,
+        roomValid: !!currentChatRoomId,
+        messagesStructure: messages?.map(m => ({ 
+          sender: m.sender, 
+          contentLength: m.content?.length,
+          timestamp: m.timestamp 
+        }))
+      });
+
+      // 세션 ID 변경 감지를 위한 초기 기록
+      const initialSessionId = currentSessionId;
+      console.log('📌 초기 세션 ID 기록:', { initialSessionId });
 
       if (!currentSessionId || !currentChatRoomId) {
+        console.error('❌ 세션 정보 없음 - 상세 분석:', { 
+          currentSessionId, 
+          currentChatRoomId,
+          sessionIdType: typeof currentSessionId,
+          roomIdType: typeof currentChatRoomId,
+          storeState: useComfortStore.getState()
+        });
         setError('세션이 설정되지 않았습니다.');
         return;
       }
+      
       if (!messages || messages.length <= 1) {
+        console.error('❌ 대화 내용 부족 - 메시지 상세:', { 
+          messagesLength: messages?.length,
+          messagesArray: messages,
+          firstMessage: messages?.[0],
+          lastMessage: messages?.[messages?.length - 1]
+        });
         setError('대화 내용이 부족합니다.');
         return;
       }
 
       setLoading(true);
       setShowManhwa(true);
+      
+      console.log('🟢 로딩 상태 시작, 모달 열기 완료');
 
       // 최근 사용자 메시지들을 기반으로 만화 생성 프롬프트 구성
       const userMessages = messages.filter(msg => msg.sender === 'user').slice(-5); // 최근 5개 사용자 메시지
       const chatContext = userMessages.map(msg => msg.content).join(' ');
       const prompt = `다음 대화 내용을 바탕으로 네컷만화를 그려주세요: ${chatContext}`;
+      
+      console.log('📝 만화 생성 프롬프트:', {
+        userMessagesCount: userMessages.length,
+        promptLength: prompt.length,
+        chatContext: chatContext.substring(0, 100) + '...',
+        fullPrompt: prompt
+      });
 
       try {
+        // 2. 실제 API 요청 검증 - 요청 전 상태 점검
+        console.log('🚀 API 요청 준비 - 요청 전 최종 점검:', {
+          sessionId: currentSessionId,
+          sessionStillValid: currentSessionId === initialSessionId,
+          mode: 'COMIC',
+          promptPreview: prompt.substring(0, 50) + '...',
+          promptLength: prompt.length,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          connectionType: navigator.connection?.effectiveType || 'unknown'
+        });
+        
+        // 세션 변경 감지
+        if (currentSessionId !== initialSessionId) {
+          console.warn('⚠️ 세션 ID 변경 감지!', {
+            initial: initialSessionId,
+            current: currentSessionId,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        console.log('📤 실제 API 요청 시작 - comfortService.sendMessage 호출');
+        const startTime = Date.now();
         const response = await comfortService.sendMessage(currentSessionId, prompt, 'COMIC');
-        console.log('🎨 네컷만화 API 응답:', response);
+        const duration = Date.now() - startTime;
+        
+        // 3. 타임아웃 및 응답 분석
+        console.log('✅ 네컷만화 API 응답 수신 - 상세 분석:', {
+          success: true,
+          duration: `${duration}ms`,
+          isTimeout: duration > 180000,
+          responseType: typeof response,
+          responseKeys: Object.keys(response || {}),
+          responseSize: JSON.stringify(response).length,
+          timestamp: new Date().toISOString(),
+          response: response
+        });
+        
+        // 타임아웃 근처 경고
+        if (duration > 150000) { // 150초 이상이면 경고
+          console.warn('⏰ 응답 시간이 오래 걸렸습니다:', {
+            duration: `${duration}ms`,
+            timeoutLimit: '180000ms',
+            remainingTime: `${180000 - duration}ms`
+          });
+        }
         
         let imageUrl = response.data.message;
         
@@ -411,20 +540,44 @@ const ComfortChatPage = () => {
         
         console.log('🔍 처리된 이미지 URL:', imageUrl);
 
-        // 만화 생성 중인 경우 - 로딩 상태 유지
-        if (imageUrl.startsWith('COMIC_GENERATING:')) {
-          console.log('🎨 만화 생성 중, 로딩 상태 유지:', imageUrl);
+        // 에러 응답 처리
+        if (imageUrl.startsWith('ERROR:')) {
+          const errorMsg = imageUrl.replace('ERROR:', '');
+          console.error('❌ 백엔드 에러 응답:', errorMsg);
           
-          // 로딩 상태를 유지하여 사용자가 기다리도록 함
-          // setLoading(false); 제거 - 로딩 상태 유지
-          
-          // 모달을 열어서 로딩 상태 표시
-          setShowManhwa(true);
-          
-          // 로딩 메시지 표시
           useComfortStore.getState().setManhwaCache(currentChatRoomId, [
-            { type: 'loading', text: '네컷만화를 생성하고 있습니다...', bg: 'bg-blue-100' }
+            { emoji: '❌', text: errorMsg, bg: 'bg-red-100' }
           ]);
+          setError(errorMsg);
+          setLoading(false);
+          return;
+        }
+
+        // 만화 생성 중인 경우 - 로딩만 표시 (GMS 토큰 절약)
+        if (imageUrl.startsWith('COMIC_GENERATING:')) {
+          const comicId = imageUrl.replace('COMIC_GENERATING:', '');
+          console.log('🎨 만화 생성 중, 로딩 표시:', comicId);
+          
+          // 모달 열기 및 로딩 메시지 표시
+          setShowManhwa(true);
+          useComfortStore.getState().setManhwaCache(currentChatRoomId, [
+            { type: 'loading', text: '네컷만화를 생성하고 있습니다... (최대 3분 소요)', bg: 'bg-blue-100' }
+          ]);
+          
+          // GMS 토큰 절약을 위해 폴링하지 않고 로딩만 유지
+          // 백엔드에서 비동기로 처리되고 있음
+          console.log('💡 GMS 토큰 절약 모드: 폴링 없이 대기');
+          
+          // 3분 후 타임아웃 처리
+          setTimeout(() => {
+            if (isLoading) {
+              console.log('⏰ 3분 타임아웃');
+              useComfortStore.getState().setManhwaCache(currentChatRoomId, [
+                { emoji: '⏰', text: '만화 생성 시간이 초과되었습니다. 다시 시도해주세요.', bg: 'bg-yellow-100' }
+              ]);
+              setLoading(false);
+            }
+          }, 180000); // 3분
           
           return;
         }
@@ -480,17 +633,88 @@ const ComfortChatPage = () => {
           throw new Error('이미지 생성에 실패했습니다. 다시 시도해주세요.');
         }
       } catch (error) {
-        console.error('❌ 네컷만화 생성 API 오류:', error);
-        const errorMessage = error.response?.data?.message || '만화 생성에 실패했습니다.';
+        const errorDuration = Date.now() - (startTime || Date.now());
+        
+        // 상세한 에러 분석 및 로깅
+        console.error('❌ 네컷만화 생성 API 오류 - 상세 분석:', {
+          errorType: error.constructor.name,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorStack: error.stack,
+          
+          // 네트워크 관련 정보
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          responseHeaders: error.response?.headers,
+          responseData: error.response?.data,
+          
+          // 요청 관련 정보
+          requestConfig: error.config,
+          requestUrl: error.config?.url,
+          requestMethod: error.config?.method,
+          requestTimeout: error.config?.timeout,
+          
+          // 타이밍 정보
+          errorDuration: `${errorDuration}ms`,
+          wasTimeout: errorDuration > 180000,
+          isNetworkError: !error.response,
+          
+          // 세션 정보
+          sessionId: currentSessionId,
+          sessionChanged: currentSessionId !== initialSessionId,
+          chatRoomId: currentChatRoomId,
+          
+          // 시스템 정보
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          online: navigator.onLine,
+          connectionType: navigator.connection?.effectiveType || 'unknown'
+        });
+        
+        let errorMessage = '만화 생성에 실패했습니다.';
+        let errorCategory = 'UNKNOWN';
+        
+        // 에러 유형별 상세 분류
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+          errorMessage = '요청 시간이 초과되었습니다. 네트워크 상태를 확인하고 다시 시도해주세요.';
+          errorCategory = 'TIMEOUT';
+          console.error('🕐 타임아웃 상세 분석:', {
+            timeoutDuration: `${errorDuration}ms`,
+            configuredTimeout: error.config?.timeout || '180000ms',
+            networkType: navigator.connection?.effectiveType,
+            downlink: navigator.connection?.downlink,
+            rtt: navigator.connection?.rtt
+          });
+        } else if (error.response?.status >= 500) {
+          errorMessage = `서버 오류가 발생했습니다 (${error.response.status}).`;
+          errorCategory = 'SERVER_ERROR';
+        } else if (error.response?.status >= 400) {
+          errorMessage = `요청 오류가 발생했습니다 (${error.response.status}).`;
+          errorCategory = 'CLIENT_ERROR';
+        } else if (!error.response) {
+          errorMessage = '네트워크 연결을 확인해주세요.';
+          errorCategory = 'NETWORK_ERROR';
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+          errorCategory = 'API_ERROR';
+        }
+        
+        console.error(`📊 에러 분류: ${errorCategory} - ${errorMessage}`);
+        
         useComfortStore.getState().setManhwaCache(currentChatRoomId, [
           { emoji: '❌', text: errorMessage, bg: 'bg-red-100' }
         ]);
         setError(errorMessage);
       } finally {
+        console.log('🔄 만화 생성 완료/종료, 로딩 상태 해제');
         setLoading(false);
       }
     } catch (error) {
-      console.error('❌ 네컷만화 생성 전체 오류:', error);
+      console.error('❌ 네컷만화 생성 전체 오류:', {
+        error,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       setError('만화 생성 중 오류가 발생했습니다.');
       setLoading(false);
     }
@@ -1472,19 +1696,6 @@ const ComfortChatPage = () => {
                             {panel.description}
                           </p>
                         )}
-                        
-                        {/* 다운로드 버튼 - 이미지가 있을 때만 표시 */}
-                        <div className="text-center mt-4">
-                          <button
-                            onClick={() => downloadManhwaImage()}
-                            className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg transition-colors hover:bg-blue-600"
-                          >
-                            <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            다운로드
-                          </button>
-                        </div>
                       </div>
                     );
                   }

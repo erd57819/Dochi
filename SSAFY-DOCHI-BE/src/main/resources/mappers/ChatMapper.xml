@@ -59,4 +59,13 @@
         SET title = #{newTitle}
         WHERE id = #{chatRoomId}
     </update>
+
+    <!-- 9. 세션 ID로 채팅 메시지 조회 (채팅방 ID를 통해) -->
+    <select id="getMessagesBySessionId" resultType="com.ssafy.dochi.chat.domain.Chat">
+        SELECT cm.id, cm.chat_room_id, 0 as user_id, cr.session_id, cm.sender_type, cm.message, cm.created_at AS timestamp
+        FROM chat_messages cm
+        JOIN chat_rooms cr ON cm.chat_room_id = cr.id
+        WHERE cr.session_id = #{sessionId}
+        ORDER BY cm.created_at ASC
+    </select>
 </mapper>

@@ -24,4 +24,7 @@ public interface ChatDao {
     void deleteMessagesByRoomId(@Param("chatRoomId") Long chatRoomId);
 
     void updateChatRoomTitle(@Param("chatRoomId") Long chatRoomId, @Param("newTitle") String newTitle);
+    
+    // 세션 ID로 채팅 메시지 조회 (시간순 정렬)
+    List<Chat> getMessagesBySessionId(@Param("sessionId") String sessionId);
 }
