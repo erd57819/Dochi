@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import RouletteGame from '../components/games/RouletteGame.jsx';
 import LadderGame from '../components/games/LadderGame.jsx';
 import WhackAMoleGame from '../components/games/WhackAMoleGame.jsx';
-import hedgehogImg from '../assets/image-65.png';
 
 const GamePage = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -48,11 +47,14 @@ const GamePage = () => {
         {/* 헤더 섹션 */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <img 
-              src={hedgehogImg} 
-              alt="참견도치" 
-              className="w-32 h-32 object-contain"
-            />
+            <svg className="w-32 h-32" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="55" r="25" fill="#8B4513"/>
+              <circle cx="50" cy="35" r="15" fill="#D2691E"/>
+              <circle cx="45" cy="32" r="2" fill="black"/>
+              <circle cx="55" cy="32" r="2" fill="black"/>
+              <circle cx="50" cy="38" r="1" fill="black"/>
+              <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="#654321" strokeWidth="2" fill="none"/>
+            </svg>
           </div>
           <h1 className="text-4xl font-bold mb-2" style={{ color: '#333333' }}>
             참견도치 게임존
@@ -70,11 +72,14 @@ const GamePage = () => {
             >
               {/* 카드 헤더 */}
               <div className="h-32 flex items-center justify-center" style={{ backgroundColor: game.color }}>
-                <img 
-                  src={hedgehogImg} 
-                  alt={game.title} 
-                  className="w-20 h-20 object-contain"
-                />
+                <svg className="w-20 h-20" viewBox="0 0 100 100" fill="none">
+                  <circle cx="50" cy="55" r="25" fill="white" opacity="0.9"/>
+                  <circle cx="50" cy="35" r="15" fill="white" opacity="0.8"/>
+                  <circle cx="45" cy="32" r="2" fill="black"/>
+                  <circle cx="55" cy="32" r="2" fill="black"/>
+                  <circle cx="50" cy="38" r="1" fill="black"/>
+                  <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="white" strokeWidth="2" fill="none" opacity="0.8"/>
+                </svg>
               </div>
               
               {/* 카드 내용 */}
@@ -102,11 +107,14 @@ const GamePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="mb-4">
-                <img 
-                  src={hedgehogImg} 
-                  alt="참견도치 룰렛" 
-                  className="w-16 h-16 object-contain mx-auto"
-                />
+                <svg className="w-16 h-16 mx-auto" viewBox="0 0 100 100" fill="none">
+                  <circle cx="50" cy="55" r="25" fill="#8B4513"/>
+                  <circle cx="50" cy="35" r="15" fill="#D2691E"/>
+                  <circle cx="45" cy="32" r="2" fill="black"/>
+                  <circle cx="55" cy="32" r="2" fill="black"/>
+                  <circle cx="50" cy="38" r="1" fill="black"/>
+                  <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="#654321" strokeWidth="2" fill="none"/>
+                </svg>
               </div>
               <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>참견도치 룰렛</h3>
               <p className="text-sm" style={{ color: '#666666' }}>
@@ -116,11 +124,14 @@ const GamePage = () => {
             </div>
             <div className="text-center">
               <div className="mb-4">
-                <img 
-                  src={hedgehogImg} 
-                  alt="사다리타기" 
-                  className="w-16 h-16 object-contain mx-auto"
-                />
+                <svg className="w-16 h-16 mx-auto" viewBox="0 0 100 100" fill="none">
+                  <circle cx="50" cy="55" r="25" fill="#8B4513"/>
+                  <circle cx="50" cy="35" r="15" fill="#D2691E"/>
+                  <circle cx="45" cy="32" r="2" fill="black"/>
+                  <circle cx="55" cy="32" r="2" fill="black"/>
+                  <circle cx="50" cy="38" r="1" fill="black"/>
+                  <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="#654321" strokeWidth="2" fill="none"/>
+                </svg>
               </div>
               <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>사다리타기</h3>
               <p className="text-sm" style={{ color: '#666666' }}>
@@ -130,11 +141,14 @@ const GamePage = () => {
             </div>
             <div className="text-center">
               <div className="mb-4">
-                <img 
-                  src={hedgehogImg} 
-                  alt="고슴도치 잡기" 
-                  className="w-16 h-16 object-contain mx-auto"
-                />
+                <svg className="w-16 h-16 mx-auto" viewBox="0 0 100 100" fill="none">
+                  <circle cx="50" cy="55" r="25" fill="#8B4513"/>
+                  <circle cx="50" cy="35" r="15" fill="#D2691E"/>
+                  <circle cx="45" cy="32" r="2" fill="black"/>
+                  <circle cx="55" cy="32" r="2" fill="black"/>
+                  <circle cx="50" cy="38" r="1" fill="black"/>
+                  <path d="M30 25 L35 20 L40 25 L45 20 L50 25 L55 20 L60 25 L65 20 L70 25" stroke="#654321" strokeWidth="2" fill="none"/>
+                </svg>
               </div>
               <h3 className="font-bold text-lg mb-2" style={{ color: '#333333' }}>고슴도치 잡기</h3>
               <p className="text-sm" style={{ color: '#666666' }}>
