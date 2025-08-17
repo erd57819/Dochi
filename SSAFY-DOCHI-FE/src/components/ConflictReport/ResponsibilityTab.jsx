@@ -61,14 +61,24 @@ const ResponsibilityTab = ({ responsibilityData }) => {
                 {speaker.conflict_management_type && (
                   <div className="mt-2">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      speaker.conflict_management_type === '경쟁형' ? 'bg-red-100 text-red-800' :
-                      speaker.conflict_management_type === '수용형' ? 'bg-blue-100 text-blue-800' :
-                      speaker.conflict_management_type === '회피형' ? 'bg-gray-100 text-gray-800' :
-                      speaker.conflict_management_type === '타협형' ? 'bg-yellow-100 text-yellow-800' :
-                      speaker.conflict_management_type === '협력형' ? 'bg-green-100 text-green-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}>
-                      🔍 갈등관리 유형: {speaker.conflict_management_type}
+                      speaker.conflict_management_type === '경쟁형' ? 'bg-orange-100' :
+                      speaker.conflict_management_type === '수용형' ? 'bg-amber-100' :
+                      speaker.conflict_management_type === '회피형' ? 'bg-stone-100' :
+                      speaker.conflict_management_type === '타협형' ? 'bg-yellow-100' :
+                      speaker.conflict_management_type === '협력형' ? 'bg-emerald-100' :
+                      'bg-brown-100'
+                    }`} style={{
+                      color: speaker.conflict_management_type === '경쟁형' ? '#8B4513' :
+                      speaker.conflict_management_type === '수용형' ? '#654321' :
+                      speaker.conflict_management_type === '회피형' ? '#5D4037' :
+                      speaker.conflict_management_type === '타협형' ? '#8B4513' :
+                      speaker.conflict_management_type === '협력형' ? '#556B2F' :
+                      '#6D4C41'
+                    }}>
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clipRule="evenodd" />
+                      </svg>
+                      갈등관리 유형: {speaker.conflict_management_type}
                     </span>
                   </div>
                 )}
@@ -91,46 +101,52 @@ const ResponsibilityTab = ({ responsibilityData }) => {
 
       {/* 갈등관리 유형 설명 */}
       <div className="bg-[#F8F5F0] rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-[#2A2A2A] mb-4">📊 갈등관리 유형별 특징</h3>
+        <h3 className="text-lg font-semibold text-[#2A2A2A] mb-4 flex items-center">
+          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+          </svg>
+          갈등관리 유형별 특징
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+          <div className="bg-orange-50 p-4 rounded-lg border" style={{ borderColor: '#D2691E' }}>
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-              <h4 className="font-medium text-red-800">경쟁형 (Competing)</h4>
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#D2691E' }}></span>
+              <h4 className="font-medium" style={{ color: '#8B4513' }}>경쟁형 (Competing)</h4>
             </div>
-            <p className="text-sm text-red-700">자신의 목표를 우선시하며 상대방과의 협력보다는 승부를 중시</p>
+            <p className="text-sm" style={{ color: '#A0522D' }}>자신의 목표를 우선시하며 상대방과의 협력보다는 승부를 중시</p>
           </div>
           
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div className="bg-amber-50 p-4 rounded-lg border" style={{ borderColor: '#B8860B' }}>
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-              <h4 className="font-medium text-blue-800">수용형 (Accommodating)</h4>
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#B8860B' }}></span>
+              <h4 className="font-medium" style={{ color: '#654321' }}>수용형 (Accommodating)</h4>
             </div>
-            <p className="text-sm text-blue-700">관계 유지를 위해 자신의 욕구를 포기하고 상대방을 우선시</p>
+            <p className="text-sm" style={{ color: '#8B6914' }}>관계 유지를 위해 자신의 욕구를 포기하고 상대방을 우선시</p>
           </div>
           
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="bg-stone-50 p-4 rounded-lg border" style={{ borderColor: '#8D6E63' }}>
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
-              <h4 className="font-medium text-gray-800">회피형 (Avoiding)</h4>
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#8D6E63' }}></span>
+              <h4 className="font-medium" style={{ color: '#5D4037' }}>회피형 (Avoiding)</h4>
             </div>
-            <p className="text-sm text-gray-700">갈등 상황 자체를 피하거나 늦추려는 경향</p>
+            <p className="text-sm" style={{ color: '#6D4C41' }}>갈등 상황 자체를 피하거나 늦추려는 경향</p>
           </div>
           
-          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+          <div className="bg-yellow-50 p-4 rounded-lg border" style={{ borderColor: '#CD853F' }}>
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-              <h4 className="font-medium text-yellow-800">타협형 (Compromising)</h4>
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#CD853F' }}></span>
+              <h4 className="font-medium" style={{ color: '#8B4513' }}>타협형 (Compromising)</h4>
             </div>
-            <p className="text-sm text-yellow-700">양측이 어느 정도 양보하여 중간 지점에서 해결책 모색</p>
+            <p className="text-sm" style={{ color: '#A0522D' }}>양측이 어느 정도 양보하여 중간 지점에서 해결책 모색</p>
           </div>
           
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <div className="bg-emerald-50 p-4 rounded-lg border" style={{ borderColor: '#8FBC8F' }}>
             <div className="flex items-center mb-2">
-              <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-              <h4 className="font-medium text-green-800">협력형 (Collaborating)</h4>
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#8FBC8F' }}></span>
+              <h4 className="font-medium" style={{ color: '#556B2F' }}>협력형 (Collaborating)</h4>
             </div>
-            <p className="text-sm text-green-700">양방 모두가 만족할 수 있는 창의적 해결책 추구</p>
+            <p className="text-sm" style={{ color: '#6B8E23' }}>양방 모두가 만족할 수 있는 창의적 해결책 추구</p>
           </div>
         </div>
       </div>
@@ -155,7 +171,9 @@ const ResponsibilityTab = ({ responsibilityData }) => {
       {/* 데이터가 없을 때 표시 */}
       {(!responsibilityData?.responsibility_analysis || Object.keys(responsibilityData.responsibility_analysis).length === 0) && (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">⚖️</div>
+          <svg className="w-16 h-16 mx-auto mb-4" style={{ color: '#8B4513' }} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </svg>
           <p className="text-gray-500 text-lg">책임 분석 데이터가 생성되지 않았습니다.</p>
           <p className="text-gray-400 text-sm mt-2">대화 내용을 바탕으로 책임 비율을 분석 중입니다...</p>
         </div>
