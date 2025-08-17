@@ -49,7 +49,6 @@ const ComfortChatPage = () => {
     setShowManhwa,
     setShowTutorial, // 튜토리얼 제어 함수 추가
     checkFirstVisit, // 첫 방문자 감지 함수 추가
-    saveToDatabase // 저장 함수 추가
   } = useComfortStore();
   
   const scrollToBottom = () => {
@@ -90,11 +89,24 @@ const ComfortChatPage = () => {
         const parsedData = JSON.parse(conflictData);
         
         if (parsedData.autoSend && parsedData.message) {
+          console.log('📨 마이페이지에서 상세 갈등 데이터 수신:', {
+            conflictId: parsedData.conflictId,
+            hasDetail: !!parsedData.conflictDetail,
+            messageLength: parsedData.message?.length
+          });
+          
           // 항상 새로운 세션 생성하여 갈등 상담 시작
           await createNewSessionWithFirstMessage(parsedData.message);
           
           // 사용한 데이터 삭제
           sessionStorage.removeItem('comfortConflictData');
+          
+          // 상담 시작 알림 표시
+          if (parsedData.conflictDetail?.title) {
+            setTimeout(() => {
+              console.log(`✨ "${parsedData.conflictDetail.title}" 갈등 상담을 시작합니다.`);
+            }, 1000);
+          }
         }
       }
     } catch (error) {
@@ -152,12 +164,15 @@ const ComfortChatPage = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
+    const messageToSend = inputValue.trim();
+    setInputValue(''); // 즉시 입력값 초기화
+
     try {
-      console.log('메시지 전송:', { inputValue, selectedMode });
-      await sendMessage(inputValue);
-      setInputValue('');
+      console.log('메시지 전송:', { messageToSend, selectedMode });
+      await sendMessage(messageToSend);
     } catch (error) {
       console.error('Failed to send message:', error);
+      setInputValue(messageToSend); // 에러 발생 시 입력값 복원
     }
   };
 
@@ -317,25 +332,6 @@ const ComfortChatPage = () => {
     }
   };
 
-  const saveChatToDatabase = async () => {
-    const { currentChatRoomId, currentSessionId, messages } = useComfortStore.getState();
-    
-    if (!currentSessionId || !currentChatRoomId || !messages || messages.length === 0) {
-      alert('저장할 대화 내용이 없습니다.');
-      return;
-    }
-    
-    try {
-      await saveToDatabase(currentChatRoomId, currentSessionId);
-      alert('대화 내용이 성공적으로 저장되었습니다!');
-      
-      // 저장 후 Redis 캐시 정리
-      useComfortStore.getState().clearCache();
-    } catch (error) {
-      console.error('대화 저장 실패:', error);
-      alert('대화 저장에 실패했습니다.');
-    }
-  };
 
   const downloadManhwaImage = async () => {
     const { currentChatRoomId, manhwaCache } = useComfortStore.getState();
@@ -415,10 +411,22 @@ const ComfortChatPage = () => {
         
         console.log('🔍 처리된 이미지 URL:', imageUrl);
 
-        // 만화 생성 중인 경우 에러로 처리
+        // 만화 생성 중인 경우 - 로딩 상태 유지
         if (imageUrl.startsWith('COMIC_GENERATING:')) {
-          console.log('🎨 만화 생성 중이지만 동기 처리로 변경:', imageUrl);
-          throw new Error('만화 생성이 아직 완료되지 않았습니다. 잠시 후 다시 시도해주세요.');
+          console.log('🎨 만화 생성 중, 로딩 상태 유지:', imageUrl);
+          
+          // 로딩 상태를 유지하여 사용자가 기다리도록 함
+          // setLoading(false); 제거 - 로딩 상태 유지
+          
+          // 모달을 열어서 로딩 상태 표시
+          setShowManhwa(true);
+          
+          // 로딩 메시지 표시
+          useComfortStore.getState().setManhwaCache(currentChatRoomId, [
+            { type: 'loading', text: '네컷만화를 생성하고 있습니다...', bg: 'bg-blue-100' }
+          ]);
+          
+          return;
         }
 
         // 더 유연한 URL 검증 로직
@@ -435,6 +443,8 @@ const ComfortChatPage = () => {
           imageUrl.includes('.gif') || 
           imageUrl.includes('.webp')
         );
+        
+        console.log('🔍 이미지 URL 검증 결과:', { imageUrl, isValidUrl });
 
         if (isValidUrl) {
           // 백엔드에서 받은 description 사용 (없으면 기본값)
@@ -446,9 +456,28 @@ const ComfortChatPage = () => {
             description: description
           }];
           useComfortStore.getState().setManhwaCache(currentChatRoomId, manhwaData);
+          
+          // 이미지가 생성되면 모달 자동 열기
+          setShowManhwa(true);
+          
+        } else if (imageUrl && imageUrl.trim()) {
+          // URL이 있지만 유효성 검사를 통과하지 못한 경우에도 시도
+          console.warn('⚠️ URL 형식이 예상과 다르지만 시도:', imageUrl);
+          const description = response.data.description || '당신의 이야기를 4컷 만화로 표현했어요';
+          const manhwaData = [{ 
+            type: 'image', 
+            url: imageUrl, 
+            title: '오늘의 네컷만화',
+            description: description
+          }];
+          useComfortStore.getState().setManhwaCache(currentChatRoomId, manhwaData);
+          
+          // 이미지가 생성되면 모달 자동 열기
+          setShowManhwa(true);
+          
         } else {
           console.error('❌ 유효하지 않은 이미지 URL:', imageUrl);
-          throw new Error(`유효하지 않은 이미지 URL입니다: ${imageUrl}`);
+          throw new Error('이미지 생성에 실패했습니다. 다시 시도해주세요.');
         }
       } catch (error) {
         console.error('❌ 네컷만화 생성 API 오류:', error);
@@ -467,26 +496,54 @@ const ComfortChatPage = () => {
     }
   };
 
+
   const parseTimelineResponse = (text) => {
-  const lines = text.split('\n').filter(line => line.trim());
-  const timeline = [];
-  
-  lines.forEach((line, index) => {
-  if (line.includes(':') || line.includes('.')) {
-    const parts = line.split(/[:.]/); 
-    if (parts.length >= 2) {
-      timeline.push({
-          time: parts[0].trim(),
-          content: parts.slice(1).join(':').trim(),
-          color: ['orange', 'blue', 'green', 'purple'][index % 4]
-        });
+    const lines = text.split('\n').filter(line => line.trim());
+    const timeline = [];
+    
+    lines.forEach((line, index) => {
+      // 숫자로 시작하는 라인 (1. 2. 3. 등) 또는 **로 감싸진 제목
+      if (line.match(/^\d+[.:]/) || line.includes('**') || line.includes(':')) {
+        let time = '';
+        let content = '';
+        
+        if (line.match(/^\d+[.:]/)) {
+          // "1. 시간/상황: 내용" 형식
+          const match = line.match(/^(\d+[.:]?)\s*(.*)/);
+          if (match) {
+            time = `${match[1]} 단계`;
+            content = match[2].replace(/\*\*/g, '').trim();
+          }
+        } else if (line.includes('**')) {
+          // "**시간/상황**: 내용" 형식
+          const cleanLine = line.replace(/\*\*/g, '');
+          const parts = cleanLine.split(':');
+          if (parts.length >= 2) {
+            time = parts[0].trim();
+            content = parts.slice(1).join(':').trim();
+          }
+        } else if (line.includes(':')) {
+          // "시간/상황: 내용" 형식
+          const parts = line.split(':');
+          if (parts.length >= 2) {
+            time = parts[0].trim();
+            content = parts.slice(1).join(':').trim();
+          }
+        }
+        
+        if (time && content) {
+          timeline.push({
+            time: time,
+            content: content,
+            color: ['orange', 'blue', 'green', 'purple', 'red', 'indigo'][index % 6]
+          });
+        }
       }
-  }
-  });
-  
-  return timeline.length > 0 ? timeline : [
-  { time: 'AI 분석 결과', content: text, color: 'blue' }
-  ];
+    });
+    
+    return timeline.length > 0 ? timeline : [
+      { time: 'AI 분석 결과', content: text, color: 'blue' }
+    ];
   };
 
   const renderMessage = (message) => {
@@ -771,6 +828,28 @@ const ComfortChatPage = () => {
                   </div>
                   <h2 className="text-3xl font-bold text-black mb-2">토닥토닥 챗봇</h2>
                   <p className="text-lg text-[#666] mb-6">갈등 상황이나 고민을 자세히 입력해 주시면 참견도치가 다양한 모드로 도와드립니다</p>
+                  
+                  {/* 마이페이지에서 온 검드 표시 */}
+                  {(() => {
+                    const conflictData = sessionStorage.getItem('comfortConflictData');
+                    if (conflictData) {
+                      try {
+                        const parsedData = JSON.parse(conflictData);
+                        if (parsedData.conflictDetail?.title) {
+                          return (
+                            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                              <p className="text-sm text-orange-800">
+                                📝 <strong>"{ parsedData.conflictDetail.title }"</strong> 갈등에 대한 상담을 준비했어요.
+                              </p>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 에러 무시
+                      }
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {/* 입력 폼 */}
@@ -783,14 +862,26 @@ const ComfortChatPage = () => {
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyPress={handleKeyPress}
                         className="w-full max-w-2xl px-0 py-0 bg-transparent border-0 border-b-2 border-b-gray-300 focus:border-b-[#bf7d2c] focus:outline-none text-base transition-colors text-center resize-none"
-                        placeholder="이야기를 자세히 들려주세요..."
+                        placeholder={(() => {
+                          const conflictData = sessionStorage.getItem('comfortConflictData');
+                          if (conflictData) {
+                            try {
+                              const parsedData = JSON.parse(conflictData);
+                              if (parsedData.conflictDetail?.title) {
+                                return `"${parsedData.conflictDetail.title}" 갈등에 대해 더 자세히 이야기해주세요...`;
+                              }
+                            } catch (e) {
+                              // 파싱 에러 무시
+                            }
+                          }
+                          return "이야기를 자세히 들려주세요...";
+                        })()}
                         style={{ 
                           minHeight: '30px',
                           fontFamily: 'inherit',
                           paddingBottom: '2px'
                         }}
                         rows="1"
-                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -1019,31 +1110,6 @@ const ComfortChatPage = () => {
               )}
             </button>
 
-            {/* 저장 버튼 */}
-            <button
-              onClick={saveChatToDatabase}
-              className="px-3 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-2 border"
-              style={{ 
-                backgroundColor: 'transparent',
-                borderColor: '#bf7d2c',
-                color: '#bf7d2c'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#bf7d2c';
-                e.target.style.color = 'white';
-                e.target.style.borderColor = '#bf7d2c';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-                e.target.style.color = '#bf7d2c';
-                e.target.style.borderColor = '#bf7d2c';
-              }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-              저장
-            </button>
 
             {/* 도움말 버튼 */}
             <button
@@ -1202,7 +1268,6 @@ const ComfortChatPage = () => {
                 border: 'none'
               }}
               rows="1"
-              disabled={isLoading}
             />
             <button
               onClick={handleSendMessage}
@@ -1275,25 +1340,56 @@ const ComfortChatPage = () => {
                 </button>
               </div>
             </div>
-            <div className="space-y-3">
-              {(timelineCache[currentChatRoomId] || []).map((item, index) => (
-                <div key={index} className="bg-white border rounded-lg p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-800 mb-1">{item.time}</h4>
-                      <p className="text-gray-600 text-sm leading-relaxed">{item.content}</p>
+            <div className="relative">
+              {/* 타임라인 컨테이너 */}
+              <div className="relative">
+                {/* 세로 연결선 */}
+                <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-gradient-to-b from-orange-300 to-blue-300"></div>
+                
+                <div className="space-y-6">
+                  {(timelineCache[currentChatRoomId] || []).map((item, index) => {
+                    const colors = {
+                      orange: { bg: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-600', icon: 'bg-orange-500' },
+                      blue: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-600', icon: 'bg-blue-500' },
+                      green: { bg: 'bg-green-100', border: 'border-green-300', text: 'text-green-600', icon: 'bg-green-500' },
+                      purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-600', icon: 'bg-purple-500' },
+                      red: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-600', icon: 'bg-red-500' },
+                      indigo: { bg: 'bg-indigo-100', border: 'border-indigo-300', text: 'text-indigo-600', icon: 'bg-indigo-500' }
+                    };
+                    const colorScheme = colors[item.color] || colors.blue;
+                    
+                    return (
+                      <div key={index} className={`relative pl-16 pb-6`}>
+                        {/* 타임라인 아이콘 */}
+                        <div className={`absolute left-4 w-4 h-4 ${colorScheme.icon} rounded-full border-2 border-white shadow-md`}></div>
+                        
+                        {/* 내용 카드 */}
+                        <div className={`bg-white border-l-4 ${colorScheme.border} rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow`}>
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <div className={`inline-block px-3 py-1 ${colorScheme.bg} ${colorScheme.text} rounded-full text-xs font-semibold mb-2`}>
+                                {item.time}
+                              </div>
+                              <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ 
+                                __html: item.content.replace(/\n/g, '<br>') 
+                              }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {(!timelineCache[currentChatRoomId] || timelineCache[currentChatRoomId].length === 0) && (
+                  <div className="text-center text-gray-500 py-8">
+                    <div className="animate-pulse">
+                      <div className="text-4xl mb-4">⏳</div>
+                      <p>타임라인을 생성하고 있습니다...</p>
                     </div>
                   </div>
-                </div>
-              ))}
-              {(!timelineCache[currentChatRoomId] || timelineCache[currentChatRoomId].length === 0) && (
-                <div className="text-center text-gray-500 py-8">
-                  타임라인을 생성하고 있습니다...
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1310,19 +1406,24 @@ const ComfortChatPage = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">오늘의 네컷만화</h3>
               <div className="flex gap-2">
-                {/* <button
-                  onClick={() => downloadManhwaImage()}
-                  className="px-3 py-1 text-white text-sm rounded transition-colors"
-                  style={{ backgroundColor: '#3B82F6' }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#2563EB';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#3B82F6';
-                  }}
-                >
-                  다운로드
-                </button> */}
+                {manhwaCache[currentChatRoomId] && manhwaCache[currentChatRoomId].some(panel => panel.type === 'image') && (
+                  <button
+                    onClick={() => downloadManhwaImage()}
+                    className="px-3 py-1 text-white text-sm rounded transition-colors"
+                    style={{ backgroundColor: '#3B82F6' }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#2563EB';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#3B82F6';
+                    }}
+                  >
+                    <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    다운로드
+                  </button>
+                )}
                 <button onClick={() => setShowManhwa(false)} className="text-gray-500 hover:text-gray-700">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1333,6 +1434,23 @@ const ComfortChatPage = () => {
             {manhwaCache[currentChatRoomId] && manhwaCache[currentChatRoomId].length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
                 {manhwaCache[currentChatRoomId].map((panel, index) => {
+                  // 로딩 상태 처리
+                  if (panel.type === 'loading') {
+                    return (
+                      <div key={index} className="col-span-2 text-center py-12">
+                        <div className="animate-pulse">
+                          <div className="text-6xl mb-4">🎨</div>
+                          <h4 className="text-lg font-medium mb-2">네컷만화 생성 중...</h4>
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                            <div className="bg-orange-500 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                          </div>
+                          <p className="text-gray-600 text-sm">잠시만 기다려주세요. AI가 네컷만화를 그리고 있어요!</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // 이미지 표시
                   if (panel.type === 'image') {
                     return (
                       <div key={index} className="col-span-2">
@@ -1354,9 +1472,24 @@ const ComfortChatPage = () => {
                             {panel.description}
                           </p>
                         )}
+                        
+                        {/* 다운로드 버튼 - 이미지가 있을 때만 표시 */}
+                        <div className="text-center mt-4">
+                          <button
+                            onClick={() => downloadManhwaImage()}
+                            className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg transition-colors hover:bg-blue-600"
+                          >
+                            <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            다운로드
+                          </button>
+                        </div>
                       </div>
                     );
                   }
+                  
+                  // 기타 패널 (에러 메시지 등)
                   return (
                     <div key={index} className={`${panel.bg} p-4 rounded-lg aspect-square flex items-center justify-center`}>
                       <div className="text-center">
@@ -1366,28 +1499,20 @@ const ComfortChatPage = () => {
                     </div>
                   );
                 })}
-                <div className="col-span-2 flex justify-center mt-4">
-                  <button
-                    onClick={generateManhwa}
-                    disabled={isLoading}
-                    className="px-6 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: isLoading ? '#d1d5db' : '#bf7d2c'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isLoading) {
-                        e.target.style.backgroundColor = '#8B4513';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isLoading) {
-                        e.target.style.backgroundColor = '#bf7d2c';
-                      }
-                    }}
-                  >
-                    {isLoading ? <LoadingSpinner size="small" text="생성중..." color="white" /> : '다시 생성하기'}
-                  </button>
-                </div>
+                {/* 다시 생성 버튼 - 로딩 중이 아니고 이미지가 있을 때만 */}
+                {!isLoading && manhwaCache[currentChatRoomId].some(panel => panel.type === 'image') && (
+                  <div className="col-span-2 flex justify-center mt-4">
+                    <button
+                      onClick={generateManhwa}
+                      className="px-6 py-2 text-white rounded-lg transition-colors"
+                      style={{ backgroundColor: '#bf7d2c' }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#8B4513'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#bf7d2c'}
+                    >
+                      다시 생성하기
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-12">
