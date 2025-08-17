@@ -4,8 +4,11 @@
 > 참견도치는 **AI 기반 감정 분석**과 **실시간 대화 코칭(WebRTC)**을 통해 갈등 상황을 분석하고, 맞춤형 해결 솔루션을 제공하는 **통합 갈등 중재 플랫폼**입니다.  
 > WebRTC 실시간 대화 코칭, AI 챗봇, 커뮤니티, 게임 요소(룰렛, 사다리타기 등)까지 결합하여 사용자 친화적인 갈등 해결 환경을 제공합니다.
 
-🔗 **배포 URL** : [https://i13c209.p.ssafy.io/](https://i13c209.p.ssafy.io/)
-🔗 **노션 URL** : [https://www.notion.so/AI-2510b21b2383808a8c44f46de4a68507/](https://www.notion.so/AI-2510b21b2383808a8c44f46de4a68507/)
+<p align="center">
+  <a href="https://i13c209.p.ssafy.io/"><img src="https://img.shields.io/badge/Service%20URL-Click%20Here-blue?style=flat-square&logo=google-chrome"></a>
+  <a href="https://www.notion.so/AI-2510b21b2383808a8c44f46de4a68507/"><img src="https://img.shields.io/badge/Notion-Docs-lightgrey?style=flat-square&logo=notion"></a>
+</p>
+
 ---
 
 ## 프로젝트 개요
