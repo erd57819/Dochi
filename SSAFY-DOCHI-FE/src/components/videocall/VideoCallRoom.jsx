@@ -1652,16 +1652,27 @@ const VideoCallRoom = ({ userId, isHost, onEndCall }) => {
                 <div className="text-xs text-[#5C351A] font-medium mb-1">현재 감정</div>
                 <div className="flex space-x-3">
                   {Object.entries(emotionScores).map(([name, scores]) => {
-                    const topEmotion = Object.entries(scores).sort(([,a], [,b]) => b - a)[0];
+                    // timestamp 제외하고 감정만 필터링
+                    const emotionsOnly = Object.entries(scores).filter(([key]) => key !== 'timestamp');
+                    const topEmotion = emotionsOnly.sort(([,a], [,b]) => b - a)[0];
                     if (!topEmotion) return null;
                     const [emotion, score] = topEmotion;
+                    
+                    // 감정을 한글로 변환
+                    const emotionLabels = {
+                      happy: '기쁨',
+                      sad: '슬픔', 
+                      angry: '화남',
+                      surprised: '놀람',
+                      neutral: '평온'
+                    };
+                    
                     return (
                       <div key={name} className="text-center">
-                        <div className="text-xs text-[#4A4A4A]">{name}</div>
                         <div className={`text-xs font-medium ${
                           score > 50 ? 'text-red-600' : 'text-[#5C351A]'
                         }`}>
-                          {emotion}: {score}%
+                          {emotionLabels[emotion] || emotion}: {score}%
                         </div>
                       </div>
                     );
