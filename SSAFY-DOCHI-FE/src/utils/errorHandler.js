@@ -21,7 +21,7 @@ export const handleApiError = (error) => {
     }
     
     // 기술적인 메시지면 일반적인 안내
-    return '다시 로그인해주세요.';
+    return '로그인해주세요.';
   }
   
   // 401 에러: 토큰 갱신 로직에서 처리하므로 여기서는 제외
