@@ -118,16 +118,16 @@ const ConversationSidebar = ({
       {/* 대화 내용 */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 탭 헤더 및 컨트롤 */}
-        <div className="p-3 flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2">
-          <h3 className="text-[#2A2A2A] font-bold flex items-center mb-3">
+        <div className="p-2 flex-shrink-0 bg-[#FEFCF8] bg-opacity-50 rounded-lg m-2">
+          <h3 className="text-[#2A2A2A] font-bold flex items-center mb-2">
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
             </svg>
             참견도치 채팅
           </h3>
           
-          {/* 탭 버튼 */}
-          <div className="flex gap-1 mb-3">
+          {/* 탭 버튼과 AI 중재 컨트롤 */}
+          <div className="flex gap-1 mb-2">
             <button
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
@@ -147,18 +147,6 @@ const ConversationSidebar = ({
               }`}
             >
               AI 코칭 ({coachingMessages?.length || 0})
-            </button>
-          </div>
-          
-          {/* 컨트롤 버튼 */}
-          <div className="flex gap-2">
-            <button
-              onClick={toggleSTT}
-              className={`px-3 py-1 rounded text-sm font-medium ${
-                sttEnabled ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
-              }`}
-            >
-              STT {sttEnabled ? 'ON' : 'OFF'}
             </button>
             <button
               onClick={toggleAIMediation}
