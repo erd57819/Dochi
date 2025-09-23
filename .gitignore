@@ -160,7 +160,18 @@ google-service-account.json
 **/google-service-account.json
 service-account-key.json
 **/service-account-key.json
-*.json
+
+# === 기타 민감한 파일들 ===
+# 키, 시크릿, 설정 파일들 (보안 중요)
+keys.txt
+*.secret
+*.key
+config.json
+credentials.json
+secrets.json
+.secrets
+config.ini
+settings.ini
 
 # === 운영 환경 관련 ===
 # 운영 환경에서 생성되는 데이터 및 로그 파일들
@@ -175,5 +186,86 @@ backup_*.sql
 # Docker 볼륨 및 임시 파일들
 .docker/
 
+# === VS Code 관련 ===
+# VS Code 설정 파일들 (개인 설정이므로 제외)
+.vscode/
+.vs/
+
+# === OS 관련 파일 ===
+# 운영체제별 시스템 파일들
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# === 텍스트 에디터 관련 ===
+# vim, emacs 등의 임시 파일들
+*.swp
+*.swo
+*.tmp
+*~
+.#*
+\#*#
+*.orig
+
+# === npm/yarn 관련 ===
+# 패키지 매니저 관련 로그 및 캐시 파일들
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# === Maven 관련 ===
+# Maven wrapper 및 빌드 아티팩트
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+.mvn/timing.properties
+.mvn/wrapper/MavenWrapperDownloader.java
+
+# === Spring Boot 관련 ===
+# Spring Boot 개발 도구 관련 파일들
+.spring-boot-devtools.properties
+application-*.yml.bak
+application-*.properties.bak
+
+# === 데이터베이스 관련 ===
+# H2 데이터베이스 파일들
+*.h2.db
+*.mv.db
+*.trace.db
+
+# === 인증서 및 키 파일 ===
+# SSL 인증서 및 개인키 (보안 중요)
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+
+# === 백업 파일들 ===
+# 각종 백업 파일들
+*.bak
+*.backup
+*.old
+*.save
+
+# === 임시 파일들 ===
+# 시스템 및 애플리케이션 임시 파일들
+temp/
+tmp/
+*.pid
+*.lock
 
 .gemini/# junho 브랜치 업데이트 - 2025년 08월 17일 일 오후  3:55:36
