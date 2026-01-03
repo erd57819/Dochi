@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: 불필요한 파일 및 폴더 제거\n\n- 개발자 개인용 스크립트 파일 삭제 \\(bat, ps1\\)\n- 테스트용 폴더 삭제 \\(새 폴더, .claude\\)\n- 불필요한 설정 파일 삭제 \\(keys.txt, .coderabbit.yaml 등\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}
